@@ -71,7 +71,14 @@ To install a mod release, follow the instructions below, depending on the versio
 1. The game is ready to play from the launcher when the main menu appears.
 1. If you bought Space Age, go into the launcher's mod menu and disable elevated rails, quality, and Space Age.
 
-**Running from source:** If your antivirus blocks the launcher, you can run it directly from Python instead. Install [git](https://git-scm.com), then run `git clone --recurse-submodules https://github.com/Factorio-Access/Factorio-Access-Launcher` and place the cloned folder where you would have placed `launcher.exe`. Double-click `run.bat` to set up and start the launcher. On subsequent runs, double-click `run.bat` again.
+### Windows Zip version: Running from source instead
+
+If your antivirus blocks `launcher.exe`, you can run the launcher directly from Python instead:
+
+1. Install [git](https://git-scm.com) if you don't have it already.
+1. Clone the launcher repository: `git clone --recurse-submodules https://github.com/Factorio-Access/Factorio-Access-Launcher`
+1. Place the cloned folder in the root of the Factorio zip, the same folder as `bin` and `config-path.cfg`.
+1. Double-click `run.bat` to set up and start the launcher. On subsequent runs, double-click `run.bat` again.
 
 ## Windows Steam version or regular Windows version: Mod release install
 
@@ -90,7 +97,15 @@ To install a mod release, follow the instructions below, depending on the versio
 1. The game is ready to play from the launcher when the main menu appears.
 1. If you bought Space Age, go into the launcher's mod menu and disable elevated rails, quality, and Space Age.
 
-**Running from source:** If your antivirus blocks the launcher, you can run it directly from Python instead. Install [git](https://git-scm.com), then run `git clone --recurse-submodules https://github.com/Factorio-Access/Factorio-Access-Launcher` and place the cloned folder where you would have placed `launcher.exe` (in `%AppData%/Factorio`). Double-click `run.bat` to set up and start the launcher. On subsequent runs, double-click `run.bat` again. You will still need to configure Steam launch options, but point them at `run.bat` instead of `launcher.exe`.
+### Windows Steam version: Running from source instead
+
+If your antivirus blocks `launcher.exe`, you can run the launcher directly from Python instead:
+
+1. Install [git](https://git-scm.com) if you don't have it already.
+1. Clone the launcher repository: `git clone --recurse-submodules https://github.com/Factorio-Access/Factorio-Access-Launcher`
+1. Place the cloned folder in `%AppData%/Factorio`.
+1. Double-click `run.bat` to set up and start the launcher.
+1. You still need to configure Steam launch options as described above, but use `run.bat` in place of `launcher.exe`.
 
 ## Linux Version: Mod install and running via Python scripts
 
