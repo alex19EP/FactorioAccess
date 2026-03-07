@@ -100,8 +100,8 @@ To install a mod release, follow the instructions below, depending on the versio
 1. Create a virtual environment: `python3 -m venv venv`
 1. Install the required packages: `./venv/bin/pip install -r requirements.txt`
 1. Run the launcher: `./venv/bin/python main.py`
-1. If it complains it can't find your Factorio installation then add the path to the Factorio executable as an argument when launching.
 1. Any time you want to run the launcher again, go to the same folder and run: `./venv/bin/python main.py`
+1. If it complains it can't find your Factorio installation, pass the path to the Factorio executable: `./venv/bin/python main.py --executable-path /path/to/factorio`
 1. If you bought Space Age, go into the launcher's mod menu and disable elevated rails, quality, and Space Age.
 
 ## MacOS: Mod install and running via Python scripts
