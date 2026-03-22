@@ -78,7 +78,7 @@ If your antivirus blocks `launcher.exe`, you can run the launcher directly from 
 1. Install [git](https://git-scm.com) if you don't have it already.
 1. Clone the launcher repository: `git clone --recurse-submodules https://github.com/Factorio-Access/Factorio-Access-Launcher`
 1. Place the cloned folder in the root of the Factorio zip, the same folder as `bin` and `config-path.cfg`.
-1. Double-click `run.bat` to set up and start the launcher. On subsequent runs, double-click `run.bat` again.
+1. Double-click `install-and-run.bat` to set up and start the launcher. On subsequent runs, double-click `install-and-run.bat` again.
 
 ## Windows Steam version or regular Windows version: Mod release install
 
@@ -104,8 +104,8 @@ If your antivirus blocks `launcher.exe`, you can run the launcher directly from 
 1. Install [git](https://git-scm.com) if you don't have it already.
 1. Clone the launcher repository: `git clone --recurse-submodules https://github.com/Factorio-Access/Factorio-Access-Launcher`
 1. Place the cloned folder in `%AppData%/Factorio`.
-1. Double-click `run.bat` to set up and start the launcher.
-1. You still need to configure Steam launch options as described above, but use `run.bat` in place of `launcher.exe`.
+1. Double-click `install-and-run.bat` to set up and start the launcher.
+1. You still need to configure Steam launch options as described above, but use `install-and-run.bat` in place of `launcher.exe`.
 
 ## Linux Version: Mod install and running via Python scripts
 
