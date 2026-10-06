@@ -126,6 +126,11 @@ public:
     /// column-preserving vertical navigation.
     GraphBuilder& StartRow(std::string rowKey = "");
 
+    /// Open a LINE: a row that is one entry of the vertical list around it, its first item the
+    /// entry and the rest actions beside it (a setting and its reset button). The first item is
+    /// positioned among the list's entries ("3 of 5") like a single-item row; the rest get none.
+    GraphBuilder& StartLine(std::string rowKey = "");
+
     GraphBuilder& EndRow();
 
     /// Add a control — into the open row, or as its own single-item row. A no-op inside a
@@ -159,6 +164,7 @@ private:
         std::string Key;     // empty = unkeyed (no column preservation)
         std::string StopKey;
         bool Flyout = false; // a flyout column's item: wired by WireFlyoutEdges, not the row passes
+        bool Line = false;   // StartLine: positioned as one entry of the vertical list
     };
 
     // One owner and its declared column. Empty columns are dropped at wire time.

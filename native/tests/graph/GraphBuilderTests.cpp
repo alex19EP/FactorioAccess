@@ -186,6 +186,23 @@ TEST(PositionsAutoStampBySiblingGroup)
     CHECK_EQ(2, render->NodeAt(Id("r2"))->PositionCount);
 }
 
+TEST(LineFirstItemsArePositionedAsTheList)
+{
+    auto render = GraphBuilder()
+                      .StartLine().AddItem(Id("s1"), Vt("S1")).EndRow()
+                      .StartLine().AddItem(Id("s2"), Vt("S2")).AddItem(Id("reset2"), Vt("Reset")).EndRow()
+                      .StartLine().AddItem(Id("s3"), Vt("S3")).EndRow()
+                      .Build();
+
+    CHECK_EQ(1, render->NodeAt(Id("s1"))->PositionIndex);
+    CHECK_EQ(2, render->NodeAt(Id("s2"))->PositionIndex);
+    CHECK_EQ(3, render->NodeAt(Id("s3"))->PositionIndex);
+    CHECK_EQ(3, render->NodeAt(Id("s2"))->PositionCount);
+    CHECK_EQ(0, render->NodeAt(Id("reset2"))->PositionCount);
+    // Still a row: Right reaches the action.
+    CHECK(render->NodeAt(Id("s2"))->HasTransition(GraphDir::Right));
+}
+
 TEST(RegionsAreStamped)
 {
     auto render = GraphBuilder()

@@ -49,7 +49,7 @@ void AddMod(graph::GraphBuilder& builder, const Widget* table, const Widget* hea
                 builder.PopContext();
             continue;
         }
-        builder.StartRow(key);
+        builder.StartLine(key);
         builder.AddItem(graph::ControlId::Referenced(control, key),
             label ? ControlNode(control, label) : ControlNode(control));
         // At its default the reset icon is disabled on every row, which says nothing.

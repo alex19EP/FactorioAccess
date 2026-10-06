@@ -180,6 +180,13 @@ GraphBuilder& GraphBuilder::StartRow(std::string rowKey)
     return *this;
 }
 
+GraphBuilder& GraphBuilder::StartLine(std::string rowKey)
+{
+    StartRow(std::move(rowKey));
+    _currentRow->Line = true;
+    return *this;
+}
+
 GraphBuilder& GraphBuilder::EndRow()
 {
     if (!_currentRow)
@@ -382,15 +389,16 @@ void GraphBuilder::StitchModeBoundaries()
 }
 
 // Auto-stamp "n of m" positions: a multi-item row's members are positioned within their ROW (a
-// bar); single-item-row nodes among the siblings sharing their (parent, stop) — the vertical
-// list/tree level arrows actually traverse. Raw/grid nodes get none. Announced only when m > 1.
+// bar); single-item-row nodes, and a line's first item, among the siblings sharing their (parent,
+// stop) — the vertical list/tree level arrows actually traverse. Raw/grid nodes and a line's
+// trailing actions get none. Announced only when m > 1.
 void GraphBuilder::StampPositions()
 {
     std::vector<std::vector<GraphNode*>> groups;
     std::map<std::pair<GraphNode*, std::string>, std::size_t> groupIndex;
     for (Row* row : _rows)
     {
-        if (row->Items.size() > 1)
+        if (row->Items.size() > 1 && !row->Line)
         {
             Stamp(row->Items);
             continue;
