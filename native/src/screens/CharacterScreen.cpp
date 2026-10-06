@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "AguiNodes.hpp"
+#include "speech.h"
 #include "text.h"
 #include "vocab.h"
 
@@ -52,15 +53,32 @@ std::string SlotText(const Widget* slot)
     return std::format("{} {} {}", item.quality, item.name, item.count);
 }
 
+// The game's own tooltip for the button, as hovering shows it: its texts a line each.
+void SpeakTooltip(const Widget* button)
+{
+    bool created = false;
+    const Widget* tooltip = agui::showTooltip(button, created);
+    std::string text;
+    if (tooltip)
+        for (const Widget* label : FindAll(tooltip, "agui::Label"))
+            if (std::string line = LabelText(label); !line.empty())
+                text += (text.empty() ? "" : "\n") + line;
+    if (created)
+        agui::removeTooltip(button);
+    speech::say(text.empty() ? std::string(vocab::kNoTooltip) : text, true);
+}
+
 // Clicked as the Gui clicks the button under the mouse; the game reads Shift and Control from the
 // keyboard itself, so the flags passed along only keep the event honest.
 void ClickActions(graph::NodeVtable& vtable, const Widget* button)
 {
+    vtable.OnTooltip = [button]() { SpeakTooltip(button); };
     vtable.HostTag = button;
     vtable.OnActivate = [button]() { agui::press(button, agui::MouseButton::Left, false, false); };
     vtable.OnActivateShift = [button]() { agui::press(button, agui::MouseButton::Left, true, false); };
     vtable.OnActivateCtrl = [button]() { agui::press(button, agui::MouseButton::Left, false, true); };
     vtable.OnSecondary = [button]() { agui::press(button, agui::MouseButton::Right, false, false); };
+    vtable.OnTertiary = [button]() { agui::press(button, agui::MouseButton::Middle, false, false); };
 }
 
 graph::NodeVtable SlotNode(const Widget* slot)

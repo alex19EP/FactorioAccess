@@ -133,6 +133,9 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.mouseEventSource, "agui::MouseEvent", "source");
 
    offset(layout.widgetToolTipCreator, "agui::Widget", "toolTipCreator");
+   offset(layout.widgetToolTip, "agui::Widget", "toolTip");
+   address(layout.checkCreateTooltip, "?checkCreateTooltip@Widget@agui@@QEAAXXZ");
+   address(layout.removeToolTipWidget, "?removeToolTipWidget@Widget@agui@@QEAA_N_N@Z");
    offset(layout.plainToolTipTitle, "agui::PlainToolTipCreator", "title");
    offset(layout.plainToolTipText, "agui::PlainToolTipCreator", "text");
 

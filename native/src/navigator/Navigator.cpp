@@ -190,6 +190,11 @@ void Navigator::HandleKey(const input::KeyEvent& e)
         if (!e.repeat)
             HandleContextMenu();
         break;
+    // \ is the middle mouse button.
+    case input::keys::Backslash:
+        if (!e.repeat)
+            HandleMiddleClick();
+        break;
     // Only claimed while adjusting; otherwise it stays the game's Back.
     case input::keys::Escape:
         if (!e.repeat && _adjusting.IsValid())
@@ -318,6 +323,12 @@ void Navigator::HandleContextMenu()
     }
 
     if (!_graph->Secondary())
+        Speak(vocab::kNoAction, kInterruptOnKeypress);
+}
+
+void Navigator::HandleMiddleClick()
+{
+    if (!_graph->Tertiary())
         Speak(vocab::kNoAction, kInterruptOnKeypress);
 }
 
@@ -506,7 +517,8 @@ void Navigator::UpdateClaims(bool haveRender)
             {keys::LeftBracket, plain | mods::Shift | mods::Ctrl},
             // A held Shift or Control reaches the game's own handling of the right click.
             {keys::Backspace, plain | mods::Shift | mods::Ctrl},
-            {keys::RightBracket, plain | mods::Shift | mods::Ctrl}};
+            {keys::RightBracket, plain | mods::Shift | mods::Ctrl},
+            {keys::Backslash, plain | mods::Shift | mods::Ctrl}};
         // Leaving adjust mode is the one Escape the game must not see.
         if (adjusting)
             claims.push_back({keys::Escape, plain});

@@ -380,6 +380,18 @@ ToolTip toolTip(const Widget* widget) {
    return {readString(creator, layout.plainToolTipTitle), readString(creator, layout.plainToolTipText)};
 }
 
+const Widget* showTooltip(const Widget* widget, bool& created) {
+   created = !fromTargeter(widget, layout.widgetToolTip);
+   reinterpret_cast<void (*)(const Widget*)>(layout.checkCreateTooltip)(widget);
+   const Widget* tooltip = fromTargeter(widget, layout.widgetToolTip);
+   created &= tooltip != nullptr;
+   return tooltip;
+}
+
+void removeTooltip(const Widget* widget) {
+   reinterpret_cast<bool (*)(const Widget*, bool)>(layout.removeToolTipWidget)(widget, true);
+}
+
 bool derivesFrom(const Widget* widget, std::string_view className) {
    // "agui::Table" is decorated ".?AVTable@agui@@": the scopes innermost first.
    std::string decorated = ".?AV";
@@ -558,7 +570,7 @@ bool inTree(const Widget* root, const Widget* widget, int depth = 0) {
 void pressOver(const Widget* widget, const Widget* over, MouseButton button, bool shift, bool control) {
    using Dispatch = void (*)(const Widget* widget, const void* event);
    // agui::MouseButton and agui::MouseEvent::Type
-   constexpr uint16_t kLeft = 2, kRight = 4;
+   constexpr uint16_t kLeft = 2, kRight = 4, kMiddle = 8;
    constexpr uint32_t kDown = 1, kUp = 2, kClick = 4, kEnter = 10, kLeave = 11;
    alignas(16) std::byte event[128] = {};
    if (layout.mouseEventSize > sizeof(event)) return;
@@ -576,7 +588,7 @@ void pressOver(const Widget* widget, const Widget* over, MouseButton button, boo
    }
    put(layout.mouseEventPosition, point.x);
    put(layout.mouseEventPosition + 4, point.y);
-   put(layout.mouseEventButton, button == MouseButton::Left ? kLeft : kRight);
+   put(layout.mouseEventButton, button == MouseButton::Left ? kLeft : button == MouseButton::Right ? kRight : kMiddle);
    put(layout.mouseEventShift, shift);
    put(layout.mouseEventControl, control);
    put(layout.mouseEventSource, reinterpret_cast<uintptr_t>(widget));

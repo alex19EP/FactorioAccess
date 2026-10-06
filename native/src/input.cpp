@@ -6,6 +6,7 @@
 #include <cstring>
 #include <deque>
 #include <mutex>
+#include <tuple>
 #include <unordered_map>
 #include <utility>
 
@@ -139,6 +140,10 @@ uint32_t scancode(uint32_t key) {
    case keys::Space: return 44;
    case keys::LeftBracket: return 47;
    case keys::RightBracket: return 48;
+   case keys::Backslash: return 49;
+   case keys::LeftCtrl: return 224;
+   case keys::LeftShift: return 225;
+   case keys::LeftAlt: return 226;
    case keys::F1: return 58;
    case keys::Home: return 74;
    case keys::PageUp: return 75;
@@ -223,6 +228,13 @@ void injectKey(uint32_t key, bool shift, bool ctrl, bool alt) {
    std::scoped_lock lock(g_mutex);
    g_injected.push_back({key, mod, true});
    g_injected.push_back({key, mod, false});
+}
+
+void injectModifiers(bool shift, bool ctrl, bool alt, bool down) {
+   std::scoped_lock lock(g_mutex);
+   for (auto [held, key, mod] : {std::tuple{shift, keys::LeftShift, kModLeftShift},
+                                 std::tuple{ctrl, keys::LeftCtrl, kModLeftCtrl}, std::tuple{alt, keys::LeftAlt, kModLeftAlt}})
+      if (held) g_injected.push_back({key, down ? mod : uint16_t{0}, down});
 }
 
 void setWorldClaims(std::vector<Claim> claims) {

@@ -17,6 +17,7 @@ inline constexpr uint32_t Return = 0x0d;
 inline constexpr uint32_t Escape = 0x1b;
 inline constexpr uint32_t Space = 0x20;
 inline constexpr uint32_t LeftBracket = 0x5b;
+inline constexpr uint32_t Backslash = 0x5c;
 inline constexpr uint32_t RightBracket = 0x5d;
 inline constexpr uint32_t F1 = 0x4000003a;
 inline constexpr uint32_t Delete = 0x7f;
@@ -29,6 +30,9 @@ inline constexpr uint32_t Left = 0x40000050;
 inline constexpr uint32_t Down = 0x40000051;
 inline constexpr uint32_t Up = 0x40000052;
 inline constexpr uint32_t KeypadEnter = 0x40000058;
+inline constexpr uint32_t LeftCtrl = 0x400000e0;
+inline constexpr uint32_t LeftShift = 0x400000e1;
+inline constexpr uint32_t LeftAlt = 0x400000e2;
 } // namespace keys
 
 // Which modifier states a claim covers. A key event has exactly one of them: Alt wins over
@@ -71,6 +75,10 @@ std::vector<KeyEvent> drain();
 // Queues a press and release into the game's own event stream, where they are routed exactly like
 // typed keys: to the navigator while it claims the key, to the game otherwise. For the dev server.
 void injectKey(uint32_t key, bool shift, bool ctrl, bool alt);
+
+// Queues the left modifier keys going down or up, as separate key events: the game reads a held
+// modifier from its own key state, not from the flags on the key it modifies.
+void injectModifiers(bool shift, bool ctrl, bool alt, bool down);
 
 // A second claim set and queue, for the keys that stand in for mouse buttons in the game world.
 // It only takes what the navigator's claims leave, and lapses the same way.

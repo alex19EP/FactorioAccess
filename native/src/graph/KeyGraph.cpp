@@ -661,6 +661,17 @@ bool KeyGraph::Secondary()
     return true;
 }
 
+bool KeyGraph::Tertiary()
+{
+    if (!Rerender())
+        return false;
+    GraphNode* node = CurrentNode();
+    if (!node || !node->Vtable.OnTertiary)
+        return false;
+    node->Vtable.OnTertiary();
+    return true;
+}
+
 bool KeyGraph::ActivateShift()
 {
     if (!Rerender())

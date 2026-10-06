@@ -175,6 +175,9 @@ public:
     /// Run the focused control's secondary activation. False = it has none.
     bool Secondary();
 
+    /// Run the focused control's tertiary activation. False = it has none.
+    bool Tertiary();
+
     /// Run the focused control's shift-modified activation. False = it has none.
     bool ActivateShift();
 

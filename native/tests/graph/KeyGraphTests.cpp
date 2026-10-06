@@ -455,7 +455,27 @@ TEST(BehaviorInvokersReportAbsence)
     CHECK(g.TryAdjust(+1, false));
     CHECK(adjusted);
     CHECK_FALSE(g.Secondary());
+    CHECK_FALSE(g.Tertiary());
     CHECK_FALSE(g.Tooltip());
+}
+
+TEST(TertiaryRunsTheMiddleClick)
+{
+    GraphState state;
+    bool middle = false;
+    KeyGraph g(
+        [&]()
+        {
+            NodeVtable vt;
+            vt.Announcements = {NodeAnnouncement::Static("A")};
+            vt.OnTertiary = [&middle]() { middle = true; };
+            return GraphBuilder().AddItem(Id("a"), std::move(vt)).Build();
+        },
+        &state);
+
+    CHECK(g.Tertiary());
+    CHECK(middle);
+    CHECK_FALSE(g.Secondary());
 }
 
 TEST(InitialFocusLandsOnSelectedMember)

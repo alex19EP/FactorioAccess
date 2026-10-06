@@ -113,6 +113,7 @@ std::optional<uint32_t> keyNamed(std::string_view name) {
       {"space", Space},     {"backspace", Backspace}, {"delete", Delete}, {"home", Home}, {"end", End},
       {"pageup", PageUp},   {"pagedown", PageDown}, {"up", Up},          {"down", Down},     {"left", Left},
       {"right", Right},     {"f1", F1},         {"[", LeftBracket},     {"]", RightBracket},
+      {"\\", Backslash},    {"backslash", Backslash},
    };
    for (const auto& [n, key] : named)
       if (n == name) return key;
@@ -161,6 +162,8 @@ std::string lowered(std::string_view text) {
 constexpr uint64_t kFramesBetweenKeys = 6;
 // Frames after the last chord before reading what was said.
 constexpr uint64_t kFramesAfterKeys = 20;
+// Frames a chord's modifiers are held before and after its key.
+constexpr uint64_t kFramesForModifiers = 3;
 
 std::string runKeys(std::string_view spec) {
    struct Step {
@@ -197,7 +200,19 @@ std::string runKeys(std::string_view spec) {
       }
       if (!first) waitFrames(kFramesBetweenKeys);
       first = false;
-      input::injectKey(step.chord->key, step.chord->shift, step.chord->ctrl, step.chord->alt);
+      const Chord& chord = *step.chord;
+      // Modifiers go down frames before the key and up after the game has acted on it, as a
+      // person's do: the game reads them from its key state when it handles the key.
+      bool modified = chord.shift || chord.ctrl || chord.alt;
+      if (modified) {
+         input::injectModifiers(chord.shift, chord.ctrl, chord.alt, true);
+         waitFrames(kFramesForModifiers);
+      }
+      input::injectKey(chord.key, chord.shift, chord.ctrl, chord.alt);
+      if (modified) {
+         waitFrames(kFramesForModifiers);
+         input::injectModifiers(chord.shift, chord.ctrl, chord.alt, false);
+      }
    }
    waitFrames(kFramesAfterKeys);
 

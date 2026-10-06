@@ -136,6 +136,9 @@ struct NodeVtable
     /// Optional. Secondary activation — the right-click equivalent.
     std::function<void()> OnSecondary;
 
+    /// Optional. Tertiary activation — the middle-click equivalent.
+    std::function<void()> OnTertiary;
+
     /// Optional. Shift-modified activation (Shift+Enter) — the shift-drag equivalent.
     std::function<void()> OnActivateShift;
 

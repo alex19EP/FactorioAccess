@@ -114,6 +114,13 @@ struct ToolTip {
 };
 ToolTip toolTip(const Widget* widget);
 
+// The tooltip the game shows while the mouse rests on the widget, made now as hovering makes it
+// (Widget::checkCreateTooltip), so it is on screen too; null when the widget has none. `created`
+// tells whether this call made it, for removeTooltip. Mutating, so main thread inside logic() only.
+const Widget* showTooltip(const Widget* widget, bool& created);
+// Takes down and destroys the widget's tooltip.
+void removeTooltip(const Widget* widget);
+
 // Whether the widget's class is, or derives from, the named class, e.g. "SettingsGui".
 bool derivesFrom(const Widget* widget, std::string_view className);
 
@@ -176,7 +183,7 @@ void scrollIntoView(const Widget* widget);
 // widget's own dispatcher, so its handlers, listeners, click sound and pressed look all run as in
 // vanilla. Tabs select and dropdowns open on the press, toggles flip on the release. The OS mouse
 // is never moved. (A Button's own Enter key confirms the window instead, hence clicks.)
-enum class MouseButton { Left, Right };
+enum class MouseButton { Left, Right, Middle };
 void press(const Widget* widget, MouseButton button, bool shift, bool control);
 // The same, but at the centre of `over`, a widget inside `widget`: for widgets that act on where
 // they were clicked, such as a table selecting the row under the mouse.

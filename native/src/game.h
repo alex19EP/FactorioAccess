@@ -144,6 +144,11 @@ struct Layout {
 
    // Tooltips: Widget::toolTipCreator, and the title and text of the plain kind most buttons use.
    uint32_t widgetToolTipCreator = 0;
+   uint32_t widgetToolTip = 0; // Widget::toolTip, the GenericTargeter<ToolTip> of the one shown
+   // void Widget::checkCreateTooltip(): makes and shows the widget's tooltip as hovering does.
+   uintptr_t checkCreateTooltip = 0;
+   // bool Widget::removeToolTipWidget(bool destroy): takes it down again.
+   uintptr_t removeToolTipWidget = 0;
    uint32_t plainToolTipTitle = 0;
    uint32_t plainToolTipText = 0;
 

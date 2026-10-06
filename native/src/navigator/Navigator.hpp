@@ -63,6 +63,7 @@ private:
     void HandleEnter(bool shift, bool ctrl);
     void HandleTooltip();
     void HandleContextMenu();
+    void HandleMiddleClick();
     /// Leaves a grid slider's adjust mode (NodeVtable::AdjustOnEnter), saying its value.
     void StopAdjusting();
 
