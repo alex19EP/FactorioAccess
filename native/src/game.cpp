@@ -191,6 +191,28 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.prototypeLocalisedName, "PrototypeBase", "localisedName");
    address(layout.localisedStringStr,
            "?str@LocalisedString@@QEBAAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@PEBVLocaleProvider@@@Z");
+   offset(layout.prototypeName, "PrototypeBase", "name");
+
+   offset(layout.slotInventory, "InventoryGuiSlot", "inventory");
+   offset(layout.slotIndex, "InventoryGuiSlot", "targetSpecification.slotIndex");
+   offset(layout.slotItemStack, "InventoryGuiSlot", "itemStack");
+   offset(layout.inventoryData, "Inventory", "data");
+   offset(layout.inventorySize, "Inventory", "dataSize");
+   size(layout.itemStackSize, "ItemStack");
+   offset(layout.itemStackCount, "ItemStack", "count");
+   offset(layout.itemStackItem, "ItemStack", "itemID");
+   offset(layout.itemStackQuality, "ItemStack", "qualityID");
+   offset(layout.recipeSlotCount, "RecipeSlot", "count");
+   address(layout.itemPrototypes,
+           "?indexToPrototype@?$PrototypeList@VItemPrototype@@@@2V?$vector@PEAVItemPrototype@@V?$allocator@"
+           "PEAVItemPrototype@@@std@@@std@@A");
+   offset(layout.recipeListSlots, "SelectListGui<ID<RecipePrototype,unsigned short> >", "slots");
+   address(layout.qualityPrototypes,
+           "?indexToPrototype@?$PrototypeList@VQualityPrototype@@@@2V?$vector@PEAVQualityPrototype@@V?$allocator@"
+           "PEAVQualityPrototype@@@std@@@std@@A");
+   address(layout.recipePrototypes,
+           "?indexToPrototype@?$PrototypeList@VRecipePrototype@@@@2V?$vector@PEAVRecipePrototype@@V?$allocator@"
+           "PEAVRecipePrototype@@@std@@@std@@A");
 
    if (ok) {
       log::info("Layout: Gui baseWidget {:#x} focused {:#x} modals {:#x} (entry {} bytes); Widget parent {:#x} "

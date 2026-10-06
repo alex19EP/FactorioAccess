@@ -96,6 +96,7 @@ add_library(fa_native SHARED
   src/screens/ControlSettingsScreen.cpp
   src/screens/DropDownScreen.cpp
   src/screens/ScenarioMessageScreen.cpp
+  src/screens/CharacterScreen.cpp
   src/ui.cpp
   src/world.cpp
   src/luabridge.cpp

@@ -207,6 +207,27 @@ struct Layout {
    // std::string const& LocalisedString::str(LocaleProvider const*) const: translates through the
    // game's own locale (null provider: the current one) and caches the result.
    uintptr_t localisedStringStr = 0;
+   uint32_t prototypeName = 0;        // PrototypeBase::name, the internal name ("normal")
+
+   // The item and recipe buttons of the character screen. A slot shows stack slotIndex of its
+   // inventory, or without one the loose stack it points at (InventoryGuiSlot::getStack).
+   uint32_t slotInventory = 0;        // InventoryGuiSlot::inventory, Inventory*
+   uint32_t slotIndex = 0;            // InventoryGuiSlot::targetSpecification.slotIndex
+   uint32_t slotItemStack = 0;        // InventoryGuiSlot::itemStack, ItemStack*
+   uint32_t inventoryData = 0;        // Inventory::data, ItemStack[]
+   uint32_t inventorySize = 0;        // Inventory::dataSize
+   uint32_t itemStackSize = 0;        // sizeof(ItemStack)
+   uint32_t itemStackCount = 0;       // ItemStack::count
+   uint32_t itemStackItem = 0;        // ItemStack::itemID, an index into the item prototypes
+   uint32_t itemStackQuality = 0;     // ItemStack::qualityID, an index into the quality prototypes
+   uint32_t recipeSlotCount = 0;      // RecipeSlot::count, how many the player can craft now
+   // SelectListGui<ID<RecipePrototype>>::slots, std::map<recipe ID, unique_ptr<agui::Button>>: the
+   // crafting list's buttons by recipe.
+   uint32_t recipeListSlots = 0;
+   // PrototypeList<T>::indexToPrototype, the std::vector<T*> an ID indexes.
+   uintptr_t itemPrototypes = 0;
+   uintptr_t qualityPrototypes = 0;
+   uintptr_t recipePrototypes = 0;
 };
 
 // Bits of agui::Widget::usageBitMask, read from Widget::setVisible and Widget::isEnabled in

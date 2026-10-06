@@ -9,8 +9,10 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <optional>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
 // The input is a bare type encoding, as in RTTI type descriptors. Older SDK headers lack it.
 #ifndef UNDNAME_TYPE_ONLY
@@ -422,6 +424,18 @@ std::vector<const Widget*> listBoxItems(const Widget* listBox) {
    return buttons;
 }
 
+namespace {
+
+// A prototype's localised name in the game's current locale.
+std::string_view localisedName(const std::byte* prototype) {
+   using Str = const MsvcString* (*)(const void* localisedString, const void* localeProvider);
+   const MsvcString* name =
+       reinterpret_cast<Str>(layout.localisedStringStr)(prototype + layout.prototypeLocalisedName, nullptr);
+   return {name->capacity >= sizeof(name->buffer) ? name->pointer : name->buffer, name->size};
+}
+
+} // namespace
+
 std::string_view iconName(const Widget* widget) {
    const std::byte* button = asBase(widget, ".?AVIconButton@@");
    if (!button) return {};
@@ -429,10 +443,73 @@ std::string_view iconName(const Widget* widget) {
    if (!sprite) return {};
    const std::byte* owner = at<const std::byte*>(sprite, layout.spriteOwner);
    if (!owner) return {};
-   using Str = const MsvcString* (*)(const void* localisedString, const void* localeProvider);
-   const MsvcString* name =
-       reinterpret_cast<Str>(layout.localisedStringStr)(owner + layout.prototypeLocalisedName, nullptr);
-   return {name->capacity >= sizeof(name->buffer) ? name->pointer : name->buffer, name->size};
+   return localisedName(owner);
+}
+
+namespace {
+
+// The prototype an ID indexes in a PrototypeList<T>::indexToPrototype vector, or null.
+const std::byte* prototypeAt(uintptr_t list, size_t index) {
+   const auto& prototypes = *reinterpret_cast<const MsvcVector<const std::byte* const>*>(list);
+   return index < static_cast<size_t>(prototypes.last - prototypes.first) ? prototypes.first[index] : nullptr;
+}
+
+// An MSVC std::map node: the tree links and flags, then the stored pair.
+struct MapNode {
+   const MapNode* left;
+   const MapNode* parent;
+   const MapNode* right;
+   char color;
+   char isNil;
+};
+constexpr size_t kMapValue = 0x20;
+
+// The key of the std::map<ID<T, unsigned short>, std::unique_ptr<agui::Button>> entry holding `button`.
+std::optional<uint16_t> mapKeyOf(const std::byte* map, const Widget* button) {
+   const MapNode* head = at<const MapNode*>(map, 0);
+   std::vector<const MapNode*> pending{head->parent};
+   while (!pending.empty()) {
+      const MapNode* node = pending.back();
+      pending.pop_back();
+      if (node->isNil) continue;
+      auto* value = reinterpret_cast<const std::byte*>(node) + kMapValue;
+      if (at<const Widget*>(value, 8) == button) return at<uint16_t>(value, 0);
+      pending.push_back(node->left);
+      pending.push_back(node->right);
+   }
+   return std::nullopt;
+}
+
+} // namespace
+
+SlotItem slotItem(const Widget* slot) {
+   const std::byte* self = asBaseChecked(slot, ".?AVInventoryGuiSlot@@");
+   SlotItem item;
+   // As InventoryGuiSlot::getStack reads it.
+   const std::byte* stack = at<const std::byte*>(self, layout.slotItemStack);
+   if (const std::byte* inventory = at<const std::byte*>(self, layout.slotInventory)) {
+      uint16_t index = at<uint16_t>(self, layout.slotIndex);
+      if (index >= at<uint16_t>(inventory, layout.inventorySize)) return item;
+      stack = at<const std::byte*>(inventory, layout.inventoryData) + size_t{index} * layout.itemStackSize;
+   }
+   if (!stack) return item;
+   item.count = at<uint32_t>(stack, layout.itemStackCount);
+   if (item.count == 0) return item;
+   if (const std::byte* prototype = prototypeAt(layout.itemPrototypes, at<uint16_t>(stack, layout.itemStackItem)))
+      item.name = localisedName(prototype);
+   if (const std::byte* quality = prototypeAt(layout.qualityPrototypes, at<uint8_t>(stack, layout.itemStackQuality));
+       quality && readString(quality, layout.prototypeName) != "normal")
+      item.quality = localisedName(quality);
+   return item;
+}
+
+RecipeItem recipeItem(const Widget* craftingList, const Widget* slot) {
+   RecipeItem item;
+   item.craftable = at<uint32_t>(asBaseChecked(slot, ".?AVRecipeSlot@@"), layout.recipeSlotCount);
+   const std::byte* list = asBaseChecked(craftingList, ".?AV?$SelectListGui@V?$ID@VRecipePrototype@@G@@@@");
+   if (auto id = mapKeyOf(list + layout.recipeListSlots, slot))
+      if (const std::byte* recipe = prototypeAt(layout.recipePrototypes, *id)) item.name = localisedName(recipe);
+   return item;
 }
 
 unsigned selectedRow(const Widget* table) {

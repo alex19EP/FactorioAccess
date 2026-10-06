@@ -174,7 +174,9 @@ void Navigator::HandleKey(const input::KeyEvent& e)
         if (!e.repeat)
             HandleHomeEnd(false);
         break;
+    // [ and ] are the left and right mouse buttons, as in the world (bind-mouse-keys.ps1).
     case input::keys::Return:
+    case input::keys::LeftBracket:
         if (!e.repeat)
             HandleEnter(e.shift, e.ctrl);
         break;
@@ -184,6 +186,7 @@ void Navigator::HandleKey(const input::KeyEvent& e)
             HandleTooltip();
         break;
     case input::keys::Backspace:
+    case input::keys::RightBracket:
         if (!e.repeat)
             HandleContextMenu();
         break;
@@ -500,7 +503,10 @@ void Navigator::UpdateClaims(bool haveRender)
             {keys::Left, plain | mods::Ctrl}, {keys::Right, plain | mods::Ctrl}, {keys::Tab, shiftable},
             {keys::Home, plain}, {keys::End, plain}, {keys::Return, plain | mods::Shift | mods::Ctrl},
             {keys::KeypadEnter, plain | mods::Shift | mods::Ctrl}, {keys::Space, plain}, {keys::F1, plain},
-            {keys::Backspace, plain}};
+            {keys::LeftBracket, plain | mods::Shift | mods::Ctrl},
+            // A held Shift or Control reaches the game's own handling of the right click.
+            {keys::Backspace, plain | mods::Shift | mods::Ctrl},
+            {keys::RightBracket, plain | mods::Shift | mods::Ctrl}};
         // Leaving adjust mode is the one Escape the game must not see.
         if (adjusting)
             claims.push_back({keys::Escape, plain});

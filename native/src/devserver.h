@@ -12,6 +12,7 @@
 //   GET  /screen              live screens, the focused node and every node by Tab-stop
 //   POST /key                 body: chords such as `tab shift+tab down enter wait=60 escape`;
 //                             answers with what was spoken while they ran
+//   GET  /dump                the widget tree of every visible window, as gui-dumps writes it
 namespace fa::dev {
 
 // Reads the gate and, when it is open, starts the server thread. `directory` is the DLL's.

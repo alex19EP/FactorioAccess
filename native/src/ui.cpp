@@ -5,6 +5,7 @@
 #include "input.h"
 #include "log.h"
 #include "navigator/ScreenManager.hpp"
+#include "screens/CharacterScreen.hpp"
 #include "screens/ControlSettingsScreen.hpp"
 #include "screens/DropDownScreen.hpp"
 #include "screens/GenericWindowScreen.hpp"
@@ -73,6 +74,8 @@ void start() {
    manager.Register(std::make_unique<screens::GenericWindowScreen>(std::move(claimed)));
    // Under them, the scenario's message dialog over a loaded game.
    manager.Register(std::make_unique<screens::ScenarioMessageScreen>());
+   // The game's character screen (E) over a loaded game; the game menu takes over while it is open.
+   manager.Register(std::make_unique<screens::CharacterScreen>());
    // Over any of them, an open dropdown's list.
    manager.Register(std::make_unique<screens::DropDownScreen>());
 }

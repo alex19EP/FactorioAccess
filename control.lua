@@ -2588,6 +2588,8 @@ local function kb_open_player_inventory(event)
    local router = UiRouter.get_router(pindex)
 
    if p.ticks_to_respawn ~= nil or p.character == nil then return end
+   -- The game's own character screen opens on the same key, and the DLL reads it.
+   if NativeCursor.is_loaded() then return end
    sounds.play_open_inventory(p.index)
    p.selected = nil
 

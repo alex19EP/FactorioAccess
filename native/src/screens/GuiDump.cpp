@@ -176,4 +176,11 @@ void DumpWindow(const Widget* window, std::string_view className)
     Write(className, states);
 }
 
+std::string DescribeTree(const Widget* window)
+{
+    State state;
+    DumpWidget(state, window, window, 0);
+    return std::move(state.text);
+}
+
 } // namespace fa::screens

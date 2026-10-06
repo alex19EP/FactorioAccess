@@ -1,8 +1,10 @@
 #include "devserver.h"
 
+#include "agui.h"
 #include "input.h"
 #include "log.h"
 #include "navigator/ScreenManager.hpp"
+#include "screens/GuiDump.hpp"
 
 #include <winsock2.h>
 #include <ws2tcpip.h>
@@ -204,6 +206,18 @@ std::string runKeys(std::string_view spec) {
    return out.empty() ? "(silence)\n" : out;
 }
 
+// Every visible window of the application Gui, the game's own over a loaded game included, which
+// no screen reads and so none dumps.
+std::string dumpWindows() {
+   const agui::Gui* gui = agui::applicationGui();
+   const agui::Widget* root = gui ? agui::baseWidget(gui) : nullptr;
+   if (!root) return "(no gui)\n";
+   std::string out;
+   for (const agui::Widget* child : agui::children(root))
+      if (agui::visible(child)) out += std::format("==== {} ====\n{}\n", agui::className(child), screens::DescribeTree(child));
+   return out.empty() ? "(no visible window)\n" : out;
+}
+
 // ---- HTTP ----
 
 struct Request {
@@ -263,7 +277,9 @@ std::pair<int, std::string> route(const Request& request) {
       return {200, runKeys(spec)};
    }
 
-   return {404, "endpoints: /health /speech?since=N /screen /key\n"};
+   if (request.path == "/dump") return {200, onGameThread(dumpWindows)};
+
+   return {404, "endpoints: /health /speech?since=N /screen /key /dump\n"};
 }
 
 bool readRequest(SOCKET client, Request& request) {
@@ -410,7 +426,7 @@ void start(const std::filesystem::path& directory) {
    }
    g_running = true;
    std::thread(serve, std::move(listeners)).detach();
-   log::info("Dev server on http://localhost:{} (/health /speech /screen /key)", port);
+   log::info("Dev server on http://localhost:{} (/health /speech /screen /key /dump)", port);
 }
 
 void pump() {

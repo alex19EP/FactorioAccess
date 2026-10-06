@@ -36,6 +36,8 @@ inline constexpr std::string_view kContinue = "continue";
 inline constexpr std::string_view kClose = "close";
 inline constexpr std::string_view kAdjusting = "adjusting";
 
+inline constexpr std::string_view kEmpty = "empty";
+
 inline constexpr std::string_view kNoTooltip = "no tooltip";
 inline constexpr std::string_view kNoAction = "no action";
 
