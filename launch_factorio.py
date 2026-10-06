@@ -26,9 +26,17 @@ import glob
 
 
 # Constants
-FACTORIO_REL_PATH = Path("../../bin/x64/factorio.exe")
 DEFAULT_TIMEOUT = 300
 LUA_EXE = "lua52.exe"
+
+# By default the mod is checked out as mods/FactorioAccess inside a Factorio install.
+# --factorio-path overrides this in main().
+factorio_exe_path = (Path(__file__).parent / "../../bin/x64/factorio.exe").resolve()
+
+
+def get_factorio_dir() -> Path:
+    """Return the Factorio install root (the directory holding bin/ and script-output/)."""
+    return factorio_exe_path.parent.parent.parent
 
 
 class LogsNotFoundError(Exception):
@@ -39,13 +47,12 @@ class LogsNotFoundError(Exception):
 
 def validate_factorio_exe() -> Path:
     """Validate and return the Factorio executable path."""
-    factorio_path = (Path(__file__).parent / FACTORIO_REL_PATH).resolve()
-    if not factorio_path.exists():
+    if not factorio_exe_path.exists():
         raise FileNotFoundError(
-            f"Factorio executable not found at: {factorio_path}\n"
+            f"Factorio executable not found at: {factorio_exe_path}\n"
             f"Current working directory: {Path.cwd()}"
         )
-    return factorio_path
+    return factorio_exe_path
 
 
 def stream_process_output(
@@ -468,8 +475,10 @@ def run_lua_linter(lua_ls_path: Optional[str] = None) -> int:
 
         for pattern in possible_paths:
             if pattern == "lua-language-server.exe":
-                if shutil.which(pattern):
-                    lua_ls_path = pattern
+                # Use the full path: --check spawns worker copies of itself via argv[0]
+                found = shutil.which(pattern)
+                if found:
+                    lua_ls_path = found
                     break
             else:
                 matches = glob.glob(pattern)
@@ -607,7 +616,7 @@ def run_lua_tests(test_suite: str = "all") -> Tuple[int, str, str]:
 def find_script_output_dir() -> Optional[Path]:
     """Find Factorio's script-output directory."""
     # Script output is relative to Factorio executable
-    factorio_dir = Path(__file__).parent.parent.parent
+    factorio_dir = get_factorio_dir()
     script_output = factorio_dir / "script-output"
 
     if script_output.exists():
@@ -644,7 +653,7 @@ def capture_crash_info(exit_code: int, fail_hard: bool = True) -> Dict[str, Any]
     missing_logs = []
 
     # Find Factorio log
-    factorio_dir = Path(__file__).parent.parent.parent
+    factorio_dir = get_factorio_dir()
     log_path = factorio_dir / "factorio-current.log"
 
     if log_path.exists():
@@ -863,8 +872,7 @@ def parse_factorio_args() -> argparse.Namespace:
     factorio = parser.add_argument_group("factorio options")
     factorio.add_argument(
         "--factorio-path",
-        default="../../bin/x64/factorio.exe",
-        help="Path to Factorio executable",
+        help="Path to Factorio executable (default: ../../bin/x64/factorio.exe relative to the mod)",
     )
     factorio.add_argument("--timeout", type=int, help="Timeout in seconds")
     factorio.add_argument("--mod-directory", help="Mod directory path")
@@ -917,11 +925,21 @@ def parse_factorio_args() -> argparse.Namespace:
 
 def main():
     """Main entry point."""
+    global factorio_exe_path
+
+    # Console code pages (e.g. cp1251) can't encode every character in Factorio and
+    # lua-language-server output; print a replacement instead of crashing.
+    for stream in (sys.stdout, sys.stderr):
+        stream.reconfigure(errors="replace")
+
     args = parse_factorio_args()
+
+    if args.factorio_path:
+        factorio_exe_path = Path(args.factorio_path).resolve()
 
     # Handle show-paths
     if args.show_paths or args.debug_logs:
-        factorio_dir = Path(__file__).parent.parent.parent
+        factorio_dir = get_factorio_dir()
         mod_dir = Path(__file__).parent
         script_output = find_script_output_dir()
 
