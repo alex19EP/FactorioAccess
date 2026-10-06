@@ -1,6 +1,7 @@
 #include "ui.h"
 
 #include "agui.h"
+#include "devserver.h"
 #include "input.h"
 #include "log.h"
 #include "navigator/ScreenManager.hpp"
@@ -8,7 +9,11 @@
 #include "screens/DropDownScreen.hpp"
 #include "screens/GenericWindowScreen.hpp"
 #include "screens/LoadGameScreen.hpp"
+#include "screens/MapGeneratorScreen.hpp"
+#include "screens/MenuScreen.hpp"
+#include "screens/ModSettingsScreen.hpp"
 #include "screens/ModsScreen.hpp"
+#include "screens/NewGameScreen.hpp"
 #include "screens/ScenarioMessageScreen.hpp"
 #include "screens/SettingsScreen.hpp"
 #include "speech.h"
@@ -30,6 +35,7 @@ void tick(const agui::Gui* gui) {
    if (gui != agui::applicationGui()) return;
    screens::WindowScreen::SetGui(gui);
    nav::ScreenManager::Get().Update();
+   dev::pump();
 }
 
 // A wrong offset or a widget freed under us shows up as an access violation. Stop rather than
@@ -49,9 +55,13 @@ bool guardedTick(const agui::Gui* gui) {
 void start() {
    auto& manager = nav::ScreenManager::Get();
    std::vector<std::unique_ptr<screens::WindowScreen>> recipes;
+   recipes.push_back(std::make_unique<screens::MenuScreen>());
    recipes.push_back(std::make_unique<screens::LoadGameScreen>());
+   recipes.push_back(std::make_unique<screens::NewGameScreen>());
+   recipes.push_back(std::make_unique<screens::MapGeneratorScreen>());
    recipes.push_back(std::make_unique<screens::ModsScreen>());
    recipes.push_back(std::make_unique<screens::ControlSettingsScreen>());
+   recipes.push_back(std::make_unique<screens::ModSettingsScreen>());
    recipes.push_back(std::make_unique<screens::SettingsScreen>());
 
    std::vector<const screens::WindowScreen*> claimed;

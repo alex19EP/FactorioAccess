@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <format>
+#include <optional>
 #include <string_view>
 #include <unordered_map>
 #include <utility>
@@ -276,6 +277,78 @@ void SetTooltip(graph::NodeVtable& vtable, std::vector<const Widget*> widgets)
     vtable.OnTooltip = [widgets = std::move(widgets)]() { speech::say(ToolTipsOf(widgets), true); };
 }
 
+// A table's cells in order, blanks included: an EmptyWidget holds its place in the grid.
+std::vector<const Widget*> TableCells(const Widget* table)
+{
+    std::vector<const Widget*> cells;
+    for (const Widget* child : agui::children(table))
+        if (agui::visible(child))
+            cells.push_back(child);
+    return cells;
+}
+
+// The names of the icons a cell shows (a table of planet icons): "Nauvis, Vulcanus".
+std::string IconNames(const Widget* cell)
+{
+    std::string names;
+    for (const Widget* icon : agui::children(cell))
+    {
+        if (!agui::visible(icon))
+            continue;
+        std::string name = text::speakable(agui::iconName(icon));
+        if (name.empty())
+            continue;
+        if (!names.empty())
+            names += ", ";
+        names += name;
+    }
+    return names;
+}
+
+// A cell made only of icons.
+bool IsIconCell(const Widget* cell)
+{
+    if (agui::kind(cell) != Kind::Table)
+        return false;
+    std::vector<const Widget*> icons = TableCells(cell);
+    return !icons.empty()
+        && std::ranges::all_of(icons, [](const Widget* icon) { return agui::derivesFrom(icon, "IconButton"); });
+}
+
+// A table whose first row is headers (labels and blanks) above rows holding controls: a grid of
+// settings, each cell named by its column's header.
+bool IsHeaderGrid(const std::vector<const Widget*>& cells, std::size_t columns)
+{
+    if (columns < 2 || cells.size() < 2 * columns)
+        return false;
+    for (std::size_t i = 0; i < columns; ++i)
+    {
+        Kind kind = KindOf(cells[i]);
+        if (kind != Kind::Label && kind != Kind::Ignored)
+            return false;
+    }
+    return std::any_of(cells.begin() + columns, cells.end(),
+        [](const Widget* cell)
+        {
+            const Widget* leaf = IsSimple(cell) ? LeafOf(cell) : nullptr;
+            return leaf && IsControl(KindOf(leaf));
+        });
+}
+
+// A slider whose value a field beside it shows, and takes typed: the field's text is the value,
+// Left/Right step the slider, Enter puts the game's focus in the field for typing.
+graph::NodeVtable SliderWithField(const Widget* slider, const Widget* field, const Widget* label)
+{
+    graph::NodeVtable vtable = ControlNode(slider, label);
+    auto shown = [field]() { return text::speakable(agui::textBoxText(field)); };
+    for (graph::NodeAnnouncement& part : vtable.Announcements)
+        if (part.Kind == Value)
+            part.Text = shown;
+    vtable.StateText = shown;
+    vtable.OnActivate = [field]() { agui::focus(field); };
+    return vtable;
+}
+
 // Declares a window part's nodes. Rows open only around items that exist, so a flow or table
 // row that turns out to hold nothing never reaches the builder.
 class Walker
@@ -310,7 +383,13 @@ public:
         }
         case Kind::Table:
         {
-            std::vector<const Widget*> cells = VisibleChildren(widget);
+            std::vector<const Widget*> cells = TableCells(widget);
+            std::size_t columns = std::max(agui::tableColumns(widget), 1u);
+            if (IsHeaderGrid(cells, columns))
+            {
+                Grid(cells, columns, path);
+                return;
+            }
             // A table of whole panels is a layout grid, not rows of items: read it top-down.
             if (!std::ranges::all_of(cells, &IsSimple))
             {
@@ -318,7 +397,6 @@ public:
                     Visit(cells[i], path + "." + std::to_string(i), depth + 1);
                 return;
             }
-            std::size_t columns = std::max(agui::tableColumns(widget), 1u);
             for (std::size_t row = 0; row * columns < cells.size(); ++row)
             {
                 std::size_t end = std::min(cells.size(), (row + 1) * columns);
@@ -408,6 +486,13 @@ private:
             Add(key, std::move(node));
             return;
         }
+        if (leaves.size() == 3 && isLabel(leaves[0]) && agui::kind(leaves[1]) == Kind::Slider
+            && agui::kind(leaves[2]) == Kind::TextBox && !agui::readOnly(leaves[2]))
+        {
+            // A setting with a slider and a field showing its value: one control.
+            Add(key, SliderWithField(leaves[1], leaves[2], leaves[0]));
+            return;
+        }
         if (leaves.size() == 2 && isLabel(leaves[0]))
         {
             // A label and the one control it describes: "Website, https://..., button".
@@ -443,6 +528,82 @@ private:
         _builder.EndRow();
     }
 
+    // A header grid (IsHeaderGrid): a row per item, in a context naming it (with the icons it
+    // shows, which tell apart rows of the same name), and a cell per setting named by its column
+    // header. Rows share a key, so Up/Down keep the column. A slider among the cells adjusts only
+    // after Enter, as Left/Right move between the cells.
+    void Grid(const std::vector<const Widget*>& cells, std::size_t columns, const std::string& path)
+    {
+        for (std::size_t first = columns; first < cells.size(); first += columns)
+        {
+            std::size_t end = std::min(cells.size(), first + columns);
+            std::string rowKey = Key(path) + "#" + std::to_string(first / columns);
+            const Widget* nameCell = cells[first];
+            std::string rowName = KindOf(nameCell) == Kind::Label ? Phrase(nameCell) : OwnText(nameCell);
+            for (std::size_t c = first + 1; c < end; ++c)
+                if (IsIconCell(cells[c]))
+                    if (std::string icons = IconNames(cells[c]); !icons.empty())
+                        rowName += ", " + icons;
+
+            _builder.PushContext(rowName, "", /*positions*/ false);
+            bool open = false;
+            for (std::size_t c = first; c < end; ++c)
+            {
+                const Widget* cell = cells[c];
+                const Widget* header = cells[c - first];
+                std::optional<graph::NodeVtable> node;
+                if (c == first)
+                {
+                    // The row's own name is its context; its checkbox only says its state. A row
+                    // named by a plain label still gets this cell, so every row keeps its columns
+                    // at the same positions for Up/Down.
+                    if (KindOf(cell) == Kind::CheckBox)
+                        node = ControlNode(cell, []() { return std::string(); });
+                    else if (KindOf(cell) == Kind::Label)
+                    {
+                        node = TextNode(cell, [cell]() { return Phrase(cell); });
+                        SetTooltip(*node, {cell});
+                    }
+                }
+                else if (IsIconCell(cell))
+                {
+                    node = TextNode(cell,
+                        [header, cell]()
+                        {
+                            std::string icons = IconNames(cell);
+                            std::string name = Phrase(header);
+                            return name.empty() || icons.empty() ? name + icons : name + ", " + icons;
+                        });
+                    SetTooltip(*node, {header});
+                }
+                else if (const Widget* leaf = IsSimple(cell) ? LeafOf(cell) : nullptr)
+                {
+                    if (IsControl(KindOf(leaf)))
+                    {
+                        node = ControlNode(leaf, header);
+                        node->AdjustOnEnter = agui::kind(leaf) == Kind::Slider;
+                    }
+                    else
+                    {
+                        node = TextNode(leaf, [header, leaf]() { return Phrase(header) + ", " + Phrase(leaf); });
+                        SetTooltip(*node, {header, leaf});
+                    }
+                }
+                if (!node)
+                    continue;
+                if (!open)
+                {
+                    _builder.StartRow(Key(path));
+                    open = true;
+                }
+                Add(rowKey + "." + std::to_string(c - first), std::move(*node));
+            }
+            if (open)
+                _builder.EndRow();
+            _builder.PopContext();
+        }
+    }
+
     // One line of a multi-line label, re-read live like any other label.
     void EmitLine(const Widget* label, const std::string& path, std::size_t index)
     {
@@ -476,14 +637,20 @@ std::string OwnText(const Widget* widget) { return OwnTextAt(widget, 0); }
 
 std::string NameOf(const Widget* widget)
 {
-    std::string name = OwnText(widget);
+    // A dropdown's text is its value, which it says as such; only a tooltip can name it.
+    std::string name = agui::kind(widget) == Kind::DropDown ? std::string() : OwnText(widget);
     // A slider's tooltip is its value, not its name.
     if (name.empty() && agui::kind(widget) != Kind::Slider)
         name = text::speakable(agui::toolTip(widget).title);
+    // A title bar's X: no text, no tooltip.
+    if (name.empty() && agui::derivesFrom(widget, "CloseButton"))
+        name = vocab::kClose;
     return name;
 }
 
 bool Shows(const Widget* widget) { return agui::visible(widget) && agui::kind(widget) != Kind::Ignored; }
+
+bool HasContent(const Widget* widget) { return Navigable(widget, 1) > 0; }
 
 graph::NodeVtable ControlNode(const Widget* widget, std::function<std::string()> name)
 {

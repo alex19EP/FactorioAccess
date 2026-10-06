@@ -77,6 +77,7 @@ add_library(fa_native SHARED
   src/agui.cpp
   src/text.cpp
   src/speech.cpp
+  src/devserver.cpp
   src/input.cpp
   src/vocab.cpp
   src/navigator/Navigator.cpp
@@ -85,9 +86,13 @@ add_library(fa_native SHARED
   src/screens/GuiDump.cpp
   src/screens/WindowScreen.cpp
   src/screens/GenericWindowScreen.cpp
+  src/screens/MenuScreen.cpp
   src/screens/LoadGameScreen.cpp
+  src/screens/NewGameScreen.cpp
+  src/screens/MapGeneratorScreen.cpp
   src/screens/ModsScreen.cpp
   src/screens/SettingsScreen.cpp
+  src/screens/ModSettingsScreen.cpp
   src/screens/ControlSettingsScreen.cpp
   src/screens/DropDownScreen.cpp
   src/screens/ScenarioMessageScreen.cpp
@@ -99,7 +104,7 @@ add_library(fa_native SHARED
 )
 set_target_properties(fa_native PROPERTIES OUTPUT_NAME winmm)
 # dbghelp only for UnDecorateSymbolName on RTTI names; symbol lookup goes through raw_pdb.
-target_link_libraries(fa_native PRIVATE fa_core minhook prism dbghelp)
+target_link_libraries(fa_native PRIVATE fa_core minhook prism dbghelp ws2_32)
 
 add_executable(fa_symbols_check tools/check_symbols.cpp)
 target_link_libraries(fa_symbols_check PRIVATE fa_core)

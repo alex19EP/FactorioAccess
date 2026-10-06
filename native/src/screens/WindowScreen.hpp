@@ -34,6 +34,7 @@ public:
 
     const char* Name() const override { return ""; }
     const char* DiagName() const override { return _class.c_str(); }
+    bool RemembersCursor() const override { return true; }
     bool IsActive() override;
     void Build(graph::GraphBuilder& builder) override;
     bool TypingIn(const graph::GraphNode& node) override;

@@ -254,6 +254,22 @@ const Widget* menuStateWindow() {
    return nullptr;
 }
 
+const Widget* versionLabel() {
+   auto* context = *reinterpret_cast<const std::byte* const*>(layout.globalContext);
+   if (!context) return nullptr;
+   auto* manager = at<const std::byte*>(context, layout.globalAppManager);
+   return manager ? at<const Widget*>(manager, layout.appVersionLabel) : nullptr;
+}
+
+std::vector<const Widget*> mainMenuPanels(const Widget* mainMenu) {
+   const std::byte* menu = asBase(mainMenu, ".?AVMainMenuGui@@");
+   if (!menu) return {};
+   std::vector<const Widget*> panels;
+   for (uint32_t offset : {layout.mainMenuLanguage, layout.mainMenuSimulation, layout.mainMenuAdvert})
+      if (const Widget* panel = at<const Widget*>(menu, offset)) panels.push_back(panel);
+   return panels;
+}
+
 const Widget* scenarioMessage() {
    auto* context = *reinterpret_cast<const std::byte* const*>(layout.globalContext);
    if (!context) return nullptr;
@@ -388,6 +404,15 @@ const Widget* dialogButtons(const Widget* window) {
    return nullptr;
 }
 
+MenuParts menuParts(const Widget* window) {
+   // MenuGui is a template too.
+   for (const auto& [base, displacement] : classInfo(window).bases)
+      if (base.starts_with(".?AV?$MenuGui@"))
+         return {member(window, displacement + layout.menuTop), member(window, displacement + layout.menuMain),
+                 member(window, displacement + layout.menuBottom)};
+   return {};
+}
+
 std::vector<const Widget*> listBoxItems(const Widget* listBox) {
    const std::byte* base = asBaseChecked(listBox, ".?AVListBox@agui@@");
    const auto& items = at<MsvcVector<const std::byte>>(base, layout.listBoxItems);
@@ -395,6 +420,19 @@ std::vector<const Widget*> listBoxItems(const Widget* listBox) {
    for (const std::byte* item = items.first; item < items.last; item += layout.listBoxItemSize)
       if (const Widget* button = at<const Widget*>(item, layout.listBoxItemButton)) buttons.push_back(button);
    return buttons;
+}
+
+std::string_view iconName(const Widget* widget) {
+   const std::byte* button = asBase(widget, ".?AVIconButton@@");
+   if (!button) return {};
+   const std::byte* sprite = at<const std::byte*>(button, layout.iconButtonSprite);
+   if (!sprite) return {};
+   const std::byte* owner = at<const std::byte*>(sprite, layout.spriteOwner);
+   if (!owner) return {};
+   using Str = const MsvcString* (*)(const void* localisedString, const void* localeProvider);
+   const MsvcString* name =
+       reinterpret_cast<Str>(layout.localisedStringStr)(owner + layout.prototypeLocalisedName, nullptr);
+   return {name->capacity >= sizeof(name->buffer) ? name->pointer : name->buffer, name->size};
 }
 
 unsigned selectedRow(const Widget* table) {
@@ -424,6 +462,22 @@ void press(const Widget* widget, MouseButton button, bool shift, bool control) {
    pressOver(widget, widget, button, shift, control);
 }
 
+namespace {
+
+// Whether `widget` hangs in the tree under `root`, found by walking down from the root: the widget
+// itself is never read, so a freed one is safe to ask about.
+bool inTree(const Widget* root, const Widget* widget, int depth = 0) {
+   if (root == widget) return true;
+   if (depth > 64) return false;
+   for (const Widget* child : children(root))
+      if (inTree(child, widget, depth + 1)) return true;
+   for (const Widget* child : privateChildren(root))
+      if (inTree(child, widget, depth + 1)) return true;
+   return false;
+}
+
+} // namespace
+
 void pressOver(const Widget* widget, const Widget* over, MouseButton button, bool shift, bool control) {
    using Dispatch = void (*)(const Widget* widget, const void* event);
    // agui::MouseButton and agui::MouseEvent::Type
@@ -449,20 +503,28 @@ void pressOver(const Widget* widget, const Widget* over, MouseButton button, boo
    put(layout.mouseEventShift, shift);
    put(layout.mouseEventControl, control);
    put(layout.mouseEventSource, reinterpret_cast<uintptr_t>(widget));
+   // A handler may close the window and free the widget (Mod settings in the map generator does).
+   // The Gui holds the widget under the mouse through a targeter that clears itself then, so it
+   // sends nothing more; we look the widget up in the tree again, never touching it, and stop the
+   // same way once it is gone.
+   const Gui* gui = applicationGui();
+   const Widget* root = gui ? baseWidget(gui) : nullptr;
+   bool tracked = root && inTree(root, widget);
+   bool clickOnPress = at<uint32_t>(widget, layout.widgetUsageBits) & game::kUsageClickOnMouseDown;
    auto send = [&](uintptr_t dispatcher, uint32_t type) {
+      if (tracked && !inTree(root, widget)) return false;
       put(layout.mouseEventType, type);
       reinterpret_cast<Dispatch>(dispatcher)(widget, event);
+      return true;
    };
 
    // A widget the real mouse rests on is hovered already, and must stay so.
-   const Gui* gui = applicationGui();
    bool hover = gui && widgetUnderMouse(gui) != widget;
-   if (hover) send(layout.dispatchMouseEnter, kEnter);
-   send(layout.dispatchMouseDown, kDown);
+   if (hover && !send(layout.dispatchMouseEnter, kEnter)) return;
+   if (!send(layout.dispatchMouseDown, kDown)) return;
    // A click-on-press widget clicked inside dispatchMouseDown; the Gui sends no second click.
-   if (!(at<uint32_t>(widget, layout.widgetUsageBits) & game::kUsageClickOnMouseDown))
-      send(layout.dispatchClick, kClick);
-   send(layout.dispatchMouseUp, kUp);
+   if (!clickOnPress && !send(layout.dispatchClick, kClick)) return;
+   if (!send(layout.dispatchMouseUp, kUp)) return;
    if (hover) send(layout.dispatchMouseLeave, kLeave);
 }
 

@@ -39,10 +39,11 @@ const agui::Widget* WindowScreen::TopWindow()
     }
     if (menu)
         return agui::visible(menu) ? menu : nullptr;
-    // Otherwise the last visible window, the one drawn on top.
+    // Otherwise the last visible window, the one drawn on top. An empty one (the game keeps a bare
+    // window over the main menu for a while after startup) has nothing to read and is passed over.
     const agui::Widget* top = nullptr;
     for (const agui::Widget* child : agui::children(root))
-        if (agui::visible(child) && agui::kind(child) == agui::Kind::Window)
+        if (agui::visible(child) && agui::kind(child) == agui::Kind::Window && HasContent(child))
             top = child;
     return top;
 }
@@ -70,7 +71,9 @@ bool WindowScreen::IsActive()
 
 void WindowScreen::Build(graph::GraphBuilder& builder)
 {
-    if (!_window)
+    // A press can close the window between IsActive and this build (Mod settings in the map
+    // generator does), so it is looked up again from the root before anything in it is read.
+    if (!_window || TopWindow() != _window)
         return;
     DumpWindow(_window, _class);
     const agui::Widget* title = agui::frameTitle(_window);
@@ -95,10 +98,16 @@ bool WindowScreen::TypingIn(const graph::GraphNode& node)
 {
     // The retained render may be frames old, so the widget is compared before it is read: when it
     // is the game's focused widget, it is alive.
+    // A node may type into a field beside it (a slider's value field), so a focused sibling counts
+    // too; only the focused widget and its parent, both alive, are read.
     auto* widget = static_cast<const agui::Widget*>(node.Vtable.HostTag);
-    if (!widget || !s_gui || widget != agui::focusedWidget(s_gui))
+    const agui::Widget* focused = s_gui ? agui::focusedWidget(s_gui) : nullptr;
+    if (!widget || !focused || agui::kind(focused) != agui::Kind::TextBox || agui::readOnly(focused))
         return false;
-    return agui::kind(widget) == agui::Kind::TextBox && !agui::readOnly(widget);
+    if (widget == focused)
+        return true;
+    const agui::Widget* row = agui::parent(focused);
+    return row && std::ranges::find(agui::children(row), widget) != agui::children(row).end();
 }
 
 void WindowScreen::OnCursorMoved(const graph::GraphNode& node)

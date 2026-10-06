@@ -1,6 +1,7 @@
 #include "Navigator.hpp"
 
 #include <exception>
+#include <format>
 
 #include "graph/GraphAnnouncer.hpp"
 #include "log.h"
@@ -45,6 +46,7 @@ void Navigator::Attach(Screen* screen, graph::GraphState* state)
     _lastDriven = {};
     _liveBaselineId = {};
     _liveBaseline.clear();
+    _adjusting = {};
     _buildFailureLogged = false;
     _framesSinceRerender = kRerenderFrames; // expired: the first differ frame renders immediately
     _renderedThisFrame = false;
@@ -67,6 +69,7 @@ void Navigator::Detach()
     _lastDriven = {};
     _liveBaselineId = {};
     _liveBaseline.clear();
+    _adjusting = {};
     if (_claimsActive)
     {
         input::clearClaims();
@@ -102,11 +105,40 @@ void Navigator::Update()
             _renderedThisFrame = true;
             for (const input::KeyEvent& e : events)
                 HandleKey(e);
+            // The frame differ and live watch below resolve this render, so it is rebuilt after
+            // the keys acted: an action may have closed the window it was built from.
+            _graph->Rerender();
         }
     }
 
     RunFrameDiffer();
     DriveHostCursor();
+}
+
+std::string Navigator::Describe()
+{
+    if (!_screen)
+        return "screen: none\n";
+    std::string out = std::format("screen: {}\n", _screen->DiagName());
+    if (!_graph->Rerender())
+        return out + "render: empty\n";
+    graph::GraphNode* focus = _graph->CurrentNode();
+    if (focus)
+        out += std::format("focus: {}\nspoken: {}\n", focus->Id.StructuralKey, graph::GraphAnnouncer::ComposeFull(focus));
+    if (_adjusting.IsValid())
+        out += "adjusting\n";
+    const std::string* stop = nullptr;
+    for (const graph::GraphNode* node : _graph->Current()->Order)
+    {
+        if (!stop || node->StopKey != *stop)
+        {
+            stop = &node->StopKey;
+            out += std::format("[{}]\n", *stop);
+        }
+        out += std::format("{} {}: {}\n", node == focus ? '>' : ' ', node->Id.StructuralKey,
+            graph::GraphAnnouncer::LeafText(node));
+    }
+    return out;
 }
 
 void Navigator::HandleKey(const input::KeyEvent& e)
@@ -155,6 +187,11 @@ void Navigator::HandleKey(const input::KeyEvent& e)
         if (!e.repeat)
             HandleContextMenu();
         break;
+    // Only claimed while adjusting; otherwise it stays the game's Back.
+    case input::keys::Escape:
+        if (!e.repeat && _adjusting.IsValid())
+            StopAdjusting();
+        break;
     default:
         break;
     }
@@ -171,8 +208,11 @@ void Navigator::HandleArrow(graph::GraphDir dir, bool ctrl)
         return;
     }
 
-    // §7.1: a focused adjustable control adjusts on Left/Right instead of navigating.
-    if (dir == graph::GraphDir::Left || dir == graph::GraphDir::Right)
+    // §7.1: a focused adjustable control adjusts on Left/Right instead of navigating; one among
+    // the cells of a grid row only while its adjust mode is on.
+    graph::GraphNode* node = _graph->CurrentNode();
+    bool gated = node && node->Vtable.AdjustOnEnter && node->Id != _adjusting;
+    if ((dir == graph::GraphDir::Left || dir == graph::GraphDir::Right) && !gated)
     {
         int sign = dir == graph::GraphDir::Right ? +1 : -1;
         if (_graph->TryAdjust(sign, /*large*/ ctrl))
@@ -221,12 +261,32 @@ void Navigator::HandleHomeEnd(bool home)
 
 void Navigator::HandleEnter(bool shift, bool ctrl)
 {
+    graph::GraphNode* node = _graph->CurrentNode();
+    if (!shift && !ctrl && node && node->Vtable.AdjustOnEnter && node->Vtable.OnAdjust)
+    {
+        if (node->Id == _adjusting)
+            StopAdjusting();
+        else
+        {
+            _adjusting = node->Id;
+            Speak(vocab::kAdjusting, kInterruptOnKeypress);
+        }
+        return;
+    }
+
     bool ok = shift ? _graph->ActivateShift()
         : ctrl      ? _graph->ActivateCtrl()
                     : _graph->Activate();
     // A refusal is silent: the game's own voice or nothing.
     if (ok)
         SpeakStateFeedback();
+}
+
+void Navigator::StopAdjusting()
+{
+    _adjusting = {};
+    // The value it was left at.
+    SpeakStateFeedback();
 }
 
 void Navigator::HandleTooltip()
@@ -300,6 +360,10 @@ void Navigator::AnnounceTree(const graph::KeyGraph::TreeResult& result)
 
 void Navigator::SpeakStateFeedback()
 {
+    // The action may have changed or freed what the last render read; nothing of it is resolved
+    // again. An empty render means the screen went away with the action.
+    if (!_graph->Rerender())
+        return;
     graph::GraphNode* node = _graph->CurrentNode();
     if (!node)
         return;
@@ -408,8 +472,12 @@ void Navigator::UpdateClaims(bool haveRender)
     }
 
     graph::GraphNode* node = _graph->CurrentNode();
+    // Moving off the slider being adjusted ends its adjust mode.
+    if (_adjusting.IsValid() && (!node || node->Id != _adjusting))
+        _adjusting = {};
     bool typing = node && _screen->TypingIn(*node);
-    if (_claimsActive && typing == _claimsTyping)
+    bool adjusting = _adjusting.IsValid();
+    if (_claimsActive && typing == _claimsTyping && adjusting == _claimsAdjusting)
     {
         input::keepAlive();
         return;
@@ -433,10 +501,14 @@ void Navigator::UpdateClaims(bool haveRender)
             {keys::Home, plain}, {keys::End, plain}, {keys::Return, plain | mods::Shift | mods::Ctrl},
             {keys::KeypadEnter, plain | mods::Shift | mods::Ctrl}, {keys::Space, plain}, {keys::F1, plain},
             {keys::Backspace, plain}};
+        // Leaving adjust mode is the one Escape the game must not see.
+        if (adjusting)
+            claims.push_back({keys::Escape, plain});
     }
     input::setClaims(std::move(claims));
     _claimsActive = true;
     _claimsTyping = typing;
+    _claimsAdjusting = adjusting;
 }
 
 void Navigator::Speak(const std::string& text, bool interrupt)

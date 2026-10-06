@@ -155,6 +155,17 @@ struct Layout {
 
    // Members of the game's windows the screens read by name.
    uint32_t dialogButtons = 0;        // GuiTemplate (Dialog<>) bottomButtonsFlow, the footer
+   // MenuGui<Result> (the main menu, single player, the game menu, ...): the frame of highlighted
+   // buttons on top (Continue), the main buttons, and the bottom row (Exit, Back). Every
+   // instantiation lays them out alike.
+   uint32_t menuTop = 0;
+   uint32_t menuMain = 0;
+   uint32_t menuBottom = 0;
+   uint32_t appVersionLabel = 0;      // AppManager::backgroundVersionLabel, std::unique_ptr<agui::Label>
+   // MainMenuGui's panels beside the menu, each a std::unique_ptr.
+   uint32_t mainMenuLanguage = 0;     // languageSelectionGui
+   uint32_t mainMenuSimulation = 0;   // simulationSelectionGui
+   uint32_t mainMenuAdvert = 0;       // spaceAgeAdvert
    uint32_t loadMapList = 0;          // LoadMapGui::packageListGui
    uint32_t loadMapInfo = 0;          // LoadMapGui::mapInfo
    uint32_t mapInfoDelete = 0;        // MapInfoGui::deleteSaveButton
@@ -166,9 +177,33 @@ struct Layout {
    uint32_t manageModsSearch = 0;     // ManageModsPane::searchBar
    uint32_t settingsContent = 0;      // SettingsGui::contentFrame
    uint32_t settingsReset = 0;        // SettingsGui::resetButton
+   uint32_t modSettingsTabs = 0;      // ModSettingsGui::tabs
+   uint32_t tabbedPaneContent = 0;    // agui::TabbedPane::contentFrame, the selected tab's page
    uint32_t controlsScrollPane = 0;   // ControlSettingsGui::scrollPane
    uint32_t controlsSetting = 0;      // ControlSettingsGui::currentlySetting, the button waiting for a key
+   uint32_t newGameMaps = 0;          // NewGameGui::mapsListBox, the scenarios
+   uint32_t newGameLevels = 0;        // NewGameGui::levelsVerticalFlow, a campaign's levels
+   uint32_t newGameDifficulty = 0;    // NewGameGui::difficultyVerticalFlow
+   uint32_t newGameName = 0;          // NewGameGui::mapNameLabel
+   uint32_t newGameReplay = 0;        // NewGameGui::enableReplayCheckBox
+   uint32_t newGameDelete = 0;        // NewGameGui::deleteScenarioButton
+   uint32_t newGameDescription = 0;   // NewGameGui::descriptionLabel
+   uint32_t mapGenPresets = 0;        // MapGeneratorGui::mapGenSettingPresets
+   uint32_t mapGenPresetReset = 0;    // MapGeneratorGui::resetPresetButton
+   uint32_t mapGenPresetDescription = 0; // MapGeneratorGui::mapGeneratorPresetDescription
+   uint32_t mapGenSeed = 0;           // MapGeneratorGui::mapSeedField
+   uint32_t mapGenRandomSeed = 0;     // MapGeneratorGui::randomizeSeedButton
+   uint32_t mapGenTabs = 0;           // MapGeneratorGui::tabbedPane
+   uint32_t mapGenPages[4] = {};      // MapGeneratorGui::{resource,terrain,enemy,advanced}SettingsScrollPane
+   uint32_t mapGenImport = 0;         // MapGeneratorGui::exchangeStringImportButton
+   uint32_t mapGenExport = 0;         // MapGeneratorGui::exchangeStringExportButton
+   uint32_t mapGenButtons = 0;        // MapGeneratorGui::mainButtonHFlow, its footer
 
+   // Icons: IconButton::icon.sprite, the Sprite's owner (the prototype it depicts) and that
+   // prototype's localised name.
+   uint32_t iconButtonSprite = 0;     // Sprite*
+   uint32_t spriteOwner = 0;          // PrototypeBase*
+   uint32_t prototypeLocalisedName = 0; // LocalisedString
    // std::string const& LocalisedString::str(LocaleProvider const*) const: translates through the
    // game's own locale (null provider: the current one) and caches the result.
    uintptr_t localisedStringStr = 0;

@@ -41,7 +41,8 @@ void AddSettingsButtons(graph::GraphBuilder& builder, const Widget* window)
 
 bool SettingsScreen::Handles(const Widget* window) const
 {
-    return agui::derivesFrom(window, "SettingsGui") && !agui::derivesFrom(window, "ControlSettingsGui");
+    return agui::derivesFrom(window, "SettingsGui") && !agui::derivesFrom(window, "ControlSettingsGui")
+        && !agui::derivesFrom(window, "ModSettingsGui");
 }
 
 void SettingsScreen::BuildWindow(graph::GraphBuilder& builder, const Widget* window)

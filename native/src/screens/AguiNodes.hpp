@@ -37,6 +37,9 @@ std::string NameOf(const agui::Widget* widget);
 /// Whether the walker would declare anything for the widget: visible and not chrome.
 bool Shows(const agui::Widget* widget);
 
+/// Whether the widget would declare anything at all: a shown text or control somewhere in it.
+bool HasContent(const agui::Widget* widget);
+
 /// The node for one control. `name` reads the control's label; empty uses NameOf.
 graph::NodeVtable ControlNode(const agui::Widget* widget, std::function<std::string()> name = {});
 

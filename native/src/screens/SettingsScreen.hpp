@@ -1,7 +1,7 @@
 #pragma once
 
-// The settings windows that open from Settings (SettingsGui): Graphics, Sound, Interface, Other,
-// The rest and Mod settings. Controls has a recipe of its own. Stops:
+// The settings windows that open from Settings (SettingsGui): Graphics, Sound, Interface, Other
+// and The rest. Controls and Mod settings have recipes of their own. Stops:
 //   settings — the window's content, read generically: a labelled control per line, sections
 //              as contexts
 //   buttons  — the reset button and the footer (Back, Confirm)

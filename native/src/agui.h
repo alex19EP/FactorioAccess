@@ -23,6 +23,13 @@ bool inGame();
 // null while the top state owns none: InGame, plain play, is one.
 const Widget* menuStateWindow();
 
+// The game's version, drawn in a corner behind the main menu (AppManager::backgroundVersionLabel),
+// or null.
+const Widget* versionLabel();
+// The panels the main menu shows beside its window: the language selector, the background
+// simulation selector and the Space Age advert, those that exist. Empty for any other window.
+std::vector<const Widget*> mainMenuPanels(const Widget* mainMenu);
+
 // The scenario's message dialog shown over the loaded game (LuaGameScript show_message_dialog, the
 // freeplay welcome), or null. Its text is the label scenarioMessageLabel returns.
 const Widget* scenarioMessage();
@@ -118,8 +125,23 @@ const Widget* pointerMember(const Widget* owner, uint32_t offset);
 // The footer of a Dialog window (back, confirm and the like), or null for other windows.
 const Widget* dialogButtons(const Widget* window);
 
+// The parts of a MenuGui window (the main menu, single player, the game menu, ...), or all null
+// for any other window: the highlighted buttons on top (Continue), the main buttons, the bottom
+// row (Exit, Back).
+struct MenuParts {
+   const Widget* top = nullptr;
+   const Widget* main = nullptr;
+   const Widget* bottom = nullptr;
+};
+MenuParts menuParts(const Widget* window);
+
 // The item buttons of an agui::ListBox, in order.
 std::vector<const Widget*> listBoxItems(const Widget* listBox);
+
+// What an IconButton depicts: the translated name of the prototype its sprite belongs to (a planet,
+// an item), as the game itself would write it; empty for anything else or an ownerless sprite.
+// Translates through the game's locale, so main thread only.
+std::string_view iconName(const Widget* widget);
 
 // The selected row of an agui::TableWithSelection, the header row counting as 0.
 unsigned selectedRow(const Widget* table);

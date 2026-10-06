@@ -143,6 +143,13 @@ bool resolve(pdb::SymbolTable& symbols) {
 
    // Every Dialog<Result> instantiation lays its members out alike.
    offset(layout.dialogButtons, "GuiTemplate", "Dialog<enum ConfirmCancelResult>.bottomButtonsFlow");
+   offset(layout.menuTop, "MainMenuGui", "MenuGui<enum MainMenuResult>.topButtonsFrame");
+   offset(layout.menuMain, "MainMenuGui", "MenuGui<enum MainMenuResult>.mainButtonsFrame");
+   offset(layout.menuBottom, "MainMenuGui", "MenuGui<enum MainMenuResult>.bottomPart");
+   offset(layout.appVersionLabel, "AppManager", "backgroundVersionLabel");
+   offset(layout.mainMenuLanguage, "MainMenuGui", "languageSelectionGui");
+   offset(layout.mainMenuSimulation, "MainMenuGui", "simulationSelectionGui");
+   offset(layout.mainMenuAdvert, "MainMenuGui", "spaceAgeAdvert");
    offset(layout.loadMapList, "LoadMapGui", "packageListGui");
    offset(layout.loadMapInfo, "LoadMapGui", "mapInfo");
    offset(layout.mapInfoDelete, "MapInfoGui", "deleteSaveButton");
@@ -154,8 +161,34 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.manageModsSearch, "ManageModsPane", "searchBar");
    offset(layout.settingsContent, "SettingsGui", "contentFrame");
    offset(layout.settingsReset, "SettingsGui", "resetButton");
+   offset(layout.modSettingsTabs, "ModSettingsGui", "tabs");
+   offset(layout.tabbedPaneContent, "agui::TabbedPane", "contentFrame");
    offset(layout.controlsScrollPane, "ControlSettingsGui", "scrollPane");
    offset(layout.controlsSetting, "ControlSettingsGui", "currentlySetting");
+   offset(layout.newGameMaps, "NewGameGui", "mapsListBox");
+   offset(layout.newGameLevels, "NewGameGui", "levelsVerticalFlow");
+   offset(layout.newGameDifficulty, "NewGameGui", "difficultyVerticalFlow");
+   offset(layout.newGameName, "NewGameGui", "mapNameLabel");
+   offset(layout.newGameReplay, "NewGameGui", "enableReplayCheckBox");
+   offset(layout.newGameDelete, "NewGameGui", "deleteScenarioButton");
+   offset(layout.newGameDescription, "NewGameGui", "descriptionLabel");
+   offset(layout.mapGenPresets, "MapGeneratorGui", "mapGenSettingPresets");
+   offset(layout.mapGenPresetReset, "MapGeneratorGui", "resetPresetButton");
+   offset(layout.mapGenPresetDescription, "MapGeneratorGui", "mapGeneratorPresetDescription");
+   offset(layout.mapGenSeed, "MapGeneratorGui", "mapSeedField");
+   offset(layout.mapGenRandomSeed, "MapGeneratorGui", "randomizeSeedButton");
+   offset(layout.mapGenTabs, "MapGeneratorGui", "tabbedPane");
+   offset(layout.mapGenPages[0], "MapGeneratorGui", "resourceSettingsScrollPane");
+   offset(layout.mapGenPages[1], "MapGeneratorGui", "terrainSettingsScrollPane");
+   offset(layout.mapGenPages[2], "MapGeneratorGui", "enemySettingsScrollPane");
+   offset(layout.mapGenPages[3], "MapGeneratorGui", "advancedSettingsScrollPane");
+   offset(layout.mapGenImport, "MapGeneratorGui", "exchangeStringImportButton");
+   offset(layout.mapGenExport, "MapGeneratorGui", "exchangeStringExportButton");
+   offset(layout.mapGenButtons, "MapGeneratorGui", "mainButtonHFlow");
+
+   offset(layout.iconButtonSprite, "IconButton", "icon.sprite");
+   offset(layout.spriteOwner, "Sprite", "owner");
+   offset(layout.prototypeLocalisedName, "PrototypeBase", "localisedName");
    address(layout.localisedStringStr,
            "?str@LocalisedString@@QEBAAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@PEBVLocaleProvider@@@Z");
 

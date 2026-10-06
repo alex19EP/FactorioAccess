@@ -49,6 +49,10 @@ public:
     /// the live watch, publish the claim set.
     void Update();
 
+    /// For the dev server: the attached screen, the focused node with its full spoken line, and
+    /// every node in declaration order under its Tab-stop. Rebuilds the render to read it fresh.
+    std::string Describe();
+
 private:
     static constexpr bool kInterruptOnKeypress = true;
 
@@ -59,6 +63,8 @@ private:
     void HandleEnter(bool shift, bool ctrl);
     void HandleTooltip();
     void HandleContextMenu();
+    /// Leaves a grid slider's adjust mode (NodeVtable::AdjustOnEnter), saying its value.
+    void StopAdjusting();
 
     /// Speak a completed move (path-diffed) and update the differ memory.
     void AnnounceMove(const graph::MoveResult& result);
@@ -97,6 +103,8 @@ private:
     bool _buildFailureLogged = false;          // §7.8 log once per attach
     bool _claimsActive = false;
     bool _claimsTyping = false;                // the published set is the reduced typing one
+    bool _claimsAdjusting = false;             // the published set includes Escape
+    graph::ControlId _adjusting;               // the grid slider in adjust mode, if any
     bool _hasLiveRender = false;
 
     // Rebuild cadence: Build runs on key-op frames plus every kRerenderFrames-th idle frame, to

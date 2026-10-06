@@ -18,7 +18,8 @@ bool DropDownScreen::IsActive()
 
 void DropDownScreen::Build(graph::GraphBuilder& builder)
 {
-    if (!_dropDown)
+    // Choosing an option closes the list between IsActive and this build.
+    if (!_dropDown || agui::openDropDown(agui::applicationGui()) != _dropDown)
         return;
     const agui::Widget* dropDown = _dropDown;
     std::vector<const agui::Widget*> options = agui::listBoxItems(agui::dropDownList(dropDown));

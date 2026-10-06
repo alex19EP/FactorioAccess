@@ -26,6 +26,11 @@ public:
     /// attached screen never reads as "no screen" in the log.
     virtual const char* DiagName() const { return Name(); }
 
+    /// Whether the cursor survives the screen going away, to be back where it was when the same
+    /// thing (its DiagName) shows again. For windows the game destroys and rebuilds around a
+    /// dialog; a popup that should open on its current choice leaves it false.
+    virtual bool RemembersCursor() const { return false; }
+
     /// Stacking order: the live screen with the highest layer owns the navigator.
     virtual int Layer() const { return 0; }
 

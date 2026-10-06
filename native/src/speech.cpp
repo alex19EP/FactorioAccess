@@ -1,5 +1,6 @@
 #include "speech.h"
 
+#include "devserver.h"
 #include "log.h"
 
 #include <objbase.h>
@@ -90,6 +91,7 @@ void start() {
 void say(std::string text, bool interrupt) {
    if (text.empty()) return;
    log::info("say{}: {}", interrupt ? " (interrupt)" : "", text);
+   dev::onSpeech(text, interrupt);
    {
       std::scoped_lock lock(g_mutex);
       if (interrupt) g_queue.clear();

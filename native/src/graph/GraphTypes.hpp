@@ -159,6 +159,11 @@ struct NodeVtable
     /// requests a coarse step. When set, Left/Right do NOT navigate.
     std::function<void(int sign, bool large)> OnAdjust;
 
+    /// With OnAdjust: the slider sits among cells that Left/Right move between (a grid row), so
+    /// it only adjusts in an adjust mode the host enters on Enter and leaves on Enter, Escape or
+    /// moving off. Kernel-inert; the navigator owns the mode.
+    bool AdjustOnEnter = false;
+
     /// Optional. The control's state line, spoken IMMEDIATELY (interrupting) after an
     /// activation/adjust that changes state — the synchronous feedback path for rapid key
     /// repeats. Asynchronous/game-driven changes ride the Live announcement watch instead.

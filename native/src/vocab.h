@@ -33,6 +33,8 @@ inline constexpr std::string_view kAllMods = "all mods";
 inline constexpr std::string_view kAlternative = "alternative";
 inline constexpr std::string_view kSortBy = "sort by";
 inline constexpr std::string_view kContinue = "continue";
+inline constexpr std::string_view kClose = "close";
+inline constexpr std::string_view kAdjusting = "adjusting";
 
 inline constexpr std::string_view kNoTooltip = "no tooltip";
 inline constexpr std::string_view kNoAction = "no action";

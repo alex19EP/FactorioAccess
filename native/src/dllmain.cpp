@@ -1,5 +1,6 @@
 // FactorioAccess native: loaded into factorio.exe as a winmm.dll proxy (see CMakeLists.txt).
 
+#include "devserver.h"
 #include "game.h"
 #include "hooks.h"
 #include "log.h"
@@ -38,6 +39,7 @@ DWORD WINAPI initialize(void*) {
    log::open(directory / "factorio-access-native.log");
    log::info("Loaded into {}", modulePath(nullptr).string());
    speech::start();
+   dev::start(directory);
 
    auto started = std::chrono::steady_clock::now();
    pdb::SymbolTable symbols(GetModuleHandleW(nullptr), modulePath(nullptr), directory / "factorio-access-native.symbols");

@@ -113,6 +113,8 @@ void DumpWidget(State& state, const Widget* window, const Widget* widget, int de
     agui::ToolTip tip = agui::toolTip(widget);
     if (!tip.title.empty() || !tip.text.empty())
         line += std::format(" tooltip=\"{}\"/\"{}\"", tip.title, tip.text);
+    if (std::string_view icon = agui::iconName(widget); !icon.empty())
+        line += std::format(" icon=\"{}\"", icon);
     line += StateOf(widget);
     state.text += line;
     state.text += '\n';
