@@ -233,6 +233,27 @@ struct Layout {
    uintptr_t itemPrototypes = 0;
    uintptr_t qualityPrototypes = 0;
    uintptr_t recipePrototypes = 0;
+
+   // Slot buttons of every kind (SlotButtonBase: item, fluid, recipe and filter slots). The getters
+   // are introduced by secondary bases, so they are called through those subobjects; slot numbers
+   // are vtable slots of PrototypeProvider and ButtonNumber.
+   uint32_t providerBasePrototype = 0;    // PrototypeBase const* PrototypeProvider::getBasePrototype() const
+   uint32_t providerQualityPrototype = 0; // QualityPrototype const* PrototypeProvider::getQualityPrototype() const
+   uint32_t buttonNumberCount = 0;        // double ButtonNumber::getCount() const, the number drawn on it
+
+   uint32_t progressBarValue = 0; // agui::ProgressBar::value, 0 to 1
+
+   // The windows of entities (GameGuiWithControllerInventory): the entity's window, which holds
+   // the player's inventory beside the entity's own part.
+   uint32_t entityMainWindow = 0;     // GameGuiWithControllerInventory::mainWindow, agui::Window
+   uint32_t entityInventoryHolder = 0; // GameGuiWithControllerInventory::controllerInventory, ControllerInventoryHolder*
+   uint32_t holderInventory = 0;      // GameControllerInventoryHolder::inventoryGui, InventoryGui
+   uint32_t holderTitle = 0;          // GameControllerInventoryHolder::titleLabel ("Character")
+   uint32_t frameHeader = 0;          // agui::Frame::headerFlow: the title bar's search and close buttons
+   // The productivity bars beside the progress bar of crafting machines and drills.
+   uint32_t assemblerBonusBar = 0;    // AssemblingMachineGui::bonusProgressBar
+   uint32_t furnaceBonusBar = 0;      // FurnaceGui::bonusProgressBar
+   uint32_t drillBonusBar = 0;        // MiningDrillGui::bonusProgressBar
 };
 
 // Bits of agui::Widget::usageBitMask, read from Widget::setVisible and Widget::isEnabled in

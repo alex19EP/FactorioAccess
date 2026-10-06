@@ -1,6 +1,7 @@
 #include "AguiNodes.hpp"
 
 #include <algorithm>
+#include <cmath>
 #include <format>
 #include <optional>
 #include <string_view>
@@ -48,6 +49,7 @@ const graph::ControlType* TypeOf(Kind kind)
         {Kind::Switch, MakeType("switch", vocab::kSwitch)},
         {Kind::TextBox, MakeType("edit", vocab::kEdit)},
         {Kind::Tab, MakeType("tab", vocab::kTab)},
+        {Kind::ProgressBar, MakeType("progressbar", vocab::kProgressBar)},
     };
     auto it = types.find(kind);
     return it == types.end() ? nullptr : &it->second;
@@ -58,7 +60,8 @@ bool IsControl(Kind kind) { return TypeOf(kind) != nullptr; }
 // Controls whose own text is their value rather than their name; a label before one names it.
 bool ShowsValue(Kind kind)
 {
-    return kind == Kind::DropDown || kind == Kind::Slider || kind == Kind::Switch || kind == Kind::TextBox;
+    return kind == Kind::DropDown || kind == Kind::Slider || kind == Kind::Switch || kind == Kind::TextBox
+        || kind == Kind::ProgressBar;
 }
 
 template <class Visit>
@@ -224,6 +227,8 @@ std::string ValueText(const Widget* widget, Kind kind)
             content += ", " + std::string(vocab::kReadOnly);
         return content;
     }
+    case Kind::ProgressBar:
+        return std::format("{}%", std::lround(agui::progress(widget) * 100));
     default:
         return {};
     }
@@ -354,10 +359,12 @@ graph::NodeVtable SliderWithField(const Widget* slider, const Widget* field, con
 class Walker
 {
 public:
-    Walker(graph::GraphBuilder& builder, std::string prefix, std::vector<const Widget*> skip)
+    Walker(graph::GraphBuilder& builder, std::string prefix, std::vector<const Widget*> skip,
+        std::unordered_map<const Widget*, std::string> names)
         : _builder(builder)
         , _prefix(std::move(prefix))
         , _skip(std::move(skip))
+        , _names(std::move(names))
     {
     }
 
@@ -623,12 +630,17 @@ private:
     void Add(const std::string& key, graph::NodeVtable vtable)
     {
         const void* widget = vtable.HostTag;
+        if (auto it = _names.find(static_cast<const Widget*>(widget)); it != _names.end())
+            for (graph::NodeAnnouncement& part : vtable.Announcements)
+                if (part.Kind == Label)
+                    part.Text = [name = it->second]() { return name; };
         _builder.AddItem(graph::ControlId::Referenced(widget, key), std::move(vtable));
     }
 
     graph::GraphBuilder& _builder;
     std::string _prefix;
     std::vector<const Widget*> _skip;
+    std::unordered_map<const Widget*, std::string> _names;
 };
 
 } // namespace
@@ -652,8 +664,74 @@ bool Shows(const Widget* widget) { return agui::visible(widget) && agui::kind(wi
 
 bool HasContent(const Widget* widget) { return Navigable(widget, 1) > 0; }
 
+std::string SlotText(const Widget* slot)
+{
+    std::string_view name;
+    std::string_view quality;
+    double count = 0;
+    if (agui::derivesFrom(slot, "InventoryGuiSlot"))
+    {
+        agui::SlotItem item = agui::slotItem(slot);
+        name = item.name;
+        quality = item.quality;
+        count = item.count;
+    }
+    // An empty item slot can still name its filter, or the ingredient a machine expects in it.
+    if (count == 0)
+    {
+        agui::SlotButton button = agui::slotButton(slot);
+        name = button.name;
+        quality = button.quality;
+        count = button.count;
+    }
+    if (name.empty())
+        return std::string(vocab::kEmpty);
+    std::string spoken = quality.empty() ? std::string(name) : std::format("{} {}", quality, name);
+    if (count == 0)
+        return std::format("{}, {}", spoken, vocab::kEmpty);
+    // Fluid amounts are fractional; the game rounds what it draws too.
+    if (count >= 100 || count == std::floor(count))
+        return std::format("{} {:.0f}", spoken, count);
+    return std::format("{} {:.1f}", spoken, count);
+}
+
+namespace
+{
+
+// A slot is named by what it holds; a label beside it ("Fuel") is its name instead, the content
+// its value. Clicked as the Gui clicks the button under the mouse, so taking, placing and
+// splitting stacks and choosing recipes are vanilla.
+graph::NodeVtable SlotNode(const Widget* slot, std::function<std::string()> name)
+{
+    graph::NodeVtable vtable;
+    vtable.HostTag = slot;
+    // A fluid's amount changes every tick; watching it would talk over everything.
+    bool live = !agui::derivesFrom(slot, "FluidBoxGuiSlot");
+    auto content = [slot]() { return SlotText(slot); };
+    if (name)
+    {
+        vtable.Announcements.emplace_back(std::move(name), false, Label);
+        vtable.Announcements.emplace_back(content, live, Value);
+    }
+    else
+        vtable.Announcements.emplace_back(content, live, Label);
+    vtable.Announcements.emplace_back(
+        [slot]() { return agui::enabled(slot) ? std::string() : std::string(vocab::kDisabled); }, false, Enabled);
+    vtable.OnActivate = [slot]() { agui::press(slot, agui::MouseButton::Left, false, false); };
+    vtable.OnActivateShift = [slot]() { agui::press(slot, agui::MouseButton::Left, true, false); };
+    vtable.OnActivateCtrl = [slot]() { agui::press(slot, agui::MouseButton::Left, false, true); };
+    vtable.OnSecondary = [slot]() { agui::press(slot, agui::MouseButton::Right, false, false); };
+    // No StateText: a click reaches the game as an input action applied later, so the result is
+    // spoken by the live watch once it shows.
+    return vtable;
+}
+
+} // namespace
+
 graph::NodeVtable ControlNode(const Widget* widget, std::function<std::string()> name)
 {
+    if (agui::isSlotButton(widget))
+        return SlotNode(widget, std::move(name));
     Kind kind = agui::kind(widget);
     if (!name)
         name = [widget]() { return NameOf(widget); };
@@ -662,7 +740,9 @@ graph::NodeVtable ControlNode(const Widget* widget, std::function<std::string()>
     vtable.Type = TypeOf(kind);
     vtable.HostTag = widget;
     vtable.Announcements.emplace_back(std::move(name), false, Label);
-    vtable.Announcements.emplace_back([widget, kind]() { return ValueText(widget, kind); }, true, Value);
+    // A progress bar moves every tick; it is read when asked for, not watched.
+    vtable.Announcements.emplace_back(
+        [widget, kind]() { return ValueText(widget, kind); }, kind != Kind::ProgressBar, Value);
     vtable.Announcements.emplace_back([widget, kind]() { return SelectedText(widget, kind); }, true, Selected);
     vtable.Announcements.emplace_back(
         [widget]() { return agui::enabled(widget) ? std::string() : std::string(vocab::kDisabled); }, false, Enabled);
@@ -719,10 +799,10 @@ graph::NodeVtable TextNode(const Widget* tag, std::function<std::string()> text)
     return vtable;
 }
 
-void AddSubtree(
-    graph::GraphBuilder& builder, const std::string& prefix, const Widget* widget, std::vector<const Widget*> skip)
+void AddSubtree(graph::GraphBuilder& builder, const std::string& prefix, const Widget* widget,
+    std::vector<const Widget*> skip, std::unordered_map<const Widget*, std::string> names)
 {
-    Walker(builder, prefix, std::move(skip)).Visit(widget, "", 0);
+    Walker(builder, prefix, std::move(skip), std::move(names)).Visit(widget, "", 0);
 }
 
 bool AddControl(graph::GraphBuilder& builder, const std::string& key, const Widget* widget,

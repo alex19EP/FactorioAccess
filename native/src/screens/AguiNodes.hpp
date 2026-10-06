@@ -6,6 +6,7 @@
 //
 // The walker's reading of a subtree:
 //   - controls map to roles through their agui base class (button, checkbox, dropdown, ...)
+//   - slot buttons (items, fluids, recipes, filters) say what they hold; progress bars their percent
 //   - a frame's title is the context its contents are announced in
 //   - a horizontal flow or table row of single items is a row (Left/Right); a table's rows keep
 //     the column on Up/Down
@@ -19,6 +20,7 @@
 
 #include <functional>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "agui.h"
@@ -53,9 +55,14 @@ graph::NodeVtable TextNode(const agui::Widget* tag, std::function<std::string()>
 
 /// Declares `widget`'s whole subtree into the builder's current stop. Keys start with `prefix`.
 /// Widgets in `skip` are left out wherever they appear: a title already spoken as the context, a
-/// part declared as a stop of its own.
+/// part declared as a stop of its own. A widget in `names` is spoken by that name instead of its
+/// own, for controls the game leaves unnamed (a second progress bar).
 void AddSubtree(graph::GraphBuilder& builder, const std::string& prefix, const agui::Widget* widget,
-    std::vector<const agui::Widget*> skip = {});
+    std::vector<const agui::Widget*> skip = {}, std::unordered_map<const agui::Widget*, std::string> names = {});
+
+/// What a slot button shows: "iron plate 50", "rare iron plate 50", "water 1200", an empty slot's
+/// filter or expected ingredient as "iron plate, empty", or "empty".
+std::string SlotText(const agui::Widget* slot);
 
 /// Declares a single control, if it is visible. Returns whether it did.
 bool AddControl(graph::GraphBuilder& builder, const std::string& key, const agui::Widget* widget,

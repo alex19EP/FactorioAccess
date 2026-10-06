@@ -10,6 +10,7 @@
 #include "screens/DropDownScreen.hpp"
 #include "screens/GenericWindowScreen.hpp"
 #include "screens/LoadGameScreen.hpp"
+#include "screens/MachineScreen.hpp"
 #include "screens/MapGeneratorScreen.hpp"
 #include "screens/MenuScreen.hpp"
 #include "screens/ModSettingsScreen.hpp"
@@ -76,6 +77,8 @@ void start() {
    manager.Register(std::make_unique<screens::ScenarioMessageScreen>());
    // The game's character screen (E) over a loaded game; the game menu takes over while it is open.
    manager.Register(std::make_unique<screens::CharacterScreen>());
+   // An entity's window (a chest, a furnace, a drill, ...), opened by the game's own open-gui control.
+   manager.Register(std::make_unique<screens::MachineScreen>());
    // Over any of them, an open dropdown's list.
    manager.Register(std::make_unique<screens::DropDownScreen>());
 }

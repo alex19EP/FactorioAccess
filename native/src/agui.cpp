@@ -128,6 +128,7 @@ constexpr std::pair<std::string_view, Kind> kKindBases[] = {
    {".?AVTable@agui@@", Kind::Table},
    {".?AVHorizontalFlow@agui@@", Kind::HorizontalFlow},
    {".?AVWindow@agui@@", Kind::Window},
+   {".?AVProgressBar@agui@@", Kind::ProgressBar},
 };
 
 // Every scroll bar is an instance of the template agui::ScrollBar<Policy>.
@@ -522,6 +523,63 @@ RecipeItem recipeItem(const Widget* craftingList, const Widget* slot) {
    if (auto id = mapKeyOf(list + layout.recipeListSlots, slot))
       if (const std::byte* recipe = prototypeAt(layout.recipePrototypes, *id)) item.name = localisedName(recipe);
    return item;
+}
+
+namespace {
+
+// A const getter that `subobject`'s own vtable introduces: the game's slot buttons inherit theirs
+// from secondary bases, so the call goes through that base with `this` adjusted to it.
+template <class Result>
+Result callVirtualAt(const std::byte* subobject, uint32_t slot) {
+   auto* self = const_cast<std::byte*>(subobject);
+   auto vtable = *reinterpret_cast<VirtualTable*>(self);
+   return reinterpret_cast<Result (*)(void*)>(vtable[slot])(self);
+}
+
+} // namespace
+
+bool isSlotButton(const Widget* widget) {
+   return asBase(widget, ".?AVSlotButtonBase@@") && asBase(widget, ".?AVPrototypeProvider@@") &&
+          asBase(widget, ".?AVButtonNumber@@");
+}
+
+SlotButton slotButton(const Widget* slot) {
+   const std::byte* provider = asBaseChecked(slot, ".?AVPrototypeProvider@@");
+   SlotButton button;
+   // An item slot with neither an inventory nor a loose stack aborts the game in its getters.
+   if (const std::byte* item = asBase(slot, ".?AVInventoryGuiSlot@@");
+       item && !at<const std::byte*>(item, layout.slotInventory) && !at<const std::byte*>(item, layout.slotItemStack))
+      return button;
+   if (auto* prototype = callVirtualAt<const std::byte*>(provider, layout.providerBasePrototype))
+      button.name = localisedName(prototype);
+   if (auto* quality = callVirtualAt<const std::byte*>(provider, layout.providerQualityPrototype);
+       quality && readString(quality, layout.prototypeName) != "normal")
+      button.quality = localisedName(quality);
+   button.count = callVirtualAt<double>(asBaseChecked(slot, ".?AVButtonNumber@@"), layout.buttonNumberCount);
+   return button;
+}
+
+double progress(const Widget* bar) { return at<double>(asBaseChecked(bar, ".?AVProgressBar@agui@@"), layout.progressBarValue); }
+
+EntityWindowParts entityWindowParts(const Widget* window) {
+   const std::byte* gui = asBase(window, ".?AVGameGuiWithControllerInventory@@");
+   if (!gui) return {};
+   EntityWindowParts parts;
+   parts.entity = reinterpret_cast<const Widget*>(gui + layout.entityMainWindow);
+   parts.header = member(parts.entity, layout.frameHeader);
+   // The holder is no widget, but polymorphic all the same: its RTTI tells the player's own
+   // inventory from the remote view's item list.
+   auto* holder = at<const Widget*>(gui, layout.entityInventoryHolder);
+   if (holder && derivesFrom(holder, "GameControllerInventoryHolder")) {
+      parts.inventory = member(holder, layout.holderInventory);
+      parts.inventoryTitle = member(holder, layout.holderTitle);
+      parts.inventoryPanel = parent(parts.inventory);
+   }
+   for (auto [type, offset] : {std::pair{".?AVAssemblingMachineGui@@", layout.assemblerBonusBar},
+                               std::pair{".?AVFurnaceGui@@", layout.furnaceBonusBar},
+                               std::pair{".?AVMiningDrillGui@@", layout.drillBonusBar}})
+      if (const std::byte* machine = asBase(window, type)) parts.bonusBar = reinterpret_cast<const Widget*>(machine + offset);
+   return parts;
 }
 
 unsigned selectedRow(const Widget* table) {

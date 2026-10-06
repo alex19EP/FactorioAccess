@@ -27,12 +27,13 @@ bool resolve(pdb::SymbolTable& symbols) {
       else
          ok = false;
    };
-   auto slot = [&](uint32_t& out, const char* method) {
-      if (auto value = symbols.virtualSlot("agui::Widget", method))
+   auto classSlot = [&](uint32_t& out, const char* type, const char* method) {
+      if (auto value = symbols.virtualSlot(type, method))
          out = *value;
       else
          ok = false;
    };
+   auto slot = [&](uint32_t& out, const char* method) { classSlot(out, "agui::Widget", method); };
 
    address(layout.guiLogic, "?logic@Gui@agui@@UEAAX_N@Z");
    address(layout.guiInstance, "?instance@Gui@agui@@2PEAV12@EA");
@@ -216,6 +217,20 @@ bool resolve(pdb::SymbolTable& symbols) {
    address(layout.recipePrototypes,
            "?indexToPrototype@?$PrototypeList@VRecipePrototype@@@@2V?$vector@PEAVRecipePrototype@@V?$allocator@"
            "PEAVRecipePrototype@@@std@@@std@@A");
+
+   classSlot(layout.providerBasePrototype, "PrototypeProvider", "getBasePrototype");
+   classSlot(layout.providerQualityPrototype, "PrototypeProvider", "getQualityPrototype");
+   classSlot(layout.buttonNumberCount, "ButtonNumber", "getCount");
+   offset(layout.progressBarValue, "agui::ProgressBar", "value");
+
+   offset(layout.entityMainWindow, "GameGuiWithControllerInventory", "mainWindow");
+   offset(layout.entityInventoryHolder, "GameGuiWithControllerInventory", "controllerInventory");
+   offset(layout.holderInventory, "GameControllerInventoryHolder", "inventoryGui");
+   offset(layout.holderTitle, "GameControllerInventoryHolder", "titleLabel");
+   offset(layout.frameHeader, "agui::Frame", "headerFlow");
+   offset(layout.assemblerBonusBar, "AssemblingMachineGui", "bonusProgressBar");
+   offset(layout.furnaceBonusBar, "FurnaceGui", "bonusProgressBar");
+   offset(layout.drillBonusBar, "MiningDrillGui", "bonusProgressBar");
 
    if (ok) {
       log::info("Layout: Gui baseWidget {:#x} focused {:#x} modals {:#x} (entry {} bytes); Widget parent {:#x} "

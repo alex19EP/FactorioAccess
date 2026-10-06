@@ -17,6 +17,7 @@ inline constexpr std::string_view kSwitch = "switch";
 inline constexpr std::string_view kEdit = "edit";
 inline constexpr std::string_view kTab = "tab";
 inline constexpr std::string_view kList = "list";
+inline constexpr std::string_view kProgressBar = "progress bar";
 
 inline constexpr std::string_view kChecked = "checked";
 inline constexpr std::string_view kUnchecked = "not checked";
@@ -37,6 +38,7 @@ inline constexpr std::string_view kClose = "close";
 inline constexpr std::string_view kAdjusting = "adjusting";
 
 inline constexpr std::string_view kEmpty = "empty";
+inline constexpr std::string_view kProductivity = "productivity";
 
 inline constexpr std::string_view kNoTooltip = "no tooltip";
 inline constexpr std::string_view kNoAction = "no action";

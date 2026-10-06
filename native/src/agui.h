@@ -76,6 +76,7 @@ enum class Kind {
    TextBox,
    Tab,
    ListBox,
+   ProgressBar,
 };
 
 Kind kind(const Widget* widget);
@@ -167,6 +168,39 @@ struct RecipeItem {
    uint32_t craftable = 0;
 };
 RecipeItem recipeItem(const Widget* craftingList, const Widget* slot);
+
+// Any slot button (SlotButtonBase): the item slots of inventories, a machine's fluid boxes, recipe
+// and filter choices.
+bool isSlotButton(const Widget* widget);
+
+// What a slot button depicts, as the game itself reads it for drawing: the prototype's translated
+// name (an empty slot's expected or filtered item, or nothing), its quality unless that is normal,
+// and the number drawn on it (a stack's count, a fluid's amount). Main thread only.
+struct SlotButton {
+   std::string_view name;
+   std::string_view quality;
+   double count = 0;
+};
+SlotButton slotButton(const Widget* slot);
+
+// How full an agui::ProgressBar is, 0 to 1.
+double progress(const Widget* bar);
+
+// The parts of an entity's window (GameGuiWithControllerInventory: a chest, a furnace, a drill, an
+// assembler, ...), or all null for any other window. `entity` is the window titled with the entity's
+// name; it holds the player's inventory beside the entity's own part. `inventory` is the player's
+// InventoryGui, `inventoryPanel` the panel holding it under `inventoryTitle` ("Character"), and
+// `header` the title bar's search and close buttons. `bonusBar` is the productivity bar of a
+// crafting machine or drill.
+struct EntityWindowParts {
+   const Widget* entity = nullptr;
+   const Widget* header = nullptr;
+   const Widget* inventoryPanel = nullptr;
+   const Widget* inventoryTitle = nullptr;
+   const Widget* inventory = nullptr;
+   const Widget* bonusBar = nullptr;
+};
+EntityWindowParts entityWindowParts(const Widget* window);
 
 // The selected row of an agui::TableWithSelection, the header row counting as 0.
 unsigned selectedRow(const Widget* table);
