@@ -9,7 +9,8 @@
 // Shift or Control counts because the game reads them from the keyboard. On a slot that picks up,
 // places, splits and transfers stacks; on a recipe it crafts one, five or all.
 //
-// Slots read live, so a click's result is spoken once the game has applied it.
+// Slots read live, so a click's result is spoken once the game has applied it. Space or F1 reads
+// the game's own tooltip, and \ is the middle button, which sets a slot's filter.
 
 #include "agui.h"
 #include "navigator/Screen.hpp"
