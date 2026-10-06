@@ -1,0 +1,181 @@
+#include "luabridge.h"
+
+#include "game.h"
+#include "log.h"
+#include "speech.h"
+#include "world.h"
+
+#include <algorithm>
+#include <cstddef>
+#include <iterator>
+#include <regex>
+#include <string>
+#include <string_view>
+
+namespace fa::luabridge {
+
+namespace {
+
+using game::layout;
+
+struct lua_State;
+// Factorio's Lua 5.2: lua_Integer is ptrdiff_t and lua_Number double.
+using lua_Integer = ptrdiff_t;
+using lua_Number = double;
+using lua_CFunction = int (*)(lua_State*);
+
+void createTable(lua_State* L, int arrays, int records) {
+   reinterpret_cast<void (*)(lua_State*, int, int)>(layout.luaCreateTable)(L, arrays, records);
+}
+void pushCClosure(lua_State* L, lua_CFunction function, int upvalues) {
+   reinterpret_cast<void (*)(lua_State*, lua_CFunction, int)>(layout.luaPushCClosure)(L, function, upvalues);
+}
+void setField(lua_State* L, int index, const char* name) {
+   reinterpret_cast<void (*)(lua_State*, int, const char*)>(layout.luaSetField)(L, index, name);
+}
+void setGlobal(lua_State* L, const char* name) {
+   reinterpret_cast<void (*)(lua_State*, const char*)>(layout.luaSetGlobal)(L, name);
+}
+// The check functions raise a Lua error on a bad argument, which leaves through our frame; the
+// functions below hold nothing that needs destroying.
+lua_Integer checkInteger(lua_State* L, int argument) {
+   return reinterpret_cast<lua_Integer (*)(lua_State*, int)>(layout.luaCheckInteger)(L, argument);
+}
+lua_Number checkNumber(lua_State* L, int argument) {
+   return reinterpret_cast<lua_Number (*)(lua_State*, int)>(layout.luaCheckNumber)(L, argument);
+}
+int getTop(lua_State* L) { return reinterpret_cast<int (*)(lua_State*)>(layout.luaGetTop)(L); }
+void setTop(lua_State* L, int index) { reinterpret_cast<void (*)(lua_State*, int)>(layout.luaSetTop)(L, index); }
+void pushString(lua_State* L, std::string_view text) {
+   reinterpret_cast<const char* (*)(lua_State*, const char*, size_t)>(layout.luaPushLString)(L, text.data(),
+                                                                                             text.size());
+}
+void rawSetI(lua_State* L, int index, int n) {
+   reinterpret_cast<void (*)(lua_State*, int, int)>(layout.luaRawSetI)(L, index, n);
+}
+
+struct MsvcString {
+   union {
+      char buffer[16];
+      const char* pointer;
+   };
+   size_t size;
+   size_t capacity;
+};
+
+// Translates the LocalisedString at `index` the way localised_print does, in the game's current
+// locale. A malformed string raises a Lua error before anything here needs destroying.
+std::string translate(lua_State* L, int index) {
+   alignas(8) std::byte localised[256];
+   if (layout.localisedStringSize > sizeof(localised)) {
+      log::error("LocalisedString is {} bytes, more than the {} we hold", layout.localisedStringSize,
+                 sizeof(localised));
+      return {};
+   }
+   reinterpret_cast<void* (*)(void*, lua_State*, int, bool)>(layout.parseLocalisedString)(localised, L, index,
+                                                                                          true);
+   struct Destroy {
+      void* object;
+      ~Destroy() { reinterpret_cast<void (*)(void*)>(layout.localisedStringDestroy)(object); }
+   } destroy{localised};
+   using Str = const MsvcString* (*)(const void* localisedString, const void* localeProvider);
+   const MsvcString* text = reinterpret_cast<Str>(layout.localisedStringStr)(localised, nullptr);
+   return {text->capacity >= sizeof(text->buffer) ? text->pointer : text->buffer, text->size};
+}
+
+// Rich text tags the screen reader would read out as markup.
+std::string stripRichText(const std::string& text) {
+   static const std::regex tag(R"(\[/?(font|color|img|item|entity|technology|recipe|item-group|fluid|tile|)"
+                               R"(virtual-signal|achievement|gps|special-item|armor|train|train-stop|tooltip)[^\]]*\])");
+   return std::regex_replace(text, tag, "");
+}
+
+bool isSeparator(char c) { return c == '"' || c == ' ' || (c >= '\t' && c <= '\r'); }
+
+// The name of a key the text mentions as a lone character, such as "[" in "press [": the mod's
+// control-keys locale names the ones a screen reader would skip or misread.
+std::string keyName(lua_State* L, std::string_view key) {
+   const int top = getTop(L);
+   createTable(L, 3, 0); // {"?", {"control-keys.<key>"}, "<key>"}
+   pushString(L, "?");
+   rawSetI(L, -2, 1);
+   createTable(L, 1, 0);
+   // A locale key cannot be "[", which opens a section.
+   pushString(L, "control-keys." + std::string(key == "[" ? "left-bracket" : key));
+   rawSetI(L, -2, 1);
+   rawSetI(L, -2, 2);
+   pushString(L, key);
+   rawSetI(L, -2, 3);
+   std::string name = translate(L, -1);
+   setTop(L, top);
+   return name;
+}
+
+std::string nameKeys(lua_State* L, const std::string& text) {
+   std::string out;
+   out.reserve(text.size());
+   size_t i = 0;
+   while (i < text.size()) {
+      // One UTF-8 character.
+      const auto lead = static_cast<unsigned char>(text[i]);
+      size_t length = lead < 0x80 ? 1 : lead >= 0xf0 ? 4 : lead >= 0xe0 ? 3 : lead >= 0xc0 ? 2 : 1;
+      length = std::min(length, text.size() - i);
+      const size_t next = i + length;
+      if (i > 0 && next < text.size() && isSeparator(text[i - 1]) && isSeparator(text[next]) &&
+          !isSeparator(text[i]))
+         out += keyName(L, std::string_view(text).substr(i, length));
+      else
+         out.append(text, i, length);
+      i = next;
+   }
+   return out;
+}
+
+int speak(lua_State* L) {
+   if (!world::mayBeLocalPlayer(static_cast<int>(checkInteger(L, 1)))) return 0;
+   speech::say(nameKeys(L, stripRichText(translate(L, 2))), true);
+   return 0;
+}
+
+int setCursor(lua_State* L) {
+   world::setCursor(static_cast<int>(checkInteger(L, 1)), checkNumber(L, 2), checkNumber(L, 3));
+   return 0;
+}
+
+int releaseCursor(lua_State* L) {
+   world::releaseCursor(static_cast<int>(checkInteger(L, 1)));
+   return 0;
+}
+
+struct Function {
+   const char* name;
+   lua_CFunction function;
+};
+
+constexpr Function kFunctions[] = {
+   {"set_cursor", &setCursor},
+   {"release_cursor", &releaseCursor},
+   {"speak", &speak},
+};
+
+using InitLuaState = void (*)(lua_State*);
+InitLuaState g_original = nullptr;
+
+void detour(lua_State* L) {
+   g_original(L);
+   createTable(L, 0, static_cast<int>(std::size(kFunctions)));
+   for (const Function& entry : kFunctions) {
+      pushCClosure(L, entry.function, 0);
+      setField(L, -2, entry.name);
+   }
+   setGlobal(L, "fa_native");
+   log::info("fa_native added to a Lua state");
+}
+
+} // namespace
+
+void* initLuaStateDetour() { return reinterpret_cast<void*>(&detour); }
+
+void** initLuaStateOriginal() { return reinterpret_cast<void**>(&g_original); }
+
+} // namespace fa::luabridge

@@ -27,6 +27,33 @@ struct Layout {
    // the scenario message dialog shown over the game.
    uintptr_t processNextDialog = 0;
 
+   // Where the game world's cursor is: hover selection, building and opening an entity read the
+   // first, the selection tools and the rest of PlayerInputSource the second. Both fall back to
+   // the mouse.
+   uintptr_t playerCursorPosition = 0; // Optional<MapPosition> Player::getCursorMapPosition() const
+   uintptr_t sourceCursorPosition = 0; // MapPosition PlayerInputSource::getCursorMapPosition() const
+   // void LuaHelper::initLuaState(lua_State*): sets up the globals of every Lua state the game
+   // creates (log, localised_print, ...).
+   uintptr_t initLuaState = 0;
+
+   // The Lua 5.2 C API, linked into the game.
+   uintptr_t luaCreateTable = 0;
+   uintptr_t luaPushCClosure = 0;
+   uintptr_t luaSetField = 0;
+   uintptr_t luaSetGlobal = 0;
+   uintptr_t luaCheckInteger = 0;
+   uintptr_t luaCheckNumber = 0;
+   uintptr_t luaGetTop = 0;
+   uintptr_t luaSetTop = 0;
+   uintptr_t luaPushLString = 0;
+   uintptr_t luaRawSetI = 0;
+   // LocalisedString LuaHelper::parseLocalisedString(lua_State*, int index, bool strict): what
+   // localised_print reads its argument with. It throws ScriptException, a Lua error to the caller,
+   // on a malformed string.
+   uintptr_t parseLocalisedString = 0;
+   uintptr_t localisedStringDestroy = 0; // LocalisedString::~LocalisedString()
+   uint32_t localisedStringSize = 0;     // sizeof(LocalisedString)
+
    // GlobalContext
    uint32_t globalGui = 0;  // agui::Gui* of the application, the one the menus live in
    uint32_t globalGame = 0; // Game*, null outside a game
@@ -41,6 +68,8 @@ struct Layout {
 
    // The loaded game's view and the scenario message dialog it shows.
    uint32_t gameView = 0;            // Game::gameView
+   uint32_t gameLocalPlayer = 0;     // Game::localPlayer, the Player* of this client
+   uint32_t playerIndex = 0;         // Player::index, LuaPlayer::index
    uint32_t gameViewMessage = 0;     // GameView::scenarioMessageDialog, std::unique_ptr<SpeechBubbleGui>
    uint32_t speechBubbleLabel = 0;   // SpeechBubbleGui::messageLabel, an embedded agui::Label
 
@@ -139,6 +168,10 @@ struct Layout {
    uint32_t settingsReset = 0;        // SettingsGui::resetButton
    uint32_t controlsScrollPane = 0;   // ControlSettingsGui::scrollPane
    uint32_t controlsSetting = 0;      // ControlSettingsGui::currentlySetting, the button waiting for a key
+
+   // std::string const& LocalisedString::str(LocaleProvider const*) const: translates through the
+   // game's own locale (null provider: the current one) and caches the result.
+   uintptr_t localisedStringStr = 0;
 };
 
 // Bits of agui::Widget::usageBitMask, read from Widget::setVisible and Widget::isEnabled in
@@ -150,6 +183,9 @@ inline constexpr uint32_t kUsageEnabled = 0x8;
 // Set on widgets that click as the button goes down; the Gui then sends no click on release.
 // Read from Widget::dispatchMouseDown and Gui::handleMouseUp in 2.1.20.
 inline constexpr uint32_t kUsageClickOnMouseDown = 0x800;
+
+// MapPosition coordinates are fixed point with 8 fractional bits.
+inline constexpr int32_t kMapPositionScale = 256;
 
 extern Layout layout;
 

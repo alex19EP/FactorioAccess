@@ -52,7 +52,6 @@ function mod.initialize(player)
    faplayer.last_indexed_ent = faplayer.last_indexed_ent or nil
    faplayer.last_move_tick = faplayer.last_move_tick or 0
    faplayer.last_build_tick = faplayer.last_build_tick or 0
-   faplayer.last_click_tick = faplayer.last_click_tick or 0
    faplayer.last_menu_search_tick = faplayer.last_menu_search_tick or 0
    faplayer.last_pickup_tick = faplayer.last_pickup_tick or 0
    faplayer.last_menu_toggle_tick = faplayer.last_menu_toggle_tick or 0

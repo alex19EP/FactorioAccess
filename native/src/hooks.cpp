@@ -3,7 +3,9 @@
 #include "game.h"
 #include "input.h"
 #include "log.h"
+#include "luabridge.h"
 #include "ui.h"
+#include "world.h"
 
 #include <MinHook.h>
 
@@ -27,16 +29,24 @@ bool check(MH_STATUS status, const char* what) {
    return false;
 }
 
+bool hook(uintptr_t target, void* detour, void** original, const char* what) {
+   return check(MH_CreateHook(reinterpret_cast<void*>(target), detour, original), what);
+}
+
 } // namespace
 
 bool install() {
+   using game::layout;
    if (!check(MH_Initialize(), "MH_Initialize")) return false;
-   bool ok = check(MH_CreateHook(reinterpret_cast<void*>(game::layout.guiLogic), reinterpret_cast<void*>(&detourGuiLogic),
-                                 reinterpret_cast<void**>(&g_originalGuiLogic)),
-                   "Hooking agui::Gui::logic") &&
-             check(MH_CreateHook(reinterpret_cast<void*>(game::layout.sdlPollEvent), input::pollEventDetour(),
-                                 input::pollEventOriginal()),
-                   "Hooking SDL_PollEvent") &&
+   bool ok = hook(layout.guiLogic, reinterpret_cast<void*>(&detourGuiLogic),
+                  reinterpret_cast<void**>(&g_originalGuiLogic), "Hooking agui::Gui::logic") &&
+             hook(layout.sdlPollEvent, input::pollEventDetour(), input::pollEventOriginal(), "Hooking SDL_PollEvent") &&
+             hook(layout.playerCursorPosition, world::playerCursorDetour(), world::playerCursorOriginal(),
+                  "Hooking Player::getCursorMapPosition") &&
+             hook(layout.sourceCursorPosition, world::sourceCursorDetour(), world::sourceCursorOriginal(),
+                  "Hooking PlayerInputSource::getCursorMapPosition") &&
+             hook(layout.initLuaState, luabridge::initLuaStateDetour(), luabridge::initLuaStateOriginal(),
+                  "Hooking LuaHelper::initLuaState") &&
              check(MH_EnableHook(MH_ALL_HOOKS), "Enabling hooks");
    if (!ok) {
       MH_Uninitialize();

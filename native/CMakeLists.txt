@@ -92,6 +92,8 @@ add_library(fa_native SHARED
   src/screens/DropDownScreen.cpp
   src/screens/ScenarioMessageScreen.cpp
   src/ui.cpp
+  src/world.cpp
+  src/luabridge.cpp
   src/hooks.cpp
   "${CMAKE_CURRENT_BINARY_DIR}/winmm_forwarders.cpp"
 )

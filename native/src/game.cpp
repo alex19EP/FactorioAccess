@@ -45,6 +45,23 @@ bool resolve(pdb::SymbolTable& symbols) {
    address(layout.dispatchMouseUp, "?dispatchMouseUp@Widget@agui@@QEAAXAEBVMouseEvent@2@@Z");
    address(layout.dispatchMouseLeave, "?dispatchMouseLeave@Widget@agui@@QEAAXAEBVMouseEvent@2@@Z");
    address(layout.processNextDialog, "?processNextDialog@PlayerInputSource@@QEAA_NXZ");
+   address(layout.playerCursorPosition,
+           "?getCursorMapPosition@Player@@QEBA?AV?$Optional@VMapPosition@@U?$OptionalEmptyValue@VMapPosition@@@@@@XZ");
+   address(layout.sourceCursorPosition, "?getCursorMapPosition@PlayerInputSource@@QEBA?AVMapPosition@@XZ");
+   address(layout.initLuaState, "?initLuaState@LuaHelper@@YAXPEAUlua_State@@@Z");
+   address(layout.luaCreateTable, "lua_createtable");
+   address(layout.luaPushCClosure, "lua_pushcclosure");
+   address(layout.luaSetField, "lua_setfield");
+   address(layout.luaSetGlobal, "lua_setglobal");
+   address(layout.luaCheckInteger, "luaL_checkinteger");
+   address(layout.luaCheckNumber, "luaL_checknumber");
+   address(layout.luaGetTop, "lua_gettop");
+   address(layout.luaSetTop, "lua_settop");
+   address(layout.luaPushLString, "lua_pushlstring");
+   address(layout.luaRawSetI, "lua_rawseti");
+   address(layout.parseLocalisedString, "?parseLocalisedString@LuaHelper@@YA?AVLocalisedString@@PEAUlua_State@@H_N@Z");
+   address(layout.localisedStringDestroy, "??1LocalisedString@@QEAA@XZ");
+   size(layout.localisedStringSize, "LocalisedString");
 
    offset(layout.globalGui, "GlobalContext", "gui");
    offset(layout.globalGame, "GlobalContext", "game");
@@ -53,6 +70,8 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.appManagerStates, "AppManager", "stateStack");
    offset(layout.appStateGui, "AppManagerStateWithGuiManualConstruction<GameMenuGui>", "gui");
    offset(layout.gameView, "Game", "gameView");
+   offset(layout.gameLocalPlayer, "Game", "localPlayer");
+   offset(layout.playerIndex, "Player", "index");
    offset(layout.gameViewMessage, "GameView", "scenarioMessageDialog");
    offset(layout.speechBubbleLabel, "SpeechBubbleGui", "messageLabel");
 
@@ -137,6 +156,8 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.settingsReset, "SettingsGui", "resetButton");
    offset(layout.controlsScrollPane, "ControlSettingsGui", "scrollPane");
    offset(layout.controlsSetting, "ControlSettingsGui", "currentlySetting");
+   address(layout.localisedStringStr,
+           "?str@LocalisedString@@QEBAAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@PEBVLocaleProvider@@@Z");
 
    if (ok) {
       log::info("Layout: Gui baseWidget {:#x} focused {:#x} modals {:#x} (entry {} bytes); Widget parent {:#x} "

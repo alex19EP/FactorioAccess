@@ -2,8 +2,8 @@
 Speech System - Intelligently build and speak messages.
 
 This module combines message building with speech output. Messages are built
-using a fluent API and then sent to an external launcher process for
-text-to-speech rendering.
+using a fluent API and then sent to the native DLL, or without it to an external
+launcher process, for text-to-speech rendering.
 
 We have a pattern in the mod especially around entity info, but also in lots of
 other places.  Build a message with a prefix and then a list.  Then, possibly
@@ -45,6 +45,11 @@ attempts to do so throw when the game saves.
 local FaUtils = require("scripts.fa-utils")
 local SpeechLogger = require("scripts.speech-logger")
 local VanillaMode = require("scripts.vanilla-mode")
+
+-- The FactorioAccess native DLL speaks through the screen reader itself; without it the launcher
+-- reads speech from stdout.
+---@type fa.Native?
+local native = rawget(_G, "fa_native")
 
 local mod = {}
 
@@ -198,7 +203,7 @@ end
 
 mod.process_rich_text = process_rich_text
 
----Send a localized string to the external launcher for text-to-speech rendering.
+---Send a localized string to the native DLL or the external launcher for text-to-speech rendering.
 ---This is the primary way the mod communicates with blind players.
 ---@param pindex number Player index
 ---@param str LocalisedString The message to speak
@@ -223,7 +228,11 @@ function mod.speak(pindex, str)
       return
    end
    if not VanillaMode.is_enabled(pindex) then
-      localised_print({ "", "out " .. pindex .. " ", processed })
+      if native then
+         native.speak(pindex, processed)
+      else
+         localised_print({ "", "out " .. pindex .. " ", processed })
+      end
       -- Also log to file for debugging
       SpeechLogger.log_speech(processed, pindex)
    end
