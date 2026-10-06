@@ -7,3 +7,4 @@ __pycache__
 claude-task.md
 claude-prompt.md
 factorio_crash_*
+/native/build*/

@@ -1,0 +1,9 @@
+[submodule "native/vendor/prism"]
+	path = native/vendor/prism
+	url = https://github.com/ethindp/prism.git
+[submodule "native/vendor/minhook"]
+	path = native/vendor/minhook
+	url = https://github.com/TsudaKageyu/minhook.git
+[submodule "native/vendor/raw_pdb"]
+	path = native/vendor/raw_pdb
+	url = https://github.com/MolecularMatters/raw_pdb.git
