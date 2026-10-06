@@ -651,8 +651,12 @@ local function fuel_info(message, item_proto)
 
    message:list_item({ "fa.item-info-fuel-value", FaUtils.format_power(fuel_value, "j") })
 
-   local fuel_category = item_proto.fuel_category
-   if fuel_category then message:list_item({ "fa.item-info-fuel-category", fuel_category }) end
+   local fuel_categories = item_proto.fuel_categories
+   if fuel_categories then
+      for _, fuel_category in ipairs(fuel_categories) do
+         message:list_item({ "fa.item-info-fuel-category", fuel_category })
+      end
+   end
 end
 
 ---@class fa.ItemInfo.GetItemStackInfoOptions

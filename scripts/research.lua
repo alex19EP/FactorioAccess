@@ -163,6 +163,8 @@ local function localise_trigger(tech, trig)
       table.insert(res, quality_name)
    elseif trig.type == "mine-entity" then
       local parts = {}
+      -- The 2.1 runtime docs still list a single `entity`, but the game provides `entities` like the prototype.
+      ---@diagnostic disable-next-line: undefined-field
       for _, e in pairs(trig.entities) do
          table.insert(parts, Localising.get_localised_name_with_fallback(prototypes.entity[e]))
       end

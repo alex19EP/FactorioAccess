@@ -1273,7 +1273,8 @@ local function cursor_skip_iteration(pindex, direction, iteration_limit)
       local connections = start.get_fluid_box_pipe_connections(1)
       for i, con in ipairs(connections) do
          if con.target ~= nil then
-            local dist = math.ceil(util.distance(start.position, con.target.get_fluid_box_pipe_connections(1)[1].position))
+            local dist =
+               math.ceil(util.distance(start.position, con.target.get_fluid_box_pipe_connections(1)[1].position))
             local dir_neighbor = FaUtils.get_direction_biased(con.target_position, start.position)
             if con.connection_type == "underground" and dir_neighbor == direction then
                vp:set_cursor_pos(con.target.get_fluid_box_pipe_connections(1)[1].position)
