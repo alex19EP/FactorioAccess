@@ -695,6 +695,20 @@ std::string SlotText(const Widget* slot)
     return std::format("{} {:.1f}", spoken, count);
 }
 
+void SpeakGameTooltip(const Widget* widget)
+{
+    bool created = false;
+    const Widget* tooltip = agui::showTooltip(widget, created);
+    std::string text;
+    if (tooltip)
+        for (const Widget* label : FindAll(tooltip, "agui::Label"))
+            if (std::string line = LabelText(label); !line.empty())
+                text += (text.empty() ? "" : "\n") + line;
+    if (created)
+        agui::removeTooltip(widget);
+    speech::say(text.empty() ? std::string(vocab::kNoTooltip) : text, true);
+}
+
 namespace
 {
 
@@ -721,6 +735,8 @@ graph::NodeVtable SlotNode(const Widget* slot, std::function<std::string()> name
     vtable.OnActivateShift = [slot]() { agui::press(slot, agui::MouseButton::Left, true, false); };
     vtable.OnActivateCtrl = [slot]() { agui::press(slot, agui::MouseButton::Left, false, true); };
     vtable.OnSecondary = [slot]() { agui::press(slot, agui::MouseButton::Right, false, false); };
+    vtable.OnTertiary = [slot]() { agui::press(slot, agui::MouseButton::Middle, false, false); };
+    vtable.OnTooltip = [slot]() { SpeakGameTooltip(slot); };
     // No StateText: a click reaches the game as an input action applied later, so the result is
     // spoken by the live watch once it shows.
     return vtable;
@@ -786,7 +802,9 @@ graph::NodeVtable ControlNode(const Widget* widget, std::function<std::string()>
 graph::NodeVtable ControlNode(const Widget* widget, const Widget* label)
 {
     graph::NodeVtable vtable = ControlNode(widget, [label]() { return Phrase(label); });
-    SetTooltip(vtable, {label, widget});
+    // A slot's own tooltip is the game's description of what it holds, kept over the label's.
+    if (!agui::isSlotButton(widget))
+        SetTooltip(vtable, {label, widget});
     return vtable;
 }
 

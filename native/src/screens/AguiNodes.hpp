@@ -64,6 +64,9 @@ void AddSubtree(graph::GraphBuilder& builder, const std::string& prefix, const a
 /// filter or expected ingredient as "iron plate, empty", or "empty".
 std::string SlotText(const agui::Widget* slot);
 
+/// Speaks the game's own tooltip for the widget, as hovering shows it: its texts a line each.
+void SpeakGameTooltip(const agui::Widget* widget);
+
 /// Declares a single control, if it is visible. Returns whether it did.
 bool AddControl(graph::GraphBuilder& builder, const std::string& key, const agui::Widget* widget,
     std::function<std::string()> name = {});
