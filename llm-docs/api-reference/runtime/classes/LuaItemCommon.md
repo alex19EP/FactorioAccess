@@ -525,7 +525,7 @@ Gets the tags for the given blueprint entity index in this blueprint item.
 
 **Returns:**
 
-- `Tags`
+- `Tags` *(optional)*
 
 ### set_blueprint_entity_tags
 

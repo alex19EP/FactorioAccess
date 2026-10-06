@@ -514,3 +514,26 @@ This property also influences the automatic [Furnace Recipe Selection](auxiliary
 
 **Optional:** Yes
 
+### raise_on_crafted
+
+If set to true, an event with identifier of [LuaRecipePrototype::on_crafted_event](runtime:LuaRecipePrototype::on_crafted_event) will be raised when this recipe is crafted. Currently this is only raised when recipe is crafted by a crafting machine.
+
+Event raised will be given data as described by [RecipeCraftedEvent](runtime:RecipeCraftedEvent).
+
+**Type:** `boolean`
+
+**Optional:** Yes
+
+**Default:** False
+
+**Examples:**
+
+```
+-- in data stage:
+data.raw.recipe["iron-plate"].raise_on_crafted = true
+-- in control stage:
+script.on_event(prototypes.recipe["iron-plate"].on_crafted_event, function(event)
+  game.print("Iron plate was crafted by ".. event.entity.name .. " at " .. event.entity.gps_tag)
+end)
+```
+

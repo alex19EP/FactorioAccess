@@ -1158,7 +1158,15 @@ The description on this combinator.
 
 The effects being applied to this entity, if any. For beacons, this is the effect the beacon is broadcasting.
 
-**Read type:** `ModuleEffects`
+**Read type:** `Effect`
+
+**Optional:** Yes
+
+### potential_effects
+
+The effects that will be applied to this entity once all upgrades are resolved. Can only be used when the entity has an effect receiver (AssemblingMachine, Furnace, Lab, MiningDrill, AgriculturalTower).
+
+**Read type:** `Effect`
 
 **Optional:** Yes
 
@@ -2276,6 +2284,36 @@ The priority targets for this turret (if any).
 
 **Subclasses:** Turret
 
+### request_missing_construction_materials
+
+If this space platform hub will automatically make logistic requests for any missing construction materials.
+
+**Read type:** `boolean`
+
+**Write type:** `boolean`
+
+**Subclasses:** SpacePlatformHub
+
+### providing_to_other_platforms
+
+If this space platform hub will provide its contents to other requesting platforms.
+
+**Read type:** `boolean`
+
+**Write type:** `boolean`
+
+**Subclasses:** SpacePlatformHub
+
+### local_effect
+
+Additional effect applied to this entity with effect receiver. `nil` if this entity has no effect receiver.
+
+**Read type:** `Effect`
+
+**Write type:** `Effect`
+
+**Optional:** Yes
+
 ### proxy_target_entity
 
 Entity of which inventory is exposed by this ProxyContainer
@@ -2637,6 +2675,11 @@ Is this entity marked for upgrade?
 ### apply_upgrade
 
 Upgrades this entity in place if it's marked to be upgraded.
+
+**Parameters:**
+
+- `override_target` `EntityWithQualityID` *(optional)* - The override upgrade target - used instead of the entities current upgrade target if given. Note, the entity must be fast-replaceable with the override target, or it won't be upgraded.
+- `buffer` `LuaInventory` *(optional)* - If provided - any items left over from the upgrade are put into this inventory.
 
 **Returns:**
 

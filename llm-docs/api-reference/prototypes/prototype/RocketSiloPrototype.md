@@ -327,7 +327,7 @@ Whether the "no network" icon should be rendered on this entity if the entity is
 
 ### rocket_parts_storage_cap
 
-Must be at least `rocket_parts_required`.
+All values down to 0 are allowed, however it is suggested to avoid values from 1 up to `rocket_parts_required - 1` to avoid second progress bar stopping before reaching 100%. When set to 0, second progress bar is hidden.
 
 **Type:** `uint32`
 

@@ -27,7 +27,7 @@ Only loaded if `fixed_recipe` is defined.
 
 ### gui_title_key
 
-The locale key of the title of the GUI that is shown when the player opens the assembling machine. May not be longer than 200 characters.
+The locale key of the title of the recipe selection GUI that is shown when the player opens the assembling machine. May not be longer than 200 characters.
 
 **Type:** `string`
 

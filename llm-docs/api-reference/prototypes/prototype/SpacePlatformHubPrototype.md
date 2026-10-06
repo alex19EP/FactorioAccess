@@ -80,7 +80,7 @@ Repair speed of entities is multiplied by this value when they are on a space pl
 
 ### weight
 
-Weight which this entity adds to total space platform weight when placed.
+Mass which this entity adds to total space platform mass when placed.
 
 **Type:** `Weight`
 

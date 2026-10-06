@@ -17,6 +17,14 @@ A value which modifies platform speed; is subtracted when traveling from this lo
 
 **Default:** 0
 
+### origin
+
+**Type:** `MapPosition`
+
+**Optional:** Yes
+
+**Default:** "`{0, 0}`"
+
 ### distance
 
 Distance from the sun in map coordinates.
