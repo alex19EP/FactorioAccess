@@ -1,8 +1,9 @@
 #include "hooks.h"
 
 #include "game.h"
-#include "gui_reader.h"
+#include "input.h"
 #include "log.h"
+#include "ui.h"
 
 #include <MinHook.h>
 
@@ -17,7 +18,7 @@ GuiLogic g_originalGuiLogic = nullptr;
 
 void detourGuiLogic(agui::Gui* gui, bool argument) {
    g_originalGuiLogic(gui, argument);
-   gui_reader::afterGuiLogic(gui);
+   ui::afterGuiLogic(gui);
 }
 
 bool check(MH_STATUS status, const char* what) {
@@ -33,6 +34,9 @@ bool install() {
    bool ok = check(MH_CreateHook(reinterpret_cast<void*>(game::layout.guiLogic), reinterpret_cast<void*>(&detourGuiLogic),
                                  reinterpret_cast<void**>(&g_originalGuiLogic)),
                    "Hooking agui::Gui::logic") &&
+             check(MH_CreateHook(reinterpret_cast<void*>(game::layout.sdlPollEvent), input::pollEventDetour(),
+                                 input::pollEventOriginal()),
+                   "Hooking SDL_PollEvent") &&
              check(MH_EnableHook(MH_ALL_HOOKS), "Enabling hooks");
    if (!ok) {
       MH_Uninitialize();

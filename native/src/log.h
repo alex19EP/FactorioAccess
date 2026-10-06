@@ -7,6 +7,9 @@
 namespace fa::log {
 
 void open(const std::filesystem::path& file);
+
+// The directory of the opened log file, where other diagnostics go too; empty before open().
+const std::filesystem::path& directory();
 void write(std::string_view level, std::string_view message);
 
 template <class... Args>

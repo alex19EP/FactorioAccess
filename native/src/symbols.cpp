@@ -112,8 +112,14 @@ constexpr uint32_t kForwardRef = 1u << 7;
 struct ClassInfo {
    std::string_view name;
    uint32_t fieldList;
+   uint64_t size;
    bool forwardRef;
 };
+
+bool introducesVirtual(TPI::MemberAttributes attributes) {
+   auto property = static_cast<TPI::MethodProperty>(attributes.mprop);
+   return property == TPI::MethodProperty::Intro || property == TPI::MethodProperty::PureIntro;
+}
 
 std::optional<ClassInfo> classInfo(const TPI::Record* record) {
    if (!record || !isClassKind(record->header.kind)) return std::nullopt;
@@ -132,7 +138,7 @@ std::optional<ClassInfo> classInfo(const TPI::Record* record) {
    uint64_t size = 0;
    size_t sizeBytes = readNumeric(data, size);
    if (sizeBytes == 0) return std::nullopt;
-   return ClassInfo{data + sizeBytes, fieldList, (property & kForwardRef) != 0};
+   return ClassInfo{data + sizeBytes, fieldList, size, (property & kForwardRef) != 0};
 }
 
 } // namespace
@@ -206,6 +212,49 @@ public:
          }
       }
       return total;
+   }
+
+   std::optional<uint32_t> classSize(std::string_view type) {
+      if (classes_.empty()) indexTypes();
+      auto index = definitionOf(type);
+      if (!index) {
+         log::error("Type not found: {}", type);
+         return std::nullopt;
+      }
+      return static_cast<uint32_t>(classInfo(this->type(*index))->size);
+   }
+
+   // Slot of a virtual method in the class's primary vtable, found where the method is introduced:
+   // in the class itself or along its chain of primary (offset 0) bases.
+   std::optional<uint32_t> virtualSlot(std::string_view type, std::string_view method) {
+      if (classes_.empty()) indexTypes();
+      auto index = definitionOf(type);
+      if (!index) {
+         log::error("Type not found: {}", type);
+         return std::nullopt;
+      }
+      for (int depth = 0; index && depth < 32; ++depth) {
+         std::vector<uint32_t> slots;
+         std::optional<uint32_t> primaryBase;
+         forEachField(classInfo(this->type(*index))->fieldList,
+                      [&](const TPI::FieldList& field, const char* name, uint64_t value) {
+                         if (field.kind == TypeRecordKind::LF_BCLASS && value == 0 && !primaryBase)
+                            primaryBase = classOf(field.data.LF_BCLASS.index);
+                         if (!name || name != method) return true;
+                         if (field.kind == TypeRecordKind::LF_ONEMETHOD && introducesVirtual(field.data.LF_ONEMETHOD.attributes))
+                            slots.push_back(static_cast<uint32_t>(value));
+                         if (field.kind == TypeRecordKind::LF_METHOD) collectIntroSlots(field.data.LF_METHOD.mList, slots);
+                         return true;
+                      });
+         if (slots.size() == 1) return slots[0] / static_cast<uint32_t>(sizeof(void*));
+         if (slots.size() > 1) {
+            log::error("Virtual method {}::{} is overloaded; cannot pick a slot", type, method);
+            return std::nullopt;
+         }
+         index = primaryBase;
+      }
+      log::error("Virtual method not found: {}::{}", type, method);
+      return std::nullopt;
    }
 
 private:
@@ -282,6 +331,22 @@ private:
          return definitionOf(info->name);
       }
       return std::nullopt;
+   }
+
+   // Adds the vtable offsets of the virtuals an LF_METHODLIST (one overload set) introduces.
+   void collectIntroSlots(uint32_t methodListIndex, std::vector<uint32_t>& slots) const {
+      const auto* record = type(methodListIndex);
+      if (!record || record->header.kind != TypeRecordKind::LF_METHODLIST) return;
+      const char* begin = record->data.LF_METHODLIST.mList;
+      const size_t size = record->header.size - sizeof(uint16_t);
+      for (size_t i = 0; i + sizeof(TPI::MethodListEntry) <= size;) {
+         const auto* entry = reinterpret_cast<const TPI::MethodListEntry*>(begin + i);
+         i += sizeof(TPI::MethodListEntry);
+         if (introducesVirtual(entry->attributes)) {
+            slots.push_back(*reinterpret_cast<const uint32_t*>(begin + i));
+            i += sizeof(uint32_t);
+         }
+      }
    }
 
    std::string_view className(uint32_t index) const {
@@ -375,14 +440,16 @@ private:
             next = field->data.LF_STMEMBER.name + std::strlen(field->data.LF_STMEMBER.name) + 1;
             break;
          case TypeRecordKind::LF_METHOD:
+            if (!visit(*field, field->data.LF_METHOD.name, 0)) return false;
             next = field->data.LF_METHOD.name + std::strlen(field->data.LF_METHOD.name) + 1;
             break;
          case TypeRecordKind::LF_ONEMETHOD: {
-            // Introducing virtual methods carry their vtable offset before the name.
-            auto property = static_cast<TPI::MethodProperty>(field->data.LF_ONEMETHOD.attributes.mprop);
-            bool intro = property == TPI::MethodProperty::Intro || property == TPI::MethodProperty::PureIntro;
+            // Introducing virtual methods carry their vtable offset before the name; it is passed
+            // to visit as the offset.
+            bool intro = introducesVirtual(field->data.LF_ONEMETHOD.attributes);
             const char* name = reinterpret_cast<const char*>(field->data.LF_ONEMETHOD.vbaseoff) +
                                (intro ? sizeof(uint32_t) : 0);
+            if (!visit(*field, name, intro ? field->data.LF_ONEMETHOD.vbaseoff[0] : 0)) return false;
             next = name + std::strlen(name) + 1;
             break;
          }
@@ -504,6 +571,30 @@ std::optional<uint32_t> SymbolTable::offset(std::string_view type, std::string_v
    cache_[key] = *offset;
    cacheDirty_ = true;
    return offset;
+}
+
+std::optional<uint32_t> SymbolTable::size(std::string_view type) {
+   auto key = std::format("size {}", type);
+   if (auto it = cache_.find(key); it != cache_.end()) return static_cast<uint32_t>(it->second);
+   auto* file = pdb();
+   if (!file) return std::nullopt;
+   auto size = file->classSize(type);
+   if (!size) return std::nullopt;
+   cache_[key] = *size;
+   cacheDirty_ = true;
+   return size;
+}
+
+std::optional<uint32_t> SymbolTable::virtualSlot(std::string_view type, std::string_view method) {
+   auto key = std::format("vslot {} {}", type, method);
+   if (auto it = cache_.find(key); it != cache_.end()) return static_cast<uint32_t>(it->second);
+   auto* file = pdb();
+   if (!file) return std::nullopt;
+   auto slot = file->virtualSlot(type, method);
+   if (!slot) return std::nullopt;
+   cache_[key] = *slot;
+   cacheDirty_ = true;
+   return slot;
 }
 
 void SymbolTable::finish() {

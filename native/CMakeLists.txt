@@ -77,7 +77,21 @@ add_library(fa_native SHARED
   src/agui.cpp
   src/text.cpp
   src/speech.cpp
-  src/gui_reader.cpp
+  src/input.cpp
+  src/vocab.cpp
+  src/navigator/Navigator.cpp
+  src/navigator/ScreenManager.cpp
+  src/screens/AguiNodes.cpp
+  src/screens/GuiDump.cpp
+  src/screens/WindowScreen.cpp
+  src/screens/GenericWindowScreen.cpp
+  src/screens/LoadGameScreen.cpp
+  src/screens/ModsScreen.cpp
+  src/screens/SettingsScreen.cpp
+  src/screens/ControlSettingsScreen.cpp
+  src/screens/DropDownScreen.cpp
+  src/screens/ScenarioMessageScreen.cpp
+  src/ui.cpp
   src/hooks.cpp
   "${CMAKE_CURRENT_BINARY_DIR}/winmm_forwarders.cpp"
 )
@@ -87,6 +101,31 @@ target_link_libraries(fa_native PRIVATE fa_core minhook prism dbghelp)
 
 add_executable(fa_symbols_check tools/check_symbols.cpp)
 target_link_libraries(fa_symbols_check PRIVATE fa_core)
+
+# The Graph A11y Kernel (spec: WH40KRTAccess/docs/graph-a11y-spec.md), STL only. The conformance
+# suite compiles it with no other include path, which is what keeps game code out of it.
+set(FA_GRAPH_SOURCES
+  src/graph/GraphBuilder.cpp
+  src/graph/KeyGraph.cpp
+  src/graph/GraphAnnouncer.cpp
+)
+add_library(fa_graph STATIC ${FA_GRAPH_SOURCES})
+target_include_directories(fa_graph PUBLIC src)
+target_compile_options(fa_graph PRIVATE /W4 /permissive- /utf-8 /EHsc)
+target_link_libraries(fa_native PRIVATE fa_graph)
+
+enable_testing()
+add_executable(fa_graph_tests
+  tests/graph/TestMain.cpp
+  tests/graph/GraphBuilderTests.cpp
+  tests/graph/KeyGraphTests.cpp
+  tests/graph/GraphAnnouncerTests.cpp
+  tests/graph/FlyoutTests.cpp
+  ${FA_GRAPH_SOURCES}
+)
+target_include_directories(fa_graph_tests PRIVATE src tests/graph)
+target_compile_options(fa_graph_tests PRIVATE /W4 /permissive- /utf-8 /EHsc)
+add_test(NAME graph COMMAND fa_graph_tests)
 
 if(FA_FACTORIO_BIN)
   add_custom_command(TARGET fa_native POST_BUILD

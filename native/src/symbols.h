@@ -46,6 +46,13 @@ public:
    // A component may name a base class instead of a member, e.g. "agui::GenericTargetable".
    std::optional<uint32_t> offset(std::string_view type, std::string_view path);
 
+   // sizeof a class.
+   std::optional<uint32_t> size(std::string_view type);
+
+   // Index of a virtual method in the class's primary vtable, by its undecorated name, e.g.
+   // ("agui::Widget", "keyDown"). Fails when the name is overloaded among the introduced virtuals.
+   std::optional<uint32_t> virtualSlot(std::string_view type, std::string_view method);
+
    // Saves new answers to the cache and unmaps the PDB.
    void finish();
 

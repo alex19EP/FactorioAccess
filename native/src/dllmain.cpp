@@ -5,6 +5,7 @@
 #include "log.h"
 #include "speech.h"
 #include "symbols.h"
+#include "ui.h"
 
 #include <windows.h>
 
@@ -50,6 +51,7 @@ DWORD WINAPI initialize(void*) {
       speech::say("FactorioAccess native does not support this Factorio version", false);
       return 0;
    }
+   ui::start();
    if (!hooks::install()) {
       speech::say("FactorioAccess native could not hook the game", false);
       return 0;

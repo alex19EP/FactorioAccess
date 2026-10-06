@@ -10,12 +10,16 @@ namespace fa::log {
 namespace {
 std::mutex g_mutex;
 std::ofstream g_file;
+std::filesystem::path g_directory;
 } // namespace
 
 void open(const std::filesystem::path& file) {
    std::scoped_lock lock(g_mutex);
    g_file.open(file, std::ios::out | std::ios::trunc | std::ios::binary);
+   g_directory = file.parent_path();
 }
+
+const std::filesystem::path& directory() { return g_directory; }
 
 void write(std::string_view level, std::string_view message) {
    std::scoped_lock lock(g_mutex);

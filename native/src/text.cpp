@@ -27,7 +27,9 @@ size_t appendTag(std::string_view text, std::string& out) {
 
    bool formatting = false;
    for (auto tag : kFormattingTags) formatting |= name == tag;
-   if (!closing && !formatting && eq != std::string_view::npos) {
+   // The info icon only marks a text with a tooltip, which the tooltip key reads.
+   bool infoIcon = name == "img" && body.substr(eq + 1) == "info";
+   if (!closing && !formatting && !infoIcon && eq != std::string_view::npos) {
       // Icon tags name a prototype; "iron-plate" reads better as "iron plate".
       out.push_back(' ');
       for (char c : body.substr(eq + 1)) out.push_back(c == '-' || c == '_' ? ' ' : c);
