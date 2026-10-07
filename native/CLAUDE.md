@@ -39,8 +39,11 @@ A plain cmake build does NOT deploy unless `FA_FACTORIO_BIN` was set at configur
   - virtual slots: `virtualSlot`, asked on the class that introduces the method. Identical-code
     folding makes vtable scans unsafe.
 
-  If any name is missing, the DLL stands down. All MinHook detours are installed in one place,
-  `hooks::install`. Run `fa_symbols_check` after a Factorio update.
+  If any name is missing, the DLL stands down. Run `fa_symbols_check` after a Factorio update.
+- Every hook is one entry in `src/hook-list.h`; `hooks::install` installs them all from it.
+  `fa_symbols_check` fails when the compiler inlined a hooked function anywhere, because those calls
+  never reach the hook. Hook the function holding the copy too, or read the copy in Ghidra and add
+  it to `kReviewedCopies` in `tools/check_symbols.cpp` with the reason it needs no hook.
 - Do RE in Ghidra through the `mcp__ghidra__*` tools, project `factorio-full`: the DRM-free
   2.1.21 build with full PDB types. Function addresses differ between the DRM-free and Steam builds;
   class layouts match. `xrefs` lists caller addresses only. `get_code` on an address inside a
