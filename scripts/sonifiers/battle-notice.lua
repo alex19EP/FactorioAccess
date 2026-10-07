@@ -1,12 +1,8 @@
 --[[
-Battle Notice Sonifier - Audio alert when structures are damaged or destroyed.
+Battle Notice Sonifier - Audio alert while a force is under attack.
 
-Per-force sonifier that plays an alert sound when entities belonging to that force are damaged or destroyed. Checks
-periodically and plays a single alert if any battle activity occurred since the last check.
-
-Battle activity is detected via:
-- Direct notify() calls from on_entity_damaged/on_entity_died events
-- Polling for combat-related alerts (entity_under_attack, entity_destroyed, turret_fire)
+Per-force sonifier that checks periodically and plays a single alert while any player of the force has a combat alert
+(entity_under_attack, entity_destroyed, turret_fire): the same alerts the game shows sighted players.
 
 Uses Factorio's native player.play_sound() API, skipping vanilla mode players.
 ]]
@@ -25,20 +21,6 @@ local COMBAT_ALERT_TYPES = {
    defines.alert_type.turret_fire,
 }
 
--- Storage for per-force state
--- Keyed by force index, stores { notified = boolean }
-local force_state = {}
-
----Get or create state for a force
----@param force_index uint32
----@return { notified: boolean }
-local function get_force_state(force_index)
-   if not force_state[force_index] then force_state[force_index] = {
-      notified = false,
-   } end
-   return force_state[force_index]
-end
-
 ---Check if a player has any combat-related alerts
 ---@param player LuaPlayer
 ---@return boolean
@@ -53,46 +35,27 @@ local function has_combat_alerts(player)
    return false
 end
 
----Notify that a force's entity was damaged or destroyed
----@param force LuaForce
-function mod.notify(force)
-   local state = get_force_state(force.index)
-   state.notified = true
-end
-
 ---On tick handler - checks periodically for battle notifications
 function mod.on_tick()
    local tick = game.tick
    if tick % CHECK_INTERVAL ~= 0 then return end
 
    for _, force in pairs(game.forces) do
-      -- Skip forces with no players
-      if #force.players == 0 then goto continue end
+      local under_attack = false
+      for _, player in ipairs(force.players) do
+         if player.connected and has_combat_alerts(player) then
+            under_attack = true
+            break
+         end
+      end
 
-      local state = get_force_state(force.index)
-
-      -- Check for combat alerts if not already notified
-      if not state.notified then
-         -- Check any connected player from this force for combat alerts
+      if under_attack then
          for _, player in ipairs(force.players) do
-            if player.connected and has_combat_alerts(player) then
-               state.notified = true
-               break
+            if player.connected and not VanillaMode.is_enabled(player.index) then
+               player.play_sound({ path = "fa-battle-notice" })
             end
          end
       end
-
-      if not state.notified then goto continue end
-
-      -- Clear the notification flag and play sound for non-vanilla players
-      state.notified = false
-      for _, player in ipairs(force.players) do
-         if player.connected and not VanillaMode.is_enabled(player.index) then
-            player.play_sound({ path = "fa-battle-notice" })
-         end
-      end
-
-      ::continue::
    end
 end
 

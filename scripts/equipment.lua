@@ -175,9 +175,8 @@ function mod.remove_weapons_and_ammo(pindex, source_entity, target_entity, targe
    --Remove all ammo
    for i = 1, ammos_count, 1 do
       if main_inv.can_insert(ammo_inv[i]) then
-         local inserted = main_inv.insert(ammo_inv[i])
+         main_inv.insert(ammo_inv[i])
          local removed = ammo_inv.remove(ammo_inv[i])
-         if inserted ~= removed then p.print("ammo removal count error", { volume_modifier = 0 }) end
          resulted_remove_count = resulted_remove_count + math.ceil(removed / 1000) --counts how many stacks are removed
       end
    end
@@ -185,9 +184,8 @@ function mod.remove_weapons_and_ammo(pindex, source_entity, target_entity, targe
    --Remove all guns
    for i = 1, guns_count, 1 do
       if main_inv.can_insert(guns_inv[i]) then
-         local inserted = main_inv.insert(guns_inv[i])
+         main_inv.insert(guns_inv[i])
          local removed = guns_inv.remove(guns_inv[i])
-         if inserted ~= removed then p.print("gun removal count error", { volume_modifier = 0 }) end
          resulted_remove_count = resulted_remove_count + math.ceil(removed / 1000) --counts how many stacks are removed
       end
    end

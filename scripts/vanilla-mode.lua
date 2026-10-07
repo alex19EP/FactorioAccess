@@ -29,16 +29,13 @@ end
 
 ---@param pindex integer
 function mod.toggle(pindex)
-   local p = game.get_player(pindex)
    local vp = Viewpoint.get_viewpoint(pindex)
    local state = vanilla_state[pindex]
 
    if not state.enabled then
-      p.print("Vanilla mode : ON")
       vp:set_cursor_hidden(true)
       state.enabled = true
    else
-      p.print("Vanilla mode : OFF")
       vp:set_cursor_hidden(false)
       state.enabled = false
    end

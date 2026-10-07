@@ -36,7 +36,7 @@ local Electrical = require("scripts.electrical")
 local EntitySelection = require("scripts.entity-selection")
 local Equipment = require("scripts.equipment")
 local EventManager = require("scripts.event-manager")
-local FaCommands = require("scripts.fa-commands")
+require("scripts.fa-commands") -- registers FA's console commands
 local FaInfo = require("scripts.fa-info")
 local FaUtils = require("scripts.fa-utils")
 local F = require("scripts.field-ref")
@@ -796,97 +796,6 @@ function set_inserter_filter_by_hand(pindex, ent)
    end
 end
 
---Notifies battle sonifier when structures are damaged
---Character/vehicle damage sounds are handled by the tick-based health-bar sonifier
-EventManager.on_event(
-   defines.events.on_entity_damaged,
-   ---@param event EventData.on_entity_damaged
-   function(event)
-      local ent = event.entity
-      local tick = event.tick
-      if ent == nil or not ent.valid then
-         return
-      elseif ent.name == "character" then
-         -- Character damage is handled by tick-based health-bar sonifier
-         return
-      elseif Consts.VEHICLE_TYPES[ent.type] then
-         -- Vehicle damage is handled by tick-based health-bar sonifier
-         return
-      elseif ent.get_health_ratio() == 1.0 then
-         --Ignore alerts if an entity has full health despite being damaged
-         return
-      elseif tick < 3600 and tick > 600 then
-         --No alerts for the first 10th to 60th seconds (because of the alert spam from spaceship fire damage)
-         return
-      end
-
-      BattleNotice.notify(ent.force)
-   end
-)
-
---Notifies battle sonifier when structures are destroyed
-EventManager.on_event(
-   defines.events.on_entity_died,
-   ---@param event EventData.on_entity_died
-   function(event)
-      local ent = event.entity
-      if ent == nil or ent.name == "character" then return end
-      BattleNotice.notify(ent.force)
-   end
-)
-
---Notify all players when a player character dies
-EventManager.on_event(
-   defines.events.on_player_died,
-   ---@param event EventData.on_player_died
-   ---@param pindex integer
-   function(event, pindex)
-      local p = game.get_player(pindex)
-      local causer = event.cause
-      local bodies = p.surface.find_entities_filtered({ name = "character-corpse" })
-      local latest_body = nil
-      local latest_death_tick = 0
-      local name = p.name
-      if name == nil then name = " " end
-      --Find the most recent character corpse
-      for i, body in ipairs(bodies) do
-         if
-            body.character_corpse_player_index == pindex and body.character_corpse_tick_of_death > latest_death_tick
-         then
-            latest_body = body
-            latest_death_tick = latest_body.character_corpse_tick_of_death
-         end
-      end
-      --Verify the latest death
-      if event.tick - latest_death_tick > 120 then latest_body = nil end
-      --Generate death message
-      local result = "Player " .. name
-      if causer == nil or not causer.valid then
-         result = result .. " died "
-      elseif causer.name == "character" and causer.player ~= nil and causer.player.valid then
-         local other_name = causer.player.name
-         if other_name == nil then other_name = "" end
-         result = result .. " was killed by player " .. other_name
-      else
-         result = result .. " was killed by " .. causer.name
-      end
-      if latest_body ~= nil and latest_body.valid then
-         result = result
-            .. " at "
-            .. math.floor(0.5 + latest_body.position.x)
-            .. ", "
-            .. math.floor(0.5 + latest_body.position.y)
-            .. "."
-      end
-      --Notify all players
-      for pindex, player in pairs(players) do
-         storage.players[pindex].last_damage_alert_tick = event.tick
-         Speech.speak(pindex, result)
-         game.get_player(pindex).print(result) --**laterdo unique sound, for now use console sound
-      end
-   end
-)
-
 EventManager.on_event(
    defines.events.on_player_display_resolution_changed,
    ---@param event EventData.on_player_display_resolution_changed
@@ -894,9 +803,6 @@ EventManager.on_event(
    function(event, pindex)
       local new_res = game.get_player(pindex).display_resolution
       if players and storage.players[pindex] then storage.players[pindex].display_resolution = new_res end
-      game
-         .get_player(pindex)
-         .print("Display resolution changed: " .. new_res.width .. " x " .. new_res.height, { volume_modifier = 0 })
    end
 )
 
@@ -907,7 +813,6 @@ EventManager.on_event(
    function(event, pindex)
       local new_sc = game.get_player(pindex).display_scale
       if players and storage.players[pindex] then storage.players[pindex].display_resolution = new_sc end
-      game.get_player(pindex).print("Display scale changed: " .. new_sc, { volume_modifier = 0 })
    end
 )
 
@@ -949,21 +854,6 @@ function all_ents_are_walkable(pos)
    end
    return true
 end
-
-EventManager.on_event(
-   defines.events.on_console_command,
-   ---@param event EventData.on_console_command
-   function(event)
-      -- For our own commands, we handle the speaking and must not read here.
-      if FaCommands.COMMANDS[event.command] then return end
-
-      local speaker = game.get_player(event.player_index).name
-      if speaker == nil or speaker == "" then speaker = "Player" end
-      for pindex, player in pairs(players) do
-         Speech.speak(pindex, { "fa.command-message", speaker, event.command, event.parameters })
-      end
-   end
-)
 
 function general_mod_menu_up(pindex, menu, lower_limit_in) --todo*** use
    local lower_limit = lower_limit_in or 0
@@ -1030,7 +920,6 @@ if script.feature_flags.space_travel then
    )
 end
 
-EventManager.on_event(defines.events.on_research_finished, Research.on_research_finished)
 EventManager.on_event(defines.events.on_achievement_gained, GameNotices.on_achievement_gained)
 EventManager.on_event(defines.events.on_chart_tag_added, GameNotices.on_chart_tag_added)
 EventManager.on_event(defines.events.on_space_platform_changed_state, GameNotices.on_space_platform_changed_state)
@@ -1770,7 +1659,7 @@ local function read_coords(pindex, start_phrase)
 
       Speech.speak(pindex, message:build())
    else
-      --Simply give coords (floored for the readout, extra precision for the console)
+      --Simply give coords
       local location = FaUtils.get_entity_part_at_cursor(pindex)
       local message = MessageBuilder.new()
 
@@ -1793,20 +1682,6 @@ local function read_coords(pindex, start_phrase)
          })
       end
 
-      -- Also print to console with extra precision
-      game.get_player(pindex).print(
-         (start_phrase or "")
-            .. " at "
-            .. math.floor(marked_pos.x)
-            .. ", "
-            .. math.floor(marked_pos.y)
-            .. "\n ("
-            .. math.floor(marked_pos.x * 10) / 10
-            .. ", "
-            .. math.floor(marked_pos.y * 10) / 10
-            .. ")",
-         { volume_modifier = 0 }
-      )
       --Draw the point
       rendering.draw_circle({
          color = { 1.0, 0.2, 0.0 },
@@ -1865,7 +1740,7 @@ local function kb_read_cursor_distance_and_direction(event)
    table.insert(result, cursor_production) --no production
    table.insert(result, cursor_description_of) --listpos
    table.insert(result, dir_dist)
-   Speech.speak(pindex, result)
+   -- Spoken by the native console reader
    p.print(result, { volume_modifier = 0 })
    --Draw the point
    rendering.draw_circle({
@@ -1914,7 +1789,7 @@ local function kb_read_cursor_distance_vector(event)
       .. math.abs(diff_y)
       .. " "
       .. FaUtils.direction_lookup(dir_y)
-   Speech.speak(pindex, result)
+   -- Spoken by the native console reader
    p.print(result, { volume_modifier = 0 })
    --Show cursor position
    rendering.draw_circle({
@@ -1941,8 +1816,7 @@ local function kb_read_character_coords(event)
    local pindex = event.player_index
    local pos = game.get_player(pindex).position
    local result = "Character at " .. math.floor(pos.x) .. ", " .. math.floor(pos.y)
-   --Report co-ordinates (floored for the readout, extra precision for the console)
-   Speech.speak(pindex, result)
+   --Floored, then with extra precision; spoken by the native console reader
    game.get_player(pindex).print(
       result .. "\n (" .. math.floor(pos.x * 10) / 10 .. ", " .. math.floor(pos.y * 10) / 10 .. ")",
       { volume_modifier = 0 }
@@ -3076,15 +2950,12 @@ local function kb_toggle_cursor_hiding(event)
    local pindex = event.player_index
    local vp = Viewpoint.get_viewpoint(pindex)
    local cursor_hidden = vp:get_cursor_hidden()
-   local p = game.get_player(pindex)
    if cursor_hidden == nil or cursor_hidden == false then
       vp:set_cursor_hidden(true)
       Speech.speak(pindex, { "fa.cursor-hiding-enabled" })
-      p.print("Cursor hiding : ON")
    else
       vp:set_cursor_hidden(false)
       Speech.speak(pindex, { "fa.cursor-hiding-disabled" })
-      p.print("Cursor hiding : OFF")
    end
 end
 
