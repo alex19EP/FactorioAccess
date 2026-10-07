@@ -8,6 +8,8 @@
 #include <unordered_map>
 #include <utility>
 
+#include "GuiDump.hpp"
+#include "log.h"
 #include "speech.h"
 #include "text.h"
 #include "vocab.h"
@@ -733,10 +735,16 @@ void SpeakGameTooltip(const Widget* widget)
     bool created = false;
     const Widget* tooltip = agui::showTooltip(widget, created);
     std::string text;
+    // The tooltip itself stays hidden until the Gui places it; its content shows already.
     if (tooltip)
-        for (const Widget* label : FindAll(tooltip, "agui::Label"))
-            if (std::string line = LabelText(label); !line.empty())
-                text += (text.empty() ? "" : "\n") + line;
+        ForEachChild(tooltip, [&](const Widget* child, const std::string&) {
+            for (const Widget* label : FindAll(child, "agui::Label"))
+                if (std::string line = LabelText(label); !line.empty())
+                    text += (text.empty() ? "" : "\n") + line;
+        });
+    if (text.empty())
+        log::info("No tooltip text on {}: {}", agui::className(widget),
+            tooltip ? DescribeTree(tooltip) : std::string("none created"));
     if (created)
         agui::removeTooltip(widget);
     speech::say(text.empty() ? std::string(vocab::kNoTooltip) : text, true);
