@@ -561,57 +561,64 @@ local function ent_info_belt_shape(ctx)
    end
 end
 
+-- The shape the pipes joined to a pipe make ("corner north and east"), or nil when other kinds of
+-- connection leave no simple shape to name.
+---@param ent LuaEntity a pipe or an infinity pipe
+---@return LocalisedString?
+function mod.pipe_shape(ent)
+   local shape_info = Fluids.get_pipe_shape(ent)
+   local s, d = shape_info.shape, shape_info.direction
+   local conns = ent.get_fluid_box_pipe_connections(1)
+   local pipe_conn_count = 0
+   for _, c in pairs(conns) do
+      if c.target and (c.target.type == "pipe" or c.target.type == "infinity-pipe") then
+         pipe_conn_count = pipe_conn_count + 1
+      end
+   end
+
+   -- We must be careful.  Pipe shapes do not account for other kinds of connection, so we must compare with the
+   -- expected count as well. Otherwise we will say that a pipe is both connected and not connected at the same time.
+
+   -- This is just a boring if table.  no special logic here.
+   if s == NetworkShape.SHAPE.END and pipe_conn_count == 1 then
+      return { "fa.ent-info-pipe-end", FaUtils.direction_lookup(FaUtils.rotate_180(d)) }
+   elseif s == NetworkShape.SHAPE.ALONE and pipe_conn_count == 0 then
+      return { "fa.ent-info-pipe-alone" }
+   elseif s == NetworkShape.SHAPE.STRAIGHT and pipe_conn_count == 2 then
+      return { d == defines.direction.north and "fa.ent-info-pipe-vertical" or "fa.ent-info-pipe-horizontal" }
+   elseif s == NetworkShape.SHAPE.CORNER and pipe_conn_count == 2 then
+      local c1, c2
+      if d == defines.direction.northwest then
+         c1 = defines.direction.south
+         c2 = defines.direction.east
+      elseif d == defines.direction.northeast then
+         c1 = defines.direction.south
+         c2 = defines.direction.west
+      elseif d == defines.direction.southwest then
+         c1 = defines.direction.north
+         c2 = defines.direction.east
+      elseif d == defines.direction.southeast then
+         c1 = defines.direction.north
+         c2 = defines.direction.west
+      else
+         error("unreachable! " .. serpent.line({ s = s, d = d }))
+      end
+
+      return { "fa.ent-info-pipe-corner", FaUtils.direction_lookup(c1), FaUtils.direction_lookup(c2) }
+   elseif s == NetworkShape.SHAPE.CROSS and pipe_conn_count == 4 then
+      return { "fa.ent-info-pipe-cross" }
+   elseif s == NetworkShape.SHAPE.T then
+      local key = "fa.ent-info-pipe-t-vertical"
+      if d == defines.direction.north or d == defines.direction.south then key = "fa.ent-info-pipe-t-horizontal" end
+      return { key, FaUtils.direction_lookup(FaUtils.rotate_180(d)) }
+   end
+end
+
 ---@param ctx fa.Info.EntInfoContext
 local function ent_info_pipe_shape(ctx)
    if ctx.ent.type == "pipe" or ctx.ent.type == "infinity-pipe" then
-      local shape_info = Fluids.get_pipe_shape(ctx.ent)
-      local s, d = shape_info.shape, shape_info.direction
-      local d_str = FaUtils.direction_lookup(d)
-      local conns = ctx.ent.get_fluid_box_pipe_connections(1)
-      local pipe_conn_count = 0
-      for _, c in pairs(conns) do
-         if c.target and (c.target.type == "pipe" or c.target.type == "infinity-pipe") then
-            pipe_conn_count = pipe_conn_count + 1
-         end
-      end
-
-      -- We must be careful.  Pipe shapes do not account for other kinds of connection, so we must compare with the
-      -- expected count as well. Otherwise we will say that a pipe is both connected and not connected at the same time.
-
-      -- This is just a boring if table which appends fragments.  no special logic here.
-      if s == NetworkShape.SHAPE.END and pipe_conn_count == 1 then
-         ctx.message:fragment({ "fa.ent-info-pipe-end", FaUtils.direction_lookup(FaUtils.rotate_180(d)) })
-      elseif s == NetworkShape.SHAPE.ALONE and pipe_conn_count == 0 then
-         ctx.message:fragment({ "fa.ent-info-pipe-alone" })
-      elseif s == NetworkShape.SHAPE.STRAIGHT and pipe_conn_count == 2 then
-         local key = d == defines.direction.north and "fa.ent-info-pipe-vertical" or "fa.ent-info-pipe-horizontal"
-         ctx.message:fragment({ key })
-      elseif s == NetworkShape.SHAPE.CORNER and pipe_conn_count == 2 then
-         local c1, c2
-         if d == defines.direction.northwest then
-            c1 = defines.direction.south
-            c2 = defines.direction.east
-         elseif d == defines.direction.northeast then
-            c1 = defines.direction.south
-            c2 = defines.direction.west
-         elseif d == defines.direction.southwest then
-            c1 = defines.direction.north
-            c2 = defines.direction.east
-         elseif d == defines.direction.southeast then
-            c1 = defines.direction.north
-            c2 = defines.direction.west
-         else
-            error("unreachable! " .. serpent.line({ s = s, d = d }))
-         end
-
-         ctx.message:fragment({ "fa.ent-info-pipe-corner", FaUtils.direction_lookup(c1), FaUtils.direction_lookup(c2) })
-      elseif s == NetworkShape.SHAPE.CROSS and pipe_conn_count == 4 then
-         ctx.message:fragment({ "fa.ent-info-pipe-cross" })
-      elseif s == NetworkShape.SHAPE.T then
-         local key = "fa.ent-info-pipe-t-vertical"
-         if d == defines.direction.north or d == defines.direction.south then key = "fa.ent-info-pipe-t-horizontal" end
-         ctx.message:fragment({ key, FaUtils.direction_lookup(FaUtils.rotate_180(d)) })
-      end
+      local shape = mod.pipe_shape(ctx.ent)
+      if shape then ctx.message:fragment(shape) end
    end
 end
 

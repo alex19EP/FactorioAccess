@@ -675,14 +675,25 @@ EntityPanelParts entityPanelParts(const Widget* window) {
    } else if (const std::byte* splitter = asBase(window, ".?AVSplitterGui@@")) {
       parts.titled = window;
       entity = at<const std::byte*>(splitter, layout.splitterEntity);
+   } else if (const std::byte* energy = asBase(window, ".?AVEntityWithEnergySourceGui@@")) {
+      parts.titled = entityWindowParts(window).entity;
+      entity = at<const std::byte*>(energy, layout.energySourceGuiEntity);
    } else {
       return {};
    }
    parts.sidePanel = reinterpret_cast<const Widget*>(sideButtons + layout.sidePanelContainer);
-   // Belts and splitters (TransportBeltConnectable) derive from EntityWithOwner first, so it starts
-   // the object. Only the mod's views are matched by it, and the mod sends those for belts alone.
+   // Every entity these windows are for derives from EntityWithOwner first, so it starts the
+   // object. Only the mod's views are matched by it.
    if (entity) parts.unitNumber = at<uint64_t>(entity, layout.entityUnitNumber);
    return parts;
+}
+
+FluidBoxParts fluidBoxParts(const Widget* window) {
+   const std::byte* gui = asBase(window, ".?AVSingleFluidBoxEntityGui@@");
+   if (!gui) return {};
+   const std::byte* box = gui + layout.singleFluidBoxGui;
+   return {reinterpret_cast<const Widget*>(box + layout.fluidBoxIcon),
+           reinterpret_cast<const Widget*>(box + layout.fluidBoxBar)};
 }
 
 unsigned selectedRow(const Widget* table) {

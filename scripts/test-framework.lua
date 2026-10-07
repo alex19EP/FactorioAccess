@@ -57,6 +57,7 @@ local test_files = {
    "player-weapon-test", -- Test weapon/ammo property detection
    "game-notices-test", -- Test the goal window reader
    "pump-spots-test", -- Test the scanner's offshore pump build spots
+   "fluid-views-test", -- Test the views read with a pipe's window
 }
 
 -- Test execution state

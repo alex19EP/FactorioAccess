@@ -21,6 +21,7 @@
 #include "screens/ModSettingsScreen.hpp"
 #include "screens/ModsScreen.hpp"
 #include "screens/NewGameScreen.hpp"
+#include "screens/PipeScreen.hpp"
 #include "screens/QuickBarScreen.hpp"
 #include "screens/ScenarioMessageScreen.hpp"
 #include "screens/SelectedInfoScreen.hpp"
@@ -96,6 +97,8 @@ void start() {
    // A transport belt's window, with the mod's views of what the belt carries.
    manager.Register(std::make_unique<screens::BeltScreen>());
    manager.Register(std::make_unique<screens::SplitterScreen>());
+   // A pipe's or a storage tank's window, with the mod's views of where its pipeline goes.
+   manager.Register(std::make_unique<screens::PipeScreen>());
    // The quickbar, while Ctrl+Tab has moved to it.
    manager.Register(std::make_unique<screens::QuickBarScreen>());
    // The shortcut bar, the part after it.

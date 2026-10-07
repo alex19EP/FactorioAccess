@@ -369,6 +369,13 @@ struct Layout {
    uint32_t onOffEntityWindow = 0;    // GenericOnOffEntityGui::entityWindow, agui::Window
    uint32_t onOffEntity = 0;          // GenericOnOffEntityGui::entity, Entity*
    uint32_t splitterEntity = 0;       // SplitterGui::splitter, SplitterBase*
+   // A pump's, a boiler's, a radar's window and the like: the entity.
+   uint32_t energySourceGuiEntity = 0; // EntityWithEnergySourceGui::entity, Entity*
+   // A pipe's or a storage tank's window: the fluid part, and in it the fluid's icon and the bar
+   // of how full the entity is, both beside a label that says the same.
+   uint32_t singleFluidBoxGui = 0;    // SingleFluidBoxEntityGui::fluidBoxGui, FluidBoxGui
+   uint32_t fluidBoxIcon = 0;         // FluidBoxGui::fluidIcon, SimpleSlot
+   uint32_t fluidBoxBar = 0;          // FluidBoxGui::fluidPercentageBar, agui::ProgressBar
    uint32_t entityUnitNumber = 0;     // EntityWithOwner::unitNumber, LuaEntity::unit_number
 
    // The quickbar along the bottom of the screen (QuickBarGui), reached the way the game's own

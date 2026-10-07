@@ -365,6 +365,28 @@ graph::NodeVtable SliderWithField(const Widget* slider, const Widget* field, con
     return vtable;
 }
 
+// Labels side by side as one line, as it reads on screen: "Map version:" "2.0.72".
+graph::NodeVtable LineNode(std::vector<const Widget*> labels)
+{
+    graph::NodeVtable node = TextNode(labels.front(),
+        [labels]()
+        {
+            std::string line;
+            for (const Widget* label : labels)
+            {
+                std::string phrase = Phrase(label);
+                if (phrase.empty())
+                    continue;
+                if (!line.empty())
+                    line += ' ';
+                line += phrase;
+            }
+            return line;
+        });
+    SetTooltip(node, std::move(labels));
+    return node;
+}
+
 // Declares a window part's nodes. Rows open only around items that exist, so a flow or table
 // row that turns out to hold nothing never reaches the builder.
 class Walker
@@ -490,24 +512,7 @@ private:
         std::string key = Key(path) + "#row";
         if (std::ranges::all_of(leaves, isLabel))
         {
-            // "Map version:" "2.0.72": one line, as it reads on screen.
-            graph::NodeVtable node = TextNode(leaves.front(),
-                         [leaves]()
-                         {
-                             std::string line;
-                             for (const Widget* leaf : leaves)
-                             {
-                                 std::string phrase = Phrase(leaf);
-                                 if (phrase.empty())
-                                     continue;
-                                 if (!line.empty())
-                                     line += ' ';
-                                 line += phrase;
-                             }
-                             return line;
-                         });
-            SetTooltip(node, leaves);
-            Add(key, std::move(node));
+            Add(key, LineNode(leaves));
             return;
         }
         if (leaves.size() == 3 && isLabel(leaves[0]) && agui::kind(leaves[1]) == Kind::Slider
@@ -537,9 +542,15 @@ private:
             if (isLabel(leaf))
             {
                 // A label right before a value control is that control's name.
-                if (i + 1 < leaves.size() && ShowsValue(agui::kind(leaves[i + 1])))
+                auto names = [&leaves](std::size_t label)
+                { return label + 1 < leaves.size() && ShowsValue(agui::kind(leaves[label + 1])); };
+                if (names(i))
                     continue;
-                Add(cellKey, TextNode(leaf, [leaf]() { return Phrase(leaf); }));
+                // Labels side by side are one line ("Pipe contents:" "100/100"), as before a button.
+                std::vector<const Widget*> line{leaf};
+                while (i + 1 < leaves.size() && isLabel(leaves[i + 1]) && !names(i + 1))
+                    line.push_back(leaves[++i]);
+                Add(cellKey, LineNode(line));
                 continue;
             }
             if (i > 0 && isLabel(leaves[i - 1]) && ShowsValue(agui::kind(leaf)))

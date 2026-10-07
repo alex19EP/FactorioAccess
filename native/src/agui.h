@@ -246,8 +246,9 @@ struct BurnerParts {
 BurnerParts burnerParts(const Widget* burnerInfo);
 
 // The parts of a window with circuit and logistic network buttons in its title bar
-// (GuiWithSideButtons) that is a transport belt's, a lamp's or another GenericOnOffEntityGui, or a
-// splitter's (SplitterGui); all null and 0 for any other window. `titled` is the window titled with
+// (GuiWithSideButtons) that is a transport belt's, a pipe's, a lamp's or another
+// GenericOnOffEntityGui, a splitter's (SplitterGui), or a pump's, a boiler's or another
+// EntityWithEnergySourceGui; all null and 0 for any other window. `titled` is the window titled with
 // the entity's name, `sidePanel` the container the buttons open their panels in, and `unitNumber`
 // the entity's (LuaEntity::unit_number).
 struct EntityPanelParts {
@@ -256,6 +257,15 @@ struct EntityPanelParts {
    uint64_t unitNumber = 0;
 };
 EntityPanelParts entityPanelParts(const Widget* window);
+
+// The parts of a pipe's or a storage tank's window (SingleFluidBoxEntityGui) that repeat its fluid
+// line ("Water 100%"): the fluid's icon and the bar of how full the entity is. Null for any other
+// window.
+struct FluidBoxParts {
+   const Widget* icon = nullptr;
+   const Widget* bar = nullptr;
+};
+FluidBoxParts fluidBoxParts(const Widget* window);
 
 // The quickbar along the bottom of the screen (QuickBarGui), or null outside a game or while the
 // view has none.

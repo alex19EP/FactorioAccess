@@ -88,11 +88,18 @@ void MachineScreen::BuildWindow(graph::GraphBuilder& builder, const Widget* wind
         AddSubtree(builder, "window", window);
         return;
     }
+    agui::EntityPanelParts panel = agui::entityPanelParts(window);
     std::vector<const Widget*> skip;
     if (parts.inventoryPanel)
         skip.push_back(parts.inventoryPanel);
+    if (panel.sidePanel)
+        skip.push_back(panel.sidePanel);
     AddTitledWindow(builder, "entity", parts.entity, std::move(skip), MachineAttachments(parts));
     AddInventory(builder, parts);
+    if (!panel.sidePanel)
+        return;
+    AddSidePanel(builder, panel.sidePanel);
+    AddModViews(builder, panel.unitNumber);
 }
 
 } // namespace fa::screens

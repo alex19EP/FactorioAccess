@@ -308,6 +308,10 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.onOffEntityWindow, "GenericOnOffEntityGui", "entityWindow");
    offset(layout.onOffEntity, "GenericOnOffEntityGui", "entity");
    offset(layout.splitterEntity, "SplitterGui", "splitter");
+   offset(layout.energySourceGuiEntity, "EntityWithEnergySourceGui", "entity");
+   offset(layout.singleFluidBoxGui, "SingleFluidBoxEntityGui", "fluidBoxGui");
+   offset(layout.fluidBoxIcon, "FluidBoxGui", "fluidIcon");
+   offset(layout.fluidBoxBar, "FluidBoxGui", "fluidPercentageBar");
    offset(layout.entityUnitNumber, "EntityWithOwner", "unitNumber");
 
    offset(layout.gameViewControllerView, "GameView", "controllerView");

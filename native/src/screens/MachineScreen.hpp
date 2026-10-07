@@ -5,9 +5,11 @@
 // game builds a GameGuiWithControllerInventory for. Also the recipe list an assembler without a
 // recipe opens instead (AssemblingMachineSelectRecipeGui).
 //
-// Two stops. The entity's part, in its name's context, read by the generic walker: its status,
+// Two stops, or more. The entity's part, in its name's context, read by the generic walker: its status,
 // progress bars, fuel, input, output and module slots, recipe, filters and settings. Then the
-// player's inventory as the game lays it out, a row of the grid per table row.
+// player's inventory as the game lays it out, a row of the grid per table row. A window with
+// network buttons in its title bar (a pump's, a boiler's) adds the panel a button opened, then the
+// mod's views of the entity (a pump's: scripts/ui/fluid-views.lua).
 //
 // Every slot is the game's own button, clicked as the Gui clicks it, so taking, placing, splitting
 // and moving stacks between the two inventories is vanilla, held Shift and Control included.
