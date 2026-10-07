@@ -47,24 +47,6 @@ data:extend({
    },
 })
 
---Modify base prototypes to remove their default descriptions
---(science packs became plain items in 2.1, so they live in data.raw.item now)
-for name, pack in pairs(data.raw.item) do
-   if pack.localised_description and pack.localised_description[1] == "item-description.science-pack" then
-      pack.localised_description = nil
-   end
-end
-
-for name, mod in pairs(data.raw.module) do
-   if
-      mod.localised_description and mod.localised_description[1] == "item-description.effectivity-module"
-      or mod.localised_description and mod.localised_description[1] == "item-description.productivity-module"
-      or mod.localised_description and mod.localised_description[1] == "item-description.speed-module"
-   then
-      mod.localised_description = nil
-   end
-end
-
 ---Make selected vanilla objects not collide with players
 local function remove_player_collision(ent_p)
    --todo: this won't work for entities that don't have their collision_mask defined since the vanilla default collision mask include the player.
