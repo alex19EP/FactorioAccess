@@ -41,6 +41,12 @@ struct Layout {
    uintptr_t addLocalFlyingText = 0;
    uintptr_t constructGuiFlyingText = 0;
    uint32_t localMapFlyingTextText = 0; // LocalMapFlyingText::text (agui::FlyingText), std::string
+   // Console lines: void OutputConsole::add(std::string const& playerName, Color, LocalisedString
+   // const& body, Player const*, PrintSettings const&, std::vector<SavedSpecialItemReference>&&).
+   uintptr_t outputConsoleAdd = 0;
+   uint32_t outputConsoleOwner = 0;         // OutputConsole::owner, the Player* whose console it is
+   uint32_t outputConsoleItems = 0;         // OutputConsole::items, std::list<Item>, newest first
+   uint32_t outputConsoleItemsNotSaved = 0; // OutputConsole::itemsNotPartOfGameState, the same
 
    // The Lua 5.2 C API, linked into the game.
    uintptr_t luaCreateTable = 0;

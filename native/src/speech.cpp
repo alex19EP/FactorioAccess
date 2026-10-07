@@ -2,6 +2,7 @@
 
 #include "devserver.h"
 #include "log.h"
+#include "text.h"
 
 #include <objbase.h>
 #include <prism.h>
@@ -116,6 +117,15 @@ void say(std::string text, bool interrupt) {
       g_queue.push_back({std::move(text), interrupt});
    }
    g_wake.notify_one();
+}
+
+void sayShown(std::string_view text) {
+   while (!text.empty()) {
+      size_t end = text.find('\n');
+      say(text::speakable(text.substr(0, end)), false);
+      if (end == std::string_view::npos) break;
+      text.remove_prefix(end + 1);
+   }
 }
 
 } // namespace fa::speech

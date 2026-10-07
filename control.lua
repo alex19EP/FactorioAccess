@@ -949,19 +949,6 @@ function all_ents_are_walkable(pos)
 end
 
 EventManager.on_event(
-   defines.events.on_console_chat,
-   ---@param event EventData.on_console_chat
-   function(event)
-      local speaker = game.get_player(event.player_index).name
-      if speaker == nil or speaker == "" then speaker = "Player" end
-      local message = event.message
-      for pindex, player in pairs(players) do
-         Speech.speak(pindex, { "fa.chat-message", speaker, message })
-      end
-   end
-)
-
-EventManager.on_event(
    defines.events.on_console_command,
    ---@param event EventData.on_console_command
    function(event)

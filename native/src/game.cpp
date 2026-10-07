@@ -57,6 +57,13 @@ bool resolve(pdb::SymbolTable& symbols) {
            "std@@@std@@SAXAEAV?$allocator@VGuiFlyingText@agui@@@1@QEAVGuiFlyingText@agui@@AEAVPoint@4@AEBV?$basic_"
            "string@DU?$char_traits@D@std@@V?$allocator@D@2@@1@AEAVColor@4@AEAPEBVFont@4@AEAH6@Z");
    offset(layout.localMapFlyingTextText, "LocalMapFlyingText", "text");
+   address(layout.outputConsoleAdd,
+           "?add@OutputConsole@@QEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@VColor@@"
+           "AEBVLocalisedString@@PEBVPlayer@@AEBUPrintSettings@@$$QEAV?$vector@VSavedSpecialItemReference@@V?$"
+           "allocator@VSavedSpecialItemReference@@@std@@@3@@Z");
+   offset(layout.outputConsoleOwner, "OutputConsole", "owner");
+   offset(layout.outputConsoleItems, "OutputConsole", "items");
+   offset(layout.outputConsoleItemsNotSaved, "OutputConsole", "itemsNotPartOfGameState");
    address(layout.luaCreateTable, "lua_createtable");
    address(layout.luaPushCClosure, "lua_pushcclosure");
    address(layout.luaSetField, "lua_setfield");

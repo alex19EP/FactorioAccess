@@ -2,12 +2,9 @@
 
 #include "game.h"
 #include "speech.h"
-#include "text.h"
 
 #include <cstddef>
-#include <string>
 #include <string_view>
-#include <utility>
 
 namespace fa::flyingtext {
 
@@ -29,26 +26,14 @@ std::string_view view(const MsvcString& string) {
    return {string.capacity > 15 ? string.pointer : string.buffer, string.size};
 }
 
-// Each line on its own: the item count text puts one item per line. Queued, so a burst of texts
-// (mining several things at once) is read through rather than cut short.
-void say(std::string_view text) {
-   while (!text.empty()) {
-      size_t end = text.find('\n');
-      std::string line = text::speakable(text.substr(0, end));
-      if (!line.empty()) speech::say(std::move(line), false);
-      if (end == std::string_view::npos) break;
-      text.remove_prefix(end + 1);
-   }
-}
-
 // void Map::addLocalFlyingText(LocalMapFlyingText&&). It moves the text out of its argument, so
 // the text is read first.
 using AddLocalFlyingText = void (*)(void* map, void* flyingText);
 AddLocalFlyingText g_mapOriginal = nullptr;
 
 void mapFlyingText(void* map, void* flyingText) {
-   say(view(*reinterpret_cast<const MsvcString*>(static_cast<const std::byte*>(flyingText) +
-                                                  layout.localMapFlyingTextText)));
+   speech::sayShown(view(*reinterpret_cast<const MsvcString*>(static_cast<const std::byte*>(flyingText) +
+                                                               layout.localMapFlyingTextText)));
    g_mapOriginal(map, flyingText);
 }
 
@@ -61,7 +46,7 @@ ConstructGuiFlyingText g_guiOriginal = nullptr;
 
 void guiFlyingText(void* allocator, void* where, void* position, const MsvcString* text, void* color, void* font,
                    int* timeToLive, int* screenWidth) {
-   say(view(*text));
+   speech::sayShown(view(*text));
    g_guiOriginal(allocator, where, position, text, color, font, timeToLive, screenWidth);
 }
 

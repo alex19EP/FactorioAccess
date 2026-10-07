@@ -1,5 +1,6 @@
 #include "hooks.h"
 
+#include "console.h"
 #include "disclosure.h"
 #include "flyingtext.h"
 #include "game.h"
@@ -55,6 +56,8 @@ bool install() {
                   "Hooking Map::addLocalFlyingText") &&
              hook(layout.constructGuiFlyingText, flyingtext::guiDetour(), flyingtext::guiOriginal(),
                   "Hooking the GuiFlyingText construct") &&
+             hook(layout.outputConsoleAdd, console::addDetour(), console::addOriginal(),
+                  "Hooking OutputConsole::add") &&
              check(MH_EnableHook(MH_ALL_HOOKS), "Enabling hooks");
    if (!ok) {
       MH_Uninitialize();
