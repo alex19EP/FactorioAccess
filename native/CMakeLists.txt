@@ -112,6 +112,7 @@ add_library(fa_native SHARED
   src/disclosure.cpp
   src/flyingtext.cpp
   src/console.cpp
+  src/popups.cpp
   "${CMAKE_CURRENT_BINARY_DIR}/winmm_forwarders.cpp"
 )
 set_target_properties(fa_native PROPERTIES OUTPUT_NAME winmm)

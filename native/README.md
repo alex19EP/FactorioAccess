@@ -22,6 +22,11 @@ Windows only.
 - **Flying text.** Every flying text the game shows is spoken: "Cannot reach", "Cannot build
   here", "Not enough ingredients", item counts after mining or picking up, and other mods' local
   flying text.
+- **Console.** Each line the console shows is spoken as it arrives: chat, research completed,
+  players joining and leaving, and what scenarios and mods print.
+- **Pop-ups.** The "New tip" notification, speech bubbles over the map, and the boxes for saving,
+  autosaving and multiplayer (waiting for a player, reconnecting, desynced) are spoken as they
+  appear.
 - **Disclosure.** Automatic crash log upload is kept off, since crashes with a modified executable
   shouldn't reach Wube. The game's version text names the DLL.
 

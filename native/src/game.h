@@ -47,6 +47,17 @@ struct Layout {
    uint32_t outputConsoleOwner = 0;         // OutputConsole::owner, the Player* whose console it is
    uint32_t outputConsoleItems = 0;         // OutputConsole::items, std::list<Item>, newest first
    uint32_t outputConsoleItemsNotSaved = 0; // OutputConsole::itemsNotPartOfGameState, the same
+   // Pop-ups. TipsAndTricksNotificationButton::TipsAndTricksNotificationButton(TipsAndTricksItem
+   // const&, GuiContext) builds the "New tip" button; SpeechBubbleGui::SpeechBubbleGui(SpeechBubble&,
+   // std::string const& text, GameView&, agui::FlowStyle const*, SpeechBubbleStyle*) shows a speech
+   // bubble entity's text over the map; void InfoBoxManager::update() lays out the saving and
+   // multiplayer boxes once a frame, after their connectors were added or removed.
+   uintptr_t tipNotificationButton = 0;
+   uintptr_t speechBubbleGui = 0;
+   uintptr_t infoBoxManagerUpdate = 0;
+   uint32_t infoBoxManagerFrame = 0;      // InfoBoxManager::frame, an embedded agui::Window holding the boxes
+   uint32_t infoBoxManagerRebuild = 0;    // InfoBoxManager::rebuildConnectors, bool
+   uint32_t infoBoxManagerConnectors = 0; // InfoBoxManager::connectors, std::vector<ConnectorAndPosition>
 
    // The Lua 5.2 C API, linked into the game.
    uintptr_t luaCreateTable = 0;

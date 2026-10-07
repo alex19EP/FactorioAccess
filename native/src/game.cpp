@@ -64,6 +64,15 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.outputConsoleOwner, "OutputConsole", "owner");
    offset(layout.outputConsoleItems, "OutputConsole", "items");
    offset(layout.outputConsoleItemsNotSaved, "OutputConsole", "itemsNotPartOfGameState");
+   address(layout.tipNotificationButton,
+           "??0TipsAndTricksNotificationButton@@QEAA@AEBVTipsAndTricksItem@@VGuiContext@@@Z");
+   address(layout.speechBubbleGui,
+           "??0SpeechBubbleGui@@AEAA@AEAVSpeechBubble@@AEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@"
+           "std@@AEAVGameView@@PEBVFlowStyle@agui@@PEAVSpeechBubbleStyle@@@Z");
+   address(layout.infoBoxManagerUpdate, "?update@InfoBoxManager@@QEAAXXZ");
+   offset(layout.infoBoxManagerFrame, "InfoBoxManager", "frame");
+   offset(layout.infoBoxManagerRebuild, "InfoBoxManager", "rebuildConnectors");
+   offset(layout.infoBoxManagerConnectors, "InfoBoxManager", "connectors");
    address(layout.luaCreateTable, "lua_createtable");
    address(layout.luaPushCClosure, "lua_pushcclosure");
    address(layout.luaSetField, "lua_setfield");

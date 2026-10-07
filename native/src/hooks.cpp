@@ -7,6 +7,7 @@
 #include "input.h"
 #include "log.h"
 #include "luabridge.h"
+#include "popups.h"
 #include "ui.h"
 #include "world.h"
 
@@ -58,6 +59,12 @@ bool install() {
                   "Hooking the GuiFlyingText construct") &&
              hook(layout.outputConsoleAdd, console::addDetour(), console::addOriginal(),
                   "Hooking OutputConsole::add") &&
+             hook(layout.tipNotificationButton, popups::tipDetour(), popups::tipOriginal(),
+                  "Hooking the TipsAndTricksNotificationButton constructor") &&
+             hook(layout.speechBubbleGui, popups::speechBubbleDetour(), popups::speechBubbleOriginal(),
+                  "Hooking the SpeechBubbleGui constructor") &&
+             hook(layout.infoBoxManagerUpdate, popups::infoBoxesDetour(), popups::infoBoxesOriginal(),
+                  "Hooking InfoBoxManager::update") &&
              check(MH_EnableHook(MH_ALL_HOOKS), "Enabling hooks");
    if (!ok) {
       MH_Uninitialize();
