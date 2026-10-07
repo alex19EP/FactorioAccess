@@ -228,9 +228,17 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.holderInventory, "GameControllerInventoryHolder", "inventoryGui");
    offset(layout.holderTitle, "GameControllerInventoryHolder", "titleLabel");
    offset(layout.frameHeader, "agui::Frame", "headerFlow");
+   offset(layout.assemblerProgressBar, "AssemblingMachineGui", "productionProgressBar");
    offset(layout.assemblerBonusBar, "AssemblingMachineGui", "bonusProgressBar");
+   offset(layout.furnaceProgressBar, "FurnaceGui", "productionProgressBar");
    offset(layout.furnaceBonusBar, "FurnaceGui", "bonusProgressBar");
+   offset(layout.drillProgressBar, "MiningDrillGui", "miningProgressBar");
    offset(layout.drillBonusBar, "MiningDrillGui", "bonusProgressBar");
+   offset(layout.assemblerRecipe, "AssemblingMachineGui", "recipeInfoWidget");
+   offset(layout.furnaceRecipe, "FurnaceGui", "recipeInfoWidget");
+   offset(layout.assemblerChangeRecipe, "AssemblingMachineGui", "changeRecipeButton");
+   offset(layout.burnerSlots, "BurnerInfo", "burnerSlotsTable");
+   offset(layout.burnerProgressBar, "BurnerInfo", "burningProgressBar");
 
    if (ok) {
       log::info("Layout: Gui baseWidget {:#x} focused {:#x} modals {:#x} (entry {} bytes); Widget parent {:#x} "

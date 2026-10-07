@@ -190,17 +190,30 @@ double progress(const Widget* bar);
 // assembler, ...), or all null for any other window. `entity` is the window titled with the entity's
 // name; it holds the player's inventory beside the entity's own part. `inventory` is the player's
 // InventoryGui, `inventoryPanel` the panel holding it under `inventoryTitle` ("Character"), and
-// `header` the title bar's search and close buttons. `bonusBar` is the productivity bar of a
-// crafting machine or drill.
+// `header` the title bar's search and close buttons. A crafting machine or drill has a
+// `progressBar` and the productivity `bonusBar` under it; a crafting machine shows its `recipe`
+// (a RecipeInfoWidget), and an assembler the `changeRecipe` button, which is in the window only
+// when the recipe can change.
 struct EntityWindowParts {
    const Widget* entity = nullptr;
    const Widget* header = nullptr;
    const Widget* inventoryPanel = nullptr;
    const Widget* inventoryTitle = nullptr;
    const Widget* inventory = nullptr;
+   const Widget* progressBar = nullptr;
    const Widget* bonusBar = nullptr;
+   const Widget* recipe = nullptr;
+   const Widget* changeRecipe = nullptr;
 };
 EntityWindowParts entityWindowParts(const Widget* window);
+
+// The fuel part of a burner-powered entity's window (a BurnerInfo): the table of fuel slots and
+// the bar of what is left of the fuel burning.
+struct BurnerParts {
+   const Widget* slots = nullptr;
+   const Widget* bar = nullptr;
+};
+BurnerParts burnerParts(const Widget* burnerInfo);
 
 // The selected row of an agui::TableWithSelection, the header row counting as 0.
 unsigned selectedRow(const Widget* table);

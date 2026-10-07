@@ -39,12 +39,34 @@ const Widget* FindWindow()
     return top;
 }
 
+// Bars read with what they belong to rather than as stops of their own: the crafting progress and
+// productivity with the recipe, which Enter changes where the machine allows; a drill's
+// productivity with its mining progress; what is left of the burning fuel with the fuel slot.
+Attachments MachineAttachments(const agui::EntityWindowParts& parts)
+{
+    Attachments attachments;
+    std::vector<std::pair<const Widget*, std::string>> bars;
+    if (parts.progressBar && parts.recipe)
+        bars.emplace_back(parts.progressBar, "");
+    if (parts.bonusBar)
+        bars.emplace_back(parts.bonusBar, std::string(vocab::kProductivity));
+    if (parts.recipe)
+        attachments[parts.recipe] = {std::move(bars), parts.changeRecipe};
+    else if (parts.progressBar)
+        attachments[parts.progressBar] = {std::move(bars)};
+    for (const Widget* burner : FindAll(parts.entity, "BurnerInfo"))
+    {
+        agui::BurnerParts fuel = agui::burnerParts(burner);
+        std::vector<const Widget*> slots = VisibleChildren(fuel.slots);
+        if (!slots.empty())
+            attachments[slots.front()].bars.emplace_back(fuel.bar, "");
+    }
+    return attachments;
+}
+
 void AddEntity(graph::GraphBuilder& builder, const agui::EntityWindowParts& parts)
 {
     builder.BeginStop("entity");
-    std::unordered_map<const Widget*, std::string> names;
-    if (parts.bonusBar)
-        names.emplace(parts.bonusBar, std::string(vocab::kProductivity));
     std::vector<const Widget*> skip{parts.header};
     if (parts.inventoryPanel)
         skip.push_back(parts.inventoryPanel);
@@ -58,7 +80,7 @@ void AddEntity(graph::GraphBuilder& builder, const agui::EntityWindowParts& part
     std::string titleText = title && Shows(title) ? LabelText(title) : std::string();
     if (!titleText.empty())
         builder.PushContext(titleText);
-    AddSubtree(builder, "entity", parts.entity, std::move(skip), std::move(names));
+    AddSubtree(builder, "entity", parts.entity, std::move(skip), MachineAttachments(parts));
     AddSubtree(builder, "header", parts.header, std::move(headerSkip));
     if (!titleText.empty())
         builder.PopContext();

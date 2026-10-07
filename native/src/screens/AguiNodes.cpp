@@ -359,13 +359,19 @@ graph::NodeVtable SliderWithField(const Widget* slider, const Widget* field, con
 class Walker
 {
 public:
-    Walker(graph::GraphBuilder& builder, std::string prefix, std::vector<const Widget*> skip,
-        std::unordered_map<const Widget*, std::string> names)
+    Walker(graph::GraphBuilder& builder, std::string prefix, std::vector<const Widget*> skip, Attachments attachments)
         : _builder(builder)
         , _prefix(std::move(prefix))
         , _skip(std::move(skip))
-        , _names(std::move(names))
+        , _attachments(std::move(attachments))
     {
+        for (const auto& [host, attachment] : _attachments)
+        {
+            for (const auto& [bar, name] : attachment.bars)
+                _skip.push_back(bar);
+            if (attachment.press)
+                _skip.push_back(attachment.press);
+        }
     }
 
     void Visit(const Widget* widget, const std::string& path, int depth)
@@ -630,17 +636,44 @@ private:
     void Add(const std::string& key, graph::NodeVtable vtable)
     {
         const void* widget = vtable.HostTag;
-        if (auto it = _names.find(static_cast<const Widget*>(widget)); it != _names.end())
-            for (graph::NodeAnnouncement& part : vtable.Announcements)
-                if (part.Kind == Label)
-                    part.Text = [name = it->second]() { return name; };
+        if (auto it = _attachments.find(static_cast<const Widget*>(widget)); it != _attachments.end())
+            Attach(vtable, it->second);
         _builder.AddItem(graph::ControlId::Referenced(widget, key), std::move(vtable));
+    }
+
+    static void Attach(graph::NodeVtable& vtable, const Attachment& attachment)
+    {
+        // Right after the node's own value; a typed node sorts its parts by kind anyway.
+        auto at = std::ranges::find_if(vtable.Announcements,
+            [](const graph::NodeAnnouncement& part) { return part.Kind != Label && part.Kind != Value; });
+        std::vector<graph::NodeAnnouncement> bars;
+        for (const auto& [bar, name] : attachment.bars)
+            // Read when asked for, not watched: a bar moves every tick.
+            bars.emplace_back(
+                [bar, name]()
+                {
+                    if (!agui::visible(bar))
+                        return std::string();
+                    std::string value = ValueText(bar, Kind::ProgressBar);
+                    return name.empty() ? value : name + " " + value;
+                },
+                false, Value);
+        vtable.Announcements.insert(at, bars.begin(), bars.end());
+
+        if (const Widget* button = attachment.press)
+            vtable.OnActivate = [button, own = std::move(vtable.OnActivate)]()
+            {
+                if (agui::parent(button) && agui::visible(button) && agui::enabled(button))
+                    agui::press(button, agui::MouseButton::Left, false, false);
+                else if (own)
+                    own();
+            };
     }
 
     graph::GraphBuilder& _builder;
     std::string _prefix;
     std::vector<const Widget*> _skip;
-    std::unordered_map<const Widget*, std::string> _names;
+    Attachments _attachments;
 };
 
 } // namespace
@@ -764,6 +797,9 @@ graph::NodeVtable ControlNode(const Widget* widget, std::function<std::string()>
         [widget]() { return agui::enabled(widget) ? std::string() : std::string(vocab::kDisabled); }, false, Enabled);
 
     SetTooltip(vtable, {widget});
+    // A tooltip the game builds rather than stores as text (a recipe's) is read off the screen.
+    if (!vtable.OnTooltip && kind == Kind::Button)
+        vtable.OnTooltip = [widget]() { SpeakGameTooltip(widget); };
 
     auto stateText = [widget, kind]()
     {
@@ -818,9 +854,9 @@ graph::NodeVtable TextNode(const Widget* tag, std::function<std::string()> text)
 }
 
 void AddSubtree(graph::GraphBuilder& builder, const std::string& prefix, const Widget* widget,
-    std::vector<const Widget*> skip, std::unordered_map<const Widget*, std::string> names)
+    std::vector<const Widget*> skip, Attachments attachments)
 {
-    Walker(builder, prefix, std::move(skip), std::move(names)).Visit(widget, "", 0);
+    Walker(builder, prefix, std::move(skip), std::move(attachments)).Visit(widget, "", 0);
 }
 
 bool AddControl(graph::GraphBuilder& builder, const std::string& key, const Widget* widget,

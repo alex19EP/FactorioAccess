@@ -53,12 +53,23 @@ graph::NodeVtable ControlNode(const agui::Widget* widget, const agui::Widget* la
 /// and its tooltip is what the tooltip key reads.
 graph::NodeVtable TextNode(const agui::Widget* tag, std::function<std::string()> text);
 
+/// What another widget lends a node, so that one stop reads what belongs together on screen:
+/// progress bars spoken after the node's value, each under an optional name ("productivity"),
+/// while they show; and a button its activation presses instead, while that button is in the
+/// window and enabled.
+struct Attachment
+{
+    std::vector<std::pair<const agui::Widget*, std::string>> bars;
+    const agui::Widget* press = nullptr;
+};
+using Attachments = std::unordered_map<const agui::Widget*, Attachment>;
+
 /// Declares `widget`'s whole subtree into the builder's current stop. Keys start with `prefix`.
 /// Widgets in `skip` are left out wherever they appear: a title already spoken as the context, a
-/// part declared as a stop of its own. A widget in `names` is spoken by that name instead of its
-/// own, for controls the game leaves unnamed (a second progress bar).
+/// part declared as a stop of its own. A widget in `attachments` gets those parts, and the widgets
+/// lent are left out too.
 void AddSubtree(graph::GraphBuilder& builder, const std::string& prefix, const agui::Widget* widget,
-    std::vector<const agui::Widget*> skip = {}, std::unordered_map<const agui::Widget*, std::string> names = {});
+    std::vector<const agui::Widget*> skip = {}, Attachments attachments = {});
 
 /// What a slot button shows: "iron plate 50", "rare iron plate 50", "water 1200", an empty slot's
 /// filter or expected ingredient as "iron plate, empty", or "empty".

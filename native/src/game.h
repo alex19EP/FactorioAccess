@@ -250,10 +250,21 @@ struct Layout {
    uint32_t holderInventory = 0;      // GameControllerInventoryHolder::inventoryGui, InventoryGui
    uint32_t holderTitle = 0;          // GameControllerInventoryHolder::titleLabel ("Character")
    uint32_t frameHeader = 0;          // agui::Frame::headerFlow: the title bar's search and close buttons
-   // The productivity bars beside the progress bar of crafting machines and drills.
+   // The progress bars of crafting machines and drills, with the productivity bar beside each.
+   uint32_t assemblerProgressBar = 0; // AssemblingMachineGui::productionProgressBar
    uint32_t assemblerBonusBar = 0;    // AssemblingMachineGui::bonusProgressBar
+   uint32_t furnaceProgressBar = 0;   // FurnaceGui::productionProgressBar
    uint32_t furnaceBonusBar = 0;      // FurnaceGui::bonusProgressBar
+   uint32_t drillProgressBar = 0;     // MiningDrillGui::miningProgressBar
    uint32_t drillBonusBar = 0;        // MiningDrillGui::bonusProgressBar
+   // The recipe a crafting machine shows; a click on it opens Factoriopedia.
+   uint32_t assemblerRecipe = 0;      // AssemblingMachineGui::recipeInfoWidget, RecipeInfoWidget
+   uint32_t furnaceRecipe = 0;        // FurnaceGui::recipeInfoWidget
+   // Beside an assembler's recipe unless the recipe is fixed: back to the recipe chooser.
+   uint32_t assemblerChangeRecipe = 0; // AssemblingMachineGui::changeRecipeButton, IconButton
+   // The fuel part of a burner-powered entity's window (BurnerInfo).
+   uint32_t burnerSlots = 0;          // BurnerInfo::burnerSlotsTable, agui::Table
+   uint32_t burnerProgressBar = 0;    // BurnerInfo::burningProgressBar: what is left of the fuel burning
 };
 
 // Bits of agui::Widget::usageBitMask, read from Widget::setVisible and Widget::isEnabled in

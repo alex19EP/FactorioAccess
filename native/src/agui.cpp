@@ -123,6 +123,8 @@ constexpr std::pair<std::string_view, Kind> kKindBases[] = {
    {".?AVTabbedPane@agui@@", Kind::TabbedPane},
    {".?AVListBox@agui@@", Kind::ListBox},
    {".?AVButton@agui@@", Kind::Button},
+   // A LayoutButton laid out as a recipe slot and name, clicked as one button.
+   {".?AVRecipeInfoWidget@@", Kind::Button},
    {".?AVLabel@agui@@", Kind::Label},
    {".?AVScrollPane@agui@@", Kind::ScrollPane},
    {".?AVTable@agui@@", Kind::Table},
@@ -575,11 +577,30 @@ EntityWindowParts entityWindowParts(const Widget* window) {
       parts.inventoryTitle = member(holder, layout.holderTitle);
       parts.inventoryPanel = parent(parts.inventory);
    }
-   for (auto [type, offset] : {std::pair{".?AVAssemblingMachineGui@@", layout.assemblerBonusBar},
-                               std::pair{".?AVFurnaceGui@@", layout.furnaceBonusBar},
-                               std::pair{".?AVMiningDrillGui@@", layout.drillBonusBar}})
-      if (const std::byte* machine = asBase(window, type)) parts.bonusBar = reinterpret_cast<const Widget*>(machine + offset);
+   struct Machine {
+      std::string_view type;
+      uint32_t progressBar, bonusBar, recipe, changeRecipe;
+   };
+   for (const Machine& machine :
+        {Machine{".?AVAssemblingMachineGui@@", layout.assemblerProgressBar, layout.assemblerBonusBar,
+                 layout.assemblerRecipe, layout.assemblerChangeRecipe},
+         Machine{".?AVFurnaceGui@@", layout.furnaceProgressBar, layout.furnaceBonusBar, layout.furnaceRecipe, 0},
+         Machine{".?AVMiningDrillGui@@", layout.drillProgressBar, layout.drillBonusBar, 0, 0}}) {
+      const std::byte* base = asBase(window, machine.type);
+      if (!base) continue;
+      auto widgetAt = [base](uint32_t offset) {
+         return offset ? reinterpret_cast<const Widget*>(base + offset) : nullptr;
+      };
+      parts.progressBar = widgetAt(machine.progressBar);
+      parts.bonusBar = widgetAt(machine.bonusBar);
+      parts.recipe = widgetAt(machine.recipe);
+      parts.changeRecipe = widgetAt(machine.changeRecipe);
+   }
    return parts;
+}
+
+BurnerParts burnerParts(const Widget* burnerInfo) {
+   return {member(burnerInfo, layout.burnerSlots), member(burnerInfo, layout.burnerProgressBar)};
 }
 
 unsigned selectedRow(const Widget* table) {
