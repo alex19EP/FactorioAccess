@@ -112,6 +112,14 @@ bool mayBeLocalPlayer(int playerIndex) {
    return !player || at<uint16_t>(player, layout.playerIndex) + 1 == playerIndex;
 }
 
+int buildDirection(int playerIndex) {
+   const std::byte* game = gameOfLocalPlayer(playerIndex);
+   const std::byte* view = game ? at<const std::byte*>(game, layout.gameView) : nullptr;
+   if (!view) return -1;
+   const uint8_t direction = at<uint8_t>(view, layout.gameViewBuildDirection);
+   return direction < game::kDirectionCount ? direction : -1;
+}
+
 void* playerCursorDetour() { return reinterpret_cast<void*>(&playerDetour); }
 void** playerCursorOriginal() { return reinterpret_cast<void**>(&g_playerOriginal); }
 void* sourceCursorDetour() { return reinterpret_cast<void*>(&sourceDetour); }

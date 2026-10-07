@@ -13,6 +13,7 @@ Key Features:
 ]]
 
 local StorageManager = require("scripts.storage-manager")
+local EventManager = require("scripts.event-manager")
 local MovementHistory = require("scripts.movement-history")
 local BuildingTools = require("scripts.building-tools")
 local Speech = require("scripts.speech")
@@ -63,6 +64,10 @@ end
 ---@field last_cursor_stack_count number?
 ---@field last_cursor_stack_quality string?
 ---@field last_movement_generation number?
+---The game's build direction as the last custom input reported it. Walking is vanilla and reports
+---nothing, and a rotate key reports the direction from before it turns, so this catches up at the
+---next key.
+---@field build_direction defines.direction
 
 ---@type table<number, fa.BuildLock.State>
 local build_lock_storage = StorageManager.declare_storage_module("build_lock", function()
@@ -74,7 +79,12 @@ local build_lock_storage = StorageManager.declare_storage_module("build_lock", f
       last_cursor_stack_count = nil,
       last_cursor_stack_quality = nil,
       last_movement_generation = nil,
+      build_direction = defines.direction.north,
    }
+end)
+
+EventManager.observe_custom_inputs(function(event, pindex)
+   if event.cursor_direction then build_lock_storage[pindex].build_direction = event.cursor_direction end
 end)
 
 -- Backend registry
@@ -257,7 +267,7 @@ function BuildLock.set_enabled(pindex, enabled, silent, reason)
       table.insert(state.cursor_state.pending_tiles, {
          x = cursor_tile.x,
          y = cursor_tile.y,
-         direction = vp:get_hand_direction(),
+         direction = state.build_direction,
       })
 
       state.last_cursor_stack_name = player.cursor_stack and player.cursor_stack.name or nil
@@ -540,7 +550,6 @@ local function attempt_build_from_queue(pindex, build_state, pending_tiles, max_
    end
 
    -- Build base context (without position yet)
-   local vp = Viewpoint.get_viewpoint(pindex)
    local context = {
       pindex = pindex,
       player = player,
@@ -549,7 +558,7 @@ local function attempt_build_from_queue(pindex, build_state, pending_tiles, max_
       entity_prototype = entity_prototype, -- nil for tiles
       current_position = nil, -- Will be set after tile selection
       movement_direction = nil, -- Will be set after tile selection
-      building_direction = vp:get_hand_direction(),
+      building_direction = build_lock_storage[pindex].build_direction,
       entity_history = build_state.entity_history,
       backend_state = build_state.backend_state,
    }

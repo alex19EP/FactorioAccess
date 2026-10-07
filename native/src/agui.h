@@ -239,6 +239,18 @@ struct BurnerParts {
 };
 BurnerParts burnerParts(const Widget* burnerInfo);
 
+// The parts of a window with circuit and logistic network buttons in its title bar
+// (GuiWithSideButtons) that is a transport belt's, a lamp's or another GenericOnOffEntityGui, or a
+// splitter's (SplitterGui); all null and 0 for any other window. `titled` is the window titled with
+// the entity's name, `sidePanel` the container the buttons open their panels in, and `unitNumber`
+// the entity's (LuaEntity::unit_number).
+struct EntityPanelParts {
+   const Widget* titled = nullptr;
+   const Widget* sidePanel = nullptr;
+   uint64_t unitNumber = 0;
+};
+EntityPanelParts entityPanelParts(const Widget* window);
+
 // The quickbar along the bottom of the screen (QuickBarGui), or null outside a game or while the
 // view has none.
 const Widget* quickBar();

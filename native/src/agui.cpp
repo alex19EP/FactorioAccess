@@ -649,6 +649,27 @@ BurnerParts burnerParts(const Widget* burnerInfo) {
            member(burnerInfo, layout.burnerProgressBar)};
 }
 
+EntityPanelParts entityPanelParts(const Widget* window) {
+   const std::byte* sideButtons = asBase(window, ".?AVGuiWithSideButtons@@");
+   if (!sideButtons) return {};
+   const std::byte* entity = nullptr;
+   EntityPanelParts parts;
+   if (const std::byte* gui = asBase(window, ".?AVGenericOnOffEntityGui@@")) {
+      parts.titled = reinterpret_cast<const Widget*>(gui + layout.onOffEntityWindow);
+      entity = at<const std::byte*>(gui, layout.onOffEntity);
+   } else if (const std::byte* splitter = asBase(window, ".?AVSplitterGui@@")) {
+      parts.titled = window;
+      entity = at<const std::byte*>(splitter, layout.splitterEntity);
+   } else {
+      return {};
+   }
+   parts.sidePanel = reinterpret_cast<const Widget*>(sideButtons + layout.sidePanelContainer);
+   // Belts and splitters (TransportBeltConnectable) derive from EntityWithOwner first, so it starts
+   // the object. Only the mod's views are matched by it, and the mod sends those for belts alone.
+   if (entity) parts.unitNumber = at<uint64_t>(entity, layout.entityUnitNumber);
+   return parts;
+}
+
 unsigned selectedRow(const Widget* table) {
    return at<uint32_t>(asBaseChecked(table, ".?AVTableWithSelection@agui@@"), layout.tableSelectedIndex);
 }
