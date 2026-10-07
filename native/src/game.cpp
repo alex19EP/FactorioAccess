@@ -271,6 +271,16 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.rowPage, "QuickBarGui::RowWidgets", "pageIndex");
    offset(layout.rowButton, "QuickBarGui::RowWidgets", "button");
    offset(layout.rowSlots, "QuickBarGui::RowWidgets", "slots");
+   classSlot(layout.controllerViewShortcutBar, "ControllerView", "getShortcutBar");
+   offset(layout.shortcutBarColumns, "ShortcutBarGui", "columns");
+   offset(layout.shortcutBarListButton, "ShortcutBarGui", "expandButton");
+   offset(layout.shortcutBarList, "ShortcutBarGui", "shortcutSelectionFrame");
+   offset(layout.shortcutBarListOpen, "ShortcutBarGui", "shortcutSelectionFrameVisible");
+   offset(layout.shortcutBarListRows, "ShortcutBarGui", "shortcutRows");
+   offset(layout.shortcutRowCheckBox, "ShortcutBarGui::ShortcutRow", "dockCheckbox");
+   offset(layout.shortcutButtonBehavior, "ShortcutButton", "behavior");
+   offset(layout.shortcutBehaviorPrototype, "ShortcutBehavior", "prototype");
+   offset(layout.buttonIsToggle, "agui::Button", "isButtonToggleButton");
 
    address(layout.loggingLog, "?log@Logging@@SAXPEBDIW4LogLevel@@0ZZ");
    address(layout.stringAppend, "?append@?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@QEAAAEAV12@QEBD_K@Z");

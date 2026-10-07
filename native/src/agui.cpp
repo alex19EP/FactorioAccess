@@ -692,6 +692,56 @@ std::vector<QuickBarRow> quickBarPickerRows(const Widget* quickBar) {
    return rowsAt(quickBar, layout.quickBarPickerRows);
 }
 
+const Widget* shortcutBar() {
+   auto* context = *reinterpret_cast<const std::byte* const*>(layout.globalContext);
+   if (!context) return nullptr;
+   auto* game = at<const std::byte*>(context, layout.globalGame);
+   if (!game) return nullptr;
+   auto* view = at<const std::byte*>(game, layout.gameView);
+   if (!view) return nullptr;
+   auto* controllerView = at<std::byte*>(view, layout.gameViewControllerView);
+   if (!controllerView) return nullptr;
+   auto vtable = *reinterpret_cast<VirtualTable*>(controllerView);
+   return reinterpret_cast<const Widget* (*)(void*)>(vtable[layout.controllerViewShortcutBar])(controllerView);
+}
+
+std::vector<std::vector<Shortcut>> shortcutBarRows(const Widget* shortcutBar) {
+   // Columns with no shortcut at all are hidden; the rest show every place, empty or not.
+   std::vector<const Widget*> columns;
+   const auto& all = at<MsvcVector<const Widget* const>>(shortcutBar, layout.shortcutBarColumns);
+   for (const Widget* const* it = all.first; it != all.last; ++it)
+      if (visible(*it)) columns.push_back(*it);
+
+   std::vector<std::vector<Shortcut>> rows;
+   for (const Widget* column : columns) {
+      std::span<const Widget* const> buttons = children(column);
+      if (rows.size() < buttons.size()) rows.resize(buttons.size());
+      for (size_t row = 0; row < buttons.size(); ++row) {
+         const Widget* button = buttons[row];
+         const std::byte* behavior = at<const std::byte*>(button, layout.shortcutButtonBehavior);
+         if (!behavior) continue;
+         rows[row].push_back({button, localisedName(at<const std::byte*>(behavior, layout.shortcutBehaviorPrototype)),
+                              at<bool>(asBaseChecked(button, ".?AVButton@agui@@"), layout.buttonIsToggle)});
+      }
+   }
+   std::erase_if(rows, [](const std::vector<Shortcut>& row) { return row.empty(); });
+   return rows;
+}
+
+const Widget* shortcutBarListButton(const Widget* shortcutBar) {
+   return member(shortcutBar, layout.shortcutBarListButton);
+}
+
+std::vector<const Widget*> shortcutBarListCheckBoxes(const Widget* shortcutBar) {
+   std::vector<const Widget*> boxes;
+   if (!at<bool>(shortcutBar, layout.shortcutBarListOpen)) return boxes;
+   const auto& rows = at<MsvcVector<const Widget* const>>(shortcutBar, layout.shortcutBarListRows);
+   for (const Widget* const* it = rows.first; it != rows.last; ++it)
+      // The list's search hides the rows it filters out.
+      if (visible(*it)) boxes.push_back(member(*it, layout.shortcutRowCheckBox));
+   return boxes;
+}
+
 
 bool isFocusable(const Widget* widget) { return callVirtual<bool>(widget, layout.slotIsFocusable); }
 
