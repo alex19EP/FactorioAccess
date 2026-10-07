@@ -581,13 +581,14 @@ EntityWindowParts entityWindowParts(const Widget* window) {
    }
    struct Machine {
       std::string_view type;
-      uint32_t progressBar, bonusBar, recipe, changeRecipe;
+      uint32_t progressBar, bonusBar, recipe, outputs, changeRecipe;
    };
    for (const Machine& machine :
         {Machine{".?AVAssemblingMachineGui@@", layout.assemblerProgressBar, layout.assemblerBonusBar,
-                 layout.assemblerRecipe, layout.assemblerChangeRecipe},
-         Machine{".?AVFurnaceGui@@", layout.furnaceProgressBar, layout.furnaceBonusBar, layout.furnaceRecipe, 0},
-         Machine{".?AVMiningDrillGui@@", layout.drillProgressBar, layout.drillBonusBar, 0, 0}}) {
+                 layout.assemblerRecipe, layout.assemblerOutputs, layout.assemblerChangeRecipe},
+         Machine{".?AVFurnaceGui@@", layout.furnaceProgressBar, layout.furnaceBonusBar, layout.furnaceRecipe,
+                 layout.furnaceOutputs, 0},
+         Machine{".?AVMiningDrillGui@@", layout.drillProgressBar, layout.drillBonusBar, 0, 0, 0}}) {
       const std::byte* base = asBase(window, machine.type);
       if (!base) continue;
       auto widgetAt = [base](uint32_t offset) {
@@ -596,6 +597,7 @@ EntityWindowParts entityWindowParts(const Widget* window) {
       parts.progressBar = widgetAt(machine.progressBar);
       parts.bonusBar = widgetAt(machine.bonusBar);
       parts.recipe = widgetAt(machine.recipe);
+      parts.outputs = widgetAt(machine.outputs);
       parts.changeRecipe = widgetAt(machine.changeRecipe);
    }
    return parts;

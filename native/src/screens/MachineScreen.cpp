@@ -40,8 +40,9 @@ const Widget* FindWindow()
 }
 
 // Bars read with what they belong to rather than as stops of their own: the crafting progress and
-// productivity with the recipe, which Enter changes where the machine allows; a drill's
+// productivity with the first output slot (with the recipe while there is none); a drill's
 // productivity with its mining progress; what is left of the burning fuel with the fuel slot.
+// Enter on the recipe changes it where the machine allows.
 Attachments MachineAttachments(const agui::EntityWindowParts& parts)
 {
     Attachments attachments;
@@ -50,8 +51,12 @@ Attachments MachineAttachments(const agui::EntityWindowParts& parts)
         bars.emplace_back(parts.progressBar, "");
     if (parts.bonusBar)
         bars.emplace_back(parts.bonusBar, std::string(vocab::kProductivity));
+    std::vector<const Widget*> outputs = parts.outputs ? VisibleChildren(parts.outputs) : std::vector<const Widget*>();
     if (parts.recipe)
-        attachments[parts.recipe] = {std::move(bars), parts.changeRecipe};
+    {
+        attachments[parts.recipe].press = parts.changeRecipe;
+        attachments[outputs.empty() ? parts.recipe : outputs.front()].bars = std::move(bars);
+    }
     else if (parts.progressBar)
         attachments[parts.progressBar] = {std::move(bars)};
     for (const Widget* burner : FindAll(parts.entity, "BurnerInfo"))
