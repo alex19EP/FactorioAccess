@@ -58,6 +58,22 @@ struct Layout {
    uint32_t infoBoxManagerFrame = 0;      // InfoBoxManager::frame, an embedded agui::Window holding the boxes
    uint32_t infoBoxManagerRebuild = 0;    // InfoBoxManager::rebuildConnectors, bool
    uint32_t infoBoxManagerConnectors = 0; // InfoBoxManager::connectors, std::vector<ConnectorAndPosition>
+   // Walking. virtual bool Character::changePosition(Vector const&) is a character's step of the
+   // tick in the game state, true only when it went the whole way.
+   uintptr_t characterChangePosition = 0;
+   uint32_t characterPosition = 0;   // Entity::position, MapPosition
+   uint32_t characterMap = 0;        // Entity::map, Map*
+   uint32_t characterController = 0; // Character::controller, CharacterController*
+   uint32_t controllerPlayer = 0;    // Controller::player, Player*
+   uint32_t mapUpdateTick = 0;       // Map::updateTick, uint64
+   uint32_t playerMap = 0;           // Player::map, Map*
+   // Label colours: a Label's style.parent is the GuiStyle style the game gave it, e.g. the bold red
+   // and bold orange of a recipe tooltip's short ingredient counts.
+   uint32_t labelStyleParent = 0;        // agui::Label::style.parent, agui::Style*
+   uint32_t globalStyle = 0;             // GlobalContext::style.value, GuiStyle*
+   uint32_t guiStyleBoldRedLabel = 0;    // GuiStyle::_boldRedLabel, IntegratedStyle<LabelStyleSpecification>*
+   uint32_t guiStyleBoldOrangeLabel = 0; // GuiStyle::_boldOrangeLabel, the same
+   uint32_t integratedLabelStyleAgui = 0; // IntegratedStyle<LabelStyleSpecification>::agui, agui::LabelStyle
 
    // The Lua 5.2 C API, linked into the game.
    uintptr_t luaCreateTable = 0;

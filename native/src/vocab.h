@@ -92,6 +92,11 @@ inline constexpr std::string_view kMap = "map";
 // An icon in a text that the game lets the mouse click (a Factoriopedia description's).
 inline constexpr std::string_view kLink = "link";
 
+// A recipe tooltip's ingredient count in red (not enough, and none to make) or in orange (not
+// enough, made from intermediates when crafted).
+inline constexpr std::string_view kMissing = "missing";
+inline constexpr std::string_view kFromIntermediates = "from intermediates";
+
 inline constexpr std::string_view kNoTooltip = "no tooltip";
 inline constexpr std::string_view kNoAction = "no action";
 

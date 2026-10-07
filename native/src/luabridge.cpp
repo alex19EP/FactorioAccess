@@ -3,6 +3,7 @@
 #include "entityviews.h"
 #include "game.h"
 #include "log.h"
+#include "movement.h"
 #include "parts.h"
 #include "speech.h"
 #include "world.h"
@@ -163,6 +164,19 @@ int buildDirection(lua_State* L) {
    return 1;
 }
 
+// How this client's character's walking went this tick or the last: "full", "partial" (slid along
+// something) or "none" (blocked), then a step count that wraps at 256; nothing for another
+// client's player or when it did not walk. The mod may play sounds by it but must not change the
+// game by it.
+int walkingStep(lua_State* L) {
+   movement::Step step;
+   uint8_t count = 0;
+   if (!movement::recentStep(static_cast<int>(checkInteger(L, 1)), step, count)) return 0;
+   pushString(L, step == movement::Step::Full ? "full" : step == movement::Step::Partial ? "partial" : "none");
+   pushByte(L, count);
+   return 2;
+}
+
 // Ctrl+Tab in the world, which the mod hands over when none of its own menus takes it.
 int nextPart(lua_State* L) {
    if (!world::mayBeLocalPlayer(static_cast<int>(checkInteger(L, 1)))) return 0;
@@ -211,6 +225,7 @@ constexpr Function kFunctions[] = {
    {"speak", &speak},
    {"next_part", &nextPart},
    {"build_direction", &buildDirection},
+   {"walking_step", &walkingStep},
    {"entity_views_begin", &entityViewsBegin},
    {"entity_view", &entityView},
    {"entity_view_column", &entityViewColumn},

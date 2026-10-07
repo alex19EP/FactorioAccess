@@ -104,6 +104,12 @@ SwitchState switchState(const Widget* widget);
 bool readOnly(const Widget* textBox);
 std::string_view textBoxText(const Widget* textBox);
 
+// The game's bold red and bold orange label styles, which say something the text does not: in a
+// recipe tooltip, an ingredient count there is short, red when it cannot be made and orange when
+// crafting makes it from intermediates.
+enum class LabelTone { Plain, Red, Orange };
+LabelTone labelTone(const Widget* label);
+
 bool tabSelected(const Widget* tab);
 
 // Cells per row of an agui::Table; its children fill the rows in order.

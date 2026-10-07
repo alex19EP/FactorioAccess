@@ -1,28 +1,30 @@
 --[[
 Bump Detection System
-Provides audio feedback when the player collides with obstacles while walking.
 
-Detection Methods:
+Sounds: the game itself decides each tick how a walking character's step went (Character::changePosition):
+the whole way, slid along what it ran into, or not at all. The native DLL hands that to play_step_sounds for
+this client's player:
+- Trip: the first step that slides after walking freely (running into something)
+- Slide: sliding on along it
+- Stuck: blocked for 3 steps
+Only this client knows those steps, so they play sounds and nothing else.
+
+Bumps for the mod's own logic (build lock) come from the movement history in the game state, the same on every
+client:
 1. Deviation Angle: Compares intended direction (from player input) with actual movement direction.
    - High deviation (>20°) while moving smoothly = sliding along a wall
-   - Example: Pressing East but moving South along a wall = 90° deviation
-
 2. Path Angle: Compares consecutive movement vectors to detect sharp turns.
    - High path angle (>30°) = hitting a corner or obstacle
-   - Example: Moving East then suddenly Southeast = 45° path change
-
 3. Stuck Detection: Detects when walking input is active but position is unchanged.
    - Same position for 3+ ticks while walking = stuck against wall
-
-Sound Selection:
-- Stuck: Player trying to walk but not moving at all
-- Slide: Smooth movement but in wrong direction (wall sliding)
-- Trip: Sharp direction change (corner collision)
 ]]
 
 local StorageManager = require("scripts.storage-manager")
 local MovementHistory = require("scripts.movement-history")
 local sounds = require("scripts.ui.sounds")
+
+---@type fa.Native?
+local native = rawget(_G, "fa_native")
 local Logging = require("scripts.logging")
 local Consts = require("scripts.consts")
 local Geometry = require("scripts.geometry")
@@ -67,10 +69,10 @@ local function notify_bump_callbacks(pindex)
    end
 end
 
----Checks and plays bump alert sounds when collision is detected
+---Tells the bump callbacks when the movement history shows a collision
 ---@param pindex number
 ---@param this_tick number
-function mod.check_and_play_bump_alert_sound(pindex, this_tick)
+function mod.check_bump(pindex, this_tick)
    local bump = bump_storage[pindex]
 
    -- Check cooldown (30 ticks = 0.5 seconds) to avoid sound spam
@@ -177,36 +179,16 @@ function mod.check_and_play_bump_alert_sound(pindex, this_tick)
    -- 2. Sharp path change (>30°) - corner collision
    if angle_degrees > 20 or path_angle_degrees > 30 then
       bump.last_bump_tick = this_tick
-
-      -- Notify registered callbacks
       notify_bump_callbacks(pindex)
-
-      -- Select appropriate sound based on collision type
-      if angle_degrees > 20 and angle_degrees < 70 and path_angle_degrees < 30 then
-         -- Sliding along wall: moving wrong direction but smoothly
-         -- Example: Trying to move east but sliding south along a wall
-         logger:info("Playing slide sound (deviation)")
-         sounds.play_player_bump_slide(pindex)
-      elseif path_angle_degrees > 45 then
-         -- Sharp turn or direct hit: sudden direction change in path
-         -- Example: Running into a corner and bouncing off
-         logger:info("Playing trip sound (sharp turn)")
-         sounds.play_player_bump_trip(pindex)
-      else
-         -- General bump: other collision patterns
-         logger:info("Playing slide sound (general)")
-         sounds.play_player_bump_slide(pindex)
-      end
    else
       logger:debug("No bump detected")
    end
 end
 
----If walking but position unchanged, play stuck alert
----Detects when player is giving walking input but not moving at all
+---Tells the bump callbacks when the player is giving walking input but not moving at all
 ---@param pindex number
 ---@param this_tick number
-function mod.check_and_play_stuck_alert_sound(pindex, this_tick)
+function mod.check_stuck(pindex, this_tick)
    local bump = bump_storage[pindex]
 
    -- Check cooldown (60 ticks = 1 second) - longer than bump to avoid overlap
@@ -250,13 +232,59 @@ function mod.check_and_play_stuck_alert_sound(pindex, this_tick)
    -- This means the player has been trying to walk for 3+ ticks but hasn't moved
    if stuck and walking_count >= 3 then
       bump.last_stuck_tick = this_tick
-
-      -- Notify registered callbacks
       notify_bump_callbacks(pindex)
-
-      logger:info("Playing stuck sound!")
-      sounds.play_player_bump_stuck(pindex)
    end
+end
+
+---@class fa.BumpDetection.StepState
+---@field count integer? The step count last read
+---@field last string The last step: "full", "partial" or "none"
+---@field blocked integer Steps blocked in a row
+---@field last_sound_tick integer
+
+-- Per player, outside storage: it follows steps only this client knows.
+---@type table<integer, fa.BumpDetection.StepState>
+local step_states = {}
+
+---Plays the trip, slide and stuck sounds from the game's own walking steps
+---@param pindex integer
+---@param this_tick integer
+function mod.play_step_sounds(pindex, this_tick)
+   if not native then return end
+   local step, count = native.walking_step(pindex)
+   local state = step_states[pindex]
+   if not state then
+      state = { last = "full", blocked = 0, last_sound_tick = 0 }
+      step_states[pindex] = state
+   end
+   if not step then
+      state.last = "full"
+      state.blocked = 0
+      return
+   end
+   if count == state.count then return end
+   state.count = count
+
+   if step == "none" then
+      state.blocked = state.blocked + 1
+      -- Stuck after 3 blocked steps, again every second while it lasts
+      if state.blocked == 3 or (state.blocked > 3 and this_tick - state.last_sound_tick >= 60) then
+         state.last_sound_tick = this_tick
+         sounds.play_player_bump_stuck(pindex)
+      end
+   elseif step == "partial" then
+      state.blocked = 0
+      if state.last == "full" then
+         state.last_sound_tick = this_tick
+         sounds.play_player_bump_trip(pindex)
+      elseif this_tick - state.last_sound_tick >= 30 then
+         state.last_sound_tick = this_tick
+         sounds.play_player_bump_slide(pindex)
+      end
+   else
+      state.blocked = 0
+   end
+   state.last = step
 end
 
 return mod

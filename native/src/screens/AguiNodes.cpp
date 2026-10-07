@@ -760,6 +760,28 @@ std::string SlotText(const Widget* slot)
     return std::format("{} {:.1f}", spoken, count);
 }
 
+namespace
+{
+
+bool InRecipeToolTip(const Widget* label, const Widget* tooltip)
+{
+    for (const Widget* widget = label; widget; widget = widget == tooltip ? nullptr : agui::parent(widget))
+        if (agui::derivesFrom(widget, "RecipeToolTip"))
+            return true;
+    return false;
+}
+
+// A recipe tooltip's short ingredient counts say so only by their colour.
+std::string_view ToneWord(const Widget* label, const Widget* tooltip)
+{
+    agui::LabelTone tone = agui::labelTone(label);
+    if (tone == agui::LabelTone::Plain || !InRecipeToolTip(label, tooltip))
+        return {};
+    return tone == agui::LabelTone::Red ? vocab::kMissing : vocab::kFromIntermediates;
+}
+
+} // namespace
+
 std::string TooltipText(const Widget* tooltip)
 {
     std::string text;
@@ -767,7 +789,11 @@ std::string TooltipText(const Widget* tooltip)
     ForEachChild(tooltip, [&](const Widget* child, const std::string&) {
         for (const Widget* label : FindAll(child, "agui::Label"))
             if (std::string line = LabelText(label); !line.empty())
+            {
+                if (std::string_view word = ToneWord(label, tooltip); !word.empty())
+                    line = std::format("{}, {}", word, line);
                 text += (text.empty() ? "" : "\n") + line;
+            }
     });
     return text;
 }

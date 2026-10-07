@@ -354,8 +354,9 @@ function on_tick(event)
       if not player.connected then goto continue end
       if VanillaMode.is_enabled(player.index) then goto continue end
 
-      BumpDetection.check_and_play_bump_alert_sound(player.index, event.tick)
-      BumpDetection.check_and_play_stuck_alert_sound(player.index, event.tick)
+      BumpDetection.check_bump(player.index, event.tick)
+      BumpDetection.check_stuck(player.index, event.tick)
+      BumpDetection.play_step_sounds(player.index, event.tick)
       -- Process build lock for walking movement
       BuildLock.process_walking_movement(player.index)
       -- Process walking announcements (anchored cursor or entity detection)

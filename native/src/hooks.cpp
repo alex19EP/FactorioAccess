@@ -7,6 +7,7 @@
 #include "input.h"
 #include "log.h"
 #include "luabridge.h"
+#include "movement.h"
 #include "popups.h"
 #include "ui.h"
 #include "world.h"
@@ -65,6 +66,8 @@ bool install() {
                   "Hooking the SpeechBubbleGui constructor") &&
              hook(layout.infoBoxManagerUpdate, popups::infoBoxesDetour(), popups::infoBoxesOriginal(),
                   "Hooking InfoBoxManager::update") &&
+             hook(layout.characterChangePosition, movement::changePositionDetour(),
+                  movement::changePositionOriginal(), "Hooking Character::changePosition") &&
              check(MH_EnableHook(MH_ALL_HOOKS), "Enabling hooks");
    if (!ok) {
       MH_Uninitialize();

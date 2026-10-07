@@ -73,6 +73,18 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.infoBoxManagerFrame, "InfoBoxManager", "frame");
    offset(layout.infoBoxManagerRebuild, "InfoBoxManager", "rebuildConnectors");
    offset(layout.infoBoxManagerConnectors, "InfoBoxManager", "connectors");
+   address(layout.characterChangePosition, "?changePosition@Character@@UEAA_NAEBVVector@@@Z");
+   offset(layout.characterPosition, "Character", "position");
+   offset(layout.characterMap, "Character", "map");
+   offset(layout.characterController, "Character", "controller");
+   offset(layout.controllerPlayer, "CharacterController", "player");
+   offset(layout.mapUpdateTick, "Map", "updateTick");
+   offset(layout.playerMap, "Player", "map");
+   offset(layout.labelStyleParent, "agui::Label", "style.parent");
+   offset(layout.globalStyle, "GlobalContext", "style.value");
+   offset(layout.guiStyleBoldRedLabel, "GuiStyle", "_boldRedLabel");
+   offset(layout.guiStyleBoldOrangeLabel, "GuiStyle", "_boldOrangeLabel");
+   offset(layout.integratedLabelStyleAgui, "IntegratedStyle<LabelStyleSpecification>", "agui");
    address(layout.luaCreateTable, "lua_createtable");
    address(layout.luaPushCClosure, "lua_pushcclosure");
    address(layout.luaSetField, "lua_setfield");

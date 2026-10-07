@@ -370,6 +370,21 @@ std::string_view textBoxText(const Widget* textBox) {
    return readString(asBaseChecked(textBox, ".?AVTextBox@agui@@"), layout.textBoxText);
 }
 
+LabelTone labelTone(const Widget* label) {
+   const std::byte* base = asBase(label, ".?AVLabel@agui@@");
+   auto* context = *reinterpret_cast<const std::byte* const*>(layout.globalContext);
+   const std::byte* styles = context ? at<const std::byte*>(context, layout.globalStyle) : nullptr;
+   if (!base || !styles) return LabelTone::Plain;
+   const std::byte* parent = at<const std::byte*>(base, layout.labelStyleParent);
+   auto is = [&](uint32_t field) {
+      const std::byte* style = at<const std::byte*>(styles, field);
+      return style && parent == style + layout.integratedLabelStyleAgui;
+   };
+   if (is(layout.guiStyleBoldRedLabel)) return LabelTone::Red;
+   if (is(layout.guiStyleBoldOrangeLabel)) return LabelTone::Orange;
+   return LabelTone::Plain;
+}
+
 bool tabSelected(const Widget* tab) {
    const auto* pane = at<const std::byte*>(asBaseChecked(tab, ".?AVTab@agui@@"), layout.tabPane);
    if (!pane) return false;
