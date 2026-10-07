@@ -244,7 +244,9 @@ def create_or_update_luarc(config_path: str) -> None:
         "workspace": {
             "library": [],
             "checkThirdParty": False,
-            "ignoreDir": [".vscode", ".git"],
+            # .claude holds worktrees: whole second copies of the mod, whose duplicate
+            # definitions would fail the real files too.
+            "ignoreDir": [".vscode", ".git", ".claude"],
         },
         "diagnostics": {
             "enable": True,

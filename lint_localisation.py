@@ -111,8 +111,9 @@ def parse_all_cfg_keys():
 def find_lua_files():
     """Find all .lua files recursively from current directory, excluding test directories."""
     all_files = Path(".").rglob("*.lua")
-    # Exclude any files in directories containing 'tests' as a path component
-    return [f for f in all_files if 'tests' not in f.parts]
+    # Exclude any files in directories containing 'tests' as a path component, and the
+    # worktrees under .claude: their copies of the mod would count as uses of every key.
+    return [f for f in all_files if 'tests' not in f.parts and '.claude' not in f.parts]
 
 
 def strip_lua_comments(line):
