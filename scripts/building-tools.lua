@@ -14,7 +14,6 @@ local MessageBuilder = Speech.MessageBuilder
 local PlayerMiningTools = require("scripts.player-mining-tools")
 local Teleport = require("scripts.teleport")
 local TransportBelts = require("scripts.transport-belts")
-local UiRouter = require("scripts.ui.router")
 local Viewpoint = require("scripts.viewpoint")
 
 local mod = {}
@@ -161,7 +160,6 @@ end
 
 --[[Attempts to build the item in hand with explicit parameters.
 * Does nothing if the hand is empty or the item is not a place-able entity.
-* If the item is an offshore pump, calls a different, special function for it.
 * @param params fa.BuildingTools.BuildItemParams Build parameters
 * @return boolean True if build was successful
 ]]
@@ -225,46 +223,6 @@ function mod.build_item_in_hand_with_params(params)
             Speech.speak(pindex, result)
          end
          return false
-      end
-   end
-end
-
---[[Assisted building function for offshore pumps.
-* Called as a special case by build_item_in_hand_with_params
-]]
-function mod.build_offshore_pump_in_hand(pindex)
-   local p = game.get_player(pindex)
-   local stack = p.cursor_stack
-
-   if stack and stack.valid and stack.valid_for_read and stack.name == "offshore-pump" then
-      local positions = {}
-      local initial_position = p.position
-      initial_position.x = math.floor(initial_position.x)
-      initial_position.y = math.floor(initial_position.y)
-      for i1 = -10, 10 do
-         for i2 = -10, 10 do
-            for i3 = 0, 3 do
-               local position = { x = initial_position.x + i1, y = initial_position.y + i2 }
-               -- BUG: factorio 2.0 plays a sound for can_build_from_cursor if pointed at out of reach tiles
-               if FaUtils.distance(position, p.position) > p.build_distance then goto continue end
-
-               ---@type defines.direction
-               local dir_3 = i3 * dirs.east
-               if p.can_build_from_cursor({ name = "offshore-pump", position = position, direction = dir_3 }) then
-                  table.insert(positions, { position = position, direction = dir_3 })
-               end
-            end
-
-            ::continue::
-         end
-      end
-      if #positions == 0 then
-         Speech.speak(pindex, { "fa.building-pump-no-positions" })
-      else
-         table.sort(positions, function(k1, k2)
-            return util.distance(initial_position, k1.position) < util.distance(initial_position, k2.position)
-         end)
-         UiRouter.get_router(pindex):open_ui(UiRouter.UI_NAMES.PUMP, { positions = positions })
       end
    end
 end

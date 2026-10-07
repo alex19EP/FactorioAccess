@@ -84,11 +84,9 @@ Next, count 3 north from the pole and place the lab, making the setup 3 tiles wi
 
 Now we need to get this setup some water.
 
-Offshore pumps draw water from water tiles, but they have a complicated placing rule.  Most players will only ever place one or two for the entire game, so we offer a helper menu.
+Offshore pumps draw water from water tiles.  A pump stands on a land tile at the edge of the water and faces the water, and the water comes out of its back.  The game turns the pump to face the water for you.
 
-The rule for an offshore pump is that it is 3 wide by 2 high.  The frontmost tiles must all be over water and the middle of the back must be over land.  Water then comes out the center of the back.
-
-To get to the helper menu, get your character near water, put an offshore pump in hand, and alt click.  This will give you a list of candidate locations. Click one, and the pump will build.  Then, find the pump with your scanner.
+To find a spot, get your character near water, put an offshore pump in hand, and refresh the scanner.  The build spots category then lists every place within 30 tiles of your character where the pump fits, closest first.  Press control page up and down to reach it.  The scanner puts your cursor on the spot, and left bracket builds the pump there.  Then, find the pump with your scanner.
 
 Pipes are a little bit magical.  Factorio models fluids as instant teleportation.  If a pipe has water in it and something at the other end needs it, then the thing at the other end gets the water even if it is a very long pipe.
 

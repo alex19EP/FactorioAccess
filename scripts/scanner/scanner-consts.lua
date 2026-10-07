@@ -5,6 +5,8 @@ local mod = {}
 ---@enum fa.scanner.Category
 mod.CATEGORIES = {
    ALL = "all",
+   -- Places the item in hand can be built, such as the shore for an offshore pump.
+   BUILD_SPOTS = "build_spots",
    RESOURCES = "resources",
    ENEMIES = "enemies",
    LOGISTICSAndPower = "logistics_and_power",
@@ -25,6 +27,7 @@ mod.CATEGORIES = {
 -- The desired order of categories when moving through the scanner.
 mod.CATEGORY_ORDER = {
    mod.CATEGORIES.ALL,
+   mod.CATEGORIES.BUILD_SPOTS,
    mod.CATEGORIES.RESOURCES,
    mod.CATEGORIES.ENEMIES,
    mod.CATEGORIES.REMNANTS,
@@ -71,6 +74,10 @@ mod.INFINITE_RESOURCE_ZOOM_DISTANCE = 50
 -- because it allows for tiny bits of land not to get in the way, causes
 -- diagonal tiles to connect, and leaves a bit of room for floating point error.
 mod.WATER_TILE_DISTANCE = 10
+
+-- With an offshore pump in hand, shore within this many tiles of the player is checked for places to
+-- build it.
+mod.PUMP_SPOT_DISTANCE = 30
 
 -- Modded water is mostly not a thing. If it is we can extend the list.
 mod.WATER_PROTOS = Consts.WATER_TILE_NAMES

@@ -3,11 +3,6 @@
 
 local mod = {}
 
--- Special cases where we cannot compute off the game's datga, but where we can do the right thing by hardcoding.
-local SPECIAL_CASES = {
-   ["offshore-pump"] = { width = 3, height = 2 },
-}
-
 ---Analyze blueprint to determine base dimensions (before rotation)
 ---@param stack LuaItemStack The blueprint stack
 ---@return integer|nil width The width in tiles (north orientation)
@@ -108,9 +103,6 @@ function mod.get_stack_build_dimensions(stack, direction)
    elseif stack.is_blueprint then
       --Blueprints: analyze constituent entities
       return analyze_blueprint_base_dimensions(stack)
-   elseif SPECIAL_CASES[stack.name] then
-      width = SPECIAL_CASES[stack.name].width
-      height = SPECIAL_CASES[stack.name].height
    --Entities: get dimensions from prototype
    elseif stack.prototype.place_result then
       width = stack.prototype.place_result.tile_width

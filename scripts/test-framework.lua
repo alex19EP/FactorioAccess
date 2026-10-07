@@ -56,6 +56,7 @@ local test_files = {
    "rail-grid-adjustment-test", -- Test that TestSurface matches game rail grid adjustment
    "player-weapon-test", -- Test weapon/ammo property detection
    "game-notices-test", -- Test the goal window reader
+   "pump-spots-test", -- Test the scanner's offshore pump build spots
 }
 
 -- Test execution state
