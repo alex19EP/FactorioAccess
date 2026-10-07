@@ -732,6 +732,17 @@ const Widget* shortcutBarListButton(const Widget* shortcutBar) {
    return member(shortcutBar, layout.shortcutBarListButton);
 }
 
+const Widget* sideMenu() {
+   auto* context = *reinterpret_cast<const std::byte* const*>(layout.globalContext);
+   if (!context) return nullptr;
+   auto* game = at<const std::byte*>(context, layout.globalGame);
+   if (!game) return nullptr;
+   auto* view = at<const std::byte*>(game, layout.gameView);
+   return view ? at<const Widget*>(view, layout.gameViewSideMenu) : nullptr;
+}
+
+const Widget* sideMenuMuteButton(const Widget* sideMenu) { return pointerMember(sideMenu, layout.sideMenuMuteButton); }
+
 std::vector<const Widget*> shortcutBarListCheckBoxes(const Widget* shortcutBar) {
    std::vector<const Widget*> boxes;
    if (!at<bool>(shortcutBar, layout.shortcutBarListOpen)) return boxes;

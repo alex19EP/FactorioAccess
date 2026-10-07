@@ -69,6 +69,7 @@ inline constexpr std::string_view kShowOnBar = "show on bar";
 // its own on screen.
 inline constexpr std::string_view kShortcutBar = "shortcut bar";
 inline constexpr std::string_view kAllShortcuts = "all shortcuts";
+inline constexpr std::string_view kSideMenu = "side menu";
 // Where leaving a part of the HUD with no window open takes the player.
 inline constexpr std::string_view kMap = "map";
 
