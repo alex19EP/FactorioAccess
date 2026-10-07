@@ -280,7 +280,7 @@ function mod.can_rotate_item(stack)
 end
 
 --Reads the direction the game turned the item in hand to. The game turns a blueprint's own rotation,
---which Lua cannot read, so a blueprint only gets the sound.
+--which Lua cannot read, so a blueprint gets nothing.
 function mod.rotate_item_in_hand(event)
    local pindex = event.player_index
    local p = game.get_player(pindex)
@@ -290,7 +290,6 @@ function mod.rotate_item_in_hand(event)
 
    -- Check if item in hand can rotate
    if mod.can_rotate_item(stack) then
-      p.play_sound({ path = "Rotate-Hand-Sound" })
       if stack.is_blueprint or stack.is_blueprint_book then return end
       local direction = NativeCursor.build_direction(pindex)
       if direction then
