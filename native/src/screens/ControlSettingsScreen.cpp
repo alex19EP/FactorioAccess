@@ -26,6 +26,19 @@ const Widget* FirstText(const Widget* widget)
     return nullptr;
 }
 
+// The label right before a subsection, when one heads it ("Kruise Kontrol").
+const Widget* SubsectionHeading(const Widget* subsection)
+{
+    const Widget* heading = nullptr;
+    for (const Widget* sibling : VisibleChildren(agui::parent(subsection)))
+    {
+        if (sibling == subsection)
+            return heading;
+        heading = agui::kind(sibling) == agui::Kind::Label && !LabelText(sibling).empty() ? sibling : nullptr;
+    }
+    return nullptr;
+}
+
 } // namespace
 
 bool ControlSettingsScreen::Handles(const Widget* window) const
@@ -89,31 +102,41 @@ void ControlSettingsScreen::BuildSection(graph::GraphBuilder& builder, const Wid
         builder.AddItem(graph::ControlId::Referenced(title, prefix), std::move(header));
     }
 
-    std::vector<const Widget*> lines = FindAll(section, "ControlSettingsGui::Section::SubSection::Line");
-    if (lines.empty())
+    if (FindAll(section, "ControlSettingsGui::Section::SubSection::Line").empty())
     {
         // Not key bindings (the mouse and vehicle options): read as it stands, minus the header.
         AddSubtree(builder, prefix + "/content", section, {title ? agui::parent(title) : nullptr});
         return;
     }
-    for (std::size_t i = 0; i < lines.size(); ++i)
+    std::size_t line = 0;
+    for (const Widget* subsection : FindAll(section, "ControlSettingsGui::Section::SubSection"))
     {
-        const Widget* action = FirstText(lines[i]);
-        std::vector<const Widget*> keys = FindAll(lines[i], "agui::TextButton");
-        if (!action || keys.empty())
-            continue;
-        std::string key = prefix + "/" + std::to_string(i);
-        builder.StartRow("binding");
-        const Widget* primary = keys[0];
-        AddControl(builder, key + "/1", primary,
-            [action, primary]() { return LabelText(action) + ", " + OwnText(primary); });
-        if (keys.size() > 1)
+        // A subsection under a heading of its own (the mods section has one per mod): the heading
+        // is the context its bindings are announced in.
+        const Widget* heading = SubsectionHeading(subsection);
+        if (heading)
+            builder.PushContext(LabelText(heading));
+        for (const Widget* binding : FindAll(subsection, "ControlSettingsGui::Section::SubSection::Line"))
         {
-            const Widget* alternative = keys[1];
-            AddControl(builder, key + "/2", alternative,
-                [alternative]() { return OwnText(alternative) + ", " + std::string(vocab::kAlternative); });
+            const Widget* action = FirstText(binding);
+            std::vector<const Widget*> keys = FindAll(binding, "agui::TextButton");
+            if (!action || keys.empty())
+                continue;
+            std::string key = prefix + "/" + std::to_string(line++);
+            builder.StartRow("binding");
+            const Widget* primary = keys[0];
+            AddControl(builder, key + "/1", primary,
+                [action, primary]() { return LabelText(action) + ", " + OwnText(primary); });
+            if (keys.size() > 1)
+            {
+                const Widget* alternative = keys[1];
+                AddControl(builder, key + "/2", alternative,
+                    [alternative]() { return OwnText(alternative) + ", " + std::string(vocab::kAlternative); });
+            }
+            builder.EndRow();
         }
-        builder.EndRow();
+        if (heading)
+            builder.PopContext();
     }
 }
 
