@@ -732,13 +732,70 @@ const Widget* shortcutBarListButton(const Widget* shortcutBar) {
    return member(shortcutBar, layout.shortcutBarListButton);
 }
 
-const Widget* sideMenu() {
+namespace {
+
+// The loaded game's GameView, or null.
+const std::byte* gameView() {
    auto* context = *reinterpret_cast<const std::byte* const*>(layout.globalContext);
    if (!context) return nullptr;
    auto* game = at<const std::byte*>(context, layout.globalGame);
-   if (!game) return nullptr;
-   auto* view = at<const std::byte*>(game, layout.gameView);
+   return game ? at<const std::byte*>(game, layout.gameView) : nullptr;
+}
+
+// The widget a GameView member points at, or null; shown only while it is visible.
+const Widget* shownMember(const std::byte* view, uint32_t offset) {
+   const Widget* widget = view ? at<const Widget*>(view, offset) : nullptr;
+   return widget && visible(widget) ? widget : nullptr;
+}
+
+const Widget* shownBar(const std::byte* bottom, uint32_t targeter) {
+   const Widget* bar = fromTargeter(bottom, targeter);
+   return bar && visible(bar) ? bar : nullptr;
+}
+
+} // namespace
+
+const Widget* sideMenu() {
+   const std::byte* view = gameView();
    return view ? at<const Widget*>(view, layout.gameViewSideMenu) : nullptr;
+}
+
+ResearchBox researchBox() {
+   const Widget* button = shownMember(gameView(), layout.gameViewResearch);
+   if (!button) return {};
+   const Widget* progress = visible(member(button, layout.researchProgressFlow))
+                                ? member(button, layout.researchProgressLabel)
+                                : nullptr;
+   return {button, member(button, layout.researchTitle), progress};
+}
+
+std::vector<AlertButton> alertButtons() {
+   std::vector<AlertButton> buttons;
+   const std::byte* view = gameView();
+   if (!view) return buttons;
+   const auto& guis = at<MsvcVector<const Widget* const>>(view, layout.gameViewAlerts);
+   for (const Widget* const* it = guis.first; it != guis.last; ++it)
+      if (visible(*it))
+         buttons.push_back({member(*it, layout.alertGuiButton), at<AlertCategory>(*it, layout.alertGuiCategory)});
+   return buttons;
+}
+
+double iconButtonCount(const Widget* button) {
+   return at<double>(asBaseChecked(button, ".?AVIconButtonWithNumber@@"), layout.iconButtonCount);
+}
+
+const Widget* goalLabel() {
+   const Widget* goal = shownMember(gameView(), layout.gameViewGoal);
+   return goal ? member(goal, layout.goalLabel) : nullptr;
+}
+
+HudBars hudBars() {
+   const std::byte* view = gameView();
+   const auto* bottom = view ? at<const std::byte*>(view, layout.gameViewBottom) : nullptr;
+   if (!bottom) return {};
+   return {shownBar(bottom, layout.bottomHealthBar), shownBar(bottom, layout.bottomShieldBar),
+           shownBar(bottom, layout.bottomVehicleHealthBar), shownBar(bottom, layout.bottomVehicleShieldBar),
+           shownBar(bottom, layout.bottomMiningBar)};
 }
 
 const Widget* sideMenuMuteButton(const Widget* sideMenu) { return pointerMember(sideMenu, layout.sideMenuMuteButton); }

@@ -334,6 +334,29 @@ struct Layout {
    uint32_t gameViewSideMenu = 0;        // GameView::sideMenu, std::unique_ptr<SideMenu>
    uint32_t sideMenuMuteButton = 0;      // SideMenu::masterMutedButton, IconButton*
 
+   // The HUD's status: the research box at the top right, the alert buttons, the scenario's goal and
+   // the bars over the quickbar.
+   uint32_t gameViewResearch = 0;        // GameView::currentResearchInfo, std::unique_ptr<CurrentResearchInfo>
+   uint32_t researchTitle = 0;           // CurrentResearchInfo::title, agui::Label: the technology, or "not researching"
+   uint32_t researchProgressFlow = 0;    // CurrentResearchInfo::progressBarFlow, hidden while nothing is researched
+   uint32_t researchProgressLabel = 0;   // CurrentResearchInfo::researchProgressLabel, the formatted percent
+   // One AlertGui per AlertCategory, each shown while its category has alerts; its button opens the
+   // category's AlertsOverview.
+   uint32_t gameViewAlerts = 0;          // GameView::alertGuis, std::vector<std::unique_ptr<AlertGui>>
+   uint32_t alertGuiCategory = 0;        // AlertGui::category, AlertCategory (unsigned char)
+   uint32_t alertGuiButton = 0;          // AlertGui::warningSlot, IconButtonWithNumber
+   // IconButtonWithNumber::count. The alert button blinks by setting it to 0 every other half second.
+   uint32_t iconButtonCount = 0;
+   uint32_t gameViewGoal = 0;            // GameView::goalDescription, std::unique_ptr<GoalDescription>
+   uint32_t goalLabel = 0;               // GoalDescription::label, agui::Label
+   uint32_t gameViewBottom = 0;          // GameView::bottomContainer, std::unique_ptr<BottomContainer>
+   // BottomContainer's bars, each a GenericTargeter<ControllerProgressBar>.
+   uint32_t bottomHealthBar = 0;
+   uint32_t bottomShieldBar = 0;
+   uint32_t bottomVehicleHealthBar = 0;
+   uint32_t bottomVehicleShieldBar = 0;
+   uint32_t bottomMiningBar = 0;
+
    // What the game says about itself while the DLL runs (see disclosure.h).
    // static void Logging::log(char const* file, unsigned line, LogLevel, char const* format, ...)
    uintptr_t loggingLog = 0;

@@ -101,6 +101,7 @@ add_library(fa_native SHARED
   src/screens/QuickBarScreen.cpp
   src/screens/ShortcutBarScreen.cpp
   src/screens/SideMenuScreen.cpp
+  src/screens/StatusScreen.cpp
   src/screens/FilterSelectScreen.cpp
   src/parts.cpp
   src/ui.cpp
