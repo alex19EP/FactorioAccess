@@ -149,6 +149,8 @@ struct Layout {
    uintptr_t checkCreateTooltip = 0;
    // bool Widget::removeToolTipWidget(bool destroy): takes it down again.
    uintptr_t removeToolTipWidget = 0;
+   // ToolTip::updateContent(): fills a tooltip, which the Gui otherwise does at the end of its logic.
+   uint32_t slotToolTipUpdateContent = 0;
    uint32_t plainToolTipTitle = 0;
    uint32_t plainToolTipText = 0;
 
