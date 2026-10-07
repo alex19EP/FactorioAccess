@@ -21,6 +21,13 @@ using agui::Widget;
 
 std::string PageName(uint8_t page) { return std::format("{} {}", vocab::kPage, page + 1); }
 
+// "bar 2, page 4": which bar, the first the number keys use, then the page it shows. Bars may show
+// the same page, so the bar comes first and tells them apart.
+std::string BarName(std::size_t bar, uint8_t page)
+{
+    return std::format("{} {}, {}", vocab::kBar, bar + 1, PageName(page));
+}
+
 // "transport belt 50", or "transport belt 0" for an item the player carries none of; "empty" with
 // nothing on the slot.
 std::string SlotContent(const Widget* slot)
@@ -66,7 +73,7 @@ void AddBars(graph::GraphBuilder& builder, const std::vector<agui::QuickBarRow>&
     builder.BeginStop("bars");
     for (std::size_t i = 0; i < rows.size(); ++i)
     {
-        builder.PushContext(PageName(rows[i].page));
+        builder.PushContext(BarName(i, rows[i].page));
         builder.StartRow("bar");
         for (std::size_t j = 0; j < rows[i].slots.size(); ++j)
             builder.AddItem(graph::ControlId::Referenced(rows[i].slots[j], SlotKey("bars", i, j)),
@@ -80,27 +87,31 @@ void AddBars(graph::GraphBuilder& builder, const std::vector<agui::QuickBarRow>&
     {
         uint8_t page = rows[i].page;
         builder.AddItem(graph::ControlId::Referenced(rows[i].button, std::format("pages/{}", i)),
-            ControlNode(rows[i].button, [page]() { return PageName(page); }));
+            ControlNode(rows[i].button, [i, page]() { return BarName(i, page); }));
     }
 }
 
-// A line per page: its button, which shows the page on the bar, then its slots numbered as the
-// quickbar keys would take them.
-void AddPicker(graph::GraphBuilder& builder, std::vector<agui::QuickBarRow> pages)
+// A row per page in its own context, so that Up and Down say the page: its button, which shows the
+// page on the bar the picker opened for, then its slots numbered as the quickbar keys take them.
+void AddPicker(graph::GraphBuilder& builder, std::vector<agui::QuickBarRow> pages, std::size_t bar)
 {
     // The game stacks page 10 on top; page 1 comes first here, as the keys count them.
     std::ranges::sort(pages, {}, &agui::QuickBarRow::page);
+    std::string show = std::format("{} {}", vocab::kShowOnBar, bar + 1);
     builder.BeginStop("picker");
-    for (std::size_t i = 0; i < pages.size(); ++i)
+    for (const agui::QuickBarRow& row : pages)
     {
-        uint8_t page = pages[i].page;
+        // The slots carry their numbers and the context its page, so the row is a line, which leaves
+        // its items unpositioned; lines keep the column on Up and Down all the same.
+        builder.PushContext(PageName(row.page));
         builder.StartLine("page");
-        builder.AddItem(graph::ControlId::Referenced(pages[i].button, std::format("picker/{}", page)),
-            ControlNode(pages[i].button, [page]() { return PageName(page); }));
-        for (std::size_t j = 0; j < pages[i].slots.size(); ++j)
-            builder.AddItem(graph::ControlId::Referenced(pages[i].slots[j], SlotKey("picker", page, j)),
-                QuickBarSlotNode(pages[i].slots[j], [j]() { return std::to_string(j + 1); }));
+        builder.AddItem(graph::ControlId::Referenced(row.button, std::format("picker/{}", row.page)),
+            ControlNode(row.button, [show]() { return show; }));
+        for (std::size_t j = 0; j < row.slots.size(); ++j)
+            builder.AddItem(graph::ControlId::Referenced(row.slots[j], SlotKey("picker", row.page, j)),
+                QuickBarSlotNode(row.slots[j], [j]() { return std::to_string(j + 1); }));
         builder.EndRow();
+        builder.PopContext();
     }
 }
 
@@ -130,7 +141,7 @@ void QuickBarScreen::Build(graph::GraphBuilder& builder)
         // Opening the picker lands on the page the bar shows.
         if (_picking != picking)
             _landing = std::format("picker/{}", rows[picking].page);
-        AddPicker(builder, agui::quickBarPickerRows(_bar));
+        AddPicker(builder, agui::quickBarPickerRows(_bar), static_cast<std::size_t>(picking));
     }
     else
     {
@@ -176,6 +187,12 @@ void QuickBarScreen::OnPop()
     _picking = -1;
     _cancelled = false;
     _landing.clear();
+}
+
+std::string QuickBarScreen::LeaveLine() const
+{
+    // Left with Ctrl+Tab or Escape, not covered by a menu: the quickbar part is no longer in use.
+    return parts::current() == parts::Part::None ? std::string(vocab::kMap) : std::string();
 }
 
 void QuickBarScreen::WatchPage()

@@ -8,6 +8,8 @@
 // Ported from CyberAccess (src/Navigator/Screen.hpp), without screen keys, quick-nav and holds,
 // which nothing here needs yet.
 
+#include <string>
+
 #include "graph/GraphBuilder.hpp"
 
 namespace fa::nav
@@ -64,6 +66,10 @@ public:
     /// must not reach the game's own Back. The navigator then takes Escape and calls OnEscape.
     virtual bool ClaimsEscape() const { return false; }
     virtual void OnEscape() {}
+
+    /// Said when this screen goes away with no screen to take the navigator after it, so the player
+    /// knows where they are (a part of the HUD left for the map). Asked after OnPop. Empty: nothing.
+    virtual std::string LeaveLine() const { return {}; }
 
     /// The focused identity changed (arrow move, differ jump, attach landing). Drive the game's
     /// own focus here (P11 write-back). Called after this frame's Build on a live render;

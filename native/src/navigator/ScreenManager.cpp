@@ -5,6 +5,7 @@
 
 #include "graph/GraphAnnouncer.hpp"
 #include "input.h"
+#include "speech.h"
 #include "vocab.h"
 
 namespace fa::nav
@@ -116,6 +117,7 @@ void ScreenManager::Update()
     // Poll and diff the active set (exception-isolated: a throwing IsActive reads as inactive).
     // Attach is DEBOUNCED: a screen goes live only after kAttachSettleFrames consecutive active
     // frames. Detach is immediate.
+    std::string leaveLine;
     for (std::size_t i = 0; i < _registry.size(); ++i)
     {
         const auto& screen = _registry[i];
@@ -140,7 +142,8 @@ void ScreenManager::Update()
         }
         else if (!active && live)
         {
-            if (_navigator.AttachedScreen() == screen.get())
+            bool wasAttached = _navigator.AttachedScreen() == screen.get();
+            if (wasAttached)
             {
                 screen->OnUnfocus();
                 _navigator.Detach();
@@ -149,6 +152,8 @@ void ScreenManager::Update()
                 if (e.Target == screen.get())
                     Park(screen.get(), std::move(e.State));
             screen->OnPop();
+            if (wasAttached)
+                leaveLine = screen->LeaveLine();
             std::erase_if(_live, [&](const LiveEntry& e) { return e.Target == screen.get(); });
         }
     }
@@ -176,6 +181,9 @@ void ScreenManager::Update()
             top->OnFocus();
         }
     }
+    // A screen taking over announces itself instead.
+    if (!top && !leaveLine.empty())
+        speech::say(leaveLine, true);
 
     _navigator.Update();
 }

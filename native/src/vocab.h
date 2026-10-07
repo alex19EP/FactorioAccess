@@ -58,9 +58,14 @@ inline constexpr std::string_view kAllLocked = "all locked";
 inline constexpr std::string_view kLocked = "locked";
 inline constexpr std::string_view kLockFromHere = "lock from here";
 
-// The quickbar and the page each of its bars shows ("page 3").
+// The quickbar, its bars and the page each shows ("bar 2, page 3"), and the page picker's button
+// that shows a page on a bar ("show on bar 2").
 inline constexpr std::string_view kQuickBar = "quickbar";
+inline constexpr std::string_view kBar = "bar";
 inline constexpr std::string_view kPage = "page";
+inline constexpr std::string_view kShowOnBar = "show on bar";
+// Where leaving a part of the HUD with no window open takes the player.
+inline constexpr std::string_view kMap = "map";
 
 inline constexpr std::string_view kNoTooltip = "no tooltip";
 inline constexpr std::string_view kNoAction = "no action";

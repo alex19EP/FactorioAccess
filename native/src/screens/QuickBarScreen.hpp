@@ -39,6 +39,7 @@ public:
     bool ClaimsEscape() const override { return true; }
     void OnEscape() override;
     void OnPop() override;
+    std::string LeaveLine() const override;
 
     // Speaks the page the first bar shows when the game changes it while the quickbar is not in use
     // (the game's Shift+1 to 0), with the page's first slot. Once per frame, on the Gui's logic.
