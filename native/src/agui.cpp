@@ -350,6 +350,8 @@ CheckState checkState(const Widget* toggleButton) {
 
 bool buttonToggled(const Widget* button) { return at<bool>(asBaseChecked(button, ".?AVButton@agui@@"), layout.buttonToggled); }
 
+bool buttonIsToggle(const Widget* button) { return at<bool>(asBaseChecked(button, ".?AVButton@agui@@"), layout.buttonIsToggle); }
+
 SliderValue sliderValue(const Widget* slider) {
    const std::byte* base = asBaseChecked(slider, ".?AVSlider@agui@@");
    return {at<double>(base, layout.sliderValue), at<double>(base, layout.sliderMin), at<double>(base, layout.sliderMax),
@@ -721,7 +723,7 @@ std::vector<std::vector<Shortcut>> shortcutBarRows(const Widget* shortcutBar) {
          const std::byte* behavior = at<const std::byte*>(button, layout.shortcutButtonBehavior);
          if (!behavior) continue;
          rows[row].push_back({button, localisedName(at<const std::byte*>(behavior, layout.shortcutBehaviorPrototype)),
-                              at<bool>(asBaseChecked(button, ".?AVButton@agui@@"), layout.buttonIsToggle)});
+                              buttonIsToggle(button)});
       }
    }
    std::erase_if(rows, [](const std::vector<Shortcut>& row) { return row.empty(); });
@@ -796,6 +798,92 @@ HudBars hudBars() {
    return {shownBar(bottom, layout.bottomHealthBar), shownBar(bottom, layout.bottomShieldBar),
            shownBar(bottom, layout.bottomVehicleHealthBar), shownBar(bottom, layout.bottomVehicleShieldBar),
            shownBar(bottom, layout.bottomMiningBar)};
+}
+
+Factoriopedia factoriopedia() {
+   const Widget* window = shownMember(gameView(), layout.gameViewFactoriopedia);
+   if (!window) return {};
+   return {window,
+           member(window, layout.frameHeader),
+           member(window, layout.factoriopediaList),
+           member(window, layout.factoriopediaSubheader),
+           member(window, layout.factoriopediaPage),
+           member(window, layout.factoriopediaUnresearched),
+           at<bool>(window, layout.factoriopediaPinned)};
+}
+
+namespace {
+
+// TagType values: the icons RichTextHoverManager::handleHover gives a tooltip and a click, from
+// SpecialItem to SpacePlatform. Gps is left out: it needs the console line it was posted in.
+constexpr uint32_t kTagSpecialItem = 0x9;
+constexpr uint32_t kTagGps = 0xb;
+constexpr uint32_t kTagSpacePlatform = 0x27;
+
+// The hover manager of a label whose rich text is hoverable, or null for any other label.
+std::byte* hoverManager(const Widget* label) {
+   const std::byte* hoverable = asBase(label, ".?AVLabelWithHoverableRichText@@");
+   return hoverable ? const_cast<std::byte*>(hoverable + layout.hoverableLabelManager) : nullptr;
+}
+
+// The label's text sections, laid out as it draws them; empty without rich text.
+std::span<const std::byte> richTextSections(const Widget* label) {
+   const auto* text = at<const std::byte*>(asBaseChecked(label, ".?AVLabel@agui@@"), layout.labelRichText);
+   if (!text) return {};
+   const auto* begin = at<const std::byte*>(text, layout.richTextSectionsBegin);
+   const auto* end = at<const std::byte*>(text, layout.richTextSectionsEnd);
+   return {begin, end};
+}
+
+const std::byte* richTextSection(const Widget* label, size_t section) {
+   std::span<const std::byte> sections = richTextSections(label);
+   size_t offset = section * layout.richTextSectionSize;
+   return offset + layout.richTextSectionSize <= sections.size() ? sections.data() + offset : nullptr;
+}
+
+void handleHover(std::byte* manager, const std::byte* section, bool clicked) {
+   using ClearTooltip = void (*)(std::byte*);
+   using HandleHover = void (*)(std::byte*, const std::byte*, const void* consoleItem, bool);
+   reinterpret_cast<ClearTooltip>(layout.richTextClearTooltip)(manager);
+   reinterpret_cast<HandleHover>(layout.richTextHandleHover)(manager, section, nullptr, clicked);
+}
+
+} // namespace
+
+std::vector<RichTextLink> richTextLinks(const Widget* label) {
+   std::vector<RichTextLink> links;
+   if (!hoverManager(label)) return links;
+   std::span<const std::byte> sections = richTextSections(label);
+   for (size_t offset = 0, index = 0; offset + layout.richTextSectionSize <= sections.size();
+        offset += layout.richTextSectionSize, ++index) {
+      const std::byte* section = sections.data() + offset;
+      uint32_t type = at<uint32_t>(section, layout.richTextSectionType);
+      std::string_view tag = at<std::string_view>(section, layout.richTextSectionTag);
+      if (type >= kTagSpecialItem && type <= kTagSpacePlatform && type != kTagGps && !tag.empty())
+         links.push_back({index, tag});
+   }
+   return links;
+}
+
+void clickRichTextLink(const Widget* label, size_t section) {
+   std::byte* manager = hoverManager(label);
+   const std::byte* drawn = manager ? richTextSection(label, section) : nullptr;
+   if (drawn) handleHover(manager, drawn, true);
+}
+
+const Widget* hoverRichTextLink(const Widget* label, size_t section) {
+   std::byte* manager = hoverManager(label);
+   const std::byte* drawn = manager ? richTextSection(label, section) : nullptr;
+   if (!drawn) return nullptr;
+   handleHover(manager, drawn, false);
+   const Widget* tooltip = fromTargeter(manager, layout.hoverManagerTooltip);
+   if (tooltip) callVirtual<void>(tooltip, layout.slotToolTipUpdateContent);
+   return tooltip;
+}
+
+void clearRichTextHover(const Widget* label) {
+   if (std::byte* manager = hoverManager(label))
+      reinterpret_cast<void (*)(std::byte*)>(layout.richTextClearTooltip)(manager);
 }
 
 const Widget* sideMenuMuteButton(const Widget* sideMenu) { return pointerMember(sideMenu, layout.sideMenuMuteButton); }

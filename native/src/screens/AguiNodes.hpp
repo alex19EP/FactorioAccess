@@ -95,6 +95,9 @@ std::string SlotText(const agui::Widget* slot);
 /// Speaks the game's own tooltip for the widget, as hovering shows it: its texts a line each.
 void SpeakGameTooltip(const agui::Widget* widget);
 
+/// The texts of a tooltip widget the game made, a line each.
+std::string TooltipText(const agui::Widget* tooltip);
+
 /// Declares a single control, if it is visible. Returns whether it did.
 bool AddControl(graph::GraphBuilder& builder, const std::string& key, const agui::Widget* widget,
     std::function<std::string()> name = {});

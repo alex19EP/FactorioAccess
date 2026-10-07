@@ -319,6 +319,23 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.bottomVehicleHealthBar, "BottomContainer", "vehicleHealthProgressBar");
    offset(layout.bottomVehicleShieldBar, "BottomContainer", "vehicleShieldProgressBar");
    offset(layout.bottomMiningBar, "BottomContainer", "miningProgressBar");
+   offset(layout.gameViewFactoriopedia, "GameView", "factoriopedia");
+   offset(layout.factoriopediaList, "Factoriopedia", "selectList");
+   offset(layout.factoriopediaSubheader, "Factoriopedia", "insideFrame.subheader");
+   offset(layout.factoriopediaPage, "Factoriopedia", "scrollPane");
+   offset(layout.factoriopediaUnresearched, "Factoriopedia", "showUnresearchedButton");
+   offset(layout.factoriopediaPinned, "Factoriopedia", "pinned");
+   offset(layout.labelRichText, "agui::Label", "resizableText.richTextData");
+   offset(layout.richTextSectionsBegin, "TextDrawSections", "sections.begin_");
+   offset(layout.richTextSectionsEnd, "TextDrawSections", "sections.end_");
+   size(layout.richTextSectionSize, "TextDrawSection");
+   offset(layout.richTextSectionType, "TextDrawSection", "type");
+   offset(layout.richTextSectionTag, "TextDrawSection", "tagText");
+   offset(layout.hoverableLabelManager, "LabelWithHoverableRichText", "hoverManger");
+   offset(layout.hoverManagerTooltip, "RichTextHoverManager", "hoverTooltip");
+   address(layout.richTextHandleHover,
+           "?handleHover@RichTextHoverManager@@IEAAXAEBVTextDrawSection@@PEBVItem@OutputConsole@@_N@Z");
+   address(layout.richTextClearTooltip, "?clearTooltip@RichTextHoverManager@@QEAAXXZ");
 
    address(layout.loggingLog, "?log@Logging@@SAXPEBDIW4LogLevel@@0ZZ");
    address(layout.stringAppend, "?append@?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@QEAAAEAV12@QEBD_K@Z");

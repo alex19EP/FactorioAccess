@@ -89,6 +89,8 @@ inline constexpr std::string_view kVehicleHealth = "vehicle health";
 inline constexpr std::string_view kVehicleShield = "vehicle shield";
 // Where leaving a part of the HUD with no window open takes the player.
 inline constexpr std::string_view kMap = "map";
+// An icon in a text that the game lets the mouse click (a Factoriopedia description's).
+inline constexpr std::string_view kLink = "link";
 
 inline constexpr std::string_view kNoTooltip = "no tooltip";
 inline constexpr std::string_view kNoAction = "no action";

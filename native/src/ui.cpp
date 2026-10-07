@@ -10,6 +10,7 @@
 #include "screens/ControlSettingsScreen.hpp"
 #include "screens/CraftingQueueScreen.hpp"
 #include "screens/DropDownScreen.hpp"
+#include "screens/FactoriopediaScreen.hpp"
 #include "screens/FilterSelectScreen.hpp"
 #include "screens/GenericWindowScreen.hpp"
 #include "screens/LoadGameScreen.hpp"
@@ -98,6 +99,8 @@ void start() {
    manager.Register(std::make_unique<screens::StatusScreen>());
    // The crafting queue, the part after the status.
    manager.Register(std::make_unique<screens::CraftingQueueScreen>());
+   // Factoriopedia, over the window it stacks on.
+   manager.Register(std::make_unique<screens::FactoriopediaScreen>());
    // Over it or a window, the chooser of a filter one of their slots opened.
    manager.Register(std::make_unique<screens::FilterSelectScreen>());
    // Over any of them, an open dropdown's list.
