@@ -23,11 +23,6 @@ local mod = {}
 ---@type fa.Native?
 local native = rawget(_G, "fa_native")
 
----@return boolean
-function mod.is_loaded()
-   return native ~= nil
-end
-
 ---Moves to the next part of the screen the DLL reads, such as the quickbar, or back with a
 ---negative direction.
 ---@param pindex integer

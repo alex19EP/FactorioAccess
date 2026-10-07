@@ -96,7 +96,7 @@ require("scripts.ui.planners.decon-planner-menu")
 require("scripts.ui.tabs.tile-chooser")
 require("scripts.ui.selectors.copy-paste-selector")
 require("scripts.ui.menus.gun-menu")
-local MainMenu = require("scripts.ui.menus.main-menu")
+require("scripts.ui.menus.main-menu")
 local WorldMenu = require("scripts.ui.menus.world-menu")
 require("scripts.ui.menus.fast-travel-menu")
 require("scripts.ui.menus.debug-menu")
@@ -2388,32 +2388,6 @@ EventManager.on_event(
       local router = UiRouter.get_router(pindex)
 
       kb_tile_cycle(event)
-   end
-)
-
---Opens the main unified menu
----@param event EventData.CustomInputEvent
-local function kb_open_player_inventory(event)
-   local pindex = event.player_index
-   local p = game.get_player(pindex)
-   local router = UiRouter.get_router(pindex)
-
-   if p.ticks_to_respawn ~= nil or p.character == nil then return end
-   -- The game's own character screen opens on the same key, and the DLL reads it.
-   if NativeCursor.is_loaded() then return end
-   sounds.play_open_inventory(p.index)
-   p.selected = nil
-
-   -- Open the main menu
-   MainMenu.open_main_menu(pindex)
-end
-
-EventManager.on_event(
-   "fa-e",
-   ---@param event EventData.CustomInputEvent
-   function(event, pindex)
-      -- Always open inventory - closing is handled by the UI event system
-      kb_open_player_inventory(event)
    end
 )
 

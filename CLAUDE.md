@@ -169,6 +169,14 @@ The mod requires the native DLL in `native/` (deployed as `winmm.dll`). There is
 - Don't write Lua that guesses what happened from indirect events, and don't add Lua fallbacks for when the DLL is missing. Existing Lua guesses are to be replaced by native reads.
 - Lua-only APIs that do expose the information (events, getters) remain the right tool for it. This does not apply to UI: a game GUI (window, HUD part such as the quickbar, shortcut bar or crafting queue) gets a native screen that reads and clicks the game's own widgets, even when Lua could read the same data.
 
+#### Multiplayer: the DLL is client-only
+Only the blind player runs the DLL. The server and the other players run the same Lua without it, and every peer must change the game identically or the game desyncs.
+
+- Lua never changes the game (writes `storage`, a player, an entity or a setting, opens or closes a Lua UI) based on whether `fa_native` exists or on anything it returns (`build_direction`, `walking_step`, `held_build`, ...). Those values feed speech and sounds only.
+- Guard each `fa_native` call with `if native then`, and let the guard skip only that call.
+- The DLL changes the game only through the game's own input (cursor, replayed clicks and keys, build lock), which the game sends to the server itself.
+- A key that both a Lua UI and a native screen answer is the classic desync: the peers without the DLL open the Lua UI. When a native screen covers a game window, remove the Lua UI for it.
+
 ## Testing
 
 ### Test Framework
