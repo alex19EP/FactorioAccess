@@ -95,6 +95,10 @@ inline constexpr std::string_view kLink = "link";
 // button standing for the technologies the view leaves out ("12 omitted").
 inline constexpr std::string_view kCancel = "cancel";
 inline constexpr std::string_view kOmitted = "omitted";
+// Its parts that have no heading on screen: the selected technology's details, and the buttons on
+// the technology tree's title bar.
+inline constexpr std::string_view kSelectedTechnology = "selected technology";
+inline constexpr std::string_view kTreeControls = "tree controls";
 
 // A recipe tooltip's ingredient count in red (not enough, and none to make) or in orange (not
 // enough, made from intermediates when crafted).

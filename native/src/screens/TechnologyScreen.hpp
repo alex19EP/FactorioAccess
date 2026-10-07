@@ -4,7 +4,9 @@
 // open-technology-gui control (T) or the research box. Like Factoriopedia it stacks over whatever
 // window is open, so it takes the navigator from that window's screen while it shows.
 //
-// Stops, in this order:
+// Stops, in this order, each said by name as Tab enters it: the heading the game draws over it
+// ("Research queue", "Technology list", the tree's title), or for the two without one, "selected
+// technology" and "tree controls":
 //   - queue: the research queue, the research going on first, each technology with the button
 //     that takes it out of the queue beside it;
 //   - list: every technology, a grid the game's search (Ctrl+F) filters, the search field over it

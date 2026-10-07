@@ -66,14 +66,38 @@ std::string Caption(const Widget* frame)
     return title ? text::speakable(agui::text(title)) : std::string();
 }
 
+// The heading the game draws over a part of the window: the label just before it ("Research
+// queue"), or the first label of the row just before it ("Technology list", beside the search).
+std::string Heading(const Widget* part)
+{
+    const Widget* before = nullptr;
+    for (const Widget* sibling : VisibleChildren(agui::parent(part)))
+    {
+        if (sibling == part)
+            break;
+        before = sibling;
+    }
+    if (!before)
+        return {};
+    const Widget* label = agui::kind(before) == agui::Kind::Label ? before : FindDescendant(before, "agui::Label");
+    return label ? LabelText(label) : std::string();
+}
+
+// A Tab stop named as the player hears it on entering: everything declared until the matching
+// EndZone is said in the zone's name.
+void BeginZone(graph::GraphBuilder& builder, std::string key, const std::string& name)
+{
+    builder.BeginStop(std::move(key));
+    builder.PushContext(name);
+}
+
+void EndZone(graph::GraphBuilder& builder) { builder.PopContext(); }
+
 void AddQueue(graph::GraphBuilder& builder, const Widget* queue)
 {
     if (!queue || !agui::visible(queue))
         return;
-    builder.BeginStop("queue");
-    std::string caption = Caption(queue);
-    if (!caption.empty())
-        builder.PushContext(caption);
+    BeginZone(builder, "queue", Heading(queue));
     std::vector<agui::QueueEntry> entries = agui::researchQueueEntries(queue);
     // A technology with several levels can be queued more than once.
     std::unordered_map<uint16_t, int> seen;
@@ -93,24 +117,21 @@ void AddQueue(graph::GraphBuilder& builder, const Widget* queue)
     }
     if (entries.empty())
         builder.AddLabel(graph::ControlId::Structural("queue/empty"), []() { return std::string(vocab::kEmpty); });
-    if (!caption.empty())
-        builder.PopContext();
+    EndZone(builder);
 }
 
 // Every technology, a row of the grid per row of the game's table, keyed by technology so that the
 // cursor stays on one as the search filters the rest away.
 void AddList(graph::GraphBuilder& builder, const agui::TechnologyWindow& window, const Widget* search)
 {
-    builder.BeginStop("list");
+    BeginZone(builder, "list", Heading(window.list));
     // The search button over the grid, which opens the field.
     AddControl(builder, "list/search", FindDescendant(window.window, "SearchBar"));
     if (search)
         builder.AddItem(graph::ControlId::Referenced(search, kSearchKey), ControlNode(search));
     unsigned columns = agui::tableColumns(window.listTable);
     auto cells = agui::children(window.listTable);
-    if (columns == 0)
-        return;
-    for (std::size_t start = 0; start < cells.size(); start += columns)
+    for (std::size_t start = 0; columns > 0 && start < cells.size(); start += columns)
     {
         bool open = false;
         for (std::size_t i = start; i < cells.size() && i < start + columns; ++i)
@@ -127,6 +148,7 @@ void AddList(graph::GraphBuilder& builder, const agui::TechnologyWindow& window,
         if (open)
             builder.EndRow();
     }
+    EndZone(builder);
 }
 
 bool HasLinks(const Widget* widget)
@@ -159,7 +181,7 @@ void AddDetails(graph::GraphBuilder& builder, const std::string& prefix, const W
 
 void AddSelected(graph::GraphBuilder& builder, const agui::TechnologyWindow& window)
 {
-    builder.BeginStop("selected");
+    BeginZone(builder, "selected", std::string(vocab::kSelectedTechnology));
     const Widget* title = window.title;
     const Widget* status = window.status;
     builder.AddItem(graph::ControlId::Structural("selected/title"), TextNode(title,
@@ -171,12 +193,13 @@ void AddSelected(graph::GraphBuilder& builder, const agui::TechnologyWindow& win
         }));
     // The details start with the technology's own button, which the title already reads.
     AddDetails(builder, "selected", window.featured, FindDescendant(window.featured, "TechnologySlot"));
+    EndZone(builder);
 }
 
 // The graph's title bar (Back, Forward, close) and "Show only essential technologies" under it.
 void AddControls(graph::GraphBuilder& builder, const agui::TechnologyWindow& window)
 {
-    builder.BeginStop("controls");
+    BeginZone(builder, "controls", std::string(vocab::kTreeControls));
     builder.StartRow("controls");
     int index = 0;
     for (const Widget* button : FindAll(window.graphTitle, "agui::Button"))
@@ -184,6 +207,7 @@ void AddControls(graph::GraphBuilder& builder, const agui::TechnologyWindow& win
     builder.EndRow();
     if (const Widget* essential = FindDescendant(window.graphHolder, "agui::CheckBox"))
         AddControl(builder, "controls/essential", essential);
+    EndZone(builder);
 }
 
 std::string VertexKey(const agui::TechnologyVertex& vertex)
@@ -247,7 +271,7 @@ void AddGraph(graph::GraphBuilder& builder, const agui::TechnologyWindow& window
     // Keyed by the selected technology: a newly selected one is a stop not yet visited, entered on
     // that technology rather than where the cursor last was.
     uint16_t central = graph.central < graph.vertices.size() ? graph.vertices[graph.central].technology : 0;
-    builder.BeginStop(std::format("graph/{}", central));
+    BeginZone(builder, std::format("graph/{}", central), Caption(window.graphTitle));
 
     std::map<unsigned, std::vector<std::size_t>> layers;
     for (std::size_t i = 0; i < graph.vertices.size(); ++i)
@@ -281,6 +305,7 @@ void AddGraph(graph::GraphBuilder& builder, const agui::TechnologyWindow& window
         }
     if (graph.central < graph.vertices.size())
         builder.SetStart(ids[graph.central]);
+    EndZone(builder);
 }
 
 } // namespace
@@ -311,16 +336,11 @@ void TechnologyScreen::Build(graph::GraphBuilder& builder)
         _landing = kSearchKey;
     _searching = search != nullptr;
 
-    std::string caption = Caption(window.graphTitle);
-    if (!caption.empty())
-        builder.PushContext(caption);
     AddQueue(builder, window.queue);
     AddList(builder, window, search);
     AddSelected(builder, window);
     AddControls(builder, window);
     AddGraph(builder, window);
-    if (!caption.empty())
-        builder.PopContext();
 }
 
 const char* TechnologyScreen::TakeSuggestedLanding()
