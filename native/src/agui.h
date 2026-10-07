@@ -87,6 +87,8 @@ const Widget* frameTitle(const Widget* widget);
 enum class CheckState { Unchecked, Checked, Intermediate };
 CheckState checkState(const Widget* toggleButton);
 bool buttonToggled(const Widget* button);
+// Whether a click flips the button on and off (agui::Button::isButtonToggleButton).
+bool buttonIsToggle(const Widget* button);
 
 struct SliderValue {
    double value;
@@ -348,6 +350,33 @@ struct HudBars {
    const Widget* mining = nullptr;
 };
 HudBars hudBars();
+
+// Factoriopedia (GameView::factoriopedia) while it shows, else a null window. Main thread only.
+struct Factoriopedia {
+   const Widget* window = nullptr;
+   const Widget* header = nullptr;           // the title bar's buttons
+   const Widget* list = nullptr;             // the entries: group tabs over a grid of entry buttons
+   const Widget* subheader = nullptr;        // the frame over the page, holding the entry's title label
+   const Widget* page = nullptr;             // the scroll pane of the entry's description and sections
+   const Widget* showUnresearched = nullptr; // the title bar's toggle
+   bool pinned = false;                      // kept open while playing, without the modal focus
+};
+Factoriopedia factoriopedia();
+
+// The icons a LabelWithHoverableRichText (a description's lines) lets the mouse hover and click,
+// by the index of their section in the label's text, with the tag each shows ("item=iron-plate").
+// Empty for any other label.
+struct RichTextLink {
+   size_t section = 0;
+   std::string_view tag;
+};
+std::vector<RichTextLink> richTextLinks(const Widget* label);
+// Mutating, so main thread inside logic() only. A click on the icon, as the label runs it for the
+// section under the mouse: opens its Factoriopedia entry, or its technology.
+void clickRichTextLink(const Widget* label, size_t section);
+// The tooltip hovering the icon shows, or null. It stays up until clearRichTextHover.
+const Widget* hoverRichTextLink(const Widget* label, size_t section);
+void clearRichTextHover(const Widget* label);
 
 // The selected row of an agui::TableWithSelection, the header row counting as 0.
 unsigned selectedRow(const Widget* table);

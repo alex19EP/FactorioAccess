@@ -106,6 +106,7 @@ add_library(fa_native SHARED
   src/screens/SideMenuScreen.cpp
   src/screens/StatusScreen.cpp
   src/screens/CraftingQueueScreen.cpp
+  src/screens/FactoriopediaScreen.cpp
   src/screens/FilterSelectScreen.cpp
   src/parts.cpp
   src/ui.cpp

@@ -392,6 +392,31 @@ struct Layout {
    uint32_t bottomVehicleShieldBar = 0;
    uint32_t bottomMiningBar = 0;
 
+   // Factoriopedia, which stacks over whatever window is open: the entries list on the left, the
+   // chosen entry's page on the right.
+   uint32_t gameViewFactoriopedia = 0;   // GameView::factoriopedia, std::unique_ptr<Factoriopedia>
+   uint32_t factoriopediaList = 0;       // Factoriopedia::selectList, SelectListGui<FactoriopediaID>
+   uint32_t factoriopediaSubheader = 0;  // Factoriopedia::insideFrame.subheader: the entry's title label
+   uint32_t factoriopediaPage = 0;       // Factoriopedia::scrollPane, the entry's description and sections
+   uint32_t factoriopediaUnresearched = 0; // Factoriopedia::showUnresearchedButton, a toggle IconButton
+   uint32_t factoriopediaPinned = 0;     // Factoriopedia::pinned: kept open, without modal focus
+
+   // Rich text icons that a label makes hoverable (LabelWithHoverableRichText, as in descriptions):
+   // hovering one shows its tooltip, clicking it opens its Factoriopedia entry or technology. The
+   // label lays its text out in sections, an icon each and the plain runs between them.
+   uint32_t labelRichText = 0;           // agui::Label::resizableText.richTextData, std::unique_ptr to TextDrawSections
+   uint32_t richTextSectionsBegin = 0;   // TextDrawSections::sections.begin_, TextDrawSection*
+   uint32_t richTextSectionsEnd = 0;     // TextDrawSections::sections.end_
+   uint32_t richTextSectionSize = 0;     // sizeof(TextDrawSection)
+   uint32_t richTextSectionType = 0;     // TextDrawSection::type, TagType
+   uint32_t richTextSectionTag = 0;      // TextDrawSection::tagText, std::string_view: "item=iron-plate"
+   uint32_t hoverableLabelManager = 0;   // LabelWithHoverableRichText::hoverManger, LabelRichTextHoverManager
+   uint32_t hoverManagerTooltip = 0;     // RichTextHoverManager::hoverTooltip, GenericTargeter<agui::ToolTip>
+   // void RichTextHoverManager::handleHover(TextDrawSection const&, OutputConsole::Item const*, bool
+   // clicked): what the label runs for the section under the mouse, on a move and on a click.
+   uintptr_t richTextHandleHover = 0;
+   uintptr_t richTextClearTooltip = 0;   // void RichTextHoverManager::clearTooltip()
+
    // What the game says about itself while the DLL runs (see disclosure.h).
    // static void Logging::log(char const* file, unsigned line, LogLevel, char const* format, ...)
    uintptr_t loggingLog = 0;

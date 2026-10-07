@@ -310,15 +310,6 @@ data:extend({
 
    {
       type = "sound",
-      name = "Rotate-Hand-Sound",
-      category = "gui-effect",
-      filename = "__core__/sound/gui-back.ogg",
-      volume = 1,
-      preload = true,
-   },
-
-   {
-      type = "sound",
       name = "scanner-pulse",
       category = "game-effect",
       filename = "__FactorioAccess__/audio/scanner-pulse-zapsplat_science_fiction_computer_alarm_single_medium_ring_beep_fast_001_84293.wav",

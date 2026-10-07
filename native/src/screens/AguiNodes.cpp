@@ -760,18 +760,23 @@ std::string SlotText(const Widget* slot)
     return std::format("{} {:.1f}", spoken, count);
 }
 
+std::string TooltipText(const Widget* tooltip)
+{
+    std::string text;
+    // The tooltip itself stays hidden until the Gui places it; its content shows already.
+    ForEachChild(tooltip, [&](const Widget* child, const std::string&) {
+        for (const Widget* label : FindAll(child, "agui::Label"))
+            if (std::string line = LabelText(label); !line.empty())
+                text += (text.empty() ? "" : "\n") + line;
+    });
+    return text;
+}
+
 void SpeakGameTooltip(const Widget* widget)
 {
     bool created = false;
     const Widget* tooltip = agui::showTooltip(widget, created);
-    std::string text;
-    // The tooltip itself stays hidden until the Gui places it; its content shows already.
-    if (tooltip)
-        ForEachChild(tooltip, [&](const Widget* child, const std::string&) {
-            for (const Widget* label : FindAll(child, "agui::Label"))
-                if (std::string line = LabelText(label); !line.empty())
-                    text += (text.empty() ? "" : "\n") + line;
-        });
+    std::string text = tooltip ? TooltipText(tooltip) : std::string();
     if (text.empty())
         log::info("No tooltip text on {}: {}", agui::className(widget),
             tooltip ? DescribeTree(tooltip) : std::string("none created"));
