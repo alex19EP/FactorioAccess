@@ -36,8 +36,8 @@ function mod.next_part(pindex, direction)
    if native then native.next_part(pindex, direction) end
 end
 
----Opens the game's own info panel for what the cursor points at, the entity or else the tile, for
----the DLL to read a line at a time.
+---Opens the game's own info panel for the entity the cursor points at, or in the map editor the tile
+---when there is none, for the DLL to read a line at a time.
 ---@param pindex integer
 function mod.open_selected_info(pindex)
    if native then native.open_selected_info(pindex) end

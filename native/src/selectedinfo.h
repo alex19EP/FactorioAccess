@@ -5,7 +5,8 @@ struct Widget;
 }
 
 // The game's info panel for what the player points at: the entity under the cursor, or with no
-// entity the tile. It is the panel the game shows beside the mouse (or at the right of the screen),
+// entity the tile, which only the map editor describes (Controller::deduceSelectedTile finds none
+// elsewhere). It is the panel the game shows beside the mouse (or at the right of the screen),
 // filled with what the game says about the entity: its status, recipe, contents, power, health and
 // the rest, already translated.
 //

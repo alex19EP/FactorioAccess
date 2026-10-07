@@ -1,8 +1,8 @@
 #pragma once
 
 // The game's info panel for what the cursor points at (see selectedinfo.h), opened by the Y key in
-// the world: the entity's name, status, recipe, contents, power, health and the rest, or the tile's,
-// as the game shows them beside the mouse. Up and Down read it a line at a time; the generic walker
+// the world: the entity's name, status, recipe, contents, power, health and the rest (in the map
+// editor a tile's too), as the game shows them beside the mouse. Up and Down read it a line at a time; the generic walker
 // reads its rows and tables as it does any window's.
 //
 // It is what the game said when Y was pressed. It closes on Escape, when the cursor points at

@@ -18,7 +18,7 @@ When your cursor is on an entity, it is selected.
 
 Use k to get more information on the selected entity or what is in your hand.
 
-y opens what the game itself says about the selected entity, or the tile when there is none: its status, recipe, contents, power and more. Up and down read it a line at a time, and escape closes it.
+y opens what the game itself says about the selected entity: its status, recipe, contents, power and more. Up and down read it a line at a time, and escape closes it.
 
 Use shift y for detailed information on the item in your hand.
 
