@@ -35,10 +35,6 @@ mod.ENT_NAMES_CLEARED_AS_OBSTACLES = {
    "big-sand-rock",
 }
 
--- Holds a mapping of names. See data-updates.lua.
-mod.RESEARCH_CRAFT_ITEMS_MAP_OUTER = "craft-item-map-names"
-mod.RESEARCH_CRAFT_ITEM_TRIGGER_MAPNAME_SUFFIX = "craft-item-counts"
-
 -- The unit vectors of the directions in order north going clockwise.  If indexed by defines.direction, this gives back
 -- the unit vector pointing in that direction.  Note that this is a 0-indexed table, 0 is north, directions go
 -- clockwise, 15 is northnorthwest.
