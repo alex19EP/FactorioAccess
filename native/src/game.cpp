@@ -50,6 +50,13 @@ bool resolve(pdb::SymbolTable& symbols) {
            "?getCursorMapPosition@Player@@QEBA?AV?$Optional@VMapPosition@@U?$OptionalEmptyValue@VMapPosition@@@@@@XZ");
    address(layout.sourceCursorPosition, "?getCursorMapPosition@PlayerInputSource@@QEBA?AVMapPosition@@XZ");
    address(layout.initLuaState, "?initLuaState@LuaHelper@@YAXPEAUlua_State@@@Z");
+   address(layout.addLocalFlyingText, "?addLocalFlyingText@Map@@QEAAX$$QEAVLocalMapFlyingText@@@Z");
+   address(layout.constructGuiFlyingText,
+           "??$construct@VGuiFlyingText@agui@@AEAVPoint@2@AEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@"
+           "std@@AEAVColor@2@AEAPEBVFont@2@AEAHAEAH@?$_Default_allocator_traits@V?$allocator@VGuiFlyingText@agui@@@"
+           "std@@@std@@SAXAEAV?$allocator@VGuiFlyingText@agui@@@1@QEAVGuiFlyingText@agui@@AEAVPoint@4@AEBV?$basic_"
+           "string@DU?$char_traits@D@std@@V?$allocator@D@2@@1@AEAVColor@4@AEAPEBVFont@4@AEAH6@Z");
+   offset(layout.localMapFlyingTextText, "LocalMapFlyingText", "text");
    address(layout.luaCreateTable, "lua_createtable");
    address(layout.luaPushCClosure, "lua_pushcclosure");
    address(layout.luaSetField, "lua_setfield");

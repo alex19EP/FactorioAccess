@@ -1,6 +1,7 @@
 #include "hooks.h"
 
 #include "disclosure.h"
+#include "flyingtext.h"
 #include "game.h"
 #include "input.h"
 #include "log.h"
@@ -50,6 +51,10 @@ bool install() {
                   "Hooking LuaHelper::initLuaState") &&
              hook(layout.versionForDisplay, disclosure::versionDetour(), disclosure::versionOriginal(),
                   "Hooking ApplicationVersion::strDetailedNoBuildMode") &&
+             hook(layout.addLocalFlyingText, flyingtext::mapDetour(), flyingtext::mapOriginal(),
+                  "Hooking Map::addLocalFlyingText") &&
+             hook(layout.constructGuiFlyingText, flyingtext::guiDetour(), flyingtext::guiOriginal(),
+                  "Hooking the GuiFlyingText construct") &&
              check(MH_EnableHook(MH_ALL_HOOKS), "Enabling hooks");
    if (!ok) {
       MH_Uninitialize();

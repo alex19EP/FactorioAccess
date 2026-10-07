@@ -1,6 +1,7 @@
 #include "text.h"
 
 #include <array>
+#include <cctype>
 
 namespace fa::text {
 
@@ -11,8 +12,20 @@ constexpr std::array kFormattingTags{std::string_view("color"), std::string_view
 
 bool isTagNameChar(char c) { return (c >= 'a' && c <= 'z') || c == '-' || c == '_'; }
 
+char lower(char c) { return c >= 'A' && c <= 'Z' ? static_cast<char>(c - 'A' + 'a') : c; }
+
+// Whether `text`, past leading spaces, starts with the words of `name` (any case), ending there.
+bool startsWithName(std::string_view text, std::string_view name) {
+   while (!text.empty() && text.front() == ' ') text.remove_prefix(1);
+   if (name.empty() || text.size() < name.size()) return false;
+   for (size_t i = 0; i < name.size(); ++i)
+      if (lower(text[i]) != lower(name[i])) return false;
+   return text.size() == name.size() || !std::isalnum(static_cast<unsigned char>(text[name.size()]));
+}
+
 // Appends what a tag starting at text[0] == '[' should read as, and returns its length, or 0 when
-// the bracket does not start a rich text tag.
+// the bracket does not start a rich text tag. An icon right before its own name ("[item=iron-plate]
+// Iron plate") is read once.
 size_t appendTag(std::string_view text, std::string& out) {
    size_t close = text.find(']');
    if (close == std::string_view::npos) return 0;
@@ -31,9 +44,13 @@ size_t appendTag(std::string_view text, std::string& out) {
    bool infoIcon = name == "img" && body.substr(eq + 1) == "info";
    if (!closing && !formatting && !infoIcon && eq != std::string_view::npos) {
       // Icon tags name a prototype; "iron-plate" reads better as "iron plate".
-      out.push_back(' ');
-      for (char c : body.substr(eq + 1)) out.push_back(c == '-' || c == '_' ? ' ' : c);
-      out.push_back(' ');
+      std::string iconName;
+      for (char c : body.substr(eq + 1)) iconName.push_back(c == '-' || c == '_' ? ' ' : c);
+      if (!startsWithName(text.substr(close + 1), iconName)) {
+         out.push_back(' ');
+         out += iconName;
+         out.push_back(' ');
+      }
    }
    return close + 1;
 }

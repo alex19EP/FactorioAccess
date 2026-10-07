@@ -35,6 +35,12 @@ struct Layout {
    // void LuaHelper::initLuaState(lua_State*): sets up the globals of every Lua state the game
    // creates (log, localised_print, ...).
    uintptr_t initLuaState = 0;
+   // Flying text. Every text over the map lands in void Map::addLocalFlyingText(LocalMapFlyingText&&);
+   // every text over the GUI is built in place by the allocator's
+   // construct<agui::GuiFlyingText, Point&, std::string const&, Color&, Font const*&, int&, int&>.
+   uintptr_t addLocalFlyingText = 0;
+   uintptr_t constructGuiFlyingText = 0;
+   uint32_t localMapFlyingTextText = 0; // LocalMapFlyingText::text (agui::FlyingText), std::string
 
    // The Lua 5.2 C API, linked into the game.
    uintptr_t luaCreateTable = 0;

@@ -103,6 +103,7 @@ add_library(fa_native SHARED
   src/luabridge.cpp
   src/hooks.cpp
   src/disclosure.cpp
+  src/flyingtext.cpp
   "${CMAKE_CURRENT_BINARY_DIR}/winmm_forwarders.cpp"
 )
 set_target_properties(fa_native PROPERTIES OUTPUT_NAME winmm)
