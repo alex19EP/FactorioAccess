@@ -3,6 +3,10 @@
 #include "log.h"
 #include "symbols.h"
 
+#include <format>
+#include <string>
+#include <string_view>
+
 namespace fa::game {
 
 Layout layout;
@@ -261,6 +265,15 @@ bool resolve(pdb::SymbolTable& symbols) {
    address(layout.recipePrototypes,
            "?indexToPrototype@?$PrototypeList@VRecipePrototype@@@@2V?$vector@PEAVRecipePrototype@@V?$allocator@"
            "PEAVRecipePrototype@@@std@@@std@@A");
+   for (size_t i = 0; i < kNamedPrototypeCount; ++i) {
+      constexpr std::string_view kString =
+          "V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@";
+      std::string type = kNamedPrototypes[i].type;
+      std::string name = std::format("?nameToPrototype@?$PrototypeList@V{0}@@@@0V?$map@{1}PEAV{0}@@U?$less@X@2@V?$"
+                                     "allocator@U?$pair@$$CB{1}PEAV{0}@@@std@@@2@@std@@A",
+                                     type, kString);
+      address(layout.prototypeNames[i], name.c_str());
+   }
 
    classSlot(layout.providerBasePrototype, "PrototypeProvider", "getBasePrototype");
    classSlot(layout.providerQualityPrototype, "PrototypeProvider", "getQualityPrototype");

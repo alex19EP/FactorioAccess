@@ -68,15 +68,10 @@ graph::NodeVtable EntryNode(const Widget* slot, std::function<std::string()> tex
     return vtable;
 }
 
-// The page's title, "Wooden chest (Recipe/Item/Entity)". The game puts the entry's icon before the
-// name, which would read the name twice.
+// The page's title, "Wooden chest (Recipe/Item/Entity)": the entry's icon before its name reads once.
 std::string TitleText(const Widget* title)
 {
-    std::string_view shown = agui::text(title);
-    if (shown.starts_with('['))
-        if (std::size_t close = shown.find(']'); close != std::string_view::npos)
-            shown.remove_prefix(close + 1);
-    return text::speakable(shown);
+    return text::speakable(agui::text(title));
 }
 
 bool HasSlot(const Widget* table)
@@ -87,11 +82,10 @@ bool HasSlot(const Widget* table)
     return false;
 }
 
-// "iron plate" for the tag "item=iron-plate,quality=rare": what the line itself reads for the icon.
+// "Rare Iron plate" for the tag "item=iron-plate,quality=rare": what the icon reads as in the line.
 std::string LinkName(std::string_view tag)
 {
-    std::string_view icon = tag.substr(0, tag.find(','));
-    return text::speakable(std::format("[{}]", icon));
+    return text::speakable(std::format("[{}]", tag));
 }
 
 graph::NodeVtable LinkNode(const Widget* label, std::size_t section, std::string name)

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 
 namespace fa::pdb {
@@ -7,6 +8,32 @@ class SymbolTable;
 }
 
 namespace fa::game {
+
+// The prototype types rich text names by tag ([item=iron-plate]) or sprite path (item/iron-plate):
+// that word and the class whose PrototypeList holds them.
+struct NamedPrototype {
+   const char* tag;
+   const char* type;
+};
+inline constexpr NamedPrototype kNamedPrototypes[] = {
+    {"item", "ItemPrototype"},
+    {"entity", "EntityPrototype"},
+    {"fluid", "FluidPrototype"},
+    {"recipe", "RecipePrototype"},
+    {"technology", "TechnologyPrototype"},
+    {"tile", "TilePrototype"},
+    {"virtual-signal", "VirtualSignalPrototype"},
+    {"quality", "QualityPrototype"},
+    {"item-group", "ItemGroup"},
+    {"space-location", "SpaceLocationPrototype"},
+    {"planet", "SpaceLocationPrototype"},
+    {"achievement", "AchievementPrototype"},
+    {"asteroid-chunk", "AsteroidChunkPrototype"},
+    {"shortcut", "ShortcutPrototype"},
+    {"equipment", "EquipmentPrototype"},
+    {"airborne-pollutant", "AirbornePollutantPrototype"},
+};
+inline constexpr size_t kNamedPrototypeCount = sizeof(kNamedPrototypes) / sizeof(kNamedPrototypes[0]);
 
 // Addresses and class layouts read from factorio.pdb, so nothing here is tied to one build.
 struct Layout {
@@ -289,6 +316,9 @@ struct Layout {
    uintptr_t itemPrototypes = 0;
    uintptr_t qualityPrototypes = 0;
    uintptr_t recipePrototypes = 0;
+   // PrototypeList<T>::nameToPrototype, the std::map<std::string, T*, std::less<>> of a type's
+   // prototypes by internal name, for each of kNamedPrototypes.
+   uintptr_t prototypeNames[kNamedPrototypeCount] = {};
 
    // Slot buttons of every kind (SlotButtonBase: item, fluid, recipe and filter slots). The getters
    // are introduced by secondary bases, so they are called through those subobjects; slot numbers

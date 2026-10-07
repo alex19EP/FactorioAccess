@@ -76,6 +76,7 @@ add_library(fa_native SHARED
   src/dllmain.cpp
   src/agui.cpp
   src/text.cpp
+  src/prototypes.cpp
   src/speech.cpp
   src/devserver.cpp
   src/input.cpp
