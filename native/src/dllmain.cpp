@@ -1,6 +1,7 @@
 // FactorioAccess native: loaded into factorio.exe as a winmm.dll proxy (see CMakeLists.txt).
 
 #include "devserver.h"
+#include "disclosure.h"
 #include "game.h"
 #include "hooks.h"
 #include "log.h"
@@ -70,6 +71,7 @@ BOOL APIENTRY DllMain(HMODULE module, DWORD reason, LPVOID) {
    g_module = module;
    // Any other process that picks up this winmm.dll only gets the forwarded exports.
    if (!hostIsFactorio()) return TRUE;
+   fa::disclosure::blockLogUploader();
    // The thread starts once the loader lock is released, while the game carries on starting up.
    if (HANDLE thread = CreateThread(nullptr, 0, &initialize, nullptr, 0, nullptr)) CloseHandle(thread);
    return TRUE;

@@ -617,6 +617,40 @@ void focus(const Widget* widget) {
    callVirtual<void>(widget, layout.slotFocus, true);
 }
 
+namespace {
+
+// Our string in the game's std::string layout, for calls that take std::string const& and copy
+// it; the game never frees or grows it. Copying reads the terminator too, so `text` must stay alive
+// and unchanged for the call.
+MsvcString borrow(const std::string& text) {
+   MsvcString view{};
+   view.size = text.size();
+   if (text.size() < sizeof(view.buffer)) {
+      std::memcpy(view.buffer, text.c_str(), text.size() + 1);
+      view.capacity = sizeof(view.buffer) - 1;
+   } else {
+      view.pointer = text.c_str();
+      view.capacity = text.size();
+   }
+   return view;
+}
+
+} // namespace
+
+void setEnabled(const Widget* widget, bool enabled) {
+   callVirtual<Widget*>(widget, layout.slotSetEnabled, enabled);
+}
+
+void setToolTip(const Widget* widget, const std::string& text) {
+   MsvcString view = borrow(text);
+   reinterpret_cast<Widget* (*)(const Widget*, const MsvcString*)>(layout.widgetSetToolTip)(widget, &view);
+}
+
+void setLabelText(const Widget* label, const std::string& text) {
+   MsvcString view = borrow(text);
+   reinterpret_cast<void (*)(const Widget*, const MsvcString*)>(layout.labelSetText)(label, &view);
+}
+
 void scrollIntoView(const Widget* widget) {
    using ScrollToVisible = void (*)(std::byte* pane, const Widget* widget, uint8_t mode);
    constexpr uint8_t kInView = 1; // ScrollMode::InView

@@ -267,6 +267,27 @@ struct Layout {
    // The fuel part of a burner-powered entity's window (BurnerInfo).
    uint32_t burnerSlots = 0;          // BurnerInfo::burnerSlotsTable, agui::Table
    uint32_t burnerProgressBar = 0;    // BurnerInfo::burningProgressBar: what is left of the fuel burning
+
+   // What the game says about itself while the DLL runs (see disclosure.h).
+   // static void Logging::log(char const* file, unsigned line, LogLevel, char const* format, ...)
+   uintptr_t loggingLog = 0;
+   // std::string& std::string::append(char const*, size_t), the game's own, so that the game's
+   // allocator owns what it grows.
+   uintptr_t stringAppend = 0;
+   // std::string ApplicationVersion::strDetailedNoBuildMode() const: the version the main menu's
+   // corner label and the About dialog show. Saves and multiplayer compare other strings.
+   uintptr_t versionForDisplay = 0;
+   uintptr_t labelSetText = 0;        // void agui::Label::setText(std::string const&)
+   uintptr_t widgetSetToolTip = 0;    // agui::Widget& agui::Widget::setToolTip(std::string const&)
+   uint32_t slotSetEnabled = 0;       // agui::Widget& agui::Widget::setEnabled(bool)
+   uint32_t globalOtherSettings = 0;  // GlobalContext::otherSettings, OtherSettings*
+   uint32_t crashLogItem = 0;         // OtherSettings::enableCrashLogUploading, SimpleConfigItem<bool>
+   uint32_t configBoolValue = 0;      // SimpleConfigItem<bool>::value
+   // OtherSettingsGui::boolOtherSettings, std::vector<std::unique_ptr<BoolGuiSetting>>: the
+   // checkboxes of Settings > Other, each with the config item it edits.
+   uint32_t otherSettingsBools = 0;
+   uint32_t boolSettingItem = 0;      // BoolGuiSetting::setting, SimpleConfigItem<bool>*
+   uint32_t boolSettingWidget = 0;    // BoolGuiSetting::widget, an embedded agui::CheckBox
 };
 
 // Bits of agui::Widget::usageBitMask, read from Widget::setVisible and Widget::isEnabled in

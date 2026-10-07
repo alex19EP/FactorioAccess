@@ -241,6 +241,23 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.burnerSlots, "BurnerInfo", "burnerSlotsTable");
    offset(layout.burnerProgressBar, "BurnerInfo", "burningProgressBar");
 
+   address(layout.loggingLog, "?log@Logging@@SAXPEBDIW4LogLevel@@0ZZ");
+   address(layout.stringAppend, "?append@?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@QEAAAEAV12@QEBD_K@Z");
+   address(layout.versionForDisplay,
+           "?strDetailedNoBuildMode@ApplicationVersion@@QEBA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@"
+           "2@@std@@XZ");
+   address(layout.labelSetText,
+           "?setText@Label@agui@@UEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z");
+   address(layout.widgetSetToolTip,
+           "?setToolTip@Widget@agui@@QEAAAEAV12@AEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z");
+   slot(layout.slotSetEnabled, "setEnabled");
+   offset(layout.globalOtherSettings, "GlobalContext", "otherSettings.value");
+   offset(layout.crashLogItem, "OtherSettings", "enableCrashLogUploading");
+   offset(layout.configBoolValue, "SimpleConfigItem<bool>", "value");
+   offset(layout.otherSettingsBools, "OtherSettingsGui", "boolOtherSettings");
+   offset(layout.boolSettingItem, "BoolGuiSetting", "setting");
+   offset(layout.boolSettingWidget, "BoolGuiSetting", "widget");
+
    if (ok) {
       log::info("Layout: Gui baseWidget {:#x} focused {:#x} modals {:#x} (entry {} bytes); Widget parent {:#x} "
                 "children {:#x} privateChildren {:#x} text {:#x} usage {:#x}; Label text {:#x}; vtable slots keyDown "

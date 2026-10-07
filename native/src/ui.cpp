@@ -2,6 +2,7 @@
 
 #include "agui.h"
 #include "devserver.h"
+#include "disclosure.h"
 #include "input.h"
 #include "log.h"
 #include "navigator/ScreenManager.hpp"
@@ -35,6 +36,7 @@ void tick(const agui::Gui* gui) {
    // Only the application Gui carries screens; the main menu's background simulation runs a Gui
    // of its own every frame, which is recreated at will.
    if (gui != agui::applicationGui()) return;
+   disclosure::tick();
    screens::WindowScreen::SetGui(gui);
    nav::ScreenManager::Get().Update();
    dev::pump();

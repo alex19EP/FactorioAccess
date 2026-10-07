@@ -1,5 +1,6 @@
 #include "hooks.h"
 
+#include "disclosure.h"
 #include "game.h"
 #include "input.h"
 #include "log.h"
@@ -47,6 +48,8 @@ bool install() {
                   "Hooking PlayerInputSource::getCursorMapPosition") &&
              hook(layout.initLuaState, luabridge::initLuaStateDetour(), luabridge::initLuaStateOriginal(),
                   "Hooking LuaHelper::initLuaState") &&
+             hook(layout.versionForDisplay, disclosure::versionDetour(), disclosure::versionOriginal(),
+                  "Hooking ApplicationVersion::strDetailedNoBuildMode") &&
              check(MH_EnableHook(MH_ALL_HOOKS), "Enabling hooks");
    if (!ok) {
       MH_Uninitialize();

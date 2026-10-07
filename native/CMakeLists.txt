@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.28)
-project(FactorioAccessNative LANGUAGES C CXX)
+project(FactorioAccessNative VERSION 0.1.0 LANGUAGES C CXX)
 
 if(NOT MSVC OR NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
   message(FATAL_ERROR "The FactorioAccess native DLL builds only as a 64-bit MSVC DLL.")
@@ -102,9 +102,12 @@ add_library(fa_native SHARED
   src/world.cpp
   src/luabridge.cpp
   src/hooks.cpp
+  src/disclosure.cpp
   "${CMAKE_CURRENT_BINARY_DIR}/winmm_forwarders.cpp"
 )
 set_target_properties(fa_native PROPERTIES OUTPUT_NAME winmm)
+# Shown in the game's version text and log (src/disclosure.cpp).
+target_compile_definitions(fa_native PRIVATE FA_NATIVE_VERSION="${PROJECT_VERSION}")
 # dbghelp only for UnDecorateSymbolName on RTTI names; symbol lookup goes through raw_pdb.
 target_link_libraries(fa_native PRIVATE fa_core minhook prism dbghelp ws2_32)
 

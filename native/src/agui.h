@@ -222,6 +222,12 @@ unsigned selectedRow(const Widget* table);
 bool isFocusable(const Widget* widget);
 // Gives the widget the game's keyboard focus, as Tab would.
 void focus(const Widget* widget);
+// Greys the widget out or back in (Widget::setEnabled).
+void setEnabled(const Widget* widget, bool enabled);
+// Replaces the widget's tooltip with plain text, as the game's own Widget::setToolTip does.
+void setToolTip(const Widget* widget, const std::string& text);
+// Sets the caption of an agui::Label.
+void setLabelText(const Widget* label, const std::string& text);
 // Scrolls the nearest scroll pane holding the widget so that it is in view.
 void scrollIntoView(const Widget* widget);
 
