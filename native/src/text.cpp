@@ -89,8 +89,8 @@ void appendWords(std::string& out, std::string_view words) {
 }
 
 // Appends what a tag starting at text[0] == '[' reads as, and returns its length, or 0 when the
-// bracket does not start a rich text tag. Every icon is read, as its prototype's localised name
-// where it has one. An icon beside its own name ("[item=iron-plate] Iron plate") reads the name
+// bracket does not start a rich text tag. Icons are read, as their prototype's localised name where
+// they have one. An icon beside its own name ("[item=iron-plate] Iron plate") reads the name
 // once, and its quality once.
 size_t appendTag(std::string_view text, std::string& out) {
    size_t close = text.find(']');
@@ -114,6 +114,9 @@ size_t appendTag(std::string_view text, std::string& out) {
       appendWords(out, value.substr(0, value.rfind(',')));
       return close + 1;
    }
+
+   // The info icon only marks a text with a tooltip, which the tooltip key reads.
+   if (tag == "img" && value == "info") return close + 1;
 
    Icon icon = tag == "img" ? spriteIcon(value) : prototypeIcon(tag, value);
    std::string_view after = text.substr(close + 1);
