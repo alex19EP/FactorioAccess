@@ -68,6 +68,17 @@ graph::NodeVtable EntryNode(const Widget* slot, std::function<std::string()> tex
     return vtable;
 }
 
+// The page's title, "Wooden chest (Recipe/Item/Entity)". The game puts the entry's icon before the
+// name, which would read the name twice.
+std::string TitleText(const Widget* title)
+{
+    std::string_view shown = agui::text(title);
+    if (shown.starts_with('['))
+        if (std::size_t close = shown.find(']'); close != std::string_view::npos)
+            shown.remove_prefix(close + 1);
+    return text::speakable(shown);
+}
+
 bool HasSlot(const Widget* table)
 {
     for (const Widget* cell : agui::children(table))
@@ -193,7 +204,9 @@ void AddHeader(graph::GraphBuilder& builder, const Widget* header)
         for (const Widget* child : VisibleChildren(at))
         {
             std::string key = "header/" + std::to_string(index++);
-            if (agui::kind(child) == Kind::Button && agui::buttonIsToggle(child))
+            // The search button is a toggle too, but it opens the field rather than switching
+            // anything on.
+            if (agui::kind(child) == Kind::Button && agui::buttonIsToggle(child) && !agui::derivesFrom(child, "SearchBar"))
             {
                 auto checked = [child]()
                 { return std::string(agui::buttonToggled(child) ? vocab::kChecked : vocab::kUnchecked); };
@@ -255,7 +268,7 @@ void FactoriopediaScreen::Build(graph::GraphBuilder& builder)
         return;
 
     const Widget* title = FindDescendant(pedia.subheader, "agui::Label");
-    std::string titleText = title ? LabelText(title) : std::string();
+    std::string titleText = title ? TitleText(title) : std::string();
     const Widget* search = SearchField(pedia);
     // Opening the search lands on its field; another entry's page showing, on its title.
     if (search && !_searching)
@@ -281,7 +294,7 @@ void FactoriopediaScreen::Build(graph::GraphBuilder& builder)
 
     builder.BeginStop("page");
     if (title)
-        builder.AddItem(graph::ControlId::Referenced(title, kTitleKey), TextNode(title, [title]() { return LabelText(title); }));
+        builder.AddItem(graph::ControlId::Referenced(title, kTitleKey), TextNode(title, [title]() { return TitleText(title); }));
     PageWalker(builder).Visit(pedia.page, "page");
 
     if (!caption.empty())

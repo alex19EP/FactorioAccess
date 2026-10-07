@@ -130,6 +130,8 @@ constexpr std::pair<std::string_view, Kind> kKindBases[] = {
    {".?AVScrollPane@agui@@", Kind::ScrollPane},
    {".?AVTable@agui@@", Kind::Table},
    {".?AVHorizontalFlow@agui@@", Kind::HorizontalFlow},
+   // A description's "Stack size:" beside "50", laid out side by side.
+   {".?AVTwoLabelsFlow@agui@@", Kind::HorizontalFlow},
    {".?AVWindow@agui@@", Kind::Window},
    {".?AVProgressBar@agui@@", Kind::ProgressBar},
 };
