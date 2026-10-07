@@ -46,8 +46,8 @@ Ideally automate with Python since we already have that dependency.
 We can talk about needed credentials.  You shouldn't, because you can test against your own repo for the GH side of this
 and the fmtk uploading is one line.
 
-The one weird exception to the dependency mods is that Kruise Kontrol is now maintained by us as Kruise Kontrol Remote.
-That should be cloned somewhere and built.  We could put it as a submodule of the main repository no problem, and in fact that might be the best.
+Kruise Kontrol is the upstream mod by Klonan. Since 2.1 it has its own remote interface, so our 2.0 fork, Kruise
+Kontrol Remote, is no longer used.
 
 ## Spidertrons
 

@@ -18,9 +18,9 @@ Found during execution (not in the original plan), now fixed:
   packs became plain items -- switched to `data.raw.item`. (Was a hard load crash.)
 - Two `PipeConnection.target.owner.type` reads in fa-info.lua (573, 1048): target
   is now a LuaEntity, so `.owner` was dropped. (Caught by the stricter lint.)
-- Kruise_Kontrol_Remote (a forked 2.0 mod we own) is disabled in the install's
-  mod-list so the suite can run; it needs its own 2.1 pass, likely a separate
-  session. Our wrapper code was still migrated (the `.active` write).
+- Kruise_Kontrol_Remote (a forked 2.0 mod we own) is retired. Upstream
+  Kruise_Kontrol 2.1.0 has a remote interface of its own (`kruise_kontrol`),
+  and the wrapper now talks to that.
 
 Deliberately deferred (per scope decision):
 - Item 3b additive dialog gaps: radar `mode` (surface/universe) and descriptors

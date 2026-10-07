@@ -1,124 +1,71 @@
---Here: Functions related to Kruise Kontrol Remote
+--Here: Functions related to Kruise Kontrol
+--
+-- Jobs start from Kruise Kontrol's own control, CONTROL + ALT + mouse-button-2, which
+-- helper-scripts/bind-mouse-keys.ps1 also puts on CONTROL + ALT + RIGHTBRACKET. The game cursor
+-- follows the FA cursor, so the job lands there. Enter cancels, also handled by Kruise Kontrol.
+--
+-- Kruise Kontrol says what it is doing with text it draws over the character: a remark that lasts
+-- two seconds and is redrawn for every new one, and a status line, such as pathfinding, that keeps
+-- its object while its text animates. Each new text object is spoken once.
 
-local Viewpoint = require("scripts.viewpoint")
-local EntitySelection = require("scripts.entity-selection")
 local Speech = require("scripts.speech")
+local StorageManager = require("scripts.storage-manager")
+
+local MessageBuilder = Speech.MessageBuilder
 
 local mod = {}
 
-local interface_name = "kruise_kontrol_updated"
+local interface_name = "kruise_kontrol"
+local mod_name = "Kruise_Kontrol"
 
--- Call the closure if kk is present, returning what it returns. Otherwise don't
--- call it and return `or_default`.  Recall that unspecified parameters are
--- already nil; `or_default`, therefore, is optional.
-local function call_with_interface(closure, or_default)
-   if not remote.interfaces[interface_name] then return or_default end
-   return closure()
+---@class fa.KruiseKontrol.State
+---@field spoken table<uint64, true> Ids of the text objects already spoken
+
+---@type table<integer, fa.KruiseKontrol.State>
+local kk_storage = StorageManager.declare_storage_module("kruise_kontrol", {
+   spoken = {},
+})
+
+function mod.is_active(pindex)
+   if not remote.interfaces[interface_name] then return false end
+   local character = game.get_player(pindex).character
+   return character ~= nil and not remote.call(interface_name, "is_idle", character)
 end
 
---FA actions to take when KK activate input is pressed
-function mod.activate_kk(pindex)
-   local announcing = call_with_interface(function()
-      local p = game.get_player(pindex)
-      -- If the player has no character then abort
-      local c = p and p.valid and p.character
-      if not c then return end
-      -- The mod modifies this for e.g. telestep.
-      p.character_running_speed_modifier = 0
-
-      -- we want the mod's view of the cursor, which may be off the screen.
-      --
-      -- Without the deep copy, control.lua touches this from under us.
-      --
-      -- For now the fractional components are still present.  We're about to
-      -- fix that.
-      local vp = Viewpoint.get_viewpoint(pindex)
-      local kk_pos = vp:get_cursor_pos()
-
-      -- we must duplicate a bit of logic since the mouse is not on our side; FA
-      -- has its own idea of selections.
-      EntitySelection.reset_entity_index(pindex)
-      local target = EntitySelection.get_first_ent_at_tile(pindex)
-
-      -- Okay, but what other edge cases can we find?  Turns out that, again, KK
-      -- doesn't work if there's a blueprint in the player's hand.  This one is
-      -- really hard to resolve because some blueprints are and some blueprints
-      -- aren't temporary, and mod hacking around blueprints is currently going
-      -- on.  For now, we will short-circuit and announce this to the player.
-      --
-      -- Funnily enough deconstruction planners seem to be fine.  As we find
-      -- problems we can add them to the conditional below.
-
-      local hand = p.cursor_stack
-      if hand and hand.valid_for_read and (hand.name == "blueprint" or hand.name == "blueprint-book") then
-         return { "fa.kk-blueprints-not-allowed" }
-      end
-
-      -- If in a car, make sure to activate it
-      if p.vehicle and p.vehicle.type == "car" and p.vehicle.active == false then
-         p.vehicle.disabled_by_script = false
-         p.vehicle.speed = 0
-      end
-
-      -- Okay. Finally we're good.  Let's kick this off.
-      ---@type table
-      local opts = { x = math.floor(kk_pos.x), y = math.floor(kk_pos.y) }
-      p.selected = nil
-      remote.call(interface_name, "start_job", pindex, opts, target)
-      local desc = remote.call(interface_name, "get_description", pindex)
-      if not desc then return { "fa.kk-not-started" } end
-
-      return { "fa.kk-start", desc }
-   end, { "fa.kk-not-available" })
-
-   Speech.speak(pindex, announcing)
-end
-
---FA actions to take when KK cancel input is pressed
-function mod.cancel_kk(pindex)
+--FA actions to take when the enter/exit vehicle key is pressed
+function mod.on_toggle_driving(pindex)
    local p = game.get_player(pindex)
-   call_with_interface(function()
-      if not remote.call(interface_name, "is_active", pindex) then
-         -- If there was no interface then KK isn't installed; if the player
-         -- isn't active already then the enter key is doing enter/exit vehicle.
-         -- In that case there's nothing to say here.
-         return
-      end
-
-      remote.call(interface_name, "cancel", pindex)
-
-      -- Prevent saying KK is done after it is cancelled.
-      storage.players[pindex].kruise_kontrol_active_last_time = false
-
-      -- We screwed around with the running modifier. Put it back based on
-      -- cursor mode.
-      fix_walk(pindex)
-
-      Speech.speak(pindex, { "fa.kk-cancel" })
-   end)
-   -- If in a car, make sure to stop it because we are exiting it too because of the overlapping keys
+   -- If in a car, make sure to stop it: the key both cancels Kruise Kontrol and exits the car.
    if p.vehicle and p.vehicle.type == "car" and p.vehicle.active == true then p.vehicle.speed = 0 end
 end
 
-function mod.status_read(pindex, short_version)
-   call_with_interface(function()
-      -- We must remember if KK was last active and then use it to detect the
-      -- falling edge.  This is the only way to really know if it's finished.
-      local active = remote.call(interface_name, "is_active", pindex)
-      local was_active = storage.players[pindex].kruise_kontrol_active_last_time
-      storage.players[pindex].kruise_kontrol_active_last_time = active
-      if active then
-         Speech.speak(pindex, { "fa.kk-state", remote.call(interface_name, "get_description", pindex) })
-      elseif not active and was_active then
-         Speech.speak(pindex, { "fa.kk-done" })
-      end
-   end)
-end
+---Speaks the Kruise Kontrol text that appeared over each player's character since the last call.
+function mod.read_remarks()
+   if not script.active_mods[mod_name] then return end
 
-function mod.is_active(pindex)
-   return call_with_interface(function()
-      return remote.call(interface_name, "is_active", pindex)
-   end, false)
+   local texts = {}
+   for _, object in pairs(rendering.get_all_objects(mod_name)) do
+      if object.type == "text" then table.insert(texts, object) end
+   end
+
+   for _, player in pairs(game.connected_players) do
+      local character = player.character
+      if character then
+         local pindex = player.index
+         local state = kk_storage[pindex]
+         local spoken = {}
+         local message = MessageBuilder.new()
+         for _, object in ipairs(texts) do
+            if object.target.entity == character then
+               if not state.spoken[object.id] then message:list_item(object.text) end
+               spoken[object.id] = true
+            end
+         end
+         state.spoken = spoken
+         local built = message:build()
+         if built then Speech.speak(pindex, built) end
+      end
+   end
 end
 
 return mod

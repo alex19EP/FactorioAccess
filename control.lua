@@ -392,6 +392,7 @@ function on_tick(event)
       for pindex, player in pairs(players) do
          -- Other periodic checks can go here
       end
+      KruiseKontrol.read_remarks()
    elseif event.tick % 61 == 0 then
       -- Refresh search cache periodically (coprime with other updates)
       for pindex, player in pairs(players) do
@@ -411,8 +412,6 @@ function on_tick(event)
                { "fa.respawn-countdown", tostring(math.floor(game.get_player(pindex).ticks_to_respawn / 60)) }
             )
          end
-         --Report the KK state, if any.
-         KruiseKontrol.status_read(pindex, false)
       end
    end
 end
@@ -3512,7 +3511,7 @@ EventManager.on_event(
    "fa-kk-cancel",
    ---@param event EventData.CustomInputEvent
    function(event, pindex)
-      KruiseKontrol.cancel_kk(pindex)
+      KruiseKontrol.on_toggle_driving(pindex)
    end
 )
 
