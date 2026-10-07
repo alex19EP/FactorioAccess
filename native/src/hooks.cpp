@@ -4,6 +4,7 @@
 #include "disclosure.h"
 #include "flyingtext.h"
 #include "game.h"
+#include "hook-list.h"
 #include "input.h"
 #include "log.h"
 #include "luabridge.h"
@@ -34,8 +35,11 @@ bool check(MH_STATUS status, const char* what) {
    return false;
 }
 
-bool hook(uintptr_t target, void* detour, void** original, const char* what) {
-   return check(MH_CreateHook(reinterpret_cast<void*>(target), detour, original), what);
+bool hook(uintptr_t target, void* detour, void** original, const char* name) {
+   MH_STATUS status = MH_CreateHook(reinterpret_cast<void*>(target), detour, original);
+   if (status == MH_OK) return true;
+   log::error("Hooking {} failed: {}", name, MH_StatusToString(status));
+   return false;
 }
 
 } // namespace
@@ -43,32 +47,9 @@ bool hook(uintptr_t target, void* detour, void** original, const char* what) {
 bool install() {
    using game::layout;
    if (!check(MH_Initialize(), "MH_Initialize")) return false;
-   bool ok = hook(layout.guiLogic, reinterpret_cast<void*>(&detourGuiLogic),
-                  reinterpret_cast<void**>(&g_originalGuiLogic), "Hooking agui::Gui::logic") &&
-             hook(layout.sdlPollEvent, input::pollEventDetour(), input::pollEventOriginal(), "Hooking SDL_PollEvent") &&
-             hook(layout.playerCursorPosition, world::playerCursorDetour(), world::playerCursorOriginal(),
-                  "Hooking Player::getCursorMapPosition") &&
-             hook(layout.sourceCursorPosition, world::sourceCursorDetour(), world::sourceCursorOriginal(),
-                  "Hooking PlayerInputSource::getCursorMapPosition") &&
-             hook(layout.initLuaState, luabridge::initLuaStateDetour(), luabridge::initLuaStateOriginal(),
-                  "Hooking LuaHelper::initLuaState") &&
-             hook(layout.versionForDisplay, disclosure::versionDetour(), disclosure::versionOriginal(),
-                  "Hooking ApplicationVersion::strDetailedNoBuildMode") &&
-             hook(layout.addLocalFlyingText, flyingtext::mapDetour(), flyingtext::mapOriginal(),
-                  "Hooking Map::addLocalFlyingText") &&
-             hook(layout.constructGuiFlyingText, flyingtext::guiDetour(), flyingtext::guiOriginal(),
-                  "Hooking the GuiFlyingText construct") &&
-             hook(layout.outputConsoleAdd, console::addDetour(), console::addOriginal(),
-                  "Hooking OutputConsole::add") &&
-             hook(layout.tipNotificationButton, popups::tipDetour(), popups::tipOriginal(),
-                  "Hooking the TipsAndTricksNotificationButton constructor") &&
-             hook(layout.speechBubbleGui, popups::speechBubbleDetour(), popups::speechBubbleOriginal(),
-                  "Hooking the SpeechBubbleGui constructor") &&
-             hook(layout.infoBoxManagerUpdate, popups::infoBoxesDetour(), popups::infoBoxesOriginal(),
-                  "Hooking InfoBoxManager::update") &&
-             hook(layout.characterChangePosition, movement::changePositionDetour(),
-                  movement::changePositionOriginal(), "Hooking Character::changePosition") &&
-             check(MH_EnableHook(MH_ALL_HOOKS), "Enabling hooks");
+#define FA_INSTALL_HOOK(field, detour, original, name) hook(layout.field, detour, original, name) &&
+   bool ok = FA_HOOKS(FA_INSTALL_HOOK) check(MH_EnableHook(MH_ALL_HOOKS), "Enabling hooks");
+#undef FA_INSTALL_HOOK
    if (!ok) {
       MH_Uninitialize();
       return false;

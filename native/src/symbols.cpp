@@ -7,6 +7,9 @@
 #include "PDB_DBIStream.h"
 #include "PDB_ImageSectionStream.h"
 #include "PDB_InfoStream.h"
+#include "PDB_IPIStream.h"
+#include "PDB_ModuleInfoStream.h"
+#include "PDB_ModuleSymbolStream.h"
 #include "PDB_PublicSymbolStream.h"
 #include "PDB_RawFile.h"
 #include "PDB_TPIStream.h"
@@ -15,12 +18,16 @@
 #include <cstring>
 #include <format>
 #include <fstream>
+#include <set>
 #include <unordered_map>
 #include <vector>
 
 namespace fa::pdb {
 
+namespace DBI = PDB::CodeView::DBI;
+namespace IPI = PDB::CodeView::IPI;
 namespace TPI = PDB::CodeView::TPI;
+using DBI::SymbolRecordKind;
 using TPI::TypeRecordKind;
 
 namespace {
@@ -141,6 +148,21 @@ std::optional<ClassInfo> classInfo(const TPI::Record* record) {
    return ClassInfo{data + sizeBytes, fieldList, size, (property & kForwardRef) != 0};
 }
 
+bool isProcedure(SymbolRecordKind kind) {
+   return kind == SymbolRecordKind::S_GPROC32 || kind == SymbolRecordKind::S_LPROC32 ||
+          kind == SymbolRecordKind::S_GPROC32_ID || kind == SymbolRecordKind::S_LPROC32_ID;
+}
+
+// S_INLINESITE2 adds an invocation count after the fields S_INLINESITE has, so both read alike.
+bool isInlineSite(SymbolRecordKind kind) {
+   return kind == SymbolRecordKind::S_INLINESITE || kind == SymbolRecordKind::S_INLINESITE2;
+}
+
+std::string_view unqualified(std::string_view name) {
+   auto colons = name.rfind("::");
+   return colons == std::string_view::npos ? name : name.substr(colons + 2);
+}
+
 } // namespace
 
 class PdbFile {
@@ -255,6 +277,88 @@ public:
       }
       log::error("Virtual method not found: {}::{}", type, method);
       return std::nullopt;
+   }
+
+   // One pass finds the procedure at each RVA and its function ID, a second finds the inline sites
+   // naming those IDs.
+   std::vector<InlinedCopies> inlinedCopies(std::span<const uint32_t> rvas) {
+      auto started = std::chrono::steady_clock::now();
+      if (publics_.empty()) indexPublics();
+      std::vector<InlinedCopies> results(rvas.size());
+      std::vector<std::set<std::string>> into(rvas.size());
+      std::unordered_map<uint32_t, size_t> slotOfRva;
+      for (size_t i = 0; i < rvas.size(); ++i) {
+         results[i].address = rvas[i];
+         slotOfRva.emplace(rvas[i], i);
+      }
+
+      // S_*PROC32_ID records carry the function's ID; plain S_*PROC32 ones carry its type, which
+      // is matched to an ID through the IPI stream by type and name.
+      std::unordered_map<uint32_t, size_t> slotOfId;
+      std::vector<std::pair<size_t, uint32_t>> byType;
+      const auto modules = dbi_.CreateModuleInfoStream(raw_);
+      for (const auto& module : modules.GetModules()) {
+         if (!module.HasSymbolStream()) continue;
+         const auto stream = module.CreateSymbolStream(raw_);
+         stream.ForEachSymbol([&](const DBI::Record* record) {
+            if (!isProcedure(record->header.kind)) return;
+            const auto& proc = record->data.S_GPROC32;
+            auto it = slotOfRva.find(sections_.ConvertSectionOffsetToRVA(proc.section, proc.offset));
+            if (it == slotOfRva.end()) return;
+            results[it->second].name = proc.name;
+            if (record->header.kind == SymbolRecordKind::S_GPROC32_ID ||
+                record->header.kind == SymbolRecordKind::S_LPROC32_ID)
+               slotOfId.emplace(proc.typeIndex, it->second);
+            else
+               byType.emplace_back(it->second, proc.typeIndex);
+         });
+      }
+      if (!byType.empty() && !failed(PDB::HasValidIPIStream(raw_))) {
+         const auto ipi = PDB::CreateIPIStream(raw_);
+         const auto records = ipi.GetTypeRecords();
+         for (size_t i = 0; i < records.GetLength(); ++i) {
+            const auto* record = records[i];
+            uint32_t type;
+            const char* name;
+            if (record->header.kind == IPI::TypeRecordKind::LF_FUNC_ID) {
+               type = record->data.LF_FUNC_ID.typeIndex;
+               name = record->data.LF_FUNC_ID.name;
+            } else if (record->header.kind == IPI::TypeRecordKind::LF_MFUNC_ID) {
+               type = record->data.LF_MFUNC_ID.typeIndex;
+               name = record->data.LF_MFUNC_ID.name;
+            } else {
+               continue;
+            }
+            for (const auto& [slot, procType] : byType) {
+               if (type == procType && unqualified(results[slot].name) == name)
+                  slotOfId.emplace(ipi.GetFirstTypeIndex() + static_cast<uint32_t>(i), slot);
+            }
+         }
+      }
+
+      for (const auto& module : modules.GetModules()) {
+         if (!module.HasSymbolStream()) continue;
+         const auto stream = module.CreateSymbolStream(raw_);
+         stream.ForEachSymbol([&](const DBI::Record* record) {
+            if (!isInlineSite(record->header.kind)) return;
+            auto it = slotOfId.find(record->data.S_INLINESITE.inlinee);
+            if (it == slotOfId.end()) return;
+            results[it->second].sites++;
+            // Inline sites nest in blocks and in other inline sites, whose parents always lie earlier
+            // in the stream; the outermost scope is the procedure.
+            const DBI::Record* scope = record;
+            while (isInlineSite(scope->header.kind) || scope->header.kind == SymbolRecordKind::S_BLOCK32) {
+               scope = isInlineSite(scope->header.kind) ? stream.GetParentRecord(scope->data.S_INLINESITE)
+                                                        : stream.GetParentRecord(scope->data.S_BLOCK32);
+            }
+            into[it->second].insert(isProcedure(scope->header.kind)
+                                       ? std::string(scope->data.S_GPROC32.name)
+                                       : std::format("<scope record {:#x}>", static_cast<uint16_t>(scope->header.kind)));
+         });
+      }
+      for (size_t i = 0; i < results.size(); ++i) results[i].into.assign(into[i].begin(), into[i].end());
+      log::info("Scanned {} modules for inline copies in {} ms", modules.GetModules().GetLength(), elapsedMs(started));
+      return results;
    }
 
 private:
@@ -595,6 +699,17 @@ std::optional<uint32_t> SymbolTable::virtualSlot(std::string_view type, std::str
    cache_[key] = *slot;
    cacheDirty_ = true;
    return slot;
+}
+
+std::vector<InlinedCopies> SymbolTable::inlinedCopies(std::span<const uintptr_t> functions) {
+   auto* file = pdb();
+   if (!file) return {};
+   const auto base = reinterpret_cast<uintptr_t>(image_);
+   std::vector<uint32_t> rvas;
+   for (uintptr_t function : functions) rvas.push_back(static_cast<uint32_t>(function - base));
+   auto results = file->inlinedCopies(rvas);
+   for (auto& result : results) result.address += base;
+   return results;
 }
 
 void SymbolTable::finish() {

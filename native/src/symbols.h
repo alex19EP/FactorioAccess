@@ -7,10 +7,21 @@
 #include <map>
 #include <memory>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
+#include <vector>
 
 namespace fa::pdb {
+
+// Where the compiler copied a function inline into other functions. A hook on the function's
+// address never sees the calls those copies stand for.
+struct InlinedCopies {
+   uintptr_t address;
+   std::string name;               // the out-of-line copy's procedure name; empty if the PDB has none
+   size_t sites = 0;               // inline copies in the whole image
+   std::vector<std::string> into;  // the functions holding them, each once, sorted
+};
 
 // Identity of the PDB that matches a loaded image, from the image's CodeView debug record.
 struct Identity {
@@ -52,6 +63,10 @@ public:
    // Index of a virtual method in the class's primary vtable, by its undecorated name, e.g.
    // ("agui::Widget", "keyDown"). Fails when the name is overloaded among the introduced virtuals.
    std::optional<uint32_t> virtualSlot(std::string_view type, std::string_view method);
+
+   // For each function starting at one of these addresses, where it was inlined. Reads the symbols
+   // of every module, so it takes seconds and is not cached: meant for fa_symbols_check.
+   std::vector<InlinedCopies> inlinedCopies(std::span<const uintptr_t> functions);
 
    // Saves new answers to the cache and unmaps the PDB.
    void finish();
