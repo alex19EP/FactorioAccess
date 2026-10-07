@@ -265,6 +265,9 @@ struct Layout {
    // The recipe a crafting machine shows; a click on it opens Factoriopedia.
    uint32_t assemblerRecipe = 0;      // AssemblingMachineGui::recipeInfoWidget, RecipeInfoWidget
    uint32_t furnaceRecipe = 0;        // FurnaceGui::recipeInfoWidget
+   // The slots of what a crafting machine makes, agui::Table.
+   uint32_t assemblerOutputs = 0;     // AssemblingMachineGui::outputsTable
+   uint32_t furnaceOutputs = 0;       // FurnaceGui::outputsTable
    // Beside an assembler's recipe unless the recipe is fixed: back to the recipe chooser.
    uint32_t assemblerChangeRecipe = 0; // AssemblingMachineGui::changeRecipeButton, IconButton
    // The fuel part of a burner-powered entity's window (BurnerInfo).

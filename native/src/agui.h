@@ -192,8 +192,8 @@ double progress(const Widget* bar);
 // InventoryGui, `inventoryPanel` the panel holding it under `inventoryTitle` ("Character"), and
 // `header` the title bar's search and close buttons. A crafting machine or drill has a
 // `progressBar` and the productivity `bonusBar` under it; a crafting machine shows its `recipe`
-// (a RecipeInfoWidget), and an assembler the `changeRecipe` button, which is in the window only
-// when the recipe can change.
+// (a RecipeInfoWidget) and the table of its `outputs`, and an assembler the `changeRecipe`
+// button, which is in the window only when the recipe can change.
 struct EntityWindowParts {
    const Widget* entity = nullptr;
    const Widget* header = nullptr;
@@ -203,6 +203,7 @@ struct EntityWindowParts {
    const Widget* progressBar = nullptr;
    const Widget* bonusBar = nullptr;
    const Widget* recipe = nullptr;
+   const Widget* outputs = nullptr;
    const Widget* changeRecipe = nullptr;
 };
 EntityWindowParts entityWindowParts(const Widget* window);

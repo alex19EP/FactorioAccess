@@ -239,6 +239,8 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.drillBonusBar, "MiningDrillGui", "bonusProgressBar");
    offset(layout.assemblerRecipe, "AssemblingMachineGui", "recipeInfoWidget");
    offset(layout.furnaceRecipe, "FurnaceGui", "recipeInfoWidget");
+   offset(layout.assemblerOutputs, "AssemblingMachineGui", "outputsTable");
+   offset(layout.furnaceOutputs, "FurnaceGui", "outputsTable");
    offset(layout.assemblerChangeRecipe, "AssemblingMachineGui", "changeRecipeButton");
    offset(layout.burnerSlots, "BurnerInfo", "burnerSlotsTable");
    offset(layout.burnerProgressBar, "BurnerInfo", "burningProgressBar");
