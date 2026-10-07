@@ -22,6 +22,7 @@
 #include "screens/ScenarioMessageScreen.hpp"
 #include "screens/SettingsScreen.hpp"
 #include "screens/ShortcutBarScreen.hpp"
+#include "screens/SideMenuScreen.hpp"
 #include "speech.h"
 
 #include <windows.h>
@@ -89,6 +90,8 @@ void start() {
    manager.Register(std::make_unique<screens::QuickBarScreen>());
    // The shortcut bar, the part after it.
    manager.Register(std::make_unique<screens::ShortcutBarScreen>());
+   // The side menu, the part after that.
+   manager.Register(std::make_unique<screens::SideMenuScreen>());
    // Over it or a window, the chooser of a filter one of their slots opened.
    manager.Register(std::make_unique<screens::FilterSelectScreen>());
    // Over any of them, an open dropdown's list.

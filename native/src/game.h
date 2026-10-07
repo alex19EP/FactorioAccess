@@ -328,6 +328,12 @@ struct Layout {
    uint32_t shortcutBehaviorPrototype = 0; // ShortcutBehavior::prototype, ShortcutPrototype* (a PrototypeBase)
    uint32_t buttonIsToggle = 0;          // agui::Button::isButtonToggleButton
 
+   // The side menu at the top right (SideMenu): a table of buttons that open the game's windows
+   // (production statistics, trains, Factoriopedia, ...), and the master mute button, which acts in
+   // place.
+   uint32_t gameViewSideMenu = 0;        // GameView::sideMenu, std::unique_ptr<SideMenu>
+   uint32_t sideMenuMuteButton = 0;      // SideMenu::masterMutedButton, IconButton*
+
    // What the game says about itself while the DLL runs (see disclosure.h).
    // static void Logging::log(char const* file, unsigned line, LogLevel, char const* format, ...)
    uintptr_t loggingLog = 0;

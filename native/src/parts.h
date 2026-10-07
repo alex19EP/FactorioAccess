@@ -10,6 +10,7 @@ enum class Part {
    None, // back to what is open
    QuickBar,
    ShortcutBar,
+   SideMenu,
 };
 
 // The part in use, None while it is what is open.

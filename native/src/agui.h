@@ -277,6 +277,12 @@ const Widget* shortcutBarListButton(const Widget* shortcutBar);
 // while the shortcut is on the bar; otherwise empty.
 std::vector<const Widget*> shortcutBarListCheckBoxes(const Widget* shortcutBar);
 
+// The side menu at the top right (SideMenu), or null outside a game or while the view has none (a
+// gamepad, or a mod hiding it).
+const Widget* sideMenu();
+// Its master mute button, the one button of it that opens no window.
+const Widget* sideMenuMuteButton(const Widget* sideMenu);
+
 // The selected row of an agui::TableWithSelection, the header row counting as 0.
 unsigned selectedRow(const Widget* table);
 

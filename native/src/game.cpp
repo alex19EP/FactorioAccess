@@ -288,6 +288,8 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.shortcutButtonBehavior, "ShortcutButton", "behavior");
    offset(layout.shortcutBehaviorPrototype, "ShortcutBehavior", "prototype");
    offset(layout.buttonIsToggle, "agui::Button", "isButtonToggleButton");
+   offset(layout.gameViewSideMenu, "GameView", "sideMenu");
+   offset(layout.sideMenuMuteButton, "SideMenu", "masterMutedButton");
 
    address(layout.loggingLog, "?log@Logging@@SAXPEBDIW4LogLevel@@0ZZ");
    address(layout.stringAppend, "?append@?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@QEAAAEAV12@QEBD_K@Z");
