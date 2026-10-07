@@ -1,6 +1,5 @@
 #include "CharacterScreen.hpp"
 
-#include <functional>
 #include <string>
 #include <vector>
 
@@ -55,31 +54,6 @@ graph::NodeVtable RecipeNode(const Widget* list, const Widget* recipe)
     return vtable;
 }
 
-// A table of buttons as the game lays it out: a row of the grid per table row, keeping the column
-// on Up and Down. Cells that are not `className` (the fillers that end a subgroup's line) are
-// skipped, and a row of fillers alone is left out.
-void AddGrid(graph::GraphBuilder& builder, const std::string& prefix, const Widget* table, std::string_view className,
-    const std::function<graph::NodeVtable(const Widget*)>& node)
-{
-    unsigned columns = agui::tableColumns(table);
-    auto cells = agui::children(table);
-    if (columns == 0)
-        return;
-    for (std::size_t start = 0; start < cells.size(); start += columns)
-    {
-        std::vector<std::size_t> row;
-        for (std::size_t i = start; i < cells.size() && i < start + columns; ++i)
-            if (agui::visible(cells[i]) && agui::derivesFrom(cells[i], className))
-                row.push_back(i);
-        if (row.empty())
-            continue;
-        builder.StartRow(prefix);
-        for (std::size_t i : row)
-            builder.AddItem(graph::ControlId::Referenced(cells[i], prefix + "/" + std::to_string(i)), node(cells[i]));
-        builder.EndRow();
-    }
-}
-
 void AddInventory(graph::GraphBuilder& builder, const std::string& key, const Widget* inventory)
 {
     const Widget* slot = FindDescendant(inventory, "InventoryGuiSlot");
@@ -89,7 +63,9 @@ void AddInventory(graph::GraphBuilder& builder, const std::string& key, const Wi
     std::string title = TitleAbove(inventory);
     if (!title.empty())
         builder.PushContext(title);
-    AddGrid(builder, key, agui::parent(slot), "InventoryGuiSlot", [](const Widget* cell) { return ControlNode(cell); });
+    AddGrid(
+        builder, key, agui::parent(slot), [](const Widget* cell) { return agui::derivesFrom(cell, "InventoryGuiSlot"); },
+        [](const Widget* cell) { return ControlNode(cell); });
     if (!title.empty())
         builder.PopContext();
 }
@@ -118,7 +94,9 @@ void AddCrafting(graph::GraphBuilder& builder, const Widget* crafting)
     }
     // The selected group's recipes: the only table of them the tabbed pane shows.
     if (const Widget* recipe = FindDescendant(crafting, "RecipeSlot"))
-        AddGrid(builder, "recipes", agui::parent(recipe), "RecipeSlot",
+        AddGrid(
+            builder, "recipes", agui::parent(recipe),
+            [](const Widget* cell) { return agui::derivesFrom(cell, "RecipeSlot"); },
             [crafting](const Widget* slot) { return RecipeNode(crafting, slot); });
 
     if (!title.empty())
@@ -174,26 +152,9 @@ const char* CharacterScreen::TakeSuggestedLanding()
     return land ? kSearchKey : nullptr;
 }
 
-bool CharacterScreen::TypingIn(const graph::GraphNode& node)
-{
-    // The retained render may be frames old, so the widget is compared before it is read: when it
-    // is the game's focused widget, it is alive.
-    const agui::Gui* gui = agui::applicationGui();
-    const Widget* focused = gui ? agui::focusedWidget(gui) : nullptr;
-    return focused && focused == node.Vtable.HostTag && agui::kind(focused) == agui::Kind::TextBox
-        && !agui::readOnly(focused);
-}
+bool CharacterScreen::TypingIn(const graph::GraphNode& node) { return TypingInField(node); }
 
-void CharacterScreen::OnCursorMoved(const graph::GraphNode& node)
-{
-    auto* widget = static_cast<const Widget*>(node.Vtable.HostTag);
-    if (!widget)
-        return;
-    agui::scrollIntoView(widget);
-    // Back on the search field, typing goes to it again.
-    if (agui::kind(widget) == agui::Kind::TextBox && agui::isFocusable(widget))
-        agui::focus(widget);
-}
+void CharacterScreen::OnCursorMoved(const graph::GraphNode& node) { FollowCursor(node); }
 
 void CharacterScreen::OnPop()
 {

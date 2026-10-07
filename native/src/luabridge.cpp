@@ -2,6 +2,7 @@
 
 #include "game.h"
 #include "log.h"
+#include "parts.h"
 #include "speech.h"
 #include "world.h"
 
@@ -147,6 +148,13 @@ int releaseCursor(lua_State* L) {
    return 0;
 }
 
+// Ctrl+Tab in the world, which the mod hands over when none of its own menus takes it.
+int nextPart(lua_State* L) {
+   if (!world::mayBeLocalPlayer(static_cast<int>(checkInteger(L, 1)))) return 0;
+   parts::cycle(static_cast<int>(checkInteger(L, 2)));
+   return 0;
+}
+
 struct Function {
    const char* name;
    lua_CFunction function;
@@ -156,6 +164,7 @@ constexpr Function kFunctions[] = {
    {"set_cursor", &setCursor},
    {"release_cursor", &releaseCursor},
    {"speak", &speak},
+   {"next_part", &nextPart},
 };
 
 using InitLuaState = void (*)(lua_State*);

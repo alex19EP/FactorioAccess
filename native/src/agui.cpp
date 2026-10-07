@@ -411,6 +411,14 @@ bool derivesFrom(const Widget* widget, std::string_view className) {
    return asBase(widget, decorated) != nullptr;
 }
 
+bool derivesFromTemplate(const Widget* widget, std::string_view templateName) {
+   // "FilterSelectGui<...>" is decorated ".?AV?$FilterSelectGui@...".
+   std::string prefix = std::string(".?AV?$").append(templateName).append("@");
+   for (const auto& [base, displacement] : classInfo(widget).bases)
+      if (base.starts_with(prefix)) return true;
+   return false;
+}
+
 const Widget* member(const Widget* owner, uint32_t offset) {
    return reinterpret_cast<const Widget*>(reinterpret_cast<const std::byte*>(owner) + offset);
 }
@@ -639,6 +647,49 @@ BurnerParts burnerParts(const Widget* burnerInfo) {
 
 unsigned selectedRow(const Widget* table) {
    return at<uint32_t>(asBaseChecked(table, ".?AVTableWithSelection@agui@@"), layout.tableSelectedIndex);
+}
+
+const Widget* quickBar() {
+   auto* context = *reinterpret_cast<const std::byte* const*>(layout.globalContext);
+   if (!context) return nullptr;
+   auto* game = at<const std::byte*>(context, layout.globalGame);
+   if (!game) return nullptr;
+   auto* view = at<const std::byte*>(game, layout.gameView);
+   if (!view) return nullptr;
+   auto* controllerView = at<std::byte*>(view, layout.gameViewControllerView);
+   if (!controllerView) return nullptr;
+   auto vtable = *reinterpret_cast<VirtualTable*>(controllerView);
+   return reinterpret_cast<const Widget* (*)(void*)>(vtable[layout.controllerViewQuickBar])(controllerView);
+}
+
+namespace {
+
+std::vector<QuickBarRow> rowsAt(const Widget* quickBar, uint32_t offset) {
+   std::vector<QuickBarRow> rows;
+   const auto& all = at<MsvcVector<const std::byte* const>>(quickBar, offset);
+   for (const std::byte* const* it = all.first; it != all.last; ++it) {
+      const std::byte* widgets = *it;
+      QuickBarRow& row = rows.emplace_back();
+      row.page = at<uint8_t>(widgets, layout.rowPage);
+      row.button = at<const Widget*>(widgets, layout.rowButton);
+      const auto& slots = at<MsvcVector<const Widget* const>>(widgets, layout.rowSlots);
+      row.slots.assign(slots.first, slots.last);
+   }
+   return rows;
+}
+
+} // namespace
+
+std::vector<QuickBarRow> quickBarRows(const Widget* quickBar) { return rowsAt(quickBar, layout.quickBarMainRows); }
+
+int quickBarPickingFor(const Widget* quickBar) {
+   // MSVC std::optional<unsigned char>: the value, then whether there is one.
+   if (!at<bool>(quickBar, layout.quickBarPickingFor + 1)) return -1;
+   return at<uint8_t>(quickBar, layout.quickBarPickingFor);
+}
+
+std::vector<QuickBarRow> quickBarPickerRows(const Widget* quickBar) {
+   return rowsAt(quickBar, layout.quickBarPickerRows);
 }
 
 

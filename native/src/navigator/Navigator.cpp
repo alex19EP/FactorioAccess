@@ -5,6 +5,7 @@
 
 #include "graph/GraphAnnouncer.hpp"
 #include "log.h"
+#include "parts.h"
 #include "speech.h"
 #include "vocab.h"
 
@@ -163,7 +164,12 @@ void Navigator::HandleKey(const input::KeyEvent& e)
         break;
     // One-shot chords act on the fresh press only.
     case input::keys::Tab:
-        if (!e.repeat)
+        if (e.repeat)
+            break;
+        // Ctrl+Tab moves between the parts of the screen: the open window and the HUD.
+        if (e.ctrl)
+            parts::cycle(e.shift ? -1 : +1);
+        else
             HandleTab(e.shift);
         break;
     case input::keys::Home:
@@ -195,10 +201,15 @@ void Navigator::HandleKey(const input::KeyEvent& e)
         if (!e.repeat)
             HandleMiddleClick();
         break;
-    // Only claimed while adjusting; otherwise it stays the game's Back.
+    // Only claimed while adjusting or for a screen that is no game window; otherwise it stays the
+    // game's Back.
     case input::keys::Escape:
-        if (!e.repeat && _adjusting.IsValid())
+        if (e.repeat)
+            break;
+        if (_adjusting.IsValid())
             StopAdjusting();
+        else if (_screen->ClaimsEscape())
+            _screen->OnEscape();
         break;
     default:
         break;
@@ -504,14 +515,14 @@ void Navigator::UpdateClaims(bool haveRender)
     if (typing)
     {
         // The field edits with everything else; these are the ways out of it.
-        claims = {{keys::Tab, shiftable}, {keys::Up, plain}, {keys::Down, plain}};
+        claims = {{keys::Tab, shiftable | mods::Ctrl}, {keys::Up, plain}, {keys::Down, plain}};
     }
     else
     {
         // Escape is deliberately absent: the game's own Back handling stays live (§7.3). Alt
         // chords never match, so Alt+F4 and friends always reach the game.
         claims = {{keys::Up, plain | mods::Ctrl}, {keys::Down, plain | mods::Ctrl},
-            {keys::Left, plain | mods::Ctrl}, {keys::Right, plain | mods::Ctrl}, {keys::Tab, shiftable},
+            {keys::Left, plain | mods::Ctrl}, {keys::Right, plain | mods::Ctrl}, {keys::Tab, shiftable | mods::Ctrl},
             {keys::Home, plain}, {keys::End, plain}, {keys::Return, plain | mods::Shift | mods::Ctrl},
             {keys::KeypadEnter, plain | mods::Shift | mods::Ctrl}, {keys::Y, plain},
             {keys::LeftBracket, plain | mods::Shift | mods::Ctrl},
@@ -519,8 +530,9 @@ void Navigator::UpdateClaims(bool haveRender)
             {keys::Backspace, plain | mods::Shift | mods::Ctrl},
             {keys::RightBracket, plain | mods::Shift | mods::Ctrl},
             {keys::Backslash, plain | mods::Shift | mods::Ctrl}};
-        // Leaving adjust mode is the one Escape the game must not see.
-        if (adjusting)
+        // Leaving adjust mode is an Escape the game must not see, and so is any Escape on a part of
+        // the HUD.
+        if (adjusting || _screen->ClaimsEscape())
             claims.push_back({keys::Escape, plain});
     }
     input::setClaims(std::move(claims));

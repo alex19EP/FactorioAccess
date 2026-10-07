@@ -255,6 +255,16 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.burntResultSlots, "BurnerInfo", "burntResultSlotsTable");
    offset(layout.burnerProgressBar, "BurnerInfo", "burningProgressBar");
 
+   offset(layout.gameViewControllerView, "GameView", "controllerView");
+   classSlot(layout.controllerViewQuickBar, "ControllerView", "getQuickBar");
+   offset(layout.quickBarMainRows, "QuickBarGui", "mainWindowRows");
+   offset(layout.quickBarPickerRows, "QuickBarGui", "pageSelectorRows");
+   offset(layout.quickBarPicker, "QuickBarGui", "pageSelectorFrame");
+   offset(layout.quickBarPickingFor, "QuickBarGui", "selectingNewPageForRow");
+   offset(layout.rowPage, "QuickBarGui::RowWidgets", "pageIndex");
+   offset(layout.rowButton, "QuickBarGui::RowWidgets", "button");
+   offset(layout.rowSlots, "QuickBarGui::RowWidgets", "slots");
+
    address(layout.loggingLog, "?log@Logging@@SAXPEBDIW4LogLevel@@0ZZ");
    address(layout.stringAppend, "?append@?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@QEAAAEAV12@QEBD_K@Z");
    address(layout.versionForDisplay,

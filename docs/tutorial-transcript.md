@@ -718,13 +718,17 @@ If you want to get things off belts manually, teleport your character onto the b
 
 Finally, it is time to discuss the quickbar and pipette tool.  The numbers 1 through 0 are a standard game-style quickbar which may have items assigned to it.
 
-To assign items, put them in your hand, and press control plus the number.
+To get to the quickbar, press control tab.  This works on the map, in the inventory and in a building's screen.  Control tab again or escape takes you back.  The quickbar is a row of 10 slots, and arrows move along it.
+
+To assign items, put them in your hand, for example with left bracket on them in the inventory, then go to the quickbar and press enter or left bracket on a slot.  Enter on an empty slot while your hand is empty opens a list of every item instead, so you can assign items you do not carry yet.
 
 Later, pressing  the number will bring the item to hand as long as you have some in your inventory.
 
-To clear a slot, assign the empty hand to it.
+Pressing the number of an empty slot instead assigns whatever your cursor is on, as the pipette tool described below would pick it.  This is a quick way to assign a building you are looking at.
 
-10 slots is a pretty small number.  For that reason, you actually have 10 quickbars.  You change the active quickbar with shift 1 through 0.  To assign to further quickbars, switch to them, then assign as described above.  Quickbars do not change on you without you first pressing a number.
+To clear a slot, press backslash on it.
+
+10 slots is a pretty small number.  For that reason, you actually have 10 quickbars.  You change the active quickbar with shift 1 through 0.  In the quickbar, tab moves to its page button, and enter on that lists all 10 quickbars, so you can assign slots on any of them.  Quickbars do not change on you without you first pressing a number.
 
 A very good way to do this is to have a quickbar per category.  For example, quickbar 1 can be all kinds of belts, 2 can be all kinds of inserters, 3 can be for power, etc.
 

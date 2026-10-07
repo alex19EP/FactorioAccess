@@ -287,6 +287,20 @@ struct Layout {
    uint32_t burntResultSlots = 0;     // BurnerInfo::burntResultSlotsTable, agui::Table
    uint32_t burnerProgressBar = 0;    // BurnerInfo::burningProgressBar: what is left of the fuel burning
 
+   // The quickbar along the bottom of the screen (QuickBarGui), reached the way the game's own
+   // quickbar keys reach it: GameView::controllerView->getQuickBar().
+   uint32_t gameViewControllerView = 0;  // GameView::controllerView, std::unique_ptr<ControllerView>
+   uint32_t controllerViewQuickBar = 0;  // QuickBarGui* ControllerView::getQuickBar(), a vtable slot
+   uint32_t quickBarMainRows = 0;        // QuickBarGui::mainWindowRows, std::vector<std::unique_ptr<RowWidgets>>
+   uint32_t quickBarPickerRows = 0;      // QuickBarGui::pageSelectorRows, the same for the page picker
+   uint32_t quickBarPicker = 0;          // QuickBarGui::pageSelectorFrame, an embedded agui::Frame
+   // QuickBarGui::selectingNewPageForRow, std::optional<unsigned char>: the bar whose page the picker
+   // is choosing while it is open.
+   uint32_t quickBarPickingFor = 0;
+   uint32_t rowPage = 0;                 // QuickBarGui::RowWidgets::pageIndex, unsigned char
+   uint32_t rowButton = 0;               // QuickBarGui::RowWidgets::button, std::unique_ptr<agui::Button>
+   uint32_t rowSlots = 0;                // QuickBarGui::RowWidgets::slots, std::vector<std::unique_ptr<ChooseButton>>
+
    // What the game says about itself while the DLL runs (see disclosure.h).
    // static void Logging::log(char const* file, unsigned line, LogLevel, char const* format, ...)
    uintptr_t loggingLog = 0;

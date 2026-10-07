@@ -9,6 +9,7 @@
 #include "screens/CharacterScreen.hpp"
 #include "screens/ControlSettingsScreen.hpp"
 #include "screens/DropDownScreen.hpp"
+#include "screens/FilterSelectScreen.hpp"
 #include "screens/GenericWindowScreen.hpp"
 #include "screens/LoadGameScreen.hpp"
 #include "screens/MachineScreen.hpp"
@@ -17,6 +18,7 @@
 #include "screens/ModSettingsScreen.hpp"
 #include "screens/ModsScreen.hpp"
 #include "screens/NewGameScreen.hpp"
+#include "screens/QuickBarScreen.hpp"
 #include "screens/ScenarioMessageScreen.hpp"
 #include "screens/SettingsScreen.hpp"
 #include "speech.h"
@@ -39,6 +41,7 @@ void tick(const agui::Gui* gui) {
    disclosure::tick();
    screens::WindowScreen::SetGui(gui);
    nav::ScreenManager::Get().Update();
+   screens::QuickBarScreen::WatchPage();
    dev::pump();
 }
 
@@ -81,6 +84,10 @@ void start() {
    manager.Register(std::make_unique<screens::CharacterScreen>());
    // An entity's window (a chest, a furnace, a drill, ...), opened by the game's own open-gui control.
    manager.Register(std::make_unique<screens::MachineScreen>());
+   // The quickbar, while Ctrl+Tab has moved to it.
+   manager.Register(std::make_unique<screens::QuickBarScreen>());
+   // Over it or a window, the chooser of a filter one of their slots opened.
+   manager.Register(std::make_unique<screens::FilterSelectScreen>());
    // Over any of them, an open dropdown's list.
    manager.Register(std::make_unique<screens::DropDownScreen>());
 }
