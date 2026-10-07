@@ -6,7 +6,9 @@
 #include <objbase.h>
 #include <prism.h>
 
+#include <atomic>
 #include <condition_variable>
+#include <cwchar>
 #include <deque>
 #include <format>
 #include <mutex>
@@ -24,6 +26,16 @@ struct Utterance {
 std::mutex g_mutex;
 std::condition_variable g_wake;
 std::deque<Utterance> g_queue;
+std::atomic<bool> g_enabled = false;
+
+// Benchmarks (the mod's test runs), dedicated servers and save creation have no player at the
+// keyboard, so they leave the screen reader alone.
+bool hasPlayer() {
+   const wchar_t* commandLine = GetCommandLineW();
+   for (const wchar_t* flag : {L"--benchmark", L"--start-server", L"--create"})
+      if (std::wcsstr(commandLine, flag)) return false;
+   return true;
+}
 
 void PRISM_CALL onPrismLog(void*, PrismLogLevel level, const char* source, const char* message) {
    // Prism's own logging thread; fa::log is thread-safe.
@@ -84,6 +96,11 @@ void run() {
 } // namespace
 
 void start() {
+   if (!hasPlayer()) {
+      log::info("No player at this game, so speech only goes to the log");
+      return;
+   }
+   g_enabled = true;
    // Never joined: the thread lives until the process exits.
    std::thread(run).detach();
 }
@@ -92,6 +109,7 @@ void say(std::string text, bool interrupt) {
    if (text.empty()) return;
    log::info("say{}: {}", interrupt ? " (interrupt)" : "", text);
    dev::onSpeech(text, interrupt);
+   if (!g_enabled) return;
    {
       std::scoped_lock lock(g_mutex);
       if (interrupt) g_queue.clear();
