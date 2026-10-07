@@ -386,6 +386,8 @@ const Widget* showTooltip(const Widget* widget, bool& created) {
    reinterpret_cast<void (*)(const Widget*)>(layout.checkCreateTooltip)(widget);
    const Widget* tooltip = fromTargeter(widget, layout.widgetToolTip);
    created &= tooltip != nullptr;
+   // A new tooltip is empty until the end of the Gui's next logic fills it.
+   if (tooltip) callVirtual<void>(tooltip, layout.slotToolTipUpdateContent);
    return tooltip;
 }
 

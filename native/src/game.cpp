@@ -137,6 +137,7 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.widgetToolTip, "agui::Widget", "toolTip");
    address(layout.checkCreateTooltip, "?checkCreateTooltip@Widget@agui@@QEAAXXZ");
    address(layout.removeToolTipWidget, "?removeToolTipWidget@Widget@agui@@QEAA_N_N@Z");
+   classSlot(layout.slotToolTipUpdateContent, "agui::ToolTip", "updateContent");
    offset(layout.plainToolTipTitle, "agui::PlainToolTipCreator", "title");
    offset(layout.plainToolTipText, "agui::PlainToolTipCreator", "text");
 
