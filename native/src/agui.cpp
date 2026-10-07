@@ -722,12 +722,35 @@ void pressOver(const Widget* widget, const Widget* over, MouseButton button, boo
       return true;
    };
 
+   // Handlers that ask whether a control is held (crafting checks craft, craft5 and craftAll) read
+   // the mouse buttons from the InputState, not the event: hold the button down there until the
+   // release, as a real click would.
+   struct HeldButton {
+      uint32_t* buttons;
+      uint32_t saved;
+      void release() {
+         if (buttons) *buttons = saved;
+         buttons = nullptr;
+      }
+      ~HeldButton() { release(); }
+   } held{nullptr, 0};
+
    // A widget the real mouse rests on is hovered already, and must stay so.
    bool hover = gui && widgetUnderMouse(gui) != widget;
    if (hover && !send(layout.dispatchMouseEnter, kEnter)) return;
+   // Entered with no button down, so a slot starts no drag.
+   auto* context = *reinterpret_cast<std::byte* const*>(layout.globalContext);
+   if (auto* state = context ? at<std::byte*>(context, layout.globalInputState) : nullptr) {
+      // SDL_BUTTON_LMASK, SDL_BUTTON_MMASK, SDL_BUTTON_RMASK
+      uint32_t mask = button == MouseButton::Left ? 1 : button == MouseButton::Middle ? 2 : 4;
+      held.buttons = reinterpret_cast<uint32_t*>(state + layout.inputStateMouseButtons);
+      held.saved = *held.buttons;
+      *held.buttons |= mask;
+   }
    if (!send(layout.dispatchMouseDown, kDown)) return;
    // A click-on-press widget clicked inside dispatchMouseDown; the Gui sends no second click.
    if (!clickOnPress && !send(layout.dispatchClick, kClick)) return;
+   held.release();
    if (!send(layout.dispatchMouseUp, kUp)) return;
    if (hover) send(layout.dispatchMouseLeave, kLeave);
 }

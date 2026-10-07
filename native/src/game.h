@@ -59,6 +59,9 @@ struct Layout {
    uint32_t globalGame = 0; // Game*, null outside a game
    uint32_t globalAppManager = 0;       // AppManager*
    uint32_t globalPlayerInputSource = 0; // PlayerInputSource*
+   uint32_t globalInputState = 0;        // InputState*
+   // InputState::mouseState.buttons: the SDL mouse button mask, bit n-1 for button n.
+   uint32_t inputStateMouseButtons = 0;
 
    // AppManager: the stack of app states (InGame, InGameMenu, InSettingsMenu, ...), the top last.
    uint32_t appManagerStates = 0; // std::vector<std::unique_ptr<AppManagerState>>

@@ -68,6 +68,8 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.globalGame, "GlobalContext", "game");
    offset(layout.globalAppManager, "GlobalContext", "appManager");
    offset(layout.globalPlayerInputSource, "GlobalContext", "playerInputSource");
+   offset(layout.globalInputState, "GlobalContext", "inputState.value");
+   offset(layout.inputStateMouseButtons, "InputState", "mouseState.buttons");
    offset(layout.appManagerStates, "AppManager", "stateStack");
    offset(layout.appStateGui, "AppManagerStateWithGuiManualConstruction<GameMenuGui>", "gui");
    offset(layout.gameView, "Game", "gameView");
