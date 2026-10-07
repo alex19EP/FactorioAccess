@@ -28,6 +28,7 @@
 #include "screens/SideMenuScreen.hpp"
 #include "screens/SplitterScreen.hpp"
 #include "screens/StatusScreen.hpp"
+#include "screens/TechnologyScreen.hpp"
 #include "speech.h"
 
 #include <windows.h>
@@ -104,7 +105,9 @@ void start() {
    manager.Register(std::make_unique<screens::StatusScreen>());
    // The crafting queue, the part after the status.
    manager.Register(std::make_unique<screens::CraftingQueueScreen>());
-   // Factoriopedia, over the window it stacks on.
+   // The technology window, over the window it stacks on.
+   manager.Register(std::make_unique<screens::TechnologyScreen>());
+   // Factoriopedia, over the window it stacks on, the technology window's too.
    manager.Register(std::make_unique<screens::FactoriopediaScreen>());
    // Over it or a window, the chooser of a filter one of their slots opened.
    manager.Register(std::make_unique<screens::FilterSelectScreen>());

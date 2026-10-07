@@ -384,6 +384,68 @@ void clickRichTextLink(const Widget* label, size_t section);
 const Widget* hoverRichTextLink(const Widget* label, size_t section);
 void clearRichTextHover(const Widget* label);
 
+// The technology window (GameView::technologyGui, opened by T or the research box) while it shows,
+// else a null window. Main thread only.
+struct TechnologyWindow {
+   const Widget* window = nullptr;
+   const Widget* queue = nullptr;       // the research queue (ResearchQueueGui), hidden while the queue is off
+   const Widget* title = nullptr;       // the selected technology's name with its level
+   const Widget* status = nullptr;      // beside it, its status: "(Available)"
+   const Widget* featured = nullptr;    // its cost, effects, description and Start research
+   const Widget* list = nullptr;        // every technology, the grid the search filters (TechnologyListGui)
+   const Widget* listTable = nullptr;   // that grid's table of TechnologySlot buttons
+   const Widget* graphTitle = nullptr;  // the graph's title bar, with Back, Forward and close
+   const Widget* graphHolder = nullptr; // "Show only essential technologies" over the graph
+   const Widget* graph = nullptr;       // the graph (TechnologyGraphGui)
+};
+TechnologyWindow technologyWindow();
+
+// The research queue's entries in its order, the research going on first: the technology's button,
+// which selects it, and the button that takes it out of the queue. The empty places are left out.
+struct QueueEntry {
+   const Widget* slot = nullptr;
+   const Widget* cancel = nullptr;
+};
+std::vector<QueueEntry> researchQueueEntries(const Widget* queue);
+
+// A technology's button (TechnologySlot), in the list, the queue, the details or the graph.
+bool isTechnologySlot(const Widget* widget);
+
+// What a technology's button shows, in words: the technology's name with the level its band shows,
+// and its status as the game words the selected one's ("Researched", "Available", "Queued",
+// "Researching", "Unavailable", "Undiscovered"). A queued technology has its place in the queue,
+// 1 for the research going on. `progress` is how much of it is researched, 0 to 1, when the button
+// draws it. Translates through the game's locale, so main thread only.
+struct TechnologyInfo {
+   uint16_t id = 0;
+   std::string name;
+   std::string status;
+   unsigned queuePosition = 0;
+   double progress = 0;
+};
+TechnologyInfo technologyInfo(const Widget* slot);
+
+// The graph of the selected technology, as the game lays it out: layers top to bottom, each
+// technology's prerequisites in layers above it and what it unlocks below, and within a layer left
+// to right by x. The routing vertices an edge passes through are left out; edges link the
+// technologies at their ends. An omitted vertex is the button standing for `omitted` technologies
+// the view leaves out; its `technology` is the one it hangs from. `central` indexes the selected
+// technology, or is SIZE_MAX while the graph is empty.
+struct TechnologyVertex {
+   const Widget* button = nullptr; // a TechnologySlot, or for an omitted vertex a TechnologyOmittedButton
+   uint16_t technology = 0;
+   unsigned omitted = 0;
+   unsigned layer = 0;
+   int x = 0;
+   std::vector<size_t> prerequisites;
+   std::vector<size_t> unlocks;
+};
+struct TechnologyGraph {
+   std::vector<TechnologyVertex> vertices;
+   size_t central = SIZE_MAX;
+};
+TechnologyGraph technologyGraph(const Widget* graph);
+
 // The selected row of an agui::TableWithSelection, the header row counting as 0.
 unsigned selectedRow(const Widget* table);
 

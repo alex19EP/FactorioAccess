@@ -91,6 +91,10 @@ inline constexpr std::string_view kVehicleShield = "vehicle shield";
 inline constexpr std::string_view kMap = "map";
 // An icon in a text that the game lets the mouse click (a Factoriopedia description's).
 inline constexpr std::string_view kLink = "link";
+// The technology window: a queued research's X, which takes it out of the queue, and the graph's
+// button standing for the technologies the view leaves out ("12 omitted").
+inline constexpr std::string_view kCancel = "cancel";
+inline constexpr std::string_view kOmitted = "omitted";
 
 // A recipe tooltip's ingredient count in red (not enough, and none to make) or in orange (not
 // enough, made from intermediates when crafted).

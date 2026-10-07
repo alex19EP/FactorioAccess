@@ -80,6 +80,11 @@ void AddGrid(graph::GraphBuilder& builder, const std::string& prefix, const agui
     const std::function<bool(const agui::Widget*)>& accept,
     const std::function<graph::NodeVtable(const agui::Widget*)>& node);
 
+/// A line of a description (a LabelWithHoverableRichText) with the icons the game makes clickable in
+/// it as links beside it: Right reaches them, Enter clicks one as the mouse would, the tooltip key
+/// reads its tooltip. Returns false, declaring nothing, for a label without such icons.
+bool AddLinkLine(graph::GraphBuilder& builder, const std::string& key, const agui::Widget* label);
+
 /// Screen::TypingIn for a game window: whether `node` is an editable text field that has the game's
 /// keyboard focus.
 bool TypingInField(const graph::GraphNode& node);

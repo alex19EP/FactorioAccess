@@ -82,29 +82,6 @@ bool HasSlot(const Widget* table)
     return false;
 }
 
-// "Rare Iron plate" for the tag "item=iron-plate,quality=rare": what the icon reads as in the line.
-std::string LinkName(std::string_view tag)
-{
-    return text::speakable(std::format("[{}]", tag));
-}
-
-graph::NodeVtable LinkNode(const Widget* label, std::size_t section, std::string name)
-{
-    graph::NodeVtable vtable;
-    vtable.HostTag = label;
-    vtable.Announcements.emplace_back([name = std::move(name)]() { return name; }, false, Kinds::Label);
-    vtable.Announcements.emplace_back([]() { return std::string(vocab::kLink); }, false, Kinds::Role);
-    vtable.OnActivate = [label, section]() { agui::clickRichTextLink(label, section); };
-    vtable.OnTooltip = [label, section]()
-    {
-        const Widget* tooltip = agui::hoverRichTextLink(label, section);
-        std::string text = tooltip ? TooltipText(tooltip) : std::string();
-        agui::clearRichTextHover(label);
-        speech::say(text.empty() ? std::string(vocab::kNoTooltip) : text, true);
-    };
-    return vtable;
-}
-
 // The page's content, the game's own layout read in order. Anything without entries or links in it
 // (the description's plain lines, a section's heading) is read by the generic walker; entries, the
 // rows that lead with one (an ingredient: its button, then "2 × Iron plate") and the lines with links
@@ -124,8 +101,8 @@ public:
                 AddSubtree(_builder, key, child);
             else if (agui::isSlotButton(child))
                 _builder.AddItem(graph::ControlId::Referenced(child, key), EntryNode(child));
-            else if (std::vector<agui::RichTextLink> links = agui::richTextLinks(child); !links.empty())
-                AddLinkLine(key, child, links);
+            else if (AddLinkLine(_builder, key, child))
+                continue;
             else if (agui::derivesFrom(child, "agui::Table") && HasSlot(child))
                 AddGrid(
                     _builder, key, child, [](const Widget* cell) { return agui::isSlotButton(cell); },
@@ -171,17 +148,6 @@ private:
             if (std::string text = LabelText(label); !text.empty())
                 line += (line.empty() ? "" : " ") + text;
         return line.empty() ? EntryText(slot) : line;
-    }
-
-    // A description line with its icons as links beside it.
-    void AddLinkLine(const std::string& key, const Widget* label, const std::vector<agui::RichTextLink>& links)
-    {
-        _builder.StartLine(key);
-        _builder.AddItem(graph::ControlId::Referenced(label, key), TextNode(label, [label]() { return LabelText(label); }));
-        for (std::size_t i = 0; i < links.size(); ++i)
-            _builder.AddItem(graph::ControlId::Referenced(label, std::format("{}/link{}", key, i)),
-                LinkNode(label, links[i].section, LinkName(links[i].tag)));
-        _builder.EndRow();
     }
 
     graph::GraphBuilder& _builder;

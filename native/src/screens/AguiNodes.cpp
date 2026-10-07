@@ -719,6 +719,9 @@ std::string NameOf(const Widget* widget)
     // A slider's tooltip is its value, not its name.
     if (name.empty() && agui::kind(widget) != Kind::Slider)
         name = text::speakable(agui::toolTip(widget).title);
+    // An icon alone (a technology's effects): what it depicts.
+    if (name.empty())
+        name = text::speakable(agui::iconName(widget));
     // A title bar's X: no text, no tooltip.
     if (name.empty() && agui::derivesFrom(widget, "CloseButton"))
         name = vocab::kClose;
@@ -1003,6 +1006,49 @@ void AddGrid(graph::GraphBuilder& builder, const std::string& prefix, const Widg
             builder.AddItem(graph::ControlId::Referenced(cells[i], prefix + "/" + std::to_string(i)), node(cells[i]));
         builder.EndRow();
     }
+}
+
+namespace
+{
+
+// "Rare Iron plate" for the tag "item=iron-plate,quality=rare": what the icon reads as in the line.
+std::string LinkName(std::string_view tag)
+{
+    return text::speakable(std::format("[{}]", tag));
+}
+
+graph::NodeVtable LinkNode(const Widget* label, std::size_t section, std::string name)
+{
+    graph::NodeVtable vtable;
+    vtable.HostTag = label;
+    vtable.Announcements.emplace_back([name = std::move(name)]() { return name; }, false, graph::AnnouncementKinds::Label);
+    vtable.Announcements.emplace_back(
+        []() { return std::string(vocab::kLink); }, false, graph::AnnouncementKinds::Role);
+    vtable.OnActivate = [label, section]() { agui::clickRichTextLink(label, section); };
+    vtable.OnTooltip = [label, section]()
+    {
+        const Widget* tooltip = agui::hoverRichTextLink(label, section);
+        std::string text = tooltip ? TooltipText(tooltip) : std::string();
+        agui::clearRichTextHover(label);
+        speech::say(text.empty() ? std::string(vocab::kNoTooltip) : text, true);
+    };
+    return vtable;
+}
+
+} // namespace
+
+bool AddLinkLine(graph::GraphBuilder& builder, const std::string& key, const Widget* label)
+{
+    std::vector<agui::RichTextLink> links = agui::richTextLinks(label);
+    if (links.empty())
+        return false;
+    builder.StartLine(key);
+    builder.AddItem(graph::ControlId::Referenced(label, key), TextNode(label, [label]() { return LabelText(label); }));
+    for (std::size_t i = 0; i < links.size(); ++i)
+        builder.AddItem(graph::ControlId::Referenced(label, std::format("{}/link{}", key, i)),
+            LinkNode(label, links[i].section, LinkName(links[i].tag)));
+    builder.EndRow();
+    return true;
 }
 
 bool TypingInField(const graph::GraphNode& node)

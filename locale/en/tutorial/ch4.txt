@@ -6,7 +6,7 @@ The latter two do not matter for a very long time, and we will not discuss them 
 
 Mod UIs are divided into a two level hierarchy.
 
-The top-level hierarchy, tabs, are things like "inventories", "crafting", and "research".  You navigate between these with control tab and control shift tab.
+The top-level hierarchy, tabs, are things like "inventories" and "crafting".  You navigate between these with control tab and control shift tab.
 
 One level below that are subtabs or controls, navigated with tab and shift tab.  If you are in the inventories tab, this is every possible inventory for the building for example.
 
@@ -16,23 +16,21 @@ There are two more important keys.  K, which gives you information on what is fo
 
 We will discuss research first.  While crafting lets us fix your drill, research is how you know why it matters and what to aim for.
 
-Open your main menu, then go over to the research tab.  This is composed of 3 rows one on top of the other: researchable, locked, and previously researched.
+Press t to open the game's technology window.  Tab moves between its parts: the research queue, the list of every technology, the selected technology's details, the buttons over the technology tree, and the tree itself.
 
-Use w and s to switch rows, and a and d to explore the row.
+The window opens on the tree, at the selected technology.  The tree is laid out in layers from top to bottom.  Up arrow goes to a technology this one needs, down arrow to a technology it unlocks, and left and right arrows move along the layer.
 
-Many of our UIs take a non-obvious shape like this, so you don't have to scroll through long menus.
+Enter selects the technology you are on, and the tree centers on it.  Its details then say what it needs and what it gives.  Each technology also says whether it is researched, available or unavailable.
 
-Fortunately, every UI is searchable just like you searched your inventory earlier.
+The list of every technology can be searched with control f, the game's own search.
 
-Right now you have two researchable technologies, steam power and electronics.
+Right now you have two available technologies, steam power and electronics.
 
-Factorio has two kinds of technology, technology which you select and technology which automatically unlocks.  Both currently available technologies have an unlock condition instead of a science requirement.  To find out what it is, press k.
+Factorio has two kinds of technology, technology which you select and technology which automatically unlocks.  Both currently available technologies have an unlock condition instead of a science requirement.  To find out what it is, select the technology with enter, then tab to its details.
 
-in this case, electronics is "craft copper plate x 10 of normal quality" and steam power is "craft iron plate x 50 of normal quality".
+in this case, electronics is "craft 10 copper plate" and steam power is "craft 50 iron plate".
 
-Quality is a space age thing.  All you need to know is that you won't ever find a quality better than normal in the base game, what you are playing now.
-
-We now know what we need.  How do we get it?  Go back one tab to the crafting tab, then search for plate.
+We now know what we need.  How do we get it?  Close the technology window with escape, open your main menu, go to the crafting tab, then search for plate.
 
 If you click either of the plate recipes, the game will tell you that you can't craft it!  That's because these must be done in a machine.
 

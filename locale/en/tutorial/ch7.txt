@@ -114,11 +114,9 @@ You can visualize these exactly like a buried garden hose, where the hose ends a
 
 The other function of a pipe to ground is to let you run pipes close together without mixing fluids.  Unfortunately, practical examples of doing that are many hours away.
 
-In either case, your immediate goal is to hand-craft 10 automation science packs, get water and coal in the boiler, put the science packs in the lab, then click on automation in the research tab.
+In either case, your immediate goal is to hand-craft 10 automation science packs, get water and coal in the boiler, put the science packs in the lab, then open the technology window with t, find automation, and press shift enter on it to start its research.
 
-Research is queued, and clicking puts it in the back of the queue. Since you haven't got anything else running, it's up next.  Check research progress with t, and if you want to cancel get to the research queue by tabbing over from the technology list and clicking what you want to cancel.
-
-You can also enqueue to the front with control shift click.
+Shift enter puts a technology at the back of the research queue, the first part of the technology window.  Since you haven't got anything else running, it's up next.  The queue says how far along each research is, and the cancel button beside an entry takes it out of the queue.  Outside the window, the status part of the screen, reached with control tab, reads research progress too.
 
 If everything is working, your steam engine, lab, and boiler will all begin to make audible noise.  All factorio buildings make some sound when they are working, so sudden silence is usually the sign of a problem.
 

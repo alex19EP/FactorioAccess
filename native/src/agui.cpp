@@ -924,6 +924,188 @@ void clearRichTextHover(const Widget* label) {
       reinterpret_cast<void (*)(std::byte*)>(layout.richTextClearTooltip)(manager);
 }
 
+TechnologyWindow technologyWindow() {
+   const Widget* window = shownMember(gameView(), layout.gameViewTechnology);
+   if (!window) return {};
+   const Widget* list = member(window, layout.technologyList);
+   return {window,
+           member(window, layout.technologyQueue),
+           member(window, layout.technologyTitle),
+           member(window, layout.technologyStatus),
+           member(window, layout.technologyFeatured),
+           list,
+           member(list, layout.technologyListTable),
+           member(window, layout.technologyGraphTitle),
+           member(window, layout.technologyGraphHolder),
+           member(window, layout.technologyGraph)};
+}
+
+namespace {
+
+// Technology::ResearchState, from the PDB: an enum's values are not resolvable by name.
+enum class ResearchState : uint8_t { Disabled, Researched, Available, ConditionallyAvailable, NotAvailable };
+
+// TechnologyGraphGui::Vertex::Type, from the PDB: a technology's button, a routing point of an edge
+// that spans layers, or the button standing for the technologies the view leaves out.
+constexpr uint32_t kVertexFull = 0;
+constexpr uint32_t kVertexDummy = 1;
+
+// std::deque's elements per block for a 2-byte element, a constant of MSVC's library.
+constexpr size_t kDequeBlock = 8;
+
+uint16_t technologyId(const std::byte* reference) { return at<uint16_t>(reference, layout.techReferenceId); }
+
+const std::byte* technologyOf(const std::byte* reference) {
+   return reinterpret_cast<const std::byte* (*)(const std::byte*)>(layout.getTechnology)(reference);
+}
+
+// The text of a LocalisedString in the game's current locale; destroys the string.
+std::string takeTranslation(void* localised) {
+   struct Destroy {
+      void* object;
+      ~Destroy() { reinterpret_cast<void (*)(void*)>(layout.localisedStringDestroy)(object); }
+   } destroy{localised};
+   using Str = const MsvcString* (*)(const void* localisedString, const void* localeProvider);
+   const MsvcString* text = reinterpret_cast<Str>(layout.localisedStringStr)(localised, nullptr);
+   return {text->capacity >= sizeof(text->buffer) ? text->pointer : text->buffer, text->size};
+}
+
+// A key of the game's locale in its current language, e.g. "gui-technology-preview.status-queued".
+std::string translateKey(const char* key) {
+   alignas(8) std::byte localised[256];
+   if (layout.localisedStringSize > sizeof(localised)) return {};
+   reinterpret_cast<void* (*)(void*, const char*)>(layout.localisedStringFromKey)(localised, key);
+   return takeTranslation(localised);
+}
+
+std::string nameWithLevel(const std::byte* prototype, unsigned level) {
+   alignas(8) std::byte localised[256];
+   if (layout.localisedStringSize > sizeof(localised)) return {};
+   reinterpret_cast<void* (*)(const std::byte*, void*, unsigned)>(layout.technologyNameWithLevel)(prototype, localised,
+                                                                                                  level);
+   return takeTranslation(localised);
+}
+
+// The 1-based place of the technology in a research queue, or 0.
+unsigned queuePosition(const std::byte* queue, uint16_t id) {
+   auto* const* map = at<const uint16_t* const*>(queue, layout.researchQueueMap);
+   size_t mapSize = at<size_t>(queue, layout.researchQueueMapSize);
+   size_t first = at<size_t>(queue, layout.researchQueueOffset);
+   size_t size = at<size_t>(queue, layout.researchQueueSize);
+   for (size_t i = 0; i < size; ++i) {
+      size_t place = first + i;
+      if (map[(place / kDequeBlock) & (mapSize - 1)][place % kDequeBlock] == id) return static_cast<unsigned>(i + 1);
+   }
+   return 0;
+}
+
+// The complete object a polymorphic subobject belongs to, by its vtable's RTTI locator.
+const Widget* completeObject(const std::byte* subobject) {
+   auto* vtable = *reinterpret_cast<const void* const* const*>(subobject);
+   auto* locator = static_cast<const CompleteObjectLocator*>(vtable[-1]);
+   return reinterpret_cast<const Widget*>(subobject - locator->offset);
+}
+
+} // namespace
+
+std::vector<QueueEntry> researchQueueEntries(const Widget* queue) {
+   std::vector<QueueEntry> entries;
+   for (const Widget* element : children(member(queue, layout.queueTable))) {
+      if (!derivesFrom(element, "TechnologyQueueElement")) continue;
+      const Widget* slot = member(element, layout.queueElementSlot);
+      if (technologyId(reinterpret_cast<const std::byte*>(slot) + layout.techSlotTechnology) != 0)
+         entries.push_back({slot, member(element, layout.queueElementCancel)});
+   }
+   return entries;
+}
+
+bool isTechnologySlot(const Widget* widget) { return asBase(widget, ".?AVTechnologySlot@@") != nullptr; }
+
+TechnologyInfo technologyInfo(const Widget* slot) {
+   const std::byte* self = asBaseChecked(slot, ".?AVTechnologySlot@@");
+   const std::byte* reference = self + layout.techSlotTechnology;
+   TechnologyInfo info;
+   info.id = technologyId(reference);
+   if (info.id == 0) return info;
+   const std::byte* technology = technologyOf(reference);
+   auto level = reinterpret_cast<unsigned (*)(const std::byte*)>(layout.techSlotLevel)(self);
+   info.name = nameWithLevel(at<const std::byte*>(technology, layout.technologyPrototype), level);
+
+   const std::byte* queue = at<const std::byte*>(self, layout.techSlotResearchQueue);
+   info.queuePosition = queue ? queuePosition(queue, info.id) : 0;
+   auto state = reinterpret_cast<ResearchState (*)(const std::byte*, const std::byte*)>(layout.technologyState)(
+       technology, queue);
+   // The words of the selected technology's status (TechnologyGui::updateTitle), the research going
+   // on as the research box words it.
+   const char* key = "gui-technology-preview.status-not-available";
+   if (info.queuePosition == 1)
+      key = "gui-technology-preview.status-researching";
+   else if (info.queuePosition > 1)
+      key = "gui-technology-preview.status-queued";
+   else if (state == ResearchState::Disabled)
+      key = "gui-technology-preview.status-disabled";
+   else if (state == ResearchState::Researched)
+      key = "gui-technology-preview.status-researched";
+   else if (state == ResearchState::Available || state == ResearchState::ConditionallyAvailable)
+      key = "gui-technology-preview.status-available";
+   info.status = translateKey(key);
+
+   const std::byte* manager = at<const std::byte*>(self, layout.techSlotResearchManager);
+   if (manager && at<uint32_t>(self, layout.techSlotIndicateProgress) != 0 && state != ResearchState::Researched)
+      info.progress = reinterpret_cast<double (*)(const std::byte*, const std::byte*)>(layout.researchProgress)(
+          manager, technology);
+   return info;
+}
+
+TechnologyGraph technologyGraph(const Widget* graph) {
+   TechnologyGraph result;
+   const auto& vertices = at<MsvcVector<const std::byte* const>>(graph, layout.graphVertices);
+   auto type = [](const std::byte* vertex) { return at<uint32_t>(vertex, layout.vertexType); };
+   auto edges = [](const std::byte* vertex, uint32_t offset) {
+      const auto& list = at<MsvcVector<const std::byte* const>>(vertex, offset);
+      return std::span<const std::byte* const>(list.first, list.last);
+   };
+   // Through the routing vertices of an edge that spans layers, one in each, to its far end.
+   auto end = [&](const std::byte* vertex, uint32_t offset) {
+      while (vertex && type(vertex) == kVertexDummy) {
+         std::span<const std::byte* const> next = edges(vertex, offset);
+         vertex = next.empty() ? nullptr : next.front();
+      }
+      return vertex;
+   };
+
+   std::unordered_map<const std::byte*, size_t> index;
+   for (const std::byte* const* it = vertices.first; it != vertices.last; ++it) {
+      const std::byte* vertex = *it;
+      if (type(vertex) == kVertexDummy) continue;
+      TechnologyVertex node;
+      node.button = completeObject(at<const std::byte*>(vertex, layout.vertexSlot));
+      node.layer = at<uint32_t>(vertex, layout.vertexLayer);
+      node.x = at<int32_t>(vertex, layout.vertexX);
+      if (type(vertex) == kVertexFull) {
+         node.technology = technologyId(vertex + layout.vertexTechnology);
+      } else {
+         node.omitted = at<uint32_t>(vertex, layout.vertexNumOmitted);
+         std::span<const std::byte* const> from = edges(vertex, layout.vertexPredecessors);
+         if (const std::byte* owner = from.empty() ? nullptr : end(from.front(), layout.vertexPredecessors))
+            node.technology = technologyId(owner + layout.vertexTechnology);
+      }
+      index.emplace(vertex, result.vertices.size());
+      result.vertices.push_back(std::move(node));
+   }
+   for (const auto& [vertex, self] : index) {
+      for (const std::byte* up : edges(vertex, layout.vertexPredecessors))
+         if (auto found = index.find(end(up, layout.vertexPredecessors)); found != index.end())
+            result.vertices[self].prerequisites.push_back(found->second);
+      for (const std::byte* down : edges(vertex, layout.vertexSuccessors))
+         if (auto found = index.find(end(down, layout.vertexSuccessors)); found != index.end())
+            result.vertices[self].unlocks.push_back(found->second);
+   }
+   if (auto found = index.find(at<const std::byte*>(graph, layout.graphCentral)); found != index.end())
+      result.central = found->second;
+   return result;
+}
+
 const Widget* sideMenuMuteButton(const Widget* sideMenu) { return pointerMember(sideMenu, layout.sideMenuMuteButton); }
 
 const Widget* craftingQueue() {

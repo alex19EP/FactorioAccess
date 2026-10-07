@@ -463,6 +463,56 @@ struct Layout {
    uintptr_t richTextHandleHover = 0;
    uintptr_t richTextClearTooltip = 0;   // void RichTextHoverManager::clearTooltip()
 
+   // The technology window (T), which also stacks over whatever window is open: the research queue,
+   // the selected technology and the list of every technology on the left, the selected
+   // technology's graph of prerequisites and unlocks on the right.
+   uint32_t gameViewTechnology = 0;      // GameView::technologyGui, TechnologyGui*
+   uint32_t technologyQueue = 0;         // TechnologyGui::researchQueueGui, ResearchQueueGui
+   uint32_t technologyTitle = 0;         // TechnologyGui::featuredTechnologyTitle, agui::Label
+   uint32_t technologyStatus = 0;        // TechnologyGui::featuredTechnologyStatus, agui::Label: "(Available)"
+   uint32_t technologyFeatured = 0;      // TechnologyGui::featuredTechnologyGui, FeaturedTechnologyGui
+   uint32_t technologyList = 0;          // TechnologyGui::technologiesGui, TechnologyListGui
+   uint32_t technologyGraphTitle = 0;    // TechnologyGui::technologyGraphTitleFrame: history arrows, close
+   uint32_t technologyGraphHolder = 0;   // TechnologyGui::technologyGraphHolder: "show only essential"
+   uint32_t technologyGraph = 0;         // TechnologyGui::technologyGraph, TechnologyGraphGui
+   uint32_t technologyListTable = 0;     // TechnologyListGui::table, the grid of TechnologySlot
+   // ResearchQueueGui::queueTable, a table of TechnologyQueueElement, filled up to seven places with
+   // empty ones.
+   uint32_t queueTable = 0;
+   uint32_t queueElementSlot = 0;        // TechnologyQueueElement::technologySlot, TechnologySlot
+   uint32_t queueElementCancel = 0;      // TechnologyQueueElement::cancelButton, IconButton
+   // A technology's button, in the list, the queue and the graph.
+   uint32_t techSlotTechnology = 0;      // TechnologySlot::technology, TechnologyReference
+   uint32_t techSlotResearchQueue = 0;   // TechnologySlot::researchQueue, ResearchQueue* (may be null)
+   uint32_t techSlotResearchManager = 0; // TechnologySlot::researchManager, ResearchManager* (may be null)
+   uint32_t techSlotIndicateProgress = 0; // TechnologySlot::indicateProgress: 0 none, else a bar is drawn
+   uint32_t techReferenceId = 0;         // TechnologyReference::technologyID, ID<TechnologyPrototype,u16>
+   uint32_t technologyPrototype = 0;     // Technology::prototype
+   uint32_t researchQueueMap = 0;        // ResearchQueue::queue, std::deque<ID<TechnologyPrototype,u16>>: _Map
+   uint32_t researchQueueMapSize = 0;    // ... _Mapsize
+   uint32_t researchQueueOffset = 0;     // ... _Myoff
+   uint32_t researchQueueSize = 0;       // ... _Mysize
+   uintptr_t getTechnology = 0;          // Technology const& TechnologyReference::getTechnology() const
+   uintptr_t technologyState = 0;        // ResearchState Technology::getState(ResearchQueue const*) const
+   uintptr_t techSlotLevel = 0;          // unsigned TechnologySlot::getLevel() const: the level band's number
+   // LocalisedString TechnologyPrototype::getLocalisedNameWithLevel(unsigned) const, as the window
+   // titles the selected technology: "Steel axe", "Mining productivity 3".
+   uintptr_t technologyNameWithLevel = 0;
+   uintptr_t researchProgress = 0;       // double ResearchManager::getProgress(Technology const&) const
+   uintptr_t localisedStringFromKey = 0; // LocalisedString::LocalisedString(char const* key)
+   // The graph, laid out in layers top to bottom, prerequisites above what they unlock. An edge that
+   // spans layers runs through dummy vertices, one per layer it crosses.
+   uint32_t graphVertices = 0;           // TechnologyGraphGui::graph, std::vector<std::unique_ptr<Vertex>>
+   uint32_t graphCentral = 0;            // TechnologyGraphGui::central, Vertex*: the selected technology
+   uint32_t vertexTechnology = 0;        // TechnologyGraphGui::Vertex::technology, TechnologyReference
+   uint32_t vertexSlot = 0;              // ::slot, TechnologyGraphVertex*, a base of the button drawn
+   uint32_t vertexSuccessors = 0;        // ::successors, std::vector<Vertex*>: one layer down
+   uint32_t vertexPredecessors = 0;      // ::predecessors, std::vector<Vertex*>: one layer up
+   uint32_t vertexLayer = 0;             // ::layer, unsigned
+   uint32_t vertexType = 0;              // ::type, Vertex::Type
+   uint32_t vertexNumOmitted = 0;        // ::numOmitted, unsigned
+   uint32_t vertexX = 0;                 // ::position.x, int: left to right within the layer
+
    // What the game says about itself while the DLL runs (see disclosure.h).
    // static void Logging::log(char const* file, unsigned line, LogLevel, char const* format, ...)
    uintptr_t loggingLog = 0;
