@@ -10,4 +10,6 @@ std::string expandedState(bool expanded) { return expanded ? "expanded" : "colla
 
 std::string flyoutHint(int count) { return std::format("submenu, {} {}", count, count == 1 ? "item" : "items"); }
 
+std::string unlocked(unsigned count) { return std::format("{} unlocked", count); }
+
 } // namespace fa::vocab

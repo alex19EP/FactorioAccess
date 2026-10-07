@@ -783,6 +783,44 @@ void SpeakGameTooltip(const Widget* widget)
 namespace
 {
 
+// A chest slot past the chest's limit takes nothing from machines; while the limit is being
+// chosen, a click on a slot locks it and every slot after it.
+std::string LockText(const Widget* slot)
+{
+    agui::InventoryBar bar = agui::inventoryBar(slot);
+    if (!bar.button)
+        return {};
+    if (bar.choosing)
+        return std::string(vocab::kLockFromHere);
+    return agui::slotLocked(slot) ? std::string(vocab::kLocked) : std::string();
+}
+
+// The red X after a chest's slots, named on screen only by its tooltip: a click starts choosing
+// the first slot to lock, cancels that, or removes the limit. It shows pressed while a limit is
+// set or being chosen, so its value says which, and how many slots are left unlocked.
+void DescribeLimitButton(graph::NodeVtable& vtable, const Widget* button)
+{
+    auto state = [button]()
+    {
+        agui::InventoryBar bar = agui::inventoryBar(button);
+        if (bar.choosing)
+            return std::string(vocab::kChooseFirstLocked);
+        if (bar.unlocked >= bar.size)
+            return std::string(vocab::kAllUnlocked);
+        return bar.unlocked == 0 ? std::string(vocab::kAllLocked) : vocab::unlocked(bar.unlocked);
+    };
+    for (graph::NodeAnnouncement& part : vtable.Announcements)
+    {
+        if (part.Kind == Label)
+            part.Text = []() { return std::string(vocab::kLimitSlots); };
+        else if (part.Kind == Value)
+            part.Text = state;
+    }
+    // Spoken by the live watch once it changes: a limit is removed only when the game applies the
+    // click's input action, frames later.
+    vtable.StateText = nullptr;
+}
+
 // A slot is named by what it holds; a label beside it ("Fuel") is its name instead, the content
 // its value. Clicked as the Gui clicks the button under the mouse, so taking, placing and
 // splitting stacks and choosing recipes are vanilla.
@@ -800,6 +838,7 @@ graph::NodeVtable SlotNode(const Widget* slot, std::function<std::string()> name
     }
     else
         vtable.Announcements.emplace_back(content, live, Label);
+    vtable.Announcements.emplace_back([slot]() { return LockText(slot); }, true, Value);
     vtable.Announcements.emplace_back(
         [slot]() { return agui::enabled(slot) ? std::string() : std::string(vocab::kDisabled); }, false, Enabled);
     vtable.OnActivate = [slot]() { agui::press(slot, agui::MouseButton::Left, false, false); };
@@ -875,6 +914,8 @@ graph::NodeVtable ControlNode(const Widget* widget, std::function<std::string()>
     default:
         break;
     }
+    if (kind == Kind::Button && agui::inventoryBar(widget).button == widget)
+        DescribeLimitButton(vtable, widget);
     return vtable;
 }
 

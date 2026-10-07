@@ -226,6 +226,12 @@ struct Layout {
    uint32_t slotItemStack = 0;        // InventoryGuiSlot::itemStack, ItemStack*
    uint32_t inventoryData = 0;        // Inventory::data, ItemStack[]
    uint32_t inventorySize = 0;        // Inventory::dataSize
+   // A chest's slot limit: the slots from `bar` on take nothing from machines. Its window part
+   // (InventoryWithBarGui, an InventoryGui) sets it with the red X button after the slots.
+   uint32_t inventoryBar = 0;         // Inventory::bar, the first locked slot
+   uint32_t inventoryGuiInventory = 0; // InventoryGui::inventory, Inventory&
+   uint32_t barGuiButton = 0;         // InventoryWithBarGui::setBarSlot, IconButton
+   uint32_t barGuiMode = 0;           // InventoryWithBarGui::mode: NotSet 0, Setting 1 (choosing a slot), Set 2
    uint32_t itemStackSize = 0;        // sizeof(ItemStack)
    uint32_t itemStackCount = 0;       // ItemStack::count
    uint32_t itemStackItem = 0;        // ItemStack::itemID, an index into the item prototypes

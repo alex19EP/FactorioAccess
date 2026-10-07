@@ -6,6 +6,7 @@
 
 #include <dbghelp.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -518,6 +519,30 @@ SlotItem slotItem(const Widget* slot) {
        quality && readString(quality, layout.prototypeName) != "normal")
       item.quality = localisedName(quality);
    return item;
+}
+
+InventoryBar inventoryBar(const Widget* widget) {
+   for (const Widget* ancestor = widget; ancestor; ancestor = parent(ancestor)) {
+      const std::byte* self = asBase(ancestor, ".?AVInventoryWithBarGui@@");
+      if (!self) continue;
+      InventoryBar bar;
+      bar.button = reinterpret_cast<const Widget*>(self + layout.barGuiButton);
+      bar.choosing = at<uint32_t>(self, layout.barGuiMode) == 1;
+      if (const std::byte* inventory =
+             at<const std::byte*>(asBaseChecked(ancestor, ".?AVInventoryGui@@"), layout.inventoryGuiInventory)) {
+         bar.size = at<uint16_t>(inventory, layout.inventorySize);
+         bar.unlocked = std::min<unsigned>(at<uint16_t>(inventory, layout.inventoryBar), bar.size);
+      }
+      return bar;
+   }
+   return {};
+}
+
+bool slotLocked(const Widget* slot) {
+   const std::byte* self = asBase(slot, ".?AVInventoryGuiSlot@@");
+   if (!self || !at<const std::byte*>(self, layout.slotInventory)) return false;
+   InventoryBar bar = inventoryBar(slot);
+   return bar.button && at<uint16_t>(self, layout.slotIndex) >= bar.unlocked;
 }
 
 RecipeItem recipeItem(const Widget* craftingList, const Widget* slot) {

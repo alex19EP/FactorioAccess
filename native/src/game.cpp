@@ -205,6 +205,10 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.slotItemStack, "InventoryGuiSlot", "itemStack");
    offset(layout.inventoryData, "Inventory", "data");
    offset(layout.inventorySize, "Inventory", "dataSize");
+   offset(layout.inventoryBar, "Inventory", "bar");
+   offset(layout.inventoryGuiInventory, "InventoryGui", "inventory");
+   offset(layout.barGuiButton, "InventoryWithBarGui", "setBarSlot");
+   offset(layout.barGuiMode, "InventoryWithBarGui", "mode");
    size(layout.itemStackSize, "ItemStack");
    offset(layout.itemStackCount, "ItemStack", "count");
    offset(layout.itemStackItem, "ItemStack", "itemID");

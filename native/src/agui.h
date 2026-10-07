@@ -161,6 +161,20 @@ struct SlotItem {
 };
 SlotItem slotItem(const Widget* slot);
 
+// A chest's slot limit, for any widget in the window part that sets it (an InventoryWithBarGui):
+// its red X `button`, whether the player is `choosing` the first slot to lock (after a click on
+// the button), and how many of its `size` slots are `unlocked`. All null and 0 outside one.
+struct InventoryBar {
+   const Widget* button = nullptr;
+   bool choosing = false;
+   unsigned unlocked = 0;
+   unsigned size = 0;
+};
+InventoryBar inventoryBar(const Widget* widget);
+
+// Whether an item slot (InventoryGuiSlot) of such a part is at or past the limit.
+bool slotLocked(const Widget* slot);
+
 // A recipe button (RecipeSlot) of a crafting list (CraftingGui): the recipe's translated name and
 // how many the player can craft from what they carry.
 struct RecipeItem {

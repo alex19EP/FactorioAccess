@@ -50,11 +50,20 @@ inline constexpr std::string_view kProgress = "progress";
 inline constexpr std::string_view kMining = "mining";
 inline constexpr std::string_view kBurning = "burning";
 
+// A chest's slot limit: the red X button and the slots it locks.
+inline constexpr std::string_view kLimitSlots = "limit slots";
+inline constexpr std::string_view kChooseFirstLocked = "choose first locked slot";
+inline constexpr std::string_view kAllUnlocked = "all unlocked";
+inline constexpr std::string_view kAllLocked = "all locked";
+inline constexpr std::string_view kLocked = "locked";
+inline constexpr std::string_view kLockFromHere = "lock from here";
+
 inline constexpr std::string_view kNoTooltip = "no tooltip";
 inline constexpr std::string_view kNoAction = "no action";
 
 std::string position(int index, int count);
 std::string expandedState(bool expanded);
 std::string flyoutHint(int count);
+std::string unlocked(unsigned count);
 
 } // namespace fa::vocab
