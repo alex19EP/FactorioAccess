@@ -162,6 +162,13 @@ Modern graph-based architecture:
 - Dynamic rendering with React-like rebuilding
 - Explicit re-render is not possible because the UI does not have a painting step and is really a description of how to say things.  Controls which change values often say their new value.
 
+### Native DLL (required)
+The mod requires the native DLL in `native/` (deployed as `winmm.dll`). There is no Lua-only mode to keep working.
+
+- When the game knows something the Lua API cannot read (engine flying text such as "Cannot reach", console messages other than player chat, vanilla GUI text, why an action failed), read it at the source in the native layer.
+- Don't write Lua that guesses what happened from indirect events, and don't add Lua fallbacks for when the DLL is missing. Existing Lua guesses are to be replaced by native reads.
+- Lua-only APIs that do expose the information (events, getters) remain the right tool for it.
+
 ## Testing
 
 ### Test Framework
