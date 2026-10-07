@@ -815,13 +815,6 @@ data:extend({
 
    {
       type = "custom-input",
-      name = "fa-f1",
-      key_sequence = "F1",
-      consuming = "none",
-   },
-
-   {
-      type = "custom-input",
       name = "toggle-build-lock",
       key_sequence = "CONTROL + B",
       consuming = "none",

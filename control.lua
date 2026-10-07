@@ -3040,15 +3040,6 @@ EventManager.on_event(
    end
 )
 
-EventManager.on_event(
-   "fa-f1",
-   ---@param event EventData.CustomInputEvent
-   function(event, pindex)
-      game.auto_save("manual")
-      Speech.speak(pindex, { "fa.saving-game-wait" })
-   end
-)
-
 ---@param event EventData.CustomInputEvent
 local function kb_toggle_build_lock(event)
    local pindex = event.player_index
