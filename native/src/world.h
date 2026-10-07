@@ -14,6 +14,11 @@ void releaseCursor(int playerIndex);
 // Whether `playerIndex` may be this client's player: false only once a game with a local player
 // is up and that player is someone else.
 bool mayBeLocalPlayer(int playerIndex);
+// The direction the game builds the item in hand in (GameView::buildDirection, a 16-way
+// defines.direction), or -1 when `playerIndex` is not this client's player or there is none. The
+// game keeps it across items; rotate turns it as soon as the key is read, before the mod's Lua
+// sees the key. A blueprint keeps its own rotation, which this is not.
+int buildDirection(int playerIndex);
 
 // MinHook detours for Player::getCursorMapPosition and PlayerInputSource::getCursorMapPosition,
 // and where MinHook keeps the originals.

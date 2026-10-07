@@ -83,6 +83,7 @@ bool resolve(pdb::SymbolTable& symbols) {
    address(layout.luaSetTop, "lua_settop");
    address(layout.luaPushLString, "lua_pushlstring");
    address(layout.luaRawSetI, "lua_rawseti");
+   address(layout.luaPushByte, "??$lua_pushnumber@E@@YAXPEAUlua_State@@E@Z");
    address(layout.parseLocalisedString, "?parseLocalisedString@LuaHelper@@YA?AVLocalisedString@@PEAUlua_State@@H_N@Z");
    address(layout.localisedStringDestroy, "??1LocalisedString@@QEAA@XZ");
    size(layout.localisedStringSize, "LocalisedString");
@@ -99,6 +100,7 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.gameLocalPlayer, "Game", "localPlayer");
    offset(layout.playerIndex, "Player", "index");
    offset(layout.gameViewMessage, "GameView", "scenarioMessageDialog");
+   offset(layout.gameViewBuildDirection, "GameView", "buildDirection");
    offset(layout.speechBubbleLabel, "SpeechBubbleGui", "messageLabel");
 
    offset(layout.guiBaseWidget, "agui::Gui", "baseWidget");
@@ -277,6 +279,11 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.burnerSlots, "BurnerInfo", "burnerSlotsTable");
    offset(layout.burntResultSlots, "BurnerInfo", "burntResultSlotsTable");
    offset(layout.burnerProgressBar, "BurnerInfo", "burningProgressBar");
+   offset(layout.sidePanelContainer, "GuiWithSideButtons", "sidePanelContainer");
+   offset(layout.onOffEntityWindow, "GenericOnOffEntityGui", "entityWindow");
+   offset(layout.onOffEntity, "GenericOnOffEntityGui", "entity");
+   offset(layout.splitterEntity, "SplitterGui", "splitter");
+   offset(layout.entityUnitNumber, "EntityWithOwner", "unitNumber");
 
    offset(layout.gameViewControllerView, "GameView", "controllerView");
    classSlot(layout.controllerViewQuickBar, "ControllerView", "getQuickBar");

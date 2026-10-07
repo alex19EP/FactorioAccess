@@ -84,9 +84,10 @@ local function analyze_blueprint_base_dimensions(stack)
    return width, height
 end
 
----Get the build dimensions of a stack, accounting for rotation
+---Get the build dimensions of a stack, accounting for rotation. Blueprints keep their rotation where
+---Lua cannot read it, so their dimensions are unrotated.
 ---@param stack LuaItemStack The item stack to measure
----@param direction defines.direction The rotation direction (from viewpoint)
+---@param direction defines.direction? The direction the item is built in; blueprints ignore it
 ---@return integer|nil width The width in tiles
 ---@return integer|nil height The height in tiles
 function mod.get_stack_build_dimensions(stack, direction)
@@ -94,21 +95,22 @@ function mod.get_stack_build_dimensions(stack, direction)
 
    local width, height
 
-   if SPECIAL_CASES[stack.name] then
-      width = SPECIAL_CASES[stack.name].width
-      height = SPECIAL_CASES[stack.name].height
-   elseif stack.is_blueprint_book then
+   if stack.is_blueprint_book then
       -- Blueprint books: get dimensions from active blueprint
       local book_inv = stack.get_inventory(defines.inventory.item_main)
       if book_inv and stack.active_index then
          local active_bp = book_inv[stack.active_index]
          if active_bp and active_bp.valid_for_read and active_bp.is_blueprint then
-            width, height = analyze_blueprint_base_dimensions(active_bp)
+            return analyze_blueprint_base_dimensions(active_bp)
          end
       end
+      return nil, nil
    elseif stack.is_blueprint then
       --Blueprints: analyze constituent entities
-      width, height = analyze_blueprint_base_dimensions(stack)
+      return analyze_blueprint_base_dimensions(stack)
+   elseif SPECIAL_CASES[stack.name] then
+      width = SPECIAL_CASES[stack.name].width
+      height = SPECIAL_CASES[stack.name].height
    --Entities: get dimensions from prototype
    elseif stack.prototype.place_result then
       width = stack.prototype.place_result.tile_width

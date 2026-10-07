@@ -552,12 +552,6 @@ function mod.open_entity_ui(pindex, entity)
       return true
    end
 
-   -- Special case: belt-related entities use the belt analyzer
-   if entity.type == "transport-belt" or entity.type == "underground-belt" then
-      router:open_ui(UiRouter.UI_NAMES.BELT, params)
-      return true
-   end
-
    -- Default: generic entity UI
    -- Note: Logistic containers open as normal chests to allow inventory access
    -- Logistics config is accessed via explicit keybinding (fa-cs-l)

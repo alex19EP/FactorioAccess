@@ -1,12 +1,10 @@
 #include "MachineScreen.hpp"
 
-#include <algorithm>
-#include <ranges>
-#include <unordered_map>
+#include <string>
+#include <utility>
 #include <vector>
 
 #include "AguiNodes.hpp"
-#include "GuiDump.hpp"
 #include "vocab.h"
 
 namespace fa::screens
@@ -16,28 +14,6 @@ namespace
 {
 
 using agui::Widget;
-
-bool IsMachineWindow(const Widget* window)
-{
-    return agui::derivesFrom(window, "GameGuiWithControllerInventory")
-        || agui::derivesFrom(window, "AssemblingMachineSelectRecipeGui");
-}
-
-// The topmost open entity window, or null. Only over plain play: the game menu takes over.
-const Widget* FindWindow()
-{
-    if (!agui::inGame() || agui::menuStateWindow())
-        return nullptr;
-    const agui::Gui* gui = agui::applicationGui();
-    const Widget* root = gui ? agui::baseWidget(gui) : nullptr;
-    if (!root)
-        return nullptr;
-    const Widget* top = nullptr;
-    for (const Widget* child : agui::children(root))
-        if (agui::visible(child) && IsMachineWindow(child))
-            top = child;
-    return top;
-}
 
 // Bars read with what they belong to rather than as stops of their own: the crafting progress and
 // productivity with the first output slot (with the recipe while there is none); a drill's
@@ -80,28 +56,6 @@ Attachments MachineAttachments(const agui::EntityWindowParts& parts)
     return attachments;
 }
 
-void AddEntity(graph::GraphBuilder& builder, const agui::EntityWindowParts& parts)
-{
-    builder.BeginStop("entity");
-    std::vector<const Widget*> skip{parts.header};
-    if (parts.inventoryPanel)
-        skip.push_back(parts.inventoryPanel);
-    // The title bar after the content, so the stop opens on the entity's status: its circuit and
-    // logistic network buttons, without the title (the context already), close (Escape) or search.
-    const Widget* title = agui::frameTitle(parts.entity);
-    std::vector<const Widget*> headerSkip{title};
-    std::ranges::copy(FindAll(parts.header, "CloseButton"), std::back_inserter(headerSkip));
-    std::ranges::copy(FindAll(parts.header, "SearchBar"), std::back_inserter(headerSkip));
-
-    std::string titleText = title && Shows(title) ? LabelText(title) : std::string();
-    if (!titleText.empty())
-        builder.PushContext(titleText);
-    AddSubtree(builder, "entity", parts.entity, std::move(skip), MachineAttachments(parts));
-    AddSubtree(builder, "header", parts.header, std::move(headerSkip));
-    if (!titleText.empty())
-        builder.PopContext();
-}
-
 void AddInventory(graph::GraphBuilder& builder, const agui::EntityWindowParts& parts)
 {
     if (!parts.inventory || !Shows(parts.inventory))
@@ -118,53 +72,27 @@ void AddInventory(graph::GraphBuilder& builder, const agui::EntityWindowParts& p
 
 } // namespace
 
-bool MachineScreen::IsActive()
+bool MachineScreen::Handles(const Widget* window) const
 {
-    const Widget* window = FindWindow();
-    if (!window)
-    {
-        _window = nullptr;
-        return false;
-    }
-    // Keyed by class too, not address alone: the game reuses a closed window's memory.
-    const std::string& cls = agui::className(window);
-    if (_window && (window != _window || cls != _class))
-    {
-        // A different window: one inactive frame pops this screen, so the next one starts fresh.
-        _window = nullptr;
-        return false;
-    }
-    _window = window;
-    _class = cls;
-    return true;
+    return agui::derivesFrom(window, "GameGuiWithControllerInventory")
+        || agui::derivesFrom(window, "AssemblingMachineSelectRecipeGui");
 }
 
-void MachineScreen::Build(graph::GraphBuilder& builder)
+void MachineScreen::BuildWindow(graph::GraphBuilder& builder, const Widget* window)
 {
-    // A click can close the window or replace it (choosing a recipe opens the assembler's own
-    // window), so it is looked up again before anything in it is read.
-    if (!_window || FindWindow() != _window)
-        return;
-    DumpWindow(_window, _class);
-    agui::EntityWindowParts parts = agui::entityWindowParts(_window);
+    agui::EntityWindowParts parts = agui::entityWindowParts(window);
     if (!parts.entity)
     {
         // The recipe list: its group tabs, recipes, search and confirm, all in one stop.
         builder.BeginStop("window");
-        AddSubtree(builder, "window", _window);
+        AddSubtree(builder, "window", window);
         return;
     }
-    AddEntity(builder, parts);
+    std::vector<const Widget*> skip;
+    if (parts.inventoryPanel)
+        skip.push_back(parts.inventoryPanel);
+    AddTitledWindow(builder, "entity", parts.entity, std::move(skip), MachineAttachments(parts));
     AddInventory(builder, parts);
-}
-
-bool MachineScreen::TypingIn(const graph::GraphNode& node) { return TypingInField(node); }
-
-void MachineScreen::OnCursorMoved(const graph::GraphNode& node) { FollowCursor(node); }
-
-void MachineScreen::OnPop()
-{
-    _window = nullptr;
 }
 
 } // namespace fa::screens

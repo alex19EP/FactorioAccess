@@ -69,6 +69,10 @@ local on_configuration_changed_handlers = {}
 -- Structure: on_nth_tick_handlers[tick_interval] = { handler1, handler2, ... }
 local on_nth_tick_handlers = {}
 
+-- Called with every custom input before its handlers
+---@type fun(event: EventData.CustomInputEvent, pindex: integer)[]
+local custom_input_observers = {}
+
 -- Flag to track if we're in test mode
 local test_mode = false
 
@@ -154,6 +158,13 @@ function mod.on_custom_input(input_name, handler, priority)
    mod.on_event(input_name, handler, priority)
 end
 
+---Register a function to see every custom input before its handlers do, such as to read the
+---cursor_direction the game reports with each.
+---@param observer fun(event: EventData.CustomInputEvent, pindex: integer)
+function mod.observe_custom_inputs(observer)
+   table.insert(custom_input_observers, observer)
+end
+
 ---Register a handler (alias for on_event)
 ---@param event_id_or_input defines.events|string The event ID or custom input name
 ---@param handler fun(event: EventData, pindex?: integer): EventHandlerResult The function to call
@@ -177,6 +188,14 @@ function mod._dispatch_event(event_id, event)
          -- Player needs initialization
          local player = game.get_player(pindex)
          if player then PlayerInit.initialize(player) end
+      end
+
+      if
+         (event --[[@as { input_name: string? }]]).input_name
+      then
+         for _, observer in ipairs(custom_input_observers) do
+            observer(event --[[@as EventData.CustomInputEvent]], pindex)
+         end
       end
 
       -- Skip non-whitelisted events when vanilla mode is enabled.
@@ -270,6 +289,7 @@ function mod.clear_all_handlers()
    on_load_handlers = {}
    on_configuration_changed_handlers = {}
    on_nth_tick_handlers = {}
+   custom_input_observers = {}
 end
 
 ---Get the number of handlers for an event (useful for testing)

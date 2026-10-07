@@ -1,174 +1,66 @@
 --Here: Mod GUI and graphics drawing
 --Note: Does not include every single rendering call made by the mod, such as circles being drawn by obstacle clearing.
 
-local BuildDimensions = require("scripts.build-dimensions")
 local FaUtils = require("scripts.fa-utils")
 local Mouse = require("scripts.mouse")
 local UiRouter = require("scripts.ui.router")
 local VanillaMode = require("scripts.vanilla-mode")
 local Viewpoint = require("scripts.viewpoint")
-local dirs = defines.direction
 
 local mod = {}
 
---Updates graphics to match the mod's current construction preview in hand.
---Draws stuff like the building footprint, direction indicator arrow, selection tool selection box.
---Also moves the mouse pointer to hold the preview at the correct position on screen.
+--Updates graphics to match the item in hand: the paving area of tiles and the selection box of
+--planners. The game draws the build preview of entities and blueprints itself, at the world cursor
+--that follows the mod's cursor.
 function mod.sync_build_cursor_graphics(pindex)
    local player = storage.players[pindex]
    if player == nil or player.player.character == nil then return end
-   local p = game.get_player(pindex)
    local stack = game.get_player(pindex).cursor_stack
    turn_to_cursor_direction_cardinal(pindex)
-   local dir_indicator = player.building_dir_arrow
    local vp = Viewpoint.get_viewpoint(pindex)
-   local dir = vp:get_hand_direction()
    local cursor_pos = vp:get_cursor_pos()
    local cursor_size = vp:get_cursor_size()
-   local width = nil
-   local height = nil
-   local left_top = nil
-   local right_bottom = nil
-   if stack and stack.valid_for_read and stack.valid and stack.prototype.place_result then
-      --Redraw direction indicator arrow
-      if dir_indicator ~= nil then player.building_dir_arrow.destroy() end
-      local arrow_pos = vp:get_cursor_pos()
-      player.building_dir_arrow = rendering.draw_sprite({
-         sprite = "fluid.crude-oil",
-         tint = { r = 0.25, b = 0.25, g = 1.0, a = 0.75 },
-         render_layer = "254",
-         surface = game.get_player(pindex).surface,
-         players = nil,
-         target = arrow_pos,
-         orientation = dir / (2 * dirs.south),
-      })
-      dir_indicator = player.building_dir_arrow
-      dir_indicator.visible = true
-      if storage.players[pindex].hide_cursor then dir_indicator.visible = false end
-
-      --Redraw footprint (ent)
+   local holding = stack ~= nil and stack.valid_for_read
+   if holding and stack.prototype.place_as_tile_result then
+      --Tile placement preview
+      local left_top = {
+         math.floor(cursor_pos.x) - cursor_size,
+         math.floor(cursor_pos.y) - cursor_size,
+      }
+      local right_bottom = {
+         math.floor(cursor_pos.x) + cursor_size + 1,
+         math.floor(cursor_pos.y) + cursor_size + 1,
+      }
+      mod.draw_large_cursor(left_top, right_bottom, pindex, { r = 0.25, b = 0.25, g = 1.0, a = 0.75 })
+   elseif
+      holding
+      and (stack.is_blueprint or stack.is_deconstruction_item or stack.is_upgrade_item or stack.prototype.type == "selection-tool" or stack.prototype.type == "copy-paste-tool")
+      and storage.players[pindex].bp_selecting == true
+   then
+      --Draw planner rectangles
+      local top_left, bottom_right =
+         FaUtils.get_top_left_and_bottom_right(storage.players[pindex].bp_select_point_1, cursor_pos)
+      local color = { 1, 1, 1 }
+      if stack.is_blueprint then
+         color = { r = 0.25, b = 1.00, g = 0.50, a = 0.75 }
+      elseif stack.is_deconstruction_item then
+         color = { r = 1.00, b = 0.25, g = 0.50, a = 0.75 }
+      elseif stack.is_upgrade_item then
+         color = { r = 0.25, b = 0.25, g = 1.00, a = 0.75 }
+      end
       if player.building_footprint ~= nil then player.building_footprint.destroy() end
-
-      --Calculate footprint using centralized function
-      local footprint = FaUtils.calculate_building_footprint({
-         entity_prototype = stack.prototype.place_result,
-         position = vp:get_cursor_pos(),
-         building_direction = dir,
-      })
-
-      left_top = footprint.left_top
-      right_bottom = footprint.right_bottom
-      width = footprint.width
-      height = footprint.height
-
-      --Update the footprint info and draw it
-      player.building_footprint_left_top = left_top
-      player.building_footprint_right_bottom = right_bottom
       player.building_footprint = rendering.draw_rectangle({
-         left_top = left_top,
-         right_bottom = right_bottom,
-         color = { r = 0.25, b = 0.25, g = 1.0, a = 0.75 },
-         draw_on_ground = true,
+         color = color,
+         width = 2,
          surface = game.get_player(pindex).surface,
+         left_top = top_left,
+         right_bottom = bottom_right,
+         draw_on_ground = false,
          players = nil,
       })
       player.building_footprint.visible = true
-
-      --Hide the drawing in the desired cases
-      if storage.players[pindex].hide_cursor then player.building_footprint.visible = false end
-
-      --Move mouse pointer to the center of the footprint
-      Mouse.move_mouse_pointer(footprint.center, pindex)
-   elseif stack == nil or not stack.valid_for_read then
-      --Invalid stack: Hide the objects
-      if dir_indicator ~= nil then dir_indicator.visible = false end
-      if player.building_footprint ~= nil then player.building_footprint.visible = false end
-   elseif stack and stack.valid_for_read and stack.is_blueprint and stack.is_blueprint_setup() then
-      --Blueprints have their own data:
-      --Redraw the direction indicator arrow
-      if dir_indicator ~= nil then player.building_dir_arrow.destroy() end
-      local arrow_pos = vp:get_cursor_pos()
-      local dir = vp:get_hand_direction()
-      player.building_dir_arrow = rendering.draw_sprite({
-         sprite = "fluid.crude-oil",
-         tint = { r = 0.25, b = 0.25, g = 1.0, a = 0.75 },
-         render_layer = "254",
-         surface = game.get_player(pindex).surface,
-         players = nil,
-         target = arrow_pos,
-         orientation = dir / (2 * dirs.south),
-      })
-      dir_indicator = player.building_dir_arrow
-      dir_indicator.visible = true
-
-      --Redraw the bp footprint
-      if player.building_footprint ~= nil then player.building_footprint.destroy() end
-      local bp_width, bp_height = BuildDimensions.get_stack_build_dimensions(stack, dir)
-      if bp_width and bp_height then
-         local left_top = { x = math.floor(vp:get_cursor_pos().x), y = math.floor(vp:get_cursor_pos().y) }
-         local right_bottom = { x = (left_top.x + bp_width), y = (left_top.y + bp_height) }
-         local center_pos = { x = (left_top.x + bp_width / 2), y = (left_top.y + bp_height / 2) }
-         player.building_footprint = rendering.draw_rectangle({
-            left_top = left_top,
-            right_bottom = right_bottom,
-            color = { r = 0.25, b = 0.25, g = 1.0, a = 0.75 },
-            width = 2,
-            draw_on_ground = true,
-            surface = p.surface,
-            players = nil,
-         })
-         player.building_footprint.visible = true
-
-         Mouse.move_mouse_pointer(center_pos, pindex)
-      end
-   else
-      --Hide the objects
-      --if dir_indicator ~= nil then rendering.set_visible(dir_indicator, false) end
-      --if player.building_footprint ~= nil then rendering.set_visible(player.building_footprint, false) end
-
-      --Tile placement preview
-      if stack.valid and stack.prototype.place_as_tile_result then
-         local left_top = {
-            math.floor(cursor_pos.x) - cursor_size,
-            math.floor(cursor_pos.y) - cursor_size,
-         }
-         local right_bottom = {
-            math.floor(cursor_pos.x) + cursor_size + 1,
-            math.floor(cursor_pos.y) + cursor_size + 1,
-         }
-         mod.draw_large_cursor(left_top, right_bottom, pindex, { r = 0.25, b = 0.25, g = 1.0, a = 0.75 })
-      elseif
-         (
-            stack.is_blueprint
-            or stack.is_deconstruction_item
-            or stack.is_upgrade_item
-            or stack.prototype.type == "selection-tool"
-            or stack.prototype.type == "copy-paste-tool"
-         ) and (storage.players[pindex].bp_selecting == true)
-      then
-         --Draw planner rectangles
-         local top_left, bottom_right =
-            FaUtils.get_top_left_and_bottom_right(storage.players[pindex].bp_select_point_1, cursor_pos)
-         local color = { 1, 1, 1 }
-         if stack.is_blueprint then
-            color = { r = 0.25, b = 1.00, g = 0.50, a = 0.75 }
-         elseif stack.is_deconstruction_item then
-            color = { r = 1.00, b = 0.25, g = 0.50, a = 0.75 }
-         elseif stack.is_upgrade_item then
-            color = { r = 0.25, b = 0.25, g = 1.00, a = 0.75 }
-         end
-         player.building_footprint.destroy()
-         player.building_footprint = rendering.draw_rectangle({
-            color = color,
-            width = 2,
-            surface = game.get_player(pindex).surface,
-            left_top = top_left,
-            right_bottom = bottom_right,
-            draw_on_ground = false,
-            players = nil,
-         })
-         player.building_footprint.visible = true
-      end
+   elseif player.building_footprint ~= nil then
+      player.building_footprint.visible = false
    end
 
    --Recolor cursor boxes if multiplayer

@@ -1,5 +1,6 @@
 #include "luabridge.h"
 
+#include "entityviews.h"
 #include "game.h"
 #include "log.h"
 #include "parts.h"
@@ -12,6 +13,8 @@
 #include <regex>
 #include <string>
 #include <string_view>
+#include <utility>
+#include <vector>
 
 namespace fa::luabridge {
 
@@ -53,6 +56,9 @@ void pushString(lua_State* L, std::string_view text) {
 }
 void rawSetI(lua_State* L, int index, int n) {
    reinterpret_cast<void (*)(lua_State*, int, int)>(layout.luaRawSetI)(L, index, n);
+}
+void pushByte(lua_State* L, uint8_t value) {
+   reinterpret_cast<void (*)(lua_State*, uint8_t)>(layout.luaPushByte)(L, value);
 }
 
 struct MsvcString {
@@ -148,10 +154,49 @@ int releaseCursor(lua_State* L) {
    return 0;
 }
 
+// The game's build direction for the item in hand, or nil for another client's player. Only this
+// client knows it, so the mod may speak it but must not change the game by it.
+int buildDirection(lua_State* L) {
+   const int direction = world::buildDirection(static_cast<int>(checkInteger(L, 1)));
+   if (direction < 0) return 0;
+   pushByte(L, static_cast<uint8_t>(direction));
+   return 1;
+}
+
 // Ctrl+Tab in the world, which the mod hands over when none of its own menus takes it.
 int nextPart(lua_State* L) {
    if (!world::mayBeLocalPlayer(static_cast<int>(checkInteger(L, 1)))) return 0;
    parts::cycle(static_cast<int>(checkInteger(L, 2)));
+   return 0;
+}
+
+// The mod's own views of the entity whose window just opened (see entityviews.h):
+// entity_views_begin(player, unit_number), then per view entity_view(player, title) and its
+// entity_view_column(player, title, cell, ...) calls, then entity_views_end(player). Titles and
+// cells are LocalisedStrings.
+int entityViewsBegin(lua_State* L) {
+   if (!world::mayBeLocalPlayer(static_cast<int>(checkInteger(L, 1)))) return 0;
+   entityviews::begin(static_cast<uint64_t>(checkInteger(L, 2)));
+   return 0;
+}
+
+int entityView(lua_State* L) {
+   if (!world::mayBeLocalPlayer(static_cast<int>(checkInteger(L, 1)))) return 0;
+   entityviews::addView(translate(L, 2));
+   return 0;
+}
+
+int entityViewColumn(lua_State* L) {
+   if (!world::mayBeLocalPlayer(static_cast<int>(checkInteger(L, 1)))) return 0;
+   std::vector<std::string> cells;
+   for (int i = 3, top = getTop(L); i <= top; i++) cells.push_back(translate(L, i));
+   entityviews::addColumn(translate(L, 2), std::move(cells));
+   return 0;
+}
+
+int entityViewsEnd(lua_State* L) {
+   if (!world::mayBeLocalPlayer(static_cast<int>(checkInteger(L, 1)))) return 0;
+   entityviews::end();
    return 0;
 }
 
@@ -165,6 +210,11 @@ constexpr Function kFunctions[] = {
    {"release_cursor", &releaseCursor},
    {"speak", &speak},
    {"next_part", &nextPart},
+   {"build_direction", &buildDirection},
+   {"entity_views_begin", &entityViewsBegin},
+   {"entity_view", &entityView},
+   {"entity_view_column", &entityViewColumn},
+   {"entity_views_end", &entityViewsEnd},
 };
 
 using InitLuaState = void (*)(lua_State*);

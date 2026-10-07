@@ -304,11 +304,6 @@ function mod.rotate_270(dir)
    return (dir + defines.direction.east * 3) % (2 * defines.direction.south)
 end
 
-function mod.reset_rotation(pindex)
-   local vp = Viewpoint.get_viewpoint(pindex)
-   vp:set_hand_direction(defines.direction.north)
-end
-
 --Converts the entity orientation into a heading direction, with all directions having equal bias.
 --Returns the direction value, or nil if entity is nil.
 function mod.get_heading_value(ent)

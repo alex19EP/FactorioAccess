@@ -198,13 +198,13 @@ local function read_hand(pindex)
          end
       else
          --Any other valid item
-         local vp = Viewpoint.get_viewpoint(pindex)
          local out = { "fa.cursor-description" }
          table.insert(out, cursor_stack.prototype.localised_name)
          local build_entity = cursor_stack.prototype.place_result
-         if build_entity and build_entity.supports_direction then
+         local direction = NativeCursor.build_direction(pindex)
+         if build_entity and build_entity.supports_direction and direction then
             table.insert(out, 1)
-            table.insert(out, { "fa.facing-direction", FaUtils.direction_lookup(vp:get_hand_direction()) })
+            table.insert(out, { "fa.facing-direction", FaUtils.direction_lookup(direction) })
          else
             table.insert(out, 0)
             table.insert(out, "")
@@ -220,13 +220,13 @@ local function read_hand(pindex)
       end
    elseif cursor_ghost ~= nil then
       --Any ghost
-      local vp = Viewpoint.get_viewpoint(pindex)
       local out = { "fa.cursor-description" }
       table.insert(out, cursor_ghost.localised_name)
       local build_entity = cursor_ghost.place_result
-      if build_entity and build_entity.supports_direction then
+      local direction = NativeCursor.build_direction(pindex)
+      if build_entity and build_entity.supports_direction and direction then
          table.insert(out, 1)
-         table.insert(out, { "fa.facing-direction", FaUtils.direction_lookup(vp:get_hand_direction()) })
+         table.insert(out, { "fa.facing-direction", FaUtils.direction_lookup(direction) })
       else
          table.insert(out, 0)
          table.insert(out, "")
@@ -295,26 +295,6 @@ EventManager.on_event(
       --Update cursor graphics
       local stack = p.cursor_stack
       if stack and stack.valid_for_read and stack.valid then Graphics.sync_build_cursor_graphics(pindex) end
-   end
-)
-
---Handles a player joining into a game session.
-function on_player_join(pindex)
-   local playerList = {}
-   for _, p in pairs(game.connected_players) do
-      playerList["_" .. p.index] = p.name
-   end
-
-   --Reset the player building direction to match the vanilla behavior (Factorio 2.0)
-   local vp = Viewpoint.get_viewpoint(pindex)
-   vp:set_hand_direction(dirs.north)
-end
-
-EventManager.on_event(
-   defines.events.on_player_joined_game,
-   ---@param event EventData.on_player_joined_game
-   function(event)
-      if game.is_multiplayer() then on_player_join(event.player_index) end
    end
 )
 
@@ -1248,14 +1228,17 @@ local function cursor_skip_iteration(pindex, direction, iteration_limit)
 end
 
 --Shift the cursor by the size of the preview in hand or otherwise by the size of the cursor.
-local function apply_skip_by_preview_size(pindex, direction)
+---@param pindex integer
+---@param direction defines.direction Which way to move
+---@param build_direction defines.direction? The game's build direction, from the key's event
+local function apply_skip_by_preview_size(pindex, direction, build_direction)
    local p = game.get_player(pindex)
    local vp = Viewpoint.get_viewpoint(pindex)
    local cursor_pos = vp:get_cursor_pos()
 
    --Check the moved count against the dimensions of the preview in hand
    local stack = p.cursor_stack
-   local width, height = BuildDimensions.get_stack_build_dimensions(stack, vp:get_hand_direction())
+   local width, height = BuildDimensions.get_stack_build_dimensions(stack, build_direction)
 
    --Default to cursor size if not something else
    if not width or not height or (width + height <= 2) then
@@ -1277,7 +1260,8 @@ local function apply_skip_by_preview_size(pindex, direction)
 end
 
 --Runs the cursor skip actions and reads out results
-local function cursor_skip(pindex, direction, iteration_limit, use_preview_size)
+---@param build_direction defines.direction? With use_preview_size: the game's build direction, from the key's event
+local function cursor_skip(pindex, direction, iteration_limit, use_preview_size, build_direction)
    local vp = Viewpoint.get_viewpoint(pindex)
    local cursor_size = vp:get_cursor_size()
    local p = game.get_player(pindex)
@@ -1293,7 +1277,7 @@ local function cursor_skip(pindex, direction, iteration_limit, use_preview_size)
    local result = ""
    local moved_count = 0
    if use_preview_size == true then
-      moved_count = apply_skip_by_preview_size(pindex, direction)
+      moved_count = apply_skip_by_preview_size(pindex, direction, build_direction)
       result = "Skipped by preview size " .. moved_count .. ", "
    else
       moved_count = cursor_skip_iteration(pindex, direction, limit)
@@ -1411,7 +1395,7 @@ EventManager.on_event(
    ---@param event EventData.CustomInputEvent
    function(event, pindex)
       if skip_in_combat_mode(pindex) then return end
-      cursor_skip(pindex, defines.direction.north, 1000, true)
+      cursor_skip(pindex, defines.direction.north, 1000, true, event.cursor_direction)
    end
 )
 
@@ -1420,7 +1404,7 @@ EventManager.on_event(
    ---@param event EventData.CustomInputEvent
    function(event, pindex)
       if skip_in_combat_mode(pindex) then return end
-      cursor_skip(pindex, defines.direction.west, 1000, true)
+      cursor_skip(pindex, defines.direction.west, 1000, true, event.cursor_direction)
    end
 )
 
@@ -1429,7 +1413,7 @@ EventManager.on_event(
    ---@param event EventData.CustomInputEvent
    function(event, pindex)
       if skip_in_combat_mode(pindex) then return end
-      cursor_skip(pindex, defines.direction.south, 1000, true)
+      cursor_skip(pindex, defines.direction.south, 1000, true, event.cursor_direction)
    end
 )
 
@@ -1438,7 +1422,7 @@ EventManager.on_event(
    ---@param event EventData.CustomInputEvent
    function(event, pindex)
       if skip_in_combat_mode(pindex) then return end
-      cursor_skip(pindex, defines.direction.east, 1000, true)
+      cursor_skip(pindex, defines.direction.east, 1000, true, event.cursor_direction)
    end
 )
 
@@ -1694,7 +1678,7 @@ local function read_coords(pindex, start_phrase)
 
       --If there is a build preview, give its dimensions and which way they extend
       local stack = game.get_player(pindex).cursor_stack
-      local p_width, p_height = BuildDimensions.get_stack_build_dimensions(stack, vp:get_hand_direction())
+      local p_width, p_height = BuildDimensions.get_stack_build_dimensions(stack, NativeCursor.build_direction(pindex))
 
       -- Tiles are always 1x1, so tile case still triggers.
       if p_width and p_height and (p_width > 1 or p_height > 1) then
@@ -2784,9 +2768,7 @@ EventManager.on_event(
    "fa-r",
    ---@param event EventData.CustomInputEvent
    function(event, pindex)
-      local router = UiRouter.get_router(pindex)
-      ---From event rotate-building
-      BuildingTools.rotate_item_in_hand(event, true)
+      BuildingTools.rotate_item_in_hand(event)
    end
 )
 
@@ -2798,7 +2780,7 @@ EventManager.on_event(
       if Combat.is_combat_mode(pindex) then
          AimAssist.toggle_spawners_first(pindex)
       else
-         BuildingTools.rotate_item_in_hand(event, false)
+         BuildingTools.rotate_item_in_hand(event)
       end
    end
 )
@@ -2981,7 +2963,6 @@ local function kb_clear_renders(event)
    vp:set_cursor_ent_highlight_box(nil)
    vp:set_cursor_tile_highlight_box(nil)
    storage.players[pindex].building_footprint = nil
-   storage.players[pindex].building_dir_arrow = nil
    storage.players[pindex].overhead_sprite = nil
    storage.players[pindex].overhead_circle = nil
    storage.players[pindex].custom_GUI_frame = nil

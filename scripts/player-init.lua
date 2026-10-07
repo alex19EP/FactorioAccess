@@ -40,7 +40,11 @@ function mod.initialize(player)
 
    if type(faplayer.building_footprint) == "number" then faplayer.building_footprint = nil end
 
-   if type(faplayer.building_dir_arrow) == "number" then faplayer.building_dir_arrow = nil end
+   -- The game draws its own build preview now; take down the arrow older saves still show
+   if type(faplayer.building_dir_arrow) == "userdata" and faplayer.building_dir_arrow.valid then
+      faplayer.building_dir_arrow.destroy()
+   end
+   faplayer.building_dir_arrow = nil
 
    faplayer.overhead_sprite = nil
    faplayer.overhead_circle = nil
@@ -163,7 +167,6 @@ function mod.initialize(player)
    faplayer.building_footprint_clear = faplayer.building_footprint_clear or nil
    faplayer.building_footprint_valid = faplayer.building_footprint_valid or true
    faplayer.building_footprint_size = faplayer.building_footprint_size or nil
-   faplayer.building_dir_arrow = faplayer.building_dir_arrow or nil
    faplayer.cursor_horiz = faplayer.cursor_horiz or nil
    faplayer.cursor_verti = faplayer.cursor_verti or nil
    faplayer.cursor_round = faplayer.cursor_round or nil

@@ -12,29 +12,16 @@
 // Every slot is the game's own button, clicked as the Gui clicks it, so taking, placing, splitting
 // and moving stacks between the two inventories is vanilla, held Shift and Control included.
 
-#include <string>
-
-#include "agui.h"
-#include "navigator/Screen.hpp"
+#include "EntityWindowScreen.hpp"
 
 namespace fa::screens
 {
 
-class MachineScreen final : public nav::Screen
+class MachineScreen final : public EntityWindowScreen
 {
-public:
-    const char* Name() const override { return ""; }
-    const char* DiagName() const override { return _class.c_str(); }
-    bool RemembersCursor() const override { return true; }
-    bool IsActive() override;
-    void Build(graph::GraphBuilder& builder) override;
-    bool TypingIn(const graph::GraphNode& node) override;
-    void OnCursorMoved(const graph::GraphNode& node) override;
-    void OnPop() override;
-
-private:
-    const agui::Widget* _window = nullptr;
-    std::string _class;
+protected:
+    bool Handles(const agui::Widget* window) const override;
+    void BuildWindow(graph::GraphBuilder& builder, const agui::Widget* window) override;
 };
 
 } // namespace fa::screens

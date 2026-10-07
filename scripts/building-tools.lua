@@ -6,6 +6,7 @@ local Electrical = require("scripts.electrical")
 local FaUtils = require("scripts.fa-utils")
 local Fluids = require("scripts.fluids")
 local Localising = require("scripts.localising")
+local NativeCursor = require("scripts.native-cursor")
 local dirs = defines.direction
 local Graphics = require("scripts.graphics")
 local Speech = require("scripts.speech")
@@ -228,97 +229,6 @@ function mod.build_item_in_hand_with_params(params)
    end
 end
 
----Build a blueprint or blueprint book
----@param pindex integer Player index
----@param flip_horizontal? boolean Whether to flip horizontally
----@param flip_vertical? boolean Whether to flip vertically
----@param build_mode? defines.build_mode Build mode (normal, forced, superforced). Default: normal
----@return boolean success True if blueprint was placed successfully
-function mod.build_blueprint(pindex, flip_horizontal, flip_vertical, build_mode)
-   local p = game.get_player(pindex)
-   local cursor_stack = p.cursor_stack
-   local vp = Viewpoint.get_viewpoint(pindex)
-   local pos = vp:get_cursor_pos()
-
-   -- Verify we have a blueprint or blueprint book
-   if not cursor_stack or not cursor_stack.valid_for_read then return false end
-   if not cursor_stack.is_blueprint and not cursor_stack.is_blueprint_book then return false end
-
-   local is_book = cursor_stack.is_blueprint_book
-   local temp_inv = nil
-
-   -- Handle blueprint books: temporarily swap to active blueprint
-   if is_book then
-      local book_inv = cursor_stack.get_inventory(defines.inventory.item_main)
-      if not book_inv or not cursor_stack.active_index then return false end
-
-      local active_bp = book_inv[cursor_stack.active_index]
-      if not active_bp or not active_bp.valid_for_read or not active_bp.is_blueprint_setup() then return false end
-
-      -- Create temporary script inventory to hold the book
-      temp_inv = game.create_inventory(1)
-
-      -- Move book to temp_inv, set cursor to active blueprint (clones it)
-      temp_inv[1].swap_stack(cursor_stack)
-      cursor_stack.set_stack(active_bp)
-   else
-      -- Regular blueprint
-      if not cursor_stack.is_blueprint_setup() then return false end
-   end
-
-   -- Get the build dimensions and position
-   local dir = vp:get_hand_direction()
-   local width, height = BuildDimensions.get_stack_build_dimensions(cursor_stack, dir)
-   local left_top = { x = math.floor(pos.x), y = math.floor(pos.y) }
-   local right_bottom = { x = math.ceil(pos.x + width), y = math.ceil(pos.y + height) }
-   local build_pos = { x = pos.x + width / 2, y = pos.y + height / 2 }
-
-   -- Clear build area
-   PlayerMiningTools.clear_obstacles_in_rectangle(left_top, right_bottom, pindex, 99)
-
-   -- Try to build
-   local effective_build_mode = build_mode or defines.build_mode.normal
-   local can_build = p.can_build_from_cursor({
-      position = build_pos,
-      direction = dir,
-      flip_horizontal = flip_horizontal or false,
-      flip_vertical = flip_vertical or false,
-      build_mode = effective_build_mode,
-   })
-
-   local success = false
-   if can_build then
-      p.build_from_cursor({
-         position = build_pos,
-         direction = dir,
-         flip_horizontal = flip_horizontal or false,
-         flip_vertical = flip_vertical or false,
-         build_mode = effective_build_mode,
-      })
-      p.play_sound({ path = "Close-Inventory-Sound" })
-
-      -- Get label for feedback
-      local label = cursor_stack.label or "unnamed"
-      Speech.speak(pindex, { "fa.blueprints-placed", label })
-      success = true
-   else
-      p.play_sound({ path = "utility/cannot_build" })
-      -- Explain build error
-      local build_area = { left_top, right_bottom }
-      local result = mod.identify_building_obstacle(pindex, build_area, nil)
-      Speech.speak(pindex, result)
-      success = false
-   end
-
-   -- Restore book to cursor if we were using a blueprint book
-   if is_book and temp_inv then
-      temp_inv[1].swap_stack(p.cursor_stack)
-      temp_inv.destroy()
-   end
-
-   return success
-end
-
 --[[Assisted building function for offshore pumps.
 * Called as a special case by build_item_in_hand_with_params
 ]]
@@ -369,34 +279,22 @@ function mod.can_rotate_item(stack)
    return rotation_count ~= nil
 end
 
---Reads the result of rotating an item in hand
-function mod.rotate_item_in_hand(event, forward)
+--Reads the direction the game turned the item in hand to. The game turns a blueprint's own rotation,
+--which Lua cannot read, so a blueprint only gets the sound.
+function mod.rotate_item_in_hand(event)
    local pindex = event.player_index
    local p = game.get_player(pindex)
    if not check_for_player(pindex) then return end
 
-   local mult = 1
-   if forward == false then mult = -1 end
    local stack = p.cursor_stack
-   local vp = Viewpoint.get_viewpoint(pindex)
 
    -- Check if item in hand can rotate
    if mod.can_rotate_item(stack) then
-      local rotation_count = BuildDimensions.get_rotation_count(stack)
-      -- Adjust mult for 2-way rotation
-      if rotation_count == 2 then mult = mult * 2 end
-
-      -- Update the hand direction
       p.play_sound({ path = "Rotate-Hand-Sound" })
-      local build_dir = vp:get_hand_direction()
-      local new_dir = (build_dir + dirs.east * mult) % (2 * dirs.south)
-      vp:set_hand_direction(new_dir)
-
-      -- For blueprints and blueprint books, just announce direction
-      if stack.is_blueprint or stack.is_blueprint_book then
-         Speech.speak(pindex, FaUtils.direction_lookup(new_dir))
-      else
-         Speech.speak(pindex, { "fa.building-rotation-in-hand", FaUtils.direction_lookup(new_dir) })
+      if stack.is_blueprint or stack.is_blueprint_book then return end
+      local direction = NativeCursor.build_direction(pindex)
+      if direction then
+         Speech.speak(pindex, { "fa.building-rotation-in-hand", FaUtils.direction_lookup(direction) })
       end
       return
    elseif stack and stack.valid_for_read and stack.valid and stack.prototype.place_result then
@@ -635,7 +533,9 @@ function mod.build_preview_checks_info(stack, pindex)
    local tile_center = FaUtils.center_of_tile(pos)
 
    local result = { "" }
-   local build_dir = vp:get_hand_direction()
+   -- Only the player's own client knows the direction, and only that client speaks the result
+   local build_dir = NativeCursor.build_direction(pindex)
+   if not build_dir then return result end
    local ent_p = stack.prototype.place_result --it is an entity prototype!
    if ent_p == nil or not ent_p.valid then return "invalid entity" end
 
@@ -652,14 +552,6 @@ function mod.build_preview_checks_info(stack, pindex)
    if ent_p.type == "underground-belt" then
       local entrance, actual_dist = TransportBelts.find_underground_entrance(surf, ent_p, tile_center, build_dir)
       if entrance then
-         rendering.draw_circle({
-            color = { 0, 1, 0 },
-            radius = 1.0,
-            width = 3,
-            target = entrance.position,
-            surface = entrance.surface,
-            time_to_live = 60,
-         })
          table.insert(result, {
             "fa.connection-connects-underground",
             { "fa.direction", build_dir },
@@ -885,9 +777,7 @@ function mod.build_preview_checks_info(stack, pindex)
 
    --For all electric powered entities, note whether powered, and from which direction. Otherwise report the nearest power pole.
    if ent_p.electric_energy_source_prototype ~= nil then
-      local vp = Viewpoint.get_viewpoint(pindex)
       local position = pos
-      local build_dir = vp:get_hand_direction()
 
       position.x = position.x + math.ceil(2 * ent_p.selection_box.right_bottom.x) / 2 - 0.5
       position.y = position.y + math.ceil(2 * ent_p.selection_box.right_bottom.y) / 2 - 0.5
@@ -1094,9 +984,6 @@ function mod.snap_place_steam_engine_to_a_boiler(pindex)
          found_empty_spot = true
          local engine_position = output_location
          local dir = boiler.direction
-         local vp = Viewpoint.get_viewpoint(pindex)
-         local old_building_dir = vp:get_hand_direction()
-         vp:set_hand_direction(dir)
          if dir == dirs.east then
             engine_position = FaUtils.offset_position_legacy(engine_position, dirs.east, 2)
          elseif dir == dirs.south then

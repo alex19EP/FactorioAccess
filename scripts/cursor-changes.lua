@@ -2,7 +2,6 @@
 local mod = {}
 
 local Consts = require("scripts.consts")
-local StorageManager = require("scripts.storage-manager")
 local Viewpoint = require("scripts.viewpoint")
 local Graphics = require("scripts.graphics")
 local Blueprints = require("scripts.blueprints")
@@ -10,15 +9,8 @@ local BuildDimensions = require("scripts.build-dimensions")
 
 local dirs = defines.direction
 
----@class fa.CursorChanges.StorageState
----@field last_pipette_entity_tick number? Tick when we last pipetted an entity with direction
-
----@type table<number, fa.CursorChanges.StorageState>
-local cursor_storage = StorageManager.declare_storage_module("cursor_changes", {
-   last_pipette_entity_tick = nil,
-})
-
---- Pipette tool handler for fa-q key
+--- Pipette tool handler for fa-q key. The game's own pipette runs too and takes the entity's
+--- direction as its build direction.
 ---@param event EventData.CustomInputEvent
 function mod.kb_pipette_tool(event)
    local pindex = event.player_index
@@ -26,14 +18,7 @@ function mod.kb_pipette_tool(event)
 
    if p.is_cursor_empty() then
       local ent = p.selected
-      if ent and ent.valid then
-         if ent.supports_direction then
-            local vp = Viewpoint.get_viewpoint(pindex)
-            vp:set_hand_direction(ent.direction)
-            cursor_storage[pindex].last_pipette_entity_tick = game.tick
-         end
-         p.pipette(ent.prototype)
-      end
+      if ent and ent.valid then p.pipette(ent.prototype) end
    end
 end
 
@@ -63,14 +48,9 @@ function mod.on_cursor_stack_changed(event, pindex, read_hand)
    if storage.players[pindex].previous_hand_item_name ~= new_item_name then
       storage.players[pindex].previous_hand_item_name = new_item_name
 
-      local pipetted_this_tick = cursor_storage[pindex].last_pipette_entity_tick == game.tick
-
-      if not pipetted_this_tick then
-         vp:set_hand_direction(dirs.north)
-         vp:set_cursor_rotation_offset(0)
-         vp:set_flipped_horizontal(false)
-         vp:set_flipped_vertical(false)
-      end
+      vp:set_cursor_rotation_offset(0)
+      vp:set_flipped_horizontal(false)
+      vp:set_flipped_vertical(false)
 
       read_hand(pindex)
    end

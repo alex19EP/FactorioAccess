@@ -70,6 +70,9 @@ struct Layout {
    uintptr_t luaSetTop = 0;
    uintptr_t luaPushLString = 0;
    uintptr_t luaRawSetI = 0;
+   // void lua_pushnumber<unsigned char>(lua_State*, unsigned char): the game pushes numbers through
+   // templates like this one; there is no plain lua_pushnumber to call.
+   uintptr_t luaPushByte = 0;
    // LocalisedString LuaHelper::parseLocalisedString(lua_State*, int index, bool strict): what
    // localised_print reads its argument with. It throws ScriptException, a Lua error to the caller,
    // on a malformed string.
@@ -97,6 +100,9 @@ struct Layout {
    uint32_t gameLocalPlayer = 0;     // Game::localPlayer, the Player* of this client
    uint32_t playerIndex = 0;         // Player::index, LuaPlayer::index
    uint32_t gameViewMessage = 0;     // GameView::scenarioMessageDialog, std::unique_ptr<SpeechBubbleGui>
+   // GameView::buildDirection, a Direction (one byte; kDirectionCount means none): what building and
+   // the rotate keys use for the item in hand.
+   uint32_t gameViewBuildDirection = 0;
    uint32_t speechBubbleLabel = 0;   // SpeechBubbleGui::messageLabel, an embedded agui::Label
 
    // agui::Gui
@@ -309,6 +315,15 @@ struct Layout {
    uint32_t burnerSlots = 0;          // BurnerInfo::burnerSlotsTable, agui::Table
    uint32_t burntResultSlots = 0;     // BurnerInfo::burntResultSlotsTable, agui::Table
    uint32_t burnerProgressBar = 0;    // BurnerInfo::burningProgressBar: what is left of the fuel burning
+   // The windows with circuit and logistic network buttons in the title bar (GuiWithSideButtons):
+   // a button opens its panel beside the window, inside the side panel container.
+   uint32_t sidePanelContainer = 0;   // GuiWithSideButtons::sidePanelContainer, agui::VerticalFlow
+   // The small window of a transport belt, a lamp, an accumulator and the like
+   // (GenericOnOffEntityGui): the window titled with the entity's name, and the entity.
+   uint32_t onOffEntityWindow = 0;    // GenericOnOffEntityGui::entityWindow, agui::Window
+   uint32_t onOffEntity = 0;          // GenericOnOffEntityGui::entity, Entity*
+   uint32_t splitterEntity = 0;       // SplitterGui::splitter, SplitterBase*
+   uint32_t entityUnitNumber = 0;     // EntityWithOwner::unitNumber, LuaEntity::unit_number
 
    // The quickbar along the bottom of the screen (QuickBarGui), reached the way the game's own
    // quickbar keys reach it: GameView::controllerView->getQuickBar().
@@ -408,6 +423,10 @@ inline constexpr uint32_t kUsageEnabled = 0x8;
 // Set on widgets that click as the button goes down; the Gui then sends no click on release.
 // Read from Widget::dispatchMouseDown and Gui::handleMouseUp in 2.1.20.
 inline constexpr uint32_t kUsageClickOnMouseDown = 0x800;
+
+// Direction holds 16 directions, north 0 clockwise, as defines.direction does; 16 is none (the game
+// tests for it before handing the direction to Lua as CustomInputEvent::cursor_direction).
+inline constexpr uint8_t kDirectionCount = 16;
 
 // MapPosition coordinates are fixed point with 8 fractional bits.
 inline constexpr int32_t kMapPositionScale = 256;

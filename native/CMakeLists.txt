@@ -97,7 +97,10 @@ add_library(fa_native SHARED
   src/screens/DropDownScreen.cpp
   src/screens/ScenarioMessageScreen.cpp
   src/screens/CharacterScreen.cpp
+  src/screens/EntityWindowScreen.cpp
   src/screens/MachineScreen.cpp
+  src/screens/BeltScreen.cpp
+  src/screens/SplitterScreen.cpp
   src/screens/QuickBarScreen.cpp
   src/screens/ShortcutBarScreen.cpp
   src/screens/SideMenuScreen.cpp
@@ -108,6 +111,7 @@ add_library(fa_native SHARED
   src/ui.cpp
   src/world.cpp
   src/luabridge.cpp
+  src/entityviews.cpp
   src/hooks.cpp
   src/disclosure.cpp
   src/flyingtext.cpp
