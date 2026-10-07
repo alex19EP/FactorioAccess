@@ -54,6 +54,9 @@ void pushString(lua_State* L, std::string_view text) {
 void rawSetI(lua_State* L, int index, int n) {
    reinterpret_cast<void (*)(lua_State*, int, int)>(layout.luaRawSetI)(L, index, n);
 }
+void pushByte(lua_State* L, uint8_t value) {
+   reinterpret_cast<void (*)(lua_State*, uint8_t)>(layout.luaPushByte)(L, value);
+}
 
 struct MsvcString {
    union {
@@ -148,6 +151,15 @@ int releaseCursor(lua_State* L) {
    return 0;
 }
 
+// The game's build direction for the item in hand, or nil for another client's player. Only this
+// client knows it, so the mod may speak it but must not change the game by it.
+int buildDirection(lua_State* L) {
+   const int direction = world::buildDirection(static_cast<int>(checkInteger(L, 1)));
+   if (direction < 0) return 0;
+   pushByte(L, static_cast<uint8_t>(direction));
+   return 1;
+}
+
 // Ctrl+Tab in the world, which the mod hands over when none of its own menus takes it.
 int nextPart(lua_State* L) {
    if (!world::mayBeLocalPlayer(static_cast<int>(checkInteger(L, 1)))) return 0;
@@ -165,6 +177,7 @@ constexpr Function kFunctions[] = {
    {"release_cursor", &releaseCursor},
    {"speak", &speak},
    {"next_part", &nextPart},
+   {"build_direction", &buildDirection},
 };
 
 using InitLuaState = void (*)(lua_State*);

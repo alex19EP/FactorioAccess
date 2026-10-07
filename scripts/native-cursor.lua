@@ -12,6 +12,7 @@ local mod = {}
 ---@field release_cursor fun(player_index: integer)
 ---@field speak fun(player_index: integer, message: LocalisedString)
 ---@field next_part fun(player_index: integer, direction: integer)
+---@field build_direction fun(player_index: integer): defines.direction?
 
 ---@type fa.Native?
 local native = rawget(_G, "fa_native")
@@ -27,6 +28,16 @@ end
 ---@param direction integer
 function mod.next_part(pindex, direction)
    if native then native.next_part(pindex, direction) end
+end
+
+---The direction the game builds the item in hand in, already turned by a rotate key the mod is
+---handling. Only this client knows it: speak it, never change the game by it. Handlers of custom
+---inputs that change the game use event.cursor_direction instead. A blueprint has its own rotation,
+---which this is not.
+---@param pindex integer
+---@return defines.direction?
+function mod.build_direction(pindex)
+   return native and native.build_direction(pindex)
 end
 
 ---Called every tick. Reports each cursor as the centre of its tile.
