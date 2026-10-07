@@ -952,6 +952,49 @@ bool AddControl(graph::GraphBuilder& builder, const std::string& key, const Widg
     return true;
 }
 
+void AddGrid(graph::GraphBuilder& builder, const std::string& prefix, const Widget* table,
+    const std::function<bool(const Widget*)>& accept, const std::function<graph::NodeVtable(const Widget*)>& node)
+{
+    unsigned columns = agui::tableColumns(table);
+    auto cells = agui::children(table);
+    if (columns == 0)
+        return;
+    for (std::size_t start = 0; start < cells.size(); start += columns)
+    {
+        std::vector<std::size_t> row;
+        for (std::size_t i = start; i < cells.size() && i < start + columns; ++i)
+            if (agui::visible(cells[i]) && accept(cells[i]))
+                row.push_back(i);
+        if (row.empty())
+            continue;
+        builder.StartRow(prefix);
+        for (std::size_t i : row)
+            builder.AddItem(graph::ControlId::Referenced(cells[i], prefix + "/" + std::to_string(i)), node(cells[i]));
+        builder.EndRow();
+    }
+}
+
+bool TypingInField(const graph::GraphNode& node)
+{
+    // The retained render may be frames old, so the widget is compared before it is read: when it
+    // is the game's focused widget, it is alive.
+    const agui::Gui* gui = agui::applicationGui();
+    const Widget* focused = gui ? agui::focusedWidget(gui) : nullptr;
+    return focused && focused == node.Vtable.HostTag && agui::kind(focused) == Kind::TextBox
+        && !agui::readOnly(focused);
+}
+
+void FollowCursor(const graph::GraphNode& node)
+{
+    auto* widget = static_cast<const Widget*>(node.Vtable.HostTag);
+    if (!widget)
+        return;
+    agui::scrollIntoView(widget);
+    // Fields take typing only with the game's focus. Slots keep theirs off, as with the mouse.
+    if (agui::kind(widget) == Kind::TextBox && agui::isFocusable(widget))
+        agui::focus(widget);
+}
+
 std::vector<const Widget*> VisibleChildren(const Widget* widget)
 {
     std::vector<const Widget*> visible;

@@ -153,11 +153,6 @@ function mod.initialize(player)
 
    faplayer.opened_inventory = faplayer.opened_inventory or nil
 
-   --Quickbar
-   faplayer.qb_index = faplayer.qb_index or 1
-   faplayer.qb_slot = faplayer.qb_slot or { 1, 1 }
-   faplayer.qb_page_count = faplayer.qb_page_count or 0
-
    --Key help
    faplayer.key_help_mode = faplayer.key_help_mode or false
 
@@ -262,14 +257,6 @@ function mod.initialize(player)
    faplayer.cursor_bookmark_direction = faplayer.cursor_bookmark_direction or dirs.north
    faplayer.entities_scanned = faplayer.entities_scanned or {}
    faplayer.players_distance_described = faplayer.players_distance_described or false
-   faplayer.quick_bar_rows = faplayer.quick_bar_rows or 1
-   -- TODO: mod_settings doesn't exist on LuaEntity - should use player.mod_settings instead
-   -- if not (player.character == nil) then
-   --    local quickbar_setting = player.mod_settings["fa-quickbar-rows"]
-   --    if quickbar_setting then
-   --       faplayer.quick_bar_rows = quickbar_setting.value
-   --    end
-   -- end
    faplayer.said_owner = faplayer.said_owner or {}
 
    -- Menu initializations

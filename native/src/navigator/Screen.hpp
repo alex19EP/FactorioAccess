@@ -60,6 +60,11 @@ public:
         return false;
     }
 
+    /// True for a screen the game knows nothing of as a window (a part of the HUD), whose Escape
+    /// must not reach the game's own Back. The navigator then takes Escape and calls OnEscape.
+    virtual bool ClaimsEscape() const { return false; }
+    virtual void OnEscape() {}
+
     /// The focused identity changed (arrow move, differ jump, attach landing). Drive the game's
     /// own focus here (P11 write-back). Called after this frame's Build on a live render;
     /// exception-isolated by the navigator.

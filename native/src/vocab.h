@@ -58,6 +58,10 @@ inline constexpr std::string_view kAllLocked = "all locked";
 inline constexpr std::string_view kLocked = "locked";
 inline constexpr std::string_view kLockFromHere = "lock from here";
 
+// The quickbar and the page each of its bars shows ("page 3").
+inline constexpr std::string_view kQuickBar = "quickbar";
+inline constexpr std::string_view kPage = "page";
+
 inline constexpr std::string_view kNoTooltip = "no tooltip";
 inline constexpr std::string_view kNoAction = "no action";
 

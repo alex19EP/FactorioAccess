@@ -55,7 +55,6 @@ local Mouse = require("scripts.mouse")
 local MovementHistory = require("scripts.movement-history")
 local PlayerInit = require("scripts.player-init")
 local PlayerMiningTools = require("scripts.player-mining-tools")
-local Quickbar = require("scripts.quickbar")
 local Research = require("scripts.research")
 require("scripts.rich-text") -- registers rich text processor with speech.lua
 local Rulers = require("scripts.rulers")
@@ -502,23 +501,6 @@ EventManager.on_event(
       storage.players[pindex].last_item_picked_up = event.item_stack.name
    end
 )
-
---Quickbar event handlers
-local quickbar_get_events = {}
-local quickbar_set_events = {}
-local quickbar_page_events = {}
-for i = 1, 10 do
-   local key = tostring(i % 10)
-   table.insert(quickbar_get_events, "fa-" .. key)
-   table.insert(quickbar_set_events, "fa-c-" .. key)
-   table.insert(quickbar_page_events, "fa-s-" .. key)
-end
-
-EventManager.on_event(quickbar_get_events, Quickbar.quickbar_get_handler)
-
-EventManager.on_event(quickbar_set_events, Quickbar.quickbar_set_handler)
-
-EventManager.on_event(quickbar_page_events, Quickbar.quickbar_page_handler)
 
 function swap_weapon_forward(pindex, write_to_character)
    local p = game.get_player(pindex)
@@ -2522,7 +2504,19 @@ EventManager.on_event(
    end
 )
 
--- fa-c-tab is now handled by the UI router for section navigation
+-- In FA's own menus the UI router takes Ctrl+Tab for their sections. Otherwise it moves to the parts
+-- of the screen the native DLL reads, such as the quickbar.
+---@param direction integer
+local function next_part(direction)
+   ---@param pindex integer
+   return function(_, pindex)
+      if UiRouter.get_router(pindex):is_ui_open() then return end
+      NativeCursor.next_part(pindex, direction)
+   end
+end
+
+EventManager.on_event("fa-c-tab", next_part(1))
+EventManager.on_event("fa-cs-tab", next_part(-1))
 
 --Used when a tile has multiple overlapping entities. Reads out the next entity.
 ---@param event EventData.CustomInputEvent

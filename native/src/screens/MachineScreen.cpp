@@ -158,27 +158,9 @@ void MachineScreen::Build(graph::GraphBuilder& builder)
     AddInventory(builder, parts);
 }
 
-bool MachineScreen::TypingIn(const graph::GraphNode& node)
-{
-    // The retained render may be frames old, so the widget is compared before it is read: when it
-    // is the game's focused widget, it is alive.
-    const agui::Gui* gui = agui::applicationGui();
-    const Widget* focused = gui ? agui::focusedWidget(gui) : nullptr;
-    return focused && focused == node.Vtable.HostTag && agui::kind(focused) == agui::Kind::TextBox
-        && !agui::readOnly(focused);
-}
+bool MachineScreen::TypingIn(const graph::GraphNode& node) { return TypingInField(node); }
 
-void MachineScreen::OnCursorMoved(const graph::GraphNode& node)
-{
-    auto* widget = static_cast<const Widget*>(node.Vtable.HostTag);
-    if (!widget)
-        return;
-    agui::scrollIntoView(widget);
-    // Fields (an inserter's stack size) take typing only with the game's focus. Slots keep theirs
-    // off, as with the mouse.
-    if (agui::kind(widget) == agui::Kind::TextBox && agui::isFocusable(widget))
-        agui::focus(widget);
-}
+void MachineScreen::OnCursorMoved(const graph::GraphNode& node) { FollowCursor(node); }
 
 void MachineScreen::OnPop()
 {

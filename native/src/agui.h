@@ -124,6 +124,9 @@ void removeTooltip(const Widget* widget);
 
 // Whether the widget's class is, or derives from, the named class, e.g. "SettingsGui".
 bool derivesFrom(const Widget* widget, std::string_view className);
+// The same for any instantiation of a class template, e.g. "FilterSelectGui" for every
+// FilterSelectGui<T>; the name is unscoped.
+bool derivesFromTemplate(const Widget* widget, std::string_view templateName);
 
 // A widget the game keeps as a member at `offset` inside `owner`, by value or (for `pointer`)
 // through a pointer; offsets come from game::layout.
@@ -233,6 +236,25 @@ struct BurnerParts {
    const Widget* bar = nullptr;
 };
 BurnerParts burnerParts(const Widget* burnerInfo);
+
+// The quickbar along the bottom of the screen (QuickBarGui), or null outside a game or while the
+// view has none.
+const Widget* quickBar();
+
+// One bar of the quickbar: the page it shows (0 for page 1), the button showing that page's number,
+// and the page's slots in order (QuickBarItemSlot buttons).
+struct QuickBarRow {
+   uint8_t page = 0;
+   const Widget* button = nullptr;
+   std::vector<const Widget*> slots;
+};
+// The bars on screen, the one the quickbar keys (1 to 0) use first.
+std::vector<QuickBarRow> quickBarRows(const Widget* quickBar);
+// While the page picker is open, the bar it chooses a page for (an index into quickBarRows);
+// otherwise -1.
+int quickBarPickingFor(const Widget* quickBar);
+// The page picker's rows, one per page: clicking a row's button shows that page on the bar.
+std::vector<QuickBarRow> quickBarPickerRows(const Widget* quickBar);
 
 // The selected row of an agui::TableWithSelection, the header row counting as 0.
 unsigned selectedRow(const Widget* table);

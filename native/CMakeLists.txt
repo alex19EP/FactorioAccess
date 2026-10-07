@@ -98,6 +98,9 @@ add_library(fa_native SHARED
   src/screens/ScenarioMessageScreen.cpp
   src/screens/CharacterScreen.cpp
   src/screens/MachineScreen.cpp
+  src/screens/QuickBarScreen.cpp
+  src/screens/FilterSelectScreen.cpp
+  src/parts.cpp
   src/ui.cpp
   src/world.cpp
   src/luabridge.cpp

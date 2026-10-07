@@ -73,6 +73,21 @@ using Attachments = std::unordered_map<const agui::Widget*, Attachment>;
 void AddSubtree(graph::GraphBuilder& builder, const std::string& prefix, const agui::Widget* widget,
     std::vector<const agui::Widget*> skip = {}, Attachments attachments = {});
 
+/// A table of buttons as the game lays it out: a row of the grid per table row, keeping the column
+/// on Up and Down. Cells for which `accept` is false (the fillers that end a subgroup's line) are
+/// skipped, and a row of fillers alone is left out. Keys start with `prefix`.
+void AddGrid(graph::GraphBuilder& builder, const std::string& prefix, const agui::Widget* table,
+    const std::function<bool(const agui::Widget*)>& accept,
+    const std::function<graph::NodeVtable(const agui::Widget*)>& node);
+
+/// Screen::TypingIn for a game window: whether `node` is an editable text field that has the game's
+/// keyboard focus.
+bool TypingInField(const graph::GraphNode& node);
+
+/// Screen::OnCursorMoved for a game window: scrolls the node's widget into view, and gives a text
+/// field the game's focus again so that typing goes to it.
+void FollowCursor(const graph::GraphNode& node);
+
 /// What a slot button shows: "iron plate 50", "rare iron plate 50", "water 1200", an empty slot's
 /// filter or expected ingredient as "iron plate, empty", or "empty".
 std::string SlotText(const agui::Widget* slot);

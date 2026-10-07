@@ -11,6 +11,7 @@ local mod = {}
 ---@field set_cursor fun(player_index: integer, x: number, y: number)
 ---@field release_cursor fun(player_index: integer)
 ---@field speak fun(player_index: integer, message: LocalisedString)
+---@field next_part fun(player_index: integer, direction: integer)
 
 ---@type fa.Native?
 local native = rawget(_G, "fa_native")
@@ -18,6 +19,14 @@ local native = rawget(_G, "fa_native")
 ---@return boolean
 function mod.is_loaded()
    return native ~= nil
+end
+
+---Moves to the next part of the screen the DLL reads, such as the quickbar, or back with a
+---negative direction.
+---@param pindex integer
+---@param direction integer
+function mod.next_part(pindex, direction)
+   if native then native.next_part(pindex, direction) end
 end
 
 ---Called every tick. Reports each cursor as the centre of its tile.
