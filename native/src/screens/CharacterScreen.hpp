@@ -9,6 +9,9 @@
 // Shift or Control counts because the game reads them from the keyboard. On a slot that picks up,
 // places, splits and transfers stacks; on a recipe it crafts one, five or all.
 //
+// The game's search (Ctrl+F) opens a field above them that filters the recipes as it is typed in;
+// the cursor lands on it.
+//
 // Slots read live, so a click's result is spoken once the game has applied it. Y reads the
 // game's own tooltip, and \ is the middle button, which sets a slot's filter.
 
@@ -26,11 +29,15 @@ public:
     bool RemembersCursor() const override { return true; }
     bool IsActive() override;
     void Build(graph::GraphBuilder& builder) override;
+    const char* TakeSuggestedLanding() override;
+    bool TypingIn(const graph::GraphNode& node) override;
     void OnCursorMoved(const graph::GraphNode& node) override;
     void OnPop() override;
 
 private:
     const agui::Widget* _window = nullptr;
+    bool _searching = false;    // the search field showed at the last build
+    bool _landOnSearch = false; // it has just opened
 };
 
 } // namespace fa::screens

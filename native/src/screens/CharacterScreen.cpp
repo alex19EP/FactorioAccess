@@ -15,6 +15,8 @@ namespace
 
 using agui::Widget;
 
+constexpr const char* kSearchKey = "search/field";
+
 const Widget* FindWindow()
 {
     if (!agui::inGame() || agui::menuStateWindow())
@@ -116,6 +118,13 @@ void AddCrafting(graph::GraphBuilder& builder, const Widget* crafting)
         builder.PopContext();
 }
 
+// The search field the game's focus-search control (Ctrl+F) opens over the window, while it shows.
+const Widget* SearchField(const Widget* window)
+{
+    const Widget* popup = FindDescendant(window, "SearchPopup");
+    return popup ? FindDescendant(popup, "agui::TextField") : nullptr;
+}
+
 } // namespace
 
 bool CharacterScreen::IsActive()
@@ -135,6 +144,15 @@ void CharacterScreen::Build(graph::GraphBuilder& builder)
 {
     if (!_window || FindWindow() != _window)
         return;
+    // Searching filters the recipes as it is typed; opening it lands on the field.
+    const Widget* search = SearchField(_window);
+    if (search)
+    {
+        builder.BeginStop("search");
+        builder.AddItem(graph::ControlId::Referenced(search, kSearchKey), ControlNode(search));
+    }
+    _landOnSearch = search && !_searching;
+    _searching = search != nullptr;
     std::vector<const Widget*> inventories = FindAll(_window, "InventoryGui");
     for (std::size_t i = 0; i < inventories.size(); ++i)
         AddInventory(builder, "inventory" + std::to_string(i), inventories[i]);
@@ -142,15 +160,39 @@ void CharacterScreen::Build(graph::GraphBuilder& builder)
         AddCrafting(builder, crafting);
 }
 
+const char* CharacterScreen::TakeSuggestedLanding()
+{
+    bool land = _landOnSearch;
+    _landOnSearch = false;
+    return land ? kSearchKey : nullptr;
+}
+
+bool CharacterScreen::TypingIn(const graph::GraphNode& node)
+{
+    // The retained render may be frames old, so the widget is compared before it is read: when it
+    // is the game's focused widget, it is alive.
+    const agui::Gui* gui = agui::applicationGui();
+    const Widget* focused = gui ? agui::focusedWidget(gui) : nullptr;
+    return focused && focused == node.Vtable.HostTag && agui::kind(focused) == agui::Kind::TextBox
+        && !agui::readOnly(focused);
+}
+
 void CharacterScreen::OnCursorMoved(const graph::GraphNode& node)
 {
-    if (auto* widget = static_cast<const Widget*>(node.Vtable.HostTag))
-        agui::scrollIntoView(widget);
+    auto* widget = static_cast<const Widget*>(node.Vtable.HostTag);
+    if (!widget)
+        return;
+    agui::scrollIntoView(widget);
+    // Back on the search field, typing goes to it again.
+    if (agui::kind(widget) == agui::Kind::TextBox && agui::isFocusable(widget))
+        agui::focus(widget);
 }
 
 void CharacterScreen::OnPop()
 {
     _window = nullptr;
+    _searching = false;
+    _landOnSearch = false;
 }
 
 } // namespace fa::screens
