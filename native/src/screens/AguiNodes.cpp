@@ -274,7 +274,7 @@ std::string ToolTipsOf(const std::vector<const Widget*>& widgets)
     return spoken;
 }
 
-// Space reads the tooltips, when any of the widgets has one.
+// Y reads the tooltips, when any of the widgets has one.
 void SetTooltip(graph::NodeVtable& vtable, std::vector<const Widget*> widgets)
 {
     if (ToolTipsOf(widgets).empty())

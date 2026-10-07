@@ -19,6 +19,7 @@ inline constexpr uint32_t Space = 0x20;
 inline constexpr uint32_t LeftBracket = 0x5b;
 inline constexpr uint32_t Backslash = 0x5c;
 inline constexpr uint32_t RightBracket = 0x5d;
+inline constexpr uint32_t Y = 0x79;
 inline constexpr uint32_t F1 = 0x4000003a;
 inline constexpr uint32_t Delete = 0x7f;
 inline constexpr uint32_t Home = 0x4000004a;

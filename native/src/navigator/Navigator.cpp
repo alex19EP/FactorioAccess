@@ -180,8 +180,8 @@ void Navigator::HandleKey(const input::KeyEvent& e)
         if (!e.repeat)
             HandleEnter(e.shift, e.ctrl);
         break;
-    case input::keys::Space:
-    case input::keys::F1:
+    // Y reads the tooltip, as it reads an item's info in FA's own menus.
+    case input::keys::Y:
         if (!e.repeat)
             HandleTooltip();
         break;
@@ -513,7 +513,7 @@ void Navigator::UpdateClaims(bool haveRender)
         claims = {{keys::Up, plain | mods::Ctrl}, {keys::Down, plain | mods::Ctrl},
             {keys::Left, plain | mods::Ctrl}, {keys::Right, plain | mods::Ctrl}, {keys::Tab, shiftable},
             {keys::Home, plain}, {keys::End, plain}, {keys::Return, plain | mods::Shift | mods::Ctrl},
-            {keys::KeypadEnter, plain | mods::Shift | mods::Ctrl}, {keys::Space, plain}, {keys::F1, plain},
+            {keys::KeypadEnter, plain | mods::Shift | mods::Ctrl}, {keys::Y, plain},
             {keys::LeftBracket, plain | mods::Shift | mods::Ctrl},
             // A held Shift or Control reaches the game's own handling of the right click.
             {keys::Backspace, plain | mods::Shift | mods::Ctrl},

@@ -154,7 +154,7 @@ struct NodeVtable
     /// keep instant activation, so the latency is paid only where it buys a second gesture.
     std::function<void()> OnActivateHold;
 
-    /// Optional. Read / open the control's tooltip (Space, F1). The action owns the whole
+    /// Optional. Read / open the control's tooltip (Y). The action owns the whole
     /// behavior, so the kernel stays game-agnostic.
     std::function<void()> OnTooltip;
 
