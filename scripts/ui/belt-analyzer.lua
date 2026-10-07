@@ -1,248 +1,131 @@
+--[[
+What a transport belt carries, read with the game's own belt window. The game shows a belt's items
+only on the map, so when the window opens this sends the native DLL four views of them, which the
+belt's screen reads after the window (native/src/screens/BeltScreen.hpp): this belt's slots, and
+what the whole belt, the belts feeding it and the belts it feeds carry on each lane. They are taken
+as the window opens; reopening it takes them again.
+]]
+local EventManager = require("scripts.event-manager")
 local FaUtils = require("scripts.fa-utils")
-local Functools = require("scripts.functools")
 local Geometry = require("scripts.geometry")
 local ItemInfo = require("scripts.item-info")
-local Localising = require("scripts.localising")
 local Speech = require("scripts.speech")
 local MessageBuilder = Speech.MessageBuilder
 local TH = require("scripts.table-helpers")
 local TransportBelts = require("scripts.transport-belts")
-local Grid = require("scripts.ui.grid")
-local UiKeyGraph = require("scripts.ui.key-graph")
-local UiRouter = require("scripts.ui.router")
-local TabList = require("scripts.ui.tab-list")
-local circuit_network_tab = require("scripts.ui.tabs.circuit-network")
-local splitter_config_tab = require("scripts.ui.tabs.splitter-config")
+
+---@type fa.Native?
+local native = rawget(_G, "fa_native")
 
 local mod = {}
 
----@alias fa.BeltAnalyzer.SortedEntries ({ name: string, quality: string, count: number })[]
-
----@class fa.BeltAnalyzer.SortedAnalysisData
----@field upstream fa.BeltAnalyzer.SortedEntries[]
----@field downstream fa.BeltAnalyzer.SortedEntries[]
----@field total fa.BeltAnalyzer.SortedEntries[]
----@field upstream_length fa.TransportBelts.LaneLengths
----@field downstream_length fa.TransportBelts.LaneLengths
----@field total_length fa.TransportBelts.LaneLengths
-
----@class fa.ui.BeltAnalyzer.SharedState
----@field node fa.TransportBelts.Node
----@field analysis fa.BeltAnalyzer.SortedAnalysisData
-
----@class fa.ui.BeltAnalyzer.Parameters
----@field entity LuaEntity
-
----@class fa.ui.BeltAnalyzer.Context: fa.ui.graph.Ctx
----@field global_parameters fa.ui.BeltAnalyzer.Parameters
----@field tablist_shared_state fa.ui.BeltAnalyzer.SharedState
-
----@param ctx fa.ui.BeltAnalyzer.Context
+---@param entity LuaEntity
+---@param lane 1|2 left or right, facing along the belt
 ---@return LocalisedString
-local function name_col(ctx, x)
-   local ent = ctx.global_parameters.entity
-
-   local facing = ent.direction
-   local left = Geometry.dir_counterclockwise_90(facing)
-   local right = Geometry.dir_clockwise_90(facing)
-   local index = x
-
-   local which = ({ left, right })[index]
-   return { "fa.ui-belt-analyzer-lane", FaUtils.direction_lookup(which) }
+local function lane_name(entity, lane)
+   local facing = entity.direction
+   local side = lane == 1 and Geometry.dir_counterclockwise_90(facing) or Geometry.dir_clockwise_90(facing)
+   return { "fa.ui-belt-analyzer-lane", FaUtils.direction_lookup(side) }
 end
 
-local function name_row(y)
-   assert(y >= 1 and y <= 4)
-   return { "fa.ui-belt-analyzer-slot", y }
-end
-
----@param ctx fa.ui.BeltAnalyzer.Context
----@param x number
----@param y number
-local function local_dim_namer(ctx, x, y)
-   local col = name_col(ctx, x)
-   local row = name_row(y)
-   ctx.message:fragment({ "fa.ui-belt-analyzer-local-pos", row, col })
-end
-
----@param ctx fa.ui.BeltAnalyzer.Context
----@param x number
----@param y number
-local function label_local_cell(ctx, x, y)
-   -- x is lane. y is cell.
-   local node = ctx.tablist_shared_state.node
-
-   local contents = node:get_all_contents()
-
-   local bucket = contents[x] and contents[x][y]
-   if not bucket then return { "fa.ui-belt-analyzer-empty" } end
-
-   if not next(bucket.items) then return { "fa.ui-belt-analyzer-empty" } end
-
-   local builder = MessageBuilder.new()
-
-   for name, quals in pairs(bucket.items) do
-      for quality, count in pairs(quals) do
-         local item = ItemInfo.item_info({
-            name = name,
-            quality = quality,
-            count = count,
-         })
-         builder:list_item(item)
-      end
-   end
-
-   return builder:build()
-end
-
-local function local_renderer(ctx)
-   local builder = Grid.grid_builder()
-
-   for x = 1, 2 do
-      for y = 1, 4 do
-         builder:add_simple_label(x, y, label_local_cell(ctx, x, y))
-      end
-   end
-
-   return builder:set_dimension_labeler(local_dim_namer):build()
-end
-
--- The only difference between the upstream/total/downstream tabs is which field of the analysis they reference, so this
--- returns the grids referencing the proper field.  All other logic is 100% identical.
----@param field "upstream"|"downstream"|"total"
----@param length_field "upstream_length" | "downstream_length" | "total_length"
-local function aggregate_grid_builder(field, length_field)
-   ---@param ctx fa.ui.BeltAnalyzer.Context
-   ---@return fa.ui.graph.Render?
-   return function(ctx)
-      local ent = ctx.global_parameters.entity
-      if not ent.valid then return nil end
-
-      local builder = Grid.grid_builder()
-      local analysis = ctx.tablist_shared_state.analysis
-      local state = analysis[field]
-
-      -- Give the player a special message if the belt is empty.
-      if not next(state[1]) and not next(state[2]) then
-         return {
-            nodes = {
-               ["empty-belt"] = {
-                  transitions = {},
-                  vtable = {
-                     label = function(ctx)
-                        ctx.message:fragment({ "fa.ui-belt-analyzer-no-contents" })
-                     end,
-                  },
-               },
-            },
-            start_key = "empty-belt",
-         }
-      end
-
-      for col = 1, 2 do
-         local lane_key = col == 1 and "left" or "right"
-         local lane_length = analysis[length_field][lane_key]
-         for row, bucket in pairs(state[col]) do
-            local percent = lane_length > 0 and string.format("%.1f", 100 * bucket.count / lane_length) or "0.0"
-            builder:add_simple_label(
-               col,
-               row,
-               { "fa.ui-belt-analyzer-aggregation", ItemInfo.item_info(bucket), percent }
-            )
+-- What one slot of a lane holds, then which slot it is.
+---@param contents fa.TransportBelts.SlotBucket[][]
+---@param lane 1|2
+---@param slot integer
+---@return LocalisedString
+local function slot_cell(contents, lane, slot)
+   local message = MessageBuilder.new()
+   local bucket = contents[lane][slot]
+   if bucket and next(bucket.items) then
+      for name, quals in pairs(bucket.items) do
+         for quality, count in pairs(quals) do
+            message:list_item(ItemInfo.item_info({ name = name, quality = quality, count = count }))
          end
       end
+   else
+      message:list_item({ "fa.ui-belt-analyzer-empty" })
+   end
+   message:list_item({ "fa.ui-belt-analyzer-slot", slot })
+   return message:build()
+end
 
-      return builder:build()
+---@param pindex integer
+---@param entity LuaEntity
+---@param node fa.TransportBelts.Node
+local function send_slots(pindex, entity, node)
+   local contents = node:get_all_contents()
+   native.entity_view(pindex, { "fa.ui-belt-analyzer-tab-local" })
+   for lane = 1, 2 do
+      local cells = {}
+      for slot = 1, 4 do
+         cells[slot] = slot_cell(contents, lane, slot)
+      end
+      native.entity_view_column(pindex, lane_name(entity, lane), table.unpack(cells))
    end
 end
 
-local total_renderer = aggregate_grid_builder("total", "total_length")
-local upstream_renderer = aggregate_grid_builder("upstream", "upstream_length")
-local downstream_renderer = aggregate_grid_builder("downstream", "downstream_length")
-
----@param params fa.ui.BeltAnalyzer.Parameters
----@return fa.ui.BeltAnalyzer.SharedState
-local function state_setup(_pindex, params)
-   local node = TransportBelts.Node.create(params.entity)
-   local ad = node:belt_analyzer_algo()
-   local up_left = TH.nqc_to_sorted_descending(ad.left.upstream)
-   local up_right = TH.nqc_to_sorted_descending(ad.right.upstream)
-   local down_left = TH.nqc_to_sorted_descending(ad.left.downstream)
-   local down_right = TH.nqc_to_sorted_descending(ad.right.downstream)
-   local tot_left = TH.nqc_to_sorted_descending(ad.left.total)
-   local tot_right = TH.nqc_to_sorted_descending(ad.right.total)
-
-   return {
-      node = node,
-      analysis = {
-         upstream = { up_left, up_right },
-         total = { tot_left, tot_right },
-         downstream = { down_left, down_right },
-         upstream_length = ad.upstream_length,
-         downstream_length = ad.downstream_length,
-         total_length = ad.total_length,
-      },
-   }
+-- Each lane's items, most first, with their share of the lane's length.
+---@param pindex integer
+---@param entity LuaEntity
+---@param title LocalisedString
+---@param lanes fa.NQC[] left lane, then right
+---@param lengths fa.TransportBelts.LaneLengths
+local function send_totals(pindex, entity, title, lanes, lengths)
+   native.entity_view(pindex, title)
+   if not next(lanes[1]) and not next(lanes[2]) then
+      native.entity_view_column(pindex, "", { "fa.ui-belt-analyzer-no-contents" })
+      return
+   end
+   for lane = 1, 2 do
+      local length = lengths[lane == 1 and "left" or "right"]
+      local cells = {}
+      for _, entry in ipairs(TH.nqc_to_sorted_descending(lanes[lane])) do
+         local percent = length > 0 and string.format("%.1f", 100 * entry.count / length) or "0.0"
+         table.insert(cells, { "fa.ui-belt-analyzer-aggregation", ItemInfo.item_info(entry), percent })
+      end
+      if not cells[1] then cells[1] = { "fa.ui-belt-analyzer-empty" } end
+      native.entity_view_column(pindex, lane_name(entity, lane), table.unpack(cells))
+   end
 end
 
-mod.belt_analyzer = TabList.declare_tablist({
-   ui_name = UiRouter.UI_NAMES.BELT,
-   resets_to_first_tab_on_open = true,
-   shared_state_setup = state_setup,
-   tabs_callback = function(pindex, parameters)
-      local sections = {}
+---@param pindex integer
+---@param entity LuaEntity a transport belt
+function mod.send_views(pindex, entity)
+   local node = TransportBelts.Node.create(entity)
+   local analysis = node:belt_analyzer_algo()
+   local left, right = analysis.left, analysis.right
+   native.entity_views_begin(pindex, entity.unit_number)
+   send_slots(pindex, entity, node)
+   send_totals(pindex, entity, { "fa.ui-belt-analyzer-tab-total" }, { left.total, right.total }, analysis.total_length)
+   send_totals(
+      pindex,
+      entity,
+      { "fa.ui-belt-analyzer-tab-upstream" },
+      { left.upstream, right.upstream },
+      analysis.upstream_length
+   )
+   send_totals(
+      pindex,
+      entity,
+      { "fa.ui-belt-analyzer-tab-downstream" },
+      { left.downstream, right.downstream },
+      analysis.downstream_length
+   )
+   native.entity_views_end(pindex)
+end
 
-      -- Belt analyzer tabs
-      table.insert(sections, {
-         name = "main",
-         tabs = {
-            UiKeyGraph.declare_graph({
-               title = { "fa.ui-belt-analyzer-tab-local" },
-               render_callback = local_renderer,
-               name = "local",
-            }),
-            UiKeyGraph.declare_graph({
-               name = "total",
-               title = { "fa.ui-belt-analyzer-tab-total" },
-               render_callback = total_renderer,
-            }),
-            UiKeyGraph.declare_graph({
-               name = "upstream",
-               title = { "fa.ui-belt-analyzer-tab-upstream" },
-               render_callback = upstream_renderer,
-            }),
-            UiKeyGraph.declare_graph({
-               name = "downstream",
-               title = { "fa.ui-belt-analyzer-tab-downstream" },
-               render_callback = downstream_renderer,
-            }),
-         },
-      })
-
-      -- Add splitter configuration section if entity is a splitter
-      local entity = parameters and parameters.entity
-      if entity and splitter_config_tab.is_available(entity) then
-         table.insert(sections, {
-            name = "configuration",
-            title = { "fa.section-device-configuration" },
-            tabs = { splitter_config_tab.splitter_config_tab },
-         })
+-- Only clients running the DLL read the views, and sending them changes nothing in the game.
+EventManager.on_event(
+   defines.events.on_gui_opened,
+   ---@param event EventData.on_gui_opened
+   ---@param pindex integer
+   function(event, pindex)
+      local entity = event.entity
+      if native and event.gui_type == defines.gui_type.entity and entity.type == "transport-belt" then
+         mod.send_views(pindex, entity)
       end
-
-      -- Add circuit network section if available
-      if entity and circuit_network_tab.is_available(entity) then
-         table.insert(sections, {
-            name = "circuit-network",
-            title = { "fa.section-circuit-network" },
-            tabs = { circuit_network_tab.get_tab() },
-         })
-      end
-
-      return sections
    end,
-})
-
--- Register with the UI event routing system for event interception
-UiRouter.register_ui(mod.belt_analyzer)
+   EventManager.EVENT_KIND.UI
+)
 
 return mod

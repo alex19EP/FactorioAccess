@@ -12,6 +12,10 @@ local mod = {}
 ---@field release_cursor fun(player_index: integer)
 ---@field speak fun(player_index: integer, message: LocalisedString)
 ---@field next_part fun(player_index: integer, direction: integer)
+---@field entity_views_begin fun(player_index: integer, unit_number: integer)
+---@field entity_view fun(player_index: integer, title: LocalisedString)
+---@field entity_view_column fun(player_index: integer, title: LocalisedString, ...: LocalisedString)
+---@field entity_views_end fun(player_index: integer)
 
 ---@type fa.Native?
 local native = rawget(_G, "fa_native")

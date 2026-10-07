@@ -1,0 +1,60 @@
+#pragma once
+
+// Base of the screens for the game's windows of entities over a loaded game, opened by its own
+// open-gui control. Each subclass is the recipe for the window classes it Handles(), and reads the
+// topmost such window while the game menu is closed. A screen stays one window: when its window is
+// replaced (choosing a recipe opens the assembler's own window), it goes inactive for a frame, so
+// the manager pops it and attaches afresh.
+
+#include <cstdint>
+#include <string>
+#include <vector>
+
+#include "AguiNodes.hpp"
+#include "agui.h"
+#include "navigator/Screen.hpp"
+
+namespace fa::screens
+{
+
+class EntityWindowScreen : public nav::Screen
+{
+public:
+    const char* Name() const override { return ""; }
+    const char* DiagName() const override { return _class.c_str(); }
+    bool RemembersCursor() const override { return true; }
+    bool IsActive() override;
+    void Build(graph::GraphBuilder& builder) override;
+    bool TypingIn(const graph::GraphNode& node) override;
+    void OnCursorMoved(const graph::GraphNode& node) override;
+    void OnPop() override;
+
+protected:
+    /// Whether this recipe reads the window.
+    virtual bool Handles(const agui::Widget* window) const = 0;
+
+    /// Declares the window's stops.
+    virtual void BuildWindow(graph::GraphBuilder& builder, const agui::Widget* window) = 0;
+
+    /// A window titled with the entity's name as one stop, read in the title's context: its content,
+    /// then the title bar's network buttons, without the title (the context already), close
+    /// (Escape) or search. Widgets in `skip` are left out.
+    static void AddTitledWindow(graph::GraphBuilder& builder, const std::string& key, const agui::Widget* window,
+        std::vector<const agui::Widget*> skip = {}, Attachments attachments = {});
+
+    /// The panel a network button in the title bar opened beside the window, as a stop of its own,
+    /// while one is open.
+    static void AddSidePanel(graph::GraphBuilder& builder, const agui::Widget* sidePanel);
+
+    /// The mod's own views of the entity (entityviews.h), a stop each, when the mod sent them for
+    /// the entity with this unit number.
+    static void AddModViews(graph::GraphBuilder& builder, uint64_t unitNumber);
+
+private:
+    const agui::Widget* FindWindow() const;
+
+    const agui::Widget* _window = nullptr;
+    std::string _class;
+};
+
+} // namespace fa::screens

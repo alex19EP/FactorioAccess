@@ -6,6 +6,7 @@
 #include "input.h"
 #include "log.h"
 #include "navigator/ScreenManager.hpp"
+#include "screens/BeltScreen.hpp"
 #include "screens/CharacterScreen.hpp"
 #include "screens/ControlSettingsScreen.hpp"
 #include "screens/CraftingQueueScreen.hpp"
@@ -24,6 +25,7 @@
 #include "screens/SettingsScreen.hpp"
 #include "screens/ShortcutBarScreen.hpp"
 #include "screens/SideMenuScreen.hpp"
+#include "screens/SplitterScreen.hpp"
 #include "screens/StatusScreen.hpp"
 #include "speech.h"
 
@@ -88,6 +90,9 @@ void start() {
    manager.Register(std::make_unique<screens::CharacterScreen>());
    // An entity's window (a chest, a furnace, a drill, ...), opened by the game's own open-gui control.
    manager.Register(std::make_unique<screens::MachineScreen>());
+   // A transport belt's window, with the mod's views of what the belt carries.
+   manager.Register(std::make_unique<screens::BeltScreen>());
+   manager.Register(std::make_unique<screens::SplitterScreen>());
    // The quickbar, while Ctrl+Tab has moved to it.
    manager.Register(std::make_unique<screens::QuickBarScreen>());
    // The shortcut bar, the part after it.
