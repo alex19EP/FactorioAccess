@@ -294,6 +294,22 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.characterInfoQueueLabel, "CharacterInfoGui", "craftingQueueLabel");
    offset(layout.characterInfoQueue, "CharacterInfoGui", "craftingQueueGui");
    offset(layout.sideMenuMuteButton, "SideMenu", "masterMutedButton");
+   offset(layout.gameViewResearch, "GameView", "currentResearchInfo");
+   offset(layout.researchTitle, "CurrentResearchInfo", "title");
+   offset(layout.researchProgressFlow, "CurrentResearchInfo", "progressBarFlow");
+   offset(layout.researchProgressLabel, "CurrentResearchInfo", "researchProgressLabel");
+   offset(layout.gameViewAlerts, "GameView", "alertGuis");
+   offset(layout.alertGuiCategory, "AlertGui", "category");
+   offset(layout.alertGuiButton, "AlertGui", "warningSlot");
+   offset(layout.iconButtonCount, "IconButtonWithNumber", "count");
+   offset(layout.gameViewGoal, "GameView", "goalDescription");
+   offset(layout.goalLabel, "GoalDescription", "label");
+   offset(layout.gameViewBottom, "GameView", "bottomContainer");
+   offset(layout.bottomHealthBar, "BottomContainer", "healthProgressBar");
+   offset(layout.bottomShieldBar, "BottomContainer", "shieldProgressBar");
+   offset(layout.bottomVehicleHealthBar, "BottomContainer", "vehicleHealthProgressBar");
+   offset(layout.bottomVehicleShieldBar, "BottomContainer", "vehicleShieldProgressBar");
+   offset(layout.bottomMiningBar, "BottomContainer", "miningProgressBar");
 
    address(layout.loggingLog, "?log@Logging@@SAXPEBDIW4LogLevel@@0ZZ");
    address(layout.stringAppend, "?append@?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@QEAAAEAV12@QEBD_K@Z");

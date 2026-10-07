@@ -56,6 +56,7 @@ local test_files = {
    "entity-selection-test", -- Test stable entity ordering (issue #265)
    "rail-grid-adjustment-test", -- Test that TestSurface matches game rail grid adjustment
    "player-weapon-test", -- Test weapon/ammo property detection
+   "game-notices-test", -- Test the goal window reader
 }
 
 -- Test execution state

@@ -41,6 +41,7 @@ local FaInfo = require("scripts.fa-info")
 local FaUtils = require("scripts.fa-utils")
 local F = require("scripts.field-ref")
 local Filters = require("scripts.filters")
+local GameNotices = require("scripts.game-notices")
 local Graphics = require("scripts.graphics")
 local InventoryTransfers = require("scripts.inventory-transfers")
 local InventoryUtils = require("scripts.inventory-utils")
@@ -393,6 +394,7 @@ function on_tick(event)
          -- Other periodic checks can go here
       end
       KruiseKontrol.read_remarks()
+      GameNotices.on_tick()
    elseif event.tick % 61 == 0 then
       -- Refresh search cache periodically (coprime with other updates)
       for pindex, player in pairs(players) do
@@ -1029,6 +1031,9 @@ if script.feature_flags.space_travel then
 end
 
 EventManager.on_event(defines.events.on_research_finished, Research.on_research_finished)
+EventManager.on_event(defines.events.on_achievement_gained, GameNotices.on_achievement_gained)
+EventManager.on_event(defines.events.on_chart_tag_added, GameNotices.on_chart_tag_added)
+EventManager.on_event(defines.events.on_space_platform_changed_state, GameNotices.on_space_platform_changed_state)
 -- New input event definitions
 
 --Moves the cursor, and conducts an area scan for larger cursors. If the player is in a slow moving vehicle, it is stopped.

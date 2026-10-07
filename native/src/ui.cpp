@@ -24,6 +24,7 @@
 #include "screens/SettingsScreen.hpp"
 #include "screens/ShortcutBarScreen.hpp"
 #include "screens/SideMenuScreen.hpp"
+#include "screens/StatusScreen.hpp"
 #include "speech.h"
 
 #include <windows.h>
@@ -93,7 +94,9 @@ void start() {
    manager.Register(std::make_unique<screens::ShortcutBarScreen>());
    // The side menu, the part after that.
    manager.Register(std::make_unique<screens::SideMenuScreen>());
-   // The crafting queue, the part after that.
+   // The HUD's status, the part after that.
+   manager.Register(std::make_unique<screens::StatusScreen>());
+   // The crafting queue, the part after the status.
    manager.Register(std::make_unique<screens::CraftingQueueScreen>());
    // Over it or a window, the chooser of a filter one of their slots opened.
    manager.Register(std::make_unique<screens::FilterSelectScreen>());

@@ -71,6 +71,22 @@ inline constexpr std::string_view kShortcutBar = "shortcut bar";
 inline constexpr std::string_view kAllShortcuts = "all shortcuts";
 inline constexpr std::string_view kSideMenu = "side menu";
 inline constexpr std::string_view kCraftingQueue = "crafting queue";
+// The HUD's status: research, the alert categories, the scenario's goal and the bars.
+inline constexpr std::string_view kStatus = "status";
+inline constexpr std::string_view kResearch = "research";
+inline constexpr std::string_view kAlerts = "alerts";
+inline constexpr std::string_view kGoal = "goal";
+inline constexpr std::string_view kAttack = "attack";
+inline constexpr std::string_view kConstruction = "construction";
+inline constexpr std::string_view kPlatformConstruction = "platform construction";
+inline constexpr std::string_view kCustom = "custom";
+inline constexpr std::string_view kLogistics = "logistics";
+inline constexpr std::string_view kTrains = "trains";
+inline constexpr std::string_view kPipelines = "pipelines";
+inline constexpr std::string_view kHealth = "health";
+inline constexpr std::string_view kShield = "shield";
+inline constexpr std::string_view kVehicleHealth = "vehicle health";
+inline constexpr std::string_view kVehicleShield = "vehicle shield";
 // Where leaving a part of the HUD with no window open takes the player.
 inline constexpr std::string_view kMap = "map";
 

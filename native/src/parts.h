@@ -11,6 +11,7 @@ enum class Part {
    QuickBar,
    ShortcutBar,
    SideMenu,
+   Status,
    CraftingQueue,
 };
 

@@ -300,6 +300,43 @@ struct CharacterQueue {
 };
 CharacterQueue characterQueue(const Widget* characterInfo);
 
+// The HUD's status, each part null while the game does not show it. Main thread only.
+//
+// The research box at the top right (CurrentResearchInfo, a button that opens the technology
+// tree): its title (the technology with its level, or "not researching") and the label of its
+// progress ("45%"), which is null while nothing is researched.
+struct ResearchBox {
+   const Widget* button = nullptr;
+   const Widget* title = nullptr;
+   const Widget* progress = nullptr;
+};
+ResearchBox researchBox();
+
+// The alert buttons over the shortcut bar, one per category that has alerts, in the game's order.
+// The button (an IconButtonWithNumber) opens the list of the category's alerts.
+enum class AlertCategory : uint8_t { Attack, Construction, PlatformConstruction, Custom, Logistics, Trains, Pipelines };
+struct AlertButton {
+   const Widget* button = nullptr;
+   AlertCategory category = AlertCategory::Attack;
+};
+std::vector<AlertButton> alertButtons();
+// The number on an IconButtonWithNumber: an alert button's count of its most important alert. It
+// reads 0 while the button blinks.
+double iconButtonCount(const Widget* button);
+
+// The scenario's goal at the top left (GoalDescription's label), while it shows one.
+const Widget* goalLabel();
+
+// The bars over the quickbar (ControllerProgressBar), those the game shows.
+struct HudBars {
+   const Widget* health = nullptr;
+   const Widget* shield = nullptr;
+   const Widget* vehicleHealth = nullptr;
+   const Widget* vehicleShield = nullptr;
+   const Widget* mining = nullptr;
+};
+HudBars hudBars();
+
 // The selected row of an agui::TableWithSelection, the header row counting as 0.
 unsigned selectedRow(const Widget* table);
 

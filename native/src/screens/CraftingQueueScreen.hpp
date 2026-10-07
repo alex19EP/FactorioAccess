@@ -1,7 +1,7 @@
 #pragma once
 
 // The game's crafting queue at the bottom left (CraftingQueueGui), the part of the HUD after the
-// side menu on Ctrl+Tab (see parts.h).
+// status on Ctrl+Tab (see parts.h).
 //
 // One stop: a row of the queue's slots, the order being crafted first, each read as its recipe and
 // count. Past two rows of slots the game ends them with a button that shows every order, or two rows
