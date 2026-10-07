@@ -256,6 +256,27 @@ int quickBarPickingFor(const Widget* quickBar);
 // The page picker's rows, one per page: clicking a row's button shows that page on the bar.
 std::vector<QuickBarRow> quickBarPickerRows(const Widget* quickBar);
 
+// The shortcut bar beside the quickbar (ShortcutBarGui), or null outside a game or while the view
+// has none.
+const Widget* shortcutBar();
+
+// A shortcut on the bar: its button (a ShortcutButton), the shortcut's translated name, and whether
+// it is one that stays on or off (the personal roboport, alt mode) rather than acting once.
+struct Shortcut {
+   const Widget* button = nullptr;
+   std::string_view name;
+   bool toggle = false;
+};
+// The shortcuts on the bar, a row per row of buttons as the bar lays them out, left to right. The
+// empty places are left out. Names are translated, so main thread only.
+std::vector<std::vector<Shortcut>> shortcutBarRows(const Widget* shortcutBar);
+// The button that opens and closes the list of every shortcut, where the player chooses those on
+// the bar.
+const Widget* shortcutBarListButton(const Widget* shortcutBar);
+// While that list is open, its checkboxes in its order, one per shortcut, named with it and checked
+// while the shortcut is on the bar; otherwise empty.
+std::vector<const Widget*> shortcutBarListCheckBoxes(const Widget* shortcutBar);
+
 // The selected row of an agui::TableWithSelection, the header row counting as 0.
 unsigned selectedRow(const Widget* table);
 

@@ -24,6 +24,7 @@ inline constexpr std::string_view kUnchecked = "not checked";
 inline constexpr std::string_view kPartlyChecked = "partly checked";
 inline constexpr std::string_view kSelected = "selected";
 inline constexpr std::string_view kPressed = "pressed";
+inline constexpr std::string_view kNotPressed = "not pressed";
 inline constexpr std::string_view kLeft = "left";
 inline constexpr std::string_view kRight = "right";
 inline constexpr std::string_view kDisabled = "disabled";
@@ -64,6 +65,10 @@ inline constexpr std::string_view kQuickBar = "quickbar";
 inline constexpr std::string_view kBar = "bar";
 inline constexpr std::string_view kPage = "page";
 inline constexpr std::string_view kShowOnBar = "show on bar";
+// The shortcut bar, and the button that opens the list of every shortcut when it has no name of
+// its own on screen.
+inline constexpr std::string_view kShortcutBar = "shortcut bar";
+inline constexpr std::string_view kAllShortcuts = "all shortcuts";
 // Where leaving a part of the HUD with no window open takes the player.
 inline constexpr std::string_view kMap = "map";
 

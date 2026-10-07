@@ -313,6 +313,21 @@ struct Layout {
    uint32_t rowButton = 0;               // QuickBarGui::RowWidgets::button, std::unique_ptr<agui::Button>
    uint32_t rowSlots = 0;                // QuickBarGui::RowWidgets::slots, std::vector<std::unique_ptr<ChooseButton>>
 
+   // The shortcut bar beside the quickbar (ShortcutBarGui), reached as the quickbar is. Its buttons
+   // stand in columns, each an agui::VerticalFlow; a button with no behavior is an empty place.
+   uint32_t controllerViewShortcutBar = 0; // ShortcutBarGui* ControllerView::getShortcutBar(), a vtable slot
+   uint32_t shortcutBarColumns = 0;      // ShortcutBarGui::columns, std::vector<std::unique_ptr<agui::VerticalFlow>>
+   // The toggle button that opens and closes the list of every shortcut, where the player chooses
+   // those on the bar; the list's frame, whether it is open, and its rows.
+   uint32_t shortcutBarListButton = 0;   // ShortcutBarGui::expandButton, IconButton
+   uint32_t shortcutBarList = 0;         // ShortcutBarGui::shortcutSelectionFrame, agui::Frame
+   uint32_t shortcutBarListOpen = 0;     // ShortcutBarGui::shortcutSelectionFrameVisible, bool
+   uint32_t shortcutBarListRows = 0;     // ShortcutBarGui::shortcutRows, std::vector<std::unique_ptr<ShortcutRow>>
+   uint32_t shortcutRowCheckBox = 0;     // ShortcutBarGui::ShortcutRow::dockCheckbox: checked while on the bar
+   uint32_t shortcutButtonBehavior = 0;  // ShortcutButton::behavior, ShortcutBehavior*
+   uint32_t shortcutBehaviorPrototype = 0; // ShortcutBehavior::prototype, ShortcutPrototype* (a PrototypeBase)
+   uint32_t buttonIsToggle = 0;          // agui::Button::isButtonToggleButton
+
    // What the game says about itself while the DLL runs (see disclosure.h).
    // static void Logging::log(char const* file, unsigned line, LogLevel, char const* format, ...)
    uintptr_t loggingLog = 0;
