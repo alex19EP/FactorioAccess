@@ -33,10 +33,6 @@ In the crafting menu, craft 5: `shift + left bracket`
 
 Craft all: `ctrl + shift + left bracket`
 
-In the research menu, enqueue to the back of the research queue: `left bracket`
-
-In the research menu, enqueue to the front of the research queue: `ctrl + shift + left bracket`
-
 In inventories, use an item in the given slot: `ctrl + shift + left bracket`
 
 In inventories, send slot to trash: `o`
@@ -144,7 +140,7 @@ In inventories, `k` announces information about an item if known.
 
 The category rows control shows up only in a few places, but they are important: the warnings menu, crafting, and research.  It consists of a number of stacked rows of different lengths.  Each row has some items in it.
 
-As a concrete example, the crafting menu breaks recipes down by category, the research menu breaks research down by whether it's done, researchable, or locked, and the warnings menu makes the warning type the categories.
+As a concrete example, the crafting menu breaks recipes down by category and the warnings menu makes the warning type the categories.
 
 You switch category with `w`/`s` and move in the category with `a`/`d`.
 

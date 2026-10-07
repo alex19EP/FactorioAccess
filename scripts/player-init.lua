@@ -127,8 +127,6 @@ function mod.initialize(player)
 
    faplayer.equipment = faplayer.equipment or { index = 1, sector = 1 }
 
-   faplayer.technology = faplayer.technology or { category = 1, index = 1 }
-
    faplayer.belt_lane_direction = faplayer.belt_lane_direction or nil
 
    faplayer.belt_side = faplayer.belt_side or nil
@@ -225,7 +223,6 @@ function mod.initialize(player)
    faplayer.following = faplayer.following or nil
    faplayer.followed_by = faplayer.followed_by or {}
    faplayer.follow_id = faplayer.follow_id or nil
-   faplayer.last_technology_count = faplayer.last_technology_count or 0
    faplayer.click_to_open = faplayer.click_to_open or "disabled"
    faplayer.entering_new_character_name = faplayer.entering_new_character_name or false
    faplayer.renaming_character_name = faplayer.renaming_character_name or ""

@@ -40,7 +40,6 @@ local test_files = {
    "rich-text-test", -- Test rich text processing and shorthand parsing
    "assembler-recipe-test", -- Test assembling machine recipe management
    "assembling-machine-ui-test", -- Test assembling machine UI with recipe selection
-   "hidden-technology-filter-test", -- Test filtering of hidden technologies
    "roboport-cursor-distance-test", -- Test roboport distance calculations in cursor mode
    -- "fa-info-smoke-test", -- Test entity information extraction system (temporarily disabled)
    -- "sound-tests", -- Test sound system integration (temporarily disabled)

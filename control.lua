@@ -2977,36 +2977,6 @@ EventManager.on_event(
    end
 )
 
---Gives in-game time. The night darkness is from 11 to 13, and peak daylight hours are 18 to 6.
---For realism, if we adjust by 12 hours, we get 23 to 1 as midnight and 6 to 18 as peak solar.
----@param event EventData.CustomInputEvent
-local function kb_read_time_and_research_progress(event)
-   local pindex = event.player_index
-   --Get local time
-   local surf = game.get_player(pindex).surface
-   local hour = math.floor((24 * surf.daytime + 12) % 24)
-   local minute = math.floor((24 * surf.daytime - math.floor(24 * surf.daytime)) * 60)
-   local time_string = { "fa.local-time", tostring(hour), string.format("%02d", minute) }
-
-   --Get total playtime
-   local total_hours = math.floor(game.tick / 216000)
-   local total_minutes = math.floor((game.tick % 216000) / 3600)
-   local total_time_string = { "fa.mission-time", tostring(total_hours), tostring(total_minutes) }
-
-   --Add research progress info
-   local progress_string = Research.get_progress_string(pindex)
-
-   Speech.speak(pindex, FaUtils.spacecat(time_string, progress_string, total_time_string))
-end
-
-EventManager.on_event(
-   "fa-t",
-   ---@param event EventData.CustomInputEvent
-   function(event, pindex)
-      kb_read_time_and_research_progress(event)
-   end
-)
-
 ---@param event EventData.CustomInputEvent
 local function kb_toggle_build_lock(event)
    local pindex = event.player_index

@@ -1,5 +1,5 @@
 --[[
-Main unified menu that combines inventory, guns, crafting, and research tabs.
+Main unified menu that combines inventory, guns, and crafting tabs.
 This is the primary player interface accessed with the E key.
 ]]
 
@@ -13,8 +13,6 @@ local equipment_overview = require("scripts.ui.tabs.equipment-overview")
 local equipment_grid = require("scripts.ui.tabs.equipment-grid")
 local crafting = require("scripts.ui.menus.crafting")
 local crafting_queue = require("scripts.ui.menus.crafting-queue")
-local research = require("scripts.ui.menus.research")
-local research_queue = require("scripts.ui.menus.research-queue")
 local InventoryGrid = require("scripts.ui.inventory-grid")
 
 local mod = {}
@@ -69,16 +67,6 @@ mod.main_menu = TabList.declare_tablist({
          tabs = {
             crafting.crafting_tab,
             crafting_queue.crafting_queue_tab,
-         },
-      })
-
-      -- Add research section
-      table.insert(sections, {
-         name = "research",
-         title = { "fa.section-research" },
-         tabs = {
-            research.research_tab,
-            research_queue.research_queue_tab,
          },
       })
 
