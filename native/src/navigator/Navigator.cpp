@@ -149,18 +149,27 @@ void Navigator::HandleKey(const input::KeyEvent& e)
 
     switch (e.key)
     {
-    // Arrows act on autorepeat too (held-key scrolling).
+    // Arrows act on autorepeat too (held-key scrolling). WASD mirrors them, as it moves the FA
+    // cursor in the world; Shift+WASD is taken only to keep it from the world cursor.
     case input::keys::Up:
-        HandleArrow(graph::GraphDir::Up, e.ctrl);
+    case input::keys::W:
+        if (!e.shift)
+            HandleArrow(graph::GraphDir::Up, e.ctrl);
         break;
     case input::keys::Down:
-        HandleArrow(graph::GraphDir::Down, e.ctrl);
+    case input::keys::S:
+        if (!e.shift)
+            HandleArrow(graph::GraphDir::Down, e.ctrl);
         break;
     case input::keys::Left:
-        HandleArrow(graph::GraphDir::Left, e.ctrl);
+    case input::keys::A:
+        if (!e.shift)
+            HandleArrow(graph::GraphDir::Left, e.ctrl);
         break;
     case input::keys::Right:
-        HandleArrow(graph::GraphDir::Right, e.ctrl);
+    case input::keys::D:
+        if (!e.shift)
+            HandleArrow(graph::GraphDir::Right, e.ctrl);
         break;
     // One-shot chords act on the fresh press only.
     case input::keys::Tab:
@@ -530,6 +539,10 @@ void Navigator::UpdateClaims(bool haveRender)
             {keys::Backspace, plain | mods::Shift | mods::Ctrl},
             {keys::RightBracket, plain | mods::Shift | mods::Ctrl},
             {keys::Backslash, plain | mods::Shift | mods::Ctrl}};
+        // WASD mirrors the arrows. With Shift or Control it also drives the FA world cursor
+        // (fa-w, fa-s-w, fa-c-w, fa-cs-w), which must stay where the window was opened.
+        for (uint32_t key : {keys::W, keys::A, keys::S, keys::D})
+            claims.push_back({key, plain | mods::Shift | mods::Ctrl});
         // Leaving adjust mode is an Escape the game must not see, and so is any Escape on a part of
         // the HUD.
         if (adjusting || _screen->ClaimsEscape())
