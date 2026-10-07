@@ -315,6 +315,15 @@ struct Layout {
    uint32_t burnerSlots = 0;          // BurnerInfo::burnerSlotsTable, agui::Table
    uint32_t burntResultSlots = 0;     // BurnerInfo::burntResultSlotsTable, agui::Table
    uint32_t burnerProgressBar = 0;    // BurnerInfo::burningProgressBar: what is left of the fuel burning
+   // The windows with circuit and logistic network buttons in the title bar (GuiWithSideButtons):
+   // a button opens its panel beside the window, inside the side panel container.
+   uint32_t sidePanelContainer = 0;   // GuiWithSideButtons::sidePanelContainer, agui::VerticalFlow
+   // The small window of a transport belt, a lamp, an accumulator and the like
+   // (GenericOnOffEntityGui): the window titled with the entity's name, and the entity.
+   uint32_t onOffEntityWindow = 0;    // GenericOnOffEntityGui::entityWindow, agui::Window
+   uint32_t onOffEntity = 0;          // GenericOnOffEntityGui::entity, Entity*
+   uint32_t splitterEntity = 0;       // SplitterGui::splitter, SplitterBase*
+   uint32_t entityUnitNumber = 0;     // EntityWithOwner::unitNumber, LuaEntity::unit_number
 
    // The quickbar along the bottom of the screen (QuickBarGui), reached the way the game's own
    // quickbar keys reach it: GameView::controllerView->getQuickBar().

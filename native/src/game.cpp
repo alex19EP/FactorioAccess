@@ -279,6 +279,11 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.burnerSlots, "BurnerInfo", "burnerSlotsTable");
    offset(layout.burntResultSlots, "BurnerInfo", "burntResultSlotsTable");
    offset(layout.burnerProgressBar, "BurnerInfo", "burningProgressBar");
+   offset(layout.sidePanelContainer, "GuiWithSideButtons", "sidePanelContainer");
+   offset(layout.onOffEntityWindow, "GenericOnOffEntityGui", "entityWindow");
+   offset(layout.onOffEntity, "GenericOnOffEntityGui", "entity");
+   offset(layout.splitterEntity, "SplitterGui", "splitter");
+   offset(layout.entityUnitNumber, "EntityWithOwner", "unitNumber");
 
    offset(layout.gameViewControllerView, "GameView", "controllerView");
    classSlot(layout.controllerViewQuickBar, "ControllerView", "getQuickBar");

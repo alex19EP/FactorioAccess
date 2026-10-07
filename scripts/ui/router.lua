@@ -129,7 +129,6 @@ mod.UI_NAMES = {
    ENTITY = "entity",
    TRAVEL = "travel",
    GUNS = "guns", -- Keep for backward compatibility with gun_menu registration
-   BELT = "belt",
    WARNINGS = "warnings",
    PUMP = "pump",
    BLUEPRINT = "blueprint",
