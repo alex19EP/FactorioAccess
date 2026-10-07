@@ -9,8 +9,8 @@
 // Shift or Control counts because the game reads them from the keyboard. On a slot that picks up,
 // places, splits and transfers stacks; on a recipe it crafts one, five or all.
 //
-// The game's search (Ctrl+F) opens a field above them that filters the recipes as it is typed in;
-// the cursor lands on it.
+// The game's search (Ctrl+F, or the search button that ends the row of tabs) opens a field above
+// them that filters the recipes as it is typed in; the cursor lands on it.
 //
 // Slots read live, so a click's result is spoken once the game has applied it. Y reads the
 // game's own tooltip, and \ is the middle button, which sets a slot's filter.

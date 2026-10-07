@@ -102,11 +102,18 @@ void AddCrafting(graph::GraphBuilder& builder, const Widget* crafting)
         builder.PushContext(title);
 
     std::vector<const Widget*> groups = FindAll(crafting, "ItemGroupTab");
-    if (!groups.empty())
+    // The search button sits in the frame's title bar; it ends the row of tabs.
+    const Widget* search = nullptr;
+    for (const Widget* ancestor = agui::parent(crafting); ancestor && !search; ancestor = agui::parent(ancestor))
+        if (agui::frameTitle(ancestor))
+            search = FindDescendant(ancestor, "SearchBar");
+    if (!groups.empty() || search)
     {
         builder.StartRow("groups");
         for (std::size_t i = 0; i < groups.size(); ++i)
             builder.AddItem(graph::ControlId::Referenced(groups[i], "groups/" + std::to_string(i)), ControlNode(groups[i]));
+        if (search)
+            builder.AddItem(graph::ControlId::Referenced(search, "groups/search"), ControlNode(search));
         builder.EndRow();
     }
     // The selected group's recipes: the only table of them the tabbed pane shows.
