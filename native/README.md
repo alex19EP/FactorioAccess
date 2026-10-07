@@ -12,8 +12,9 @@ Windows only.
   stdout protocol.
 - **The game's own GUI.** Vanilla windows and menus are read and navigated from the keyboard:
   Tab, the arrows and Enter, following a graph model of each window. The main menu and its
-  screens, the character screen, entity windows, the quickbar, the shortcut bar, the side menu and
-  other windows each have a recipe that gives a fixed order. Any other window is read generically.
+  screens, the character screen, entity windows, the quickbar, the shortcut bar, the side menu, the
+  crafting queue and other windows each have a recipe that gives a fixed order. Any other window is
+  read generically.
   Activating a control replays the same mouse events vanilla gets, so using a window through FA
   never differs from clicking it. The OS mouse is never moved.
 - **The world cursor.** The game's cursor position follows the FA cursor, so vanilla controls

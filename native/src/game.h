@@ -334,6 +334,15 @@ struct Layout {
    uint32_t gameViewSideMenu = 0;        // GameView::sideMenu, std::unique_ptr<SideMenu>
    uint32_t sideMenuMuteButton = 0;      // SideMenu::masterMutedButton, IconButton*
 
+   // The crafting queue at the bottom left (CraftingQueueGui, an agui::Flow), reached as the
+   // quickbar is; CharacterView and GodView have one, the remote view none. Its slots are rebuilt on
+   // every change to the queue (CraftingQueueGui::update).
+   uint32_t controllerViewCraftingQueue = 0; // CraftingQueueGui* ControllerView::getCraftingQueue(), a vtable slot
+   uint32_t craftingQueueSlots = 0;      // CraftingQueueGui::slots, std::vector<std::unique_ptr<agui::Widget>>
+   // The same queue in the character window's left pane, under its label.
+   uint32_t characterInfoQueueLabel = 0; // CharacterInfoGui::craftingQueueLabel, agui::Label
+   uint32_t characterInfoQueue = 0;      // CharacterInfoGui::craftingQueueGui, CraftingQueueTableGui (an agui::Table)
+
    // What the game says about itself while the DLL runs (see disclosure.h).
    // static void Logging::log(char const* file, unsigned line, LogLevel, char const* format, ...)
    uintptr_t loggingLog = 0;

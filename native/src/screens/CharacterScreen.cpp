@@ -5,6 +5,7 @@
 
 #include "AguiNodes.hpp"
 #include "text.h"
+#include "vocab.h"
 
 namespace fa::screens
 {
@@ -103,6 +104,31 @@ void AddCrafting(graph::GraphBuilder& builder, const Widget* crafting)
         builder.PopContext();
 }
 
+// The crafting queue under its label in the left pane, a row per row of the game's table; a slot
+// is cancelled by clicking it, as at the bottom left.
+void AddQueue(graph::GraphBuilder& builder, const Widget* window)
+{
+    const Widget* info = FindDescendant(window, "CharacterInfoGui");
+    if (!info)
+        return;
+    agui::CharacterQueue queue = agui::characterQueue(info);
+    if (!agui::visible(queue.label))
+        return;
+    builder.BeginStop("queue");
+    std::string title = LabelText(queue.label);
+    if (!title.empty())
+        builder.PushContext(title);
+    if (FindDescendant(queue.table, "CraftingQueueSlot"))
+        AddGrid(
+            builder, "queue", queue.table, [](const Widget* cell) { return agui::derivesFrom(cell, "CraftingQueueSlot"); },
+            [](const Widget* cell) { return ControlNode(cell); });
+    else
+        builder.AddItem(graph::ControlId::Referenced(queue.table, "queue/empty"),
+            TextNode(queue.table, []() { return std::string(vocab::kEmpty); }));
+    if (!title.empty())
+        builder.PopContext();
+}
+
 // The search field the game's focus-search control (Ctrl+F) opens over the window, while it shows.
 const Widget* SearchField(const Widget* window)
 {
@@ -143,6 +169,7 @@ void CharacterScreen::Build(graph::GraphBuilder& builder)
         AddInventory(builder, "inventory" + std::to_string(i), inventories[i]);
     if (const Widget* crafting = FindDescendant(_window, "CraftingGui"))
         AddCrafting(builder, crafting);
+    AddQueue(builder, _window);
 }
 
 const char* CharacterScreen::TakeSuggestedLanding()

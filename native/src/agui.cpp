@@ -743,6 +743,28 @@ const Widget* sideMenu() {
 
 const Widget* sideMenuMuteButton(const Widget* sideMenu) { return pointerMember(sideMenu, layout.sideMenuMuteButton); }
 
+const Widget* craftingQueue() {
+   auto* context = *reinterpret_cast<const std::byte* const*>(layout.globalContext);
+   if (!context) return nullptr;
+   auto* game = at<const std::byte*>(context, layout.globalGame);
+   if (!game) return nullptr;
+   auto* view = at<const std::byte*>(game, layout.gameView);
+   if (!view) return nullptr;
+   auto* controllerView = at<std::byte*>(view, layout.gameViewControllerView);
+   if (!controllerView) return nullptr;
+   auto vtable = *reinterpret_cast<VirtualTable*>(controllerView);
+   return reinterpret_cast<const Widget* (*)(void*)>(vtable[layout.controllerViewCraftingQueue])(controllerView);
+}
+
+std::vector<const Widget*> craftingQueueSlots(const Widget* craftingQueue) {
+   const auto& slots = at<MsvcVector<const Widget* const>>(craftingQueue, layout.craftingQueueSlots);
+   return {slots.first, slots.last};
+}
+
+CharacterQueue characterQueue(const Widget* characterInfo) {
+   return {member(characterInfo, layout.characterInfoQueueLabel), member(characterInfo, layout.characterInfoQueue)};
+}
+
 std::vector<const Widget*> shortcutBarListCheckBoxes(const Widget* shortcutBar) {
    std::vector<const Widget*> boxes;
    if (!at<bool>(shortcutBar, layout.shortcutBarListOpen)) return boxes;

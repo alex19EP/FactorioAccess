@@ -289,6 +289,10 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.shortcutBehaviorPrototype, "ShortcutBehavior", "prototype");
    offset(layout.buttonIsToggle, "agui::Button", "isButtonToggleButton");
    offset(layout.gameViewSideMenu, "GameView", "sideMenu");
+   classSlot(layout.controllerViewCraftingQueue, "ControllerView", "getCraftingQueue");
+   offset(layout.craftingQueueSlots, "CraftingQueueGui", "slots");
+   offset(layout.characterInfoQueueLabel, "CharacterInfoGui", "craftingQueueLabel");
+   offset(layout.characterInfoQueue, "CharacterInfoGui", "craftingQueueGui");
    offset(layout.sideMenuMuteButton, "SideMenu", "masterMutedButton");
 
    address(layout.loggingLog, "?log@Logging@@SAXPEBDIW4LogLevel@@0ZZ");

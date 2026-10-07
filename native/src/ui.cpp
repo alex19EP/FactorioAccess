@@ -8,6 +8,7 @@
 #include "navigator/ScreenManager.hpp"
 #include "screens/CharacterScreen.hpp"
 #include "screens/ControlSettingsScreen.hpp"
+#include "screens/CraftingQueueScreen.hpp"
 #include "screens/DropDownScreen.hpp"
 #include "screens/FilterSelectScreen.hpp"
 #include "screens/GenericWindowScreen.hpp"
@@ -92,6 +93,8 @@ void start() {
    manager.Register(std::make_unique<screens::ShortcutBarScreen>());
    // The side menu, the part after that.
    manager.Register(std::make_unique<screens::SideMenuScreen>());
+   // The crafting queue, the part after that.
+   manager.Register(std::make_unique<screens::CraftingQueueScreen>());
    // Over it or a window, the chooser of a filter one of their slots opened.
    manager.Register(std::make_unique<screens::FilterSelectScreen>());
    // Over any of them, an open dropdown's list.

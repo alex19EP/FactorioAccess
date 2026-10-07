@@ -283,6 +283,23 @@ const Widget* sideMenu();
 // Its master mute button, the one button of it that opens no window.
 const Widget* sideMenuMuteButton(const Widget* sideMenu);
 
+// The crafting queue at the bottom left (CraftingQueueGui), or null outside a game or while the view
+// has none (remote view, or the queue hidden by game_view_settings).
+const Widget* craftingQueue();
+// Its slots, the order being crafted first, one CraftingQueueSlot per order: a click cancels one,
+// five or all of it, as the game's cancel craft controls bind the button and modifiers held. Past
+// two rows a last button shows every order or two rows again. Empty while nothing is queued.
+std::vector<const Widget*> craftingQueueSlots(const Widget* craftingQueue);
+
+// The crafting queue in the character window's left pane (CharacterInfoGui): its "Crafting queue"
+// label and the CraftingQueueTableGui holding the same slots as the bottom left's, a row per table
+// row.
+struct CharacterQueue {
+   const Widget* label = nullptr;
+   const Widget* table = nullptr;
+};
+CharacterQueue characterQueue(const Widget* characterInfo);
+
 // The selected row of an agui::TableWithSelection, the header row counting as 0.
 unsigned selectedRow(const Widget* table);
 

@@ -11,6 +11,7 @@ enum class Part {
    QuickBar,
    ShortcutBar,
    SideMenu,
+   CraftingQueue,
 };
 
 // The part in use, None while it is what is open.

@@ -167,7 +167,7 @@ The mod requires the native DLL in `native/` (deployed as `winmm.dll`). There is
 
 - When the game knows something the Lua API cannot read (engine flying text such as "Cannot reach", console messages other than player chat, vanilla GUI text, why an action failed), read it at the source in the native layer.
 - Don't write Lua that guesses what happened from indirect events, and don't add Lua fallbacks for when the DLL is missing. Existing Lua guesses are to be replaced by native reads.
-- Lua-only APIs that do expose the information (events, getters) remain the right tool for it.
+- Lua-only APIs that do expose the information (events, getters) remain the right tool for it. This does not apply to UI: a game GUI (window, HUD part such as the quickbar, shortcut bar or crafting queue) gets a native screen that reads and clicks the game's own widgets, even when Lua could read the same data.
 
 ## Testing
 
