@@ -239,10 +239,16 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.drillBonusBar, "MiningDrillGui", "bonusProgressBar");
    offset(layout.assemblerRecipe, "AssemblingMachineGui", "recipeInfoWidget");
    offset(layout.furnaceRecipe, "FurnaceGui", "recipeInfoWidget");
+   offset(layout.assemblerInputs, "AssemblingMachineGui", "ingredientsTable");
+   offset(layout.furnaceInputs, "FurnaceGui", "ingredientsTable");
    offset(layout.assemblerOutputs, "AssemblingMachineGui", "outputsTable");
    offset(layout.furnaceOutputs, "FurnaceGui", "outputsTable");
+   offset(layout.assemblerModules, "AssemblingMachineGui", "slotInventory");
+   offset(layout.furnaceModules, "FurnaceGui", "slotInventory");
+   offset(layout.drillModules, "MiningDrillGui", "moduleSlotsGui");
    offset(layout.assemblerChangeRecipe, "AssemblingMachineGui", "changeRecipeButton");
    offset(layout.burnerSlots, "BurnerInfo", "burnerSlotsTable");
+   offset(layout.burntResultSlots, "BurnerInfo", "burntResultSlotsTable");
    offset(layout.burnerProgressBar, "BurnerInfo", "burningProgressBar");
 
    address(layout.loggingLog, "?log@Logging@@SAXPEBDIW4LogLevel@@0ZZ");

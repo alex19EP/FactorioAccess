@@ -191,9 +191,10 @@ double progress(const Widget* bar);
 // name; it holds the player's inventory beside the entity's own part. `inventory` is the player's
 // InventoryGui, `inventoryPanel` the panel holding it under `inventoryTitle` ("Character"), and
 // `header` the title bar's search and close buttons. A crafting machine or drill has a
-// `progressBar` and the productivity `bonusBar` under it; a crafting machine shows its `recipe`
-// (a RecipeInfoWidget) and the table of its `outputs`, and an assembler the `changeRecipe`
-// button, which is in the window only when the recipe can change.
+// `progressBar` and the productivity `bonusBar` under it, and may take `modules`; a crafting
+// machine shows its `recipe` (a RecipeInfoWidget) and the tables of its `inputs` and `outputs`,
+// and an assembler the `changeRecipe` button, which is in the window only when the recipe can
+// change.
 struct EntityWindowParts {
    const Widget* entity = nullptr;
    const Widget* header = nullptr;
@@ -203,15 +204,18 @@ struct EntityWindowParts {
    const Widget* progressBar = nullptr;
    const Widget* bonusBar = nullptr;
    const Widget* recipe = nullptr;
+   const Widget* inputs = nullptr;
    const Widget* outputs = nullptr;
+   const Widget* modules = nullptr;
    const Widget* changeRecipe = nullptr;
 };
 EntityWindowParts entityWindowParts(const Widget* window);
 
-// The fuel part of a burner-powered entity's window (a BurnerInfo): the table of fuel slots and
-// the bar of what is left of the fuel burning.
+// The fuel part of a burner-powered entity's window (a BurnerInfo): the tables of fuel slots and
+// of what the fuel leaves when burnt, and the bar of what is left of the fuel burning.
 struct BurnerParts {
    const Widget* slots = nullptr;
+   const Widget* burntResults = nullptr;
    const Widget* bar = nullptr;
 };
 BurnerParts burnerParts(const Widget* burnerInfo);

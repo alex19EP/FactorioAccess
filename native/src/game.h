@@ -265,13 +265,20 @@ struct Layout {
    // The recipe a crafting machine shows; a click on it opens Factoriopedia.
    uint32_t assemblerRecipe = 0;      // AssemblingMachineGui::recipeInfoWidget, RecipeInfoWidget
    uint32_t furnaceRecipe = 0;        // FurnaceGui::recipeInfoWidget
-   // The slots of what a crafting machine makes, agui::Table.
+   // The slots of what a crafting machine takes and makes, agui::Table.
+   uint32_t assemblerInputs = 0;      // AssemblingMachineGui::ingredientsTable
+   uint32_t furnaceInputs = 0;        // FurnaceGui::ingredientsTable
    uint32_t assemblerOutputs = 0;     // AssemblingMachineGui::outputsTable
    uint32_t furnaceOutputs = 0;       // FurnaceGui::outputsTable
+   // The module slots, an InventoryGui owned through a pointer; null where the entity takes none.
+   uint32_t assemblerModules = 0;     // AssemblingMachineGui::slotInventory
+   uint32_t furnaceModules = 0;       // FurnaceGui::slotInventory
+   uint32_t drillModules = 0;         // MiningDrillGui::moduleSlotsGui
    // Beside an assembler's recipe unless the recipe is fixed: back to the recipe chooser.
    uint32_t assemblerChangeRecipe = 0; // AssemblingMachineGui::changeRecipeButton, IconButton
    // The fuel part of a burner-powered entity's window (BurnerInfo).
    uint32_t burnerSlots = 0;          // BurnerInfo::burnerSlotsTable, agui::Table
+   uint32_t burntResultSlots = 0;     // BurnerInfo::burntResultSlotsTable, agui::Table
    uint32_t burnerProgressBar = 0;    // BurnerInfo::burningProgressBar: what is left of the fuel burning
 
    // What the game says about itself while the DLL runs (see disclosure.h).

@@ -581,14 +581,16 @@ EntityWindowParts entityWindowParts(const Widget* window) {
    }
    struct Machine {
       std::string_view type;
-      uint32_t progressBar, bonusBar, recipe, outputs, changeRecipe;
+      uint32_t progressBar, bonusBar, recipe, inputs, outputs, modules, changeRecipe;
    };
    for (const Machine& machine :
         {Machine{".?AVAssemblingMachineGui@@", layout.assemblerProgressBar, layout.assemblerBonusBar,
-                 layout.assemblerRecipe, layout.assemblerOutputs, layout.assemblerChangeRecipe},
+                 layout.assemblerRecipe, layout.assemblerInputs, layout.assemblerOutputs, layout.assemblerModules,
+                 layout.assemblerChangeRecipe},
          Machine{".?AVFurnaceGui@@", layout.furnaceProgressBar, layout.furnaceBonusBar, layout.furnaceRecipe,
-                 layout.furnaceOutputs, 0},
-         Machine{".?AVMiningDrillGui@@", layout.drillProgressBar, layout.drillBonusBar, 0, 0, 0}}) {
+                 layout.furnaceInputs, layout.furnaceOutputs, layout.furnaceModules, 0},
+         Machine{".?AVMiningDrillGui@@", layout.drillProgressBar, layout.drillBonusBar, 0, 0, 0, layout.drillModules,
+                 0}}) {
       const std::byte* base = asBase(window, machine.type);
       if (!base) continue;
       auto widgetAt = [base](uint32_t offset) {
@@ -597,14 +599,17 @@ EntityWindowParts entityWindowParts(const Widget* window) {
       parts.progressBar = widgetAt(machine.progressBar);
       parts.bonusBar = widgetAt(machine.bonusBar);
       parts.recipe = widgetAt(machine.recipe);
+      parts.inputs = widgetAt(machine.inputs);
       parts.outputs = widgetAt(machine.outputs);
+      parts.modules = machine.modules ? at<const Widget*>(base, machine.modules) : nullptr;
       parts.changeRecipe = widgetAt(machine.changeRecipe);
    }
    return parts;
 }
 
 BurnerParts burnerParts(const Widget* burnerInfo) {
-   return {member(burnerInfo, layout.burnerSlots), member(burnerInfo, layout.burnerProgressBar)};
+   return {member(burnerInfo, layout.burnerSlots), member(burnerInfo, layout.burntResultSlots),
+           member(burnerInfo, layout.burnerProgressBar)};
 }
 
 unsigned selectedRow(const Widget* table) {

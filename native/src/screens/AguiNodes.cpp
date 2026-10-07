@@ -4,6 +4,7 @@
 #include <cmath>
 #include <format>
 #include <optional>
+#include <span>
 #include <string_view>
 #include <unordered_map>
 #include <utility>
@@ -137,10 +138,15 @@ std::string Phrase(const Widget* label)
     return phrase;
 }
 
-// How many nodes a widget's subtree declares, counted up to `limit`.
-int Navigable(const Widget* widget, int limit, int depth = 0)
+bool Contains(std::span<const Widget* const> widgets, const Widget* widget)
 {
-    if (depth > kMaxDepth || !Shows(widget))
+    return std::ranges::find(widgets, widget) != widgets.end();
+}
+
+// How many nodes a widget's subtree declares, counted up to `limit`, leaving out `skip`.
+int Navigable(const Widget* widget, int limit, std::span<const Widget* const> skip = {}, int depth = 0)
+{
+    if (depth > kMaxDepth || !Shows(widget) || Contains(skip, widget))
         return 0;
     Kind kind = KindOf(widget);
     if (kind == Kind::Label)
@@ -152,18 +158,21 @@ int Navigable(const Widget* widget, int limit, int depth = 0)
         [&](const Widget* child, const std::string&)
         {
             if (count < limit)
-                count += Navigable(child, limit - count, depth + 1);
+                count += Navigable(child, limit - count, skip, depth + 1);
         });
     return count;
 }
 
 // At most one node: a single control or label, however deeply wrapped.
-bool IsSimple(const Widget* widget) { return Navigable(widget, 2) <= 1; }
+bool IsSimple(const Widget* widget, std::span<const Widget* const> skip = {})
+{
+    return Navigable(widget, 2, skip) <= 1;
+}
 
 // The one label or control a simple widget holds, or null when it holds nothing.
-const Widget* LeafOf(const Widget* widget, int depth = 0)
+const Widget* LeafOf(const Widget* widget, std::span<const Widget* const> skip = {}, int depth = 0)
 {
-    if (depth > kMaxDepth || !Shows(widget))
+    if (depth > kMaxDepth || !Shows(widget) || Contains(skip, widget))
         return nullptr;
     Kind kind = KindOf(widget);
     if (kind == Kind::Label)
@@ -175,7 +184,7 @@ const Widget* LeafOf(const Widget* widget, int depth = 0)
         [&](const Widget* child, const std::string&)
         {
             if (!leaf)
-                leaf = LeafOf(child, depth + 1);
+                leaf = LeafOf(child, skip, depth + 1);
         });
     return leaf;
 }
@@ -406,7 +415,7 @@ public:
                 return;
             }
             // A table of whole panels is a layout grid, not rows of items: read it top-down.
-            if (!std::ranges::all_of(cells, &IsSimple))
+            if (!std::ranges::all_of(cells, [this](const Widget* cell) { return IsSimple(cell, _skip); }))
             {
                 for (std::size_t i = 0; i < cells.size(); ++i)
                     Visit(cells[i], path + "." + std::to_string(i), depth + 1);
@@ -431,7 +440,7 @@ public:
                 {
                     if (Skipped(child) || !Shows(child))
                         return;
-                    row = row && IsSimple(child);
+                    row = row && IsSimple(child, _skip);
                     items.push_back(child);
                 });
             if (row)
@@ -472,7 +481,7 @@ private:
     {
         std::vector<const Widget*> leaves;
         for (const Widget* item : items)
-            if (const Widget* leaf = LeafOf(item))
+            if (const Widget* leaf = LeafOf(item, _skip))
                 leaves.push_back(leaf);
         if (leaves.empty())
             return;
@@ -633,18 +642,39 @@ private:
 
     std::string Key(const std::string& path) const { return _prefix + "/" + path; }
 
-    bool Skipped(const Widget* widget) const { return std::ranges::find(_skip, widget) != _skip.end(); }
+    bool Skipped(const Widget* widget) const { return Contains(_skip, widget); }
 
     void Add(const std::string& key, graph::NodeVtable vtable)
     {
-        const void* widget = vtable.HostTag;
-        if (auto it = _attachments.find(static_cast<const Widget*>(widget)); it != _attachments.end())
+        auto* widget = static_cast<const Widget*>(vtable.HostTag);
+        if (auto it = _attachments.find(widget); it != _attachments.end())
             Attach(vtable, it->second);
+        // Each node in its labelled container's context: the cells of one row can belong to
+        // different ones (a furnace's input slot, then its output slot).
+        std::string context = ContainerLabel(widget);
+        if (!context.empty())
+            _builder.PushContext(context);
         _builder.AddItem(graph::ControlId::Referenced(widget, key), std::move(vtable));
+        if (!context.empty())
+            _builder.PopContext();
+    }
+
+    // The label of the nearest labelled container around a widget, or empty.
+    std::string ContainerLabel(const Widget* widget) const
+    {
+        for (const Widget* ancestor = widget ? agui::parent(widget) : nullptr; ancestor;
+             ancestor = agui::parent(ancestor))
+            if (auto it = _attachments.find(ancestor); it != _attachments.end() && !it->second.label.empty())
+                return it->second.label;
+        return {};
     }
 
     static void Attach(graph::NodeVtable& vtable, const Attachment& attachment)
     {
+        if (!attachment.label.empty())
+            vtable.Announcements.insert(vtable.Announcements.begin(),
+                graph::NodeAnnouncement([label = attachment.label]() { return label; }, false, Label));
+
         // Right after the node's own value; a typed node sorts its parts by kind anyway.
         auto at = std::ranges::find_if(vtable.Announcements,
             [](const graph::NodeAnnouncement& part) { return part.Kind != Label && part.Kind != Value; });
@@ -791,7 +821,12 @@ graph::NodeVtable ControlNode(const Widget* widget, std::function<std::string()>
         return SlotNode(widget, std::move(name));
     Kind kind = agui::kind(widget);
     if (!name)
-        name = [widget]() { return NameOf(widget); };
+        name = [widget, kind]()
+        {
+            // A bar's caption is mostly its percentage, which is already its value.
+            std::string own = NameOf(widget);
+            return kind == Kind::ProgressBar && own == ValueText(widget, kind) ? std::string() : own;
+        };
 
     graph::NodeVtable vtable;
     vtable.Type = TypeOf(kind);

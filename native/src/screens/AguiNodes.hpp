@@ -56,18 +56,20 @@ graph::NodeVtable TextNode(const agui::Widget* tag, std::function<std::string()>
 /// What another widget lends a node, so that one stop reads what belongs together on screen:
 /// progress bars spoken after the node's value, each under an optional name ("productivity"),
 /// while they show; and a button its activation presses instead, while that button is in the
-/// window and enabled.
+/// window and enabled. A `label` names what the game shows unnamed: read before a node's own
+/// text, or for a container the context of everything in it ("fuel", as focus enters its slots).
 struct Attachment
 {
     std::vector<std::pair<const agui::Widget*, std::string>> bars;
     const agui::Widget* press = nullptr;
+    std::string label;
 };
 using Attachments = std::unordered_map<const agui::Widget*, Attachment>;
 
 /// Declares `widget`'s whole subtree into the builder's current stop. Keys start with `prefix`.
 /// Widgets in `skip` are left out wherever they appear: a title already spoken as the context, a
 /// part declared as a stop of its own. A widget in `attachments` gets those parts, and the widgets
-/// lent are left out too.
+/// lent are left out too; a labelled container's nodes are declared in its context.
 void AddSubtree(graph::GraphBuilder& builder, const std::string& prefix, const agui::Widget* widget,
     std::vector<const agui::Widget*> skip = {}, Attachments attachments = {});
 

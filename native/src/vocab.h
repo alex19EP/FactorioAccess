@@ -40,6 +40,16 @@ inline constexpr std::string_view kAdjusting = "adjusting";
 inline constexpr std::string_view kEmpty = "empty";
 inline constexpr std::string_view kProductivity = "productivity";
 
+// An entity window's slots and bars, named as the mod's own entity menus name them.
+inline constexpr std::string_view kInputs = "input materials";
+inline constexpr std::string_view kOutputs = "output products";
+inline constexpr std::string_view kFuel = "fuel";
+inline constexpr std::string_view kBurntResults = "burnt results";
+inline constexpr std::string_view kModules = "modules";
+inline constexpr std::string_view kProgress = "progress";
+inline constexpr std::string_view kMining = "mining";
+inline constexpr std::string_view kBurning = "burning";
+
 inline constexpr std::string_view kNoTooltip = "no tooltip";
 inline constexpr std::string_view kNoAction = "no action";
 

@@ -42,13 +42,19 @@ const Widget* FindWindow()
 // Bars read with what they belong to rather than as stops of their own: the crafting progress and
 // productivity with the first output slot (with the recipe while there is none); a drill's
 // productivity with its mining progress; what is left of the burning fuel with the fuel slot.
-// Enter on the recipe changes it where the machine allows.
+// Enter on the recipe changes it where the machine allows. The slot tables, unnamed on screen,
+// are named as the mod's entity menus named their inventories.
 Attachments MachineAttachments(const agui::EntityWindowParts& parts)
 {
     Attachments attachments;
+    auto label = [&attachments](const Widget* container, std::string_view name)
+    {
+        if (container)
+            attachments[container].label = name;
+    };
     std::vector<std::pair<const Widget*, std::string>> bars;
     if (parts.progressBar && parts.recipe)
-        bars.emplace_back(parts.progressBar, "");
+        bars.emplace_back(parts.progressBar, std::string(vocab::kProgress));
     if (parts.bonusBar)
         bars.emplace_back(parts.bonusBar, std::string(vocab::kProductivity));
     std::vector<const Widget*> outputs = parts.outputs ? VisibleChildren(parts.outputs) : std::vector<const Widget*>();
@@ -58,13 +64,18 @@ Attachments MachineAttachments(const agui::EntityWindowParts& parts)
         attachments[outputs.empty() ? parts.recipe : outputs.front()].bars = std::move(bars);
     }
     else if (parts.progressBar)
-        attachments[parts.progressBar] = {std::move(bars)};
+        attachments[parts.progressBar] = {std::move(bars), nullptr, std::string(vocab::kMining)};
+    label(parts.inputs, vocab::kInputs);
+    label(parts.outputs, vocab::kOutputs);
+    label(parts.modules, vocab::kModules);
     for (const Widget* burner : FindAll(parts.entity, "BurnerInfo"))
     {
         agui::BurnerParts fuel = agui::burnerParts(burner);
+        label(fuel.slots, vocab::kFuel);
+        label(fuel.burntResults, vocab::kBurntResults);
         std::vector<const Widget*> slots = VisibleChildren(fuel.slots);
         if (!slots.empty())
-            attachments[slots.front()].bars.emplace_back(fuel.bar, "");
+            attachments[slots.front()].bars.emplace_back(fuel.bar, std::string(vocab::kBurning));
     }
     return attachments;
 }
