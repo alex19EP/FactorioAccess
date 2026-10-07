@@ -105,6 +105,9 @@ inline constexpr std::string_view kTreeControls = "tree controls";
 inline constexpr std::string_view kMissing = "missing";
 inline constexpr std::string_view kFromIntermediates = "from intermediates";
 
+// The Y key in the world when the cursor points at no entity and no tile.
+inline constexpr std::string_view kNothingHere = "nothing here";
+
 inline constexpr std::string_view kNoTooltip = "no tooltip";
 inline constexpr std::string_view kNoAction = "no action";
 

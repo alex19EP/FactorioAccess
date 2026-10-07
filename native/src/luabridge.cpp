@@ -5,6 +5,7 @@
 #include "log.h"
 #include "movement.h"
 #include "parts.h"
+#include "selectedinfo.h"
 #include "speech.h"
 #include "world.h"
 
@@ -184,6 +185,13 @@ int nextPart(lua_State* L) {
    return 0;
 }
 
+// The Y key in the world: the game's info panel for what the cursor points at (see selectedinfo.h).
+int openSelectedInfo(lua_State* L) {
+   if (!world::mayBeLocalPlayer(static_cast<int>(checkInteger(L, 1)))) return 0;
+   selectedinfo::request();
+   return 0;
+}
+
 // The mod's own views of the entity whose window just opened (see entityviews.h):
 // entity_views_begin(player, unit_number), then per view entity_view(player, title) and its
 // entity_view_column(player, title, cell, ...) calls, then entity_views_end(player). Titles and
@@ -226,6 +234,7 @@ constexpr Function kFunctions[] = {
    {"next_part", &nextPart},
    {"build_direction", &buildDirection},
    {"walking_step", &walkingStep},
+   {"open_selected_info", &openSelectedInfo},
    {"entity_views_begin", &entityViewsBegin},
    {"entity_view", &entityView},
    {"entity_view_column", &entityViewColumn},

@@ -407,6 +407,26 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.vertexType, "TechnologyGraphGui::Vertex", "type");
    offset(layout.vertexNumOmitted, "TechnologyGraphGui::Vertex", "numOmitted");
    offset(layout.vertexX, "TechnologyGraphGui::Vertex", "position.x");
+   address(layout.entityInfoConstruct,
+           "??0?$SelectedInfo@PEBVEntity@@VEntityButton@@@@QEAA@V?$optional@VGuiContext@@@std@@AEBQEBVEntity@@_N@Z");
+   address(layout.entityInfoUpdate, "?update@?$SelectedInfo@PEBVEntity@@VEntityButton@@@@QEAAXAEBQEBVEntity@@_N@Z");
+   address(layout.entityInfoDestroy, "??_G?$SelectedInfo@PEBVEntity@@VEntityButton@@@@UEAAPEAXI@Z");
+   size(layout.entityInfoSize, "SelectedInfo<Entity const *,EntityButton>");
+   address(layout.tileInfoConstruct, "??0?$SelectedInfo@VTile@@V?$ObjectButton@VTile@@VEmptyWidget@agui@@@@@@QEAA@V?$"
+                                     "optional@VGuiContext@@@std@@AEBVTile@@_N@Z");
+   address(layout.tileInfoChange,
+           "?change@?$SelectedInfo@VTile@@V?$ObjectButton@VTile@@VEmptyWidget@agui@@@@@@QEAAXAEBVTile@@_N@Z");
+   address(layout.tileInfoDestroy, "??_G?$SelectedInfo@VTile@@V?$ObjectButton@VTile@@VEmptyWidget@agui@@@@@@UEAAPEAXI@Z");
+   size(layout.tileInfoSize, "SelectedInfo<Tile,ObjectButton<Tile,agui::EmptyWidget> >");
+   offset(layout.globalInterfaceSettings, "GlobalContext", "interfaceSettings.value");
+   offset(layout.tooltipOnTheSide, "InterfaceSettings", "entityToolTipOnTheSide.value");
+   offset(layout.playerLatencyAdapter, "Player", "latencyStateAdapter");
+   offset(layout.playerGameStateAdapter, "Player", "gameStateAdapter");
+   classSlot(layout.adapterEntitySelector, "GameAdapter", "getEntitySelector");
+   offset(layout.selectorEntity, "EntitySelector", "selectedEntity.target");
+   offset(layout.playerController, "Player", "controllerManager.controller");
+   classSlot(layout.controllerSelectedTile, "Controller", "deduceSelectedTile");
+   offset(layout.gameViewActiveWindow, "GameView", "activeWindow");
 
    address(layout.loggingLog, "?log@Logging@@SAXPEBDIW4LogLevel@@0ZZ");
    address(layout.stringAppend, "?append@?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@QEAAAEAV12@QEBD_K@Z");

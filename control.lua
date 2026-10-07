@@ -2821,13 +2821,22 @@ EventManager.on_event(
    end
 )
 
---Reads detailed item info for the item in hand (router handles UI cases via on_read_info)
+--The game's own info panel for what the cursor points at, read by the DLL (the router handles
+--FA's menus via on_read_info)
 EventManager.on_event(
    "fa-y",
    ---@param event EventData.CustomInputEvent
    function(event, pindex)
-      -- UI routing is handled automatically by router.lua (line 485)
-      -- This is the fallback for when no UI is open
+      if UiRouter.get_router(pindex):is_ui_open() then return end
+      NativeCursor.open_selected_info(pindex)
+   end
+)
+
+--Reads detailed item info for the item in hand
+EventManager.on_event(
+   "fa-s-y",
+   ---@param event EventData.CustomInputEvent
+   function(event, pindex)
       ItemInfo.read_item_in_hand(pindex)
    end
 )

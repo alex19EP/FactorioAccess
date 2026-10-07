@@ -23,6 +23,7 @@
 #include "screens/NewGameScreen.hpp"
 #include "screens/QuickBarScreen.hpp"
 #include "screens/ScenarioMessageScreen.hpp"
+#include "screens/SelectedInfoScreen.hpp"
 #include "screens/SettingsScreen.hpp"
 #include "screens/ShortcutBarScreen.hpp"
 #include "screens/SideMenuScreen.hpp"
@@ -105,6 +106,8 @@ void start() {
    manager.Register(std::make_unique<screens::StatusScreen>());
    // The crafting queue, the part after the status.
    manager.Register(std::make_unique<screens::CraftingQueueScreen>());
+   // The game's info panel for what the cursor points at, which the Y key opens over the map.
+   manager.Register(std::make_unique<screens::SelectedInfoScreen>());
    // The technology window, over the window it stacks on.
    manager.Register(std::make_unique<screens::TechnologyScreen>());
    // Factoriopedia, over the window it stacks on, the technology window's too.

@@ -14,6 +14,7 @@ local mod = {}
 ---@field next_part fun(player_index: integer, direction: integer)
 ---@field build_direction fun(player_index: integer): defines.direction?
 ---@field walking_step fun(player_index: integer): ("full"|"partial"|"none")?, integer?
+---@field open_selected_info fun(player_index: integer)
 ---@field entity_views_begin fun(player_index: integer, unit_number: integer)
 ---@field entity_view fun(player_index: integer, title: LocalisedString)
 ---@field entity_view_column fun(player_index: integer, title: LocalisedString, ...: LocalisedString)
@@ -33,6 +34,13 @@ end
 ---@param direction integer
 function mod.next_part(pindex, direction)
    if native then native.next_part(pindex, direction) end
+end
+
+---Opens the game's own info panel for what the cursor points at, the entity or else the tile, for
+---the DLL to read a line at a time.
+---@param pindex integer
+function mod.open_selected_info(pindex)
+   if native then native.open_selected_info(pindex) end
 end
 
 ---The direction the game builds the item in hand in, already turned by a rotate key the mod is

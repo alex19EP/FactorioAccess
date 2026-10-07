@@ -838,6 +838,12 @@ HudBars hudBars() {
            shownBar(bottom, layout.bottomMiningBar)};
 }
 
+bool gameWindowOpen() {
+   const std::byte* view = gameView();
+   // A GameGui*, which is not where its window's Widget starts.
+   return view && at<const void*>(view, layout.gameViewActiveWindow);
+}
+
 Factoriopedia factoriopedia() {
    const Widget* window = shownMember(gameView(), layout.gameViewFactoriopedia);
    if (!window) return {};

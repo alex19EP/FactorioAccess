@@ -513,6 +513,34 @@ struct Layout {
    uint32_t vertexNumOmitted = 0;        // ::numOmitted, unsigned
    uint32_t vertexX = 0;                 // ::position.x, int: left to right within the layer
 
+   // The info panel the game shows for what the player points at, built every frame by
+   // SelectedInfoRenderer::update from GameView::update: beside the mouse after a delay, or with the
+   // interface setting "entity tooltip on the side" at the right of the screen. It is a window
+   // (SelectedInfo<Entity const*,EntityButton> for an entity, SelectedInfo<Tile,ObjectButton<...>>
+   // for a tile) that the entity's own addToDescription fills through a Description.
+   // SelectedInfo(std::optional<GuiContext>, Entity const* const&, bool onTheSide): empty until updated.
+   uintptr_t entityInfoConstruct = 0;
+   uintptr_t entityInfoUpdate = 0;       // void update(Entity const* const&, bool): fills it anew when changed
+   uintptr_t entityInfoDestroy = 0;      // its scalar deleting destructor
+   uint32_t entityInfoSize = 0;
+   // SelectedInfo(std::optional<GuiContext>, Tile const&, bool onTheSide)
+   uintptr_t tileInfoConstruct = 0;
+   uintptr_t tileInfoChange = 0;         // void change(Tile const&, bool)
+   uintptr_t tileInfoDestroy = 0;
+   uint32_t tileInfoSize = 0;
+   uint32_t globalInterfaceSettings = 0; // GlobalContext::interfaceSettings.value
+   uint32_t tooltipOnTheSide = 0;        // InterfaceSettings::entityToolTipOnTheSide.value, bool
+   // What the player points at, as GameView::update finds it: the entity of the selector the
+   // latency adapter (or, without latency hiding, the player's own adapter) gives, else the tile the
+   // controller deduces at the cursor.
+   uint32_t playerLatencyAdapter = 0;    // Player::latencyStateAdapter, LatencyStateAdapter* (may be null)
+   uint32_t playerGameStateAdapter = 0;  // Player::gameStateAdapter, by value
+   uint32_t adapterEntitySelector = 0;   // slot of EntitySelector* GameAdapter::getEntitySelector() const
+   uint32_t selectorEntity = 0;          // EntitySelector::selectedEntity.target, the Entity*
+   uint32_t playerController = 0;        // Player::controllerManager.controller, Controller*
+   uint32_t controllerSelectedTile = 0;  // slot of Tile const* Controller::deduceSelectedTile(MapPosition const&) const
+   uint32_t gameViewActiveWindow = 0;    // GameView::activeWindow, std::unique_ptr<GameGui>: inventory, an entity's
+
    // What the game says about itself while the DLL runs (see disclosure.h).
    // static void Logging::log(char const* file, unsigned line, LogLevel, char const* format, ...)
    uintptr_t loggingLog = 0;

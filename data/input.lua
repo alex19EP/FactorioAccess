@@ -574,6 +574,13 @@ data:extend({
 
    {
       type = "custom-input",
+      name = "fa-s-y",
+      key_sequence = "SHIFT + Y",
+      consuming = "none",
+   },
+
+   {
+      type = "custom-input",
       name = "fa-u",
       key_sequence = "U",
       consuming = "none",

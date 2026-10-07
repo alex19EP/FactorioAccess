@@ -357,6 +357,10 @@ struct HudBars {
 };
 HudBars hudBars();
 
+// Whether a game window is open in place of the map (GameView::activeWindow): the inventory, an
+// entity's window, production statistics and the like.
+bool gameWindowOpen();
+
 // Factoriopedia (GameView::factoriopedia) while it shows, else a null window. Main thread only.
 struct Factoriopedia {
    const Widget* window = nullptr;
