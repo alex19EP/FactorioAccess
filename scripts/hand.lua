@@ -44,7 +44,9 @@ function mod.describe(pindex)
          return { "item-name.deconstruction-planner" }
       end
       local has_direction, direction = facing(pindex, cursor_stack.prototype)
-      local extra = player.get_main_inventory().get_item_count(cursor_stack.name)
+      -- No main inventory while the player has no character, as on a space platform or dead.
+      local inventory = player.get_main_inventory()
+      local extra = inventory and inventory.get_item_count(cursor_stack.name) or 0
       return {
          "fa.cursor-description",
          cursor_stack.prototype.localised_name,
