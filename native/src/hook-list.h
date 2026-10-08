@@ -21,6 +21,23 @@
    X(playerBuildFromCursor, world::buildFromCursorDetour(), world::buildFromCursorOriginal(),                          \
      "Player::buildFromCursor")                                                                                        \
    X(settingsDraw, world::settingsDrawDetour(), world::settingsDrawOriginal(), "EntityToBeBuiltSettings::draw")        \
+   X(renderCursorBox, highlights::renderCursorBoxDetour(), highlights::renderCursorBoxOriginal(),                      \
+     "RenderUtil::renderCursorBox")                                                                                    \
+   X(renderDoubleCursorBox, highlights::renderDoubleCursorBoxDetour(), highlights::renderDoubleCursorBoxOriginal(),    \
+     "RenderUtil::renderDoubleCursorBox")                                                                              \
+   X(adapterRenderCursorBox, highlights::adapterRenderCursorBoxDetour(), highlights::adapterRenderCursorBoxOriginal(), \
+     "DrawAdapter::renderCursorBox")                                                                                   \
+   X(adapterDestroy, highlights::adapterDestroyDetour(), highlights::adapterDestroyOriginal(), "DrawAdapter::destroy") \
+   X(adapterSetDirection, highlights::adapterSetDirectionDetour(), highlights::adapterSetDirectionOriginal(),          \
+     "DrawAdapter::setDirectionAndMirroring")                                                                          \
+   X(drawPoleConnections, highlights::drawPoleConnectionsDetour(), highlights::drawPoleConnectionsOriginal(),          \
+     "ElectricEnergySource::drawPoleConnections")                                                                      \
+   X(findMatchingNetwork, highlights::findMatchingNetworkDetour(), highlights::findMatchingNetworkOriginal(),          \
+     "LogisticManager::findMatchingNetworkByPosition")                                                                 \
+   X(roboportPostPrepare, highlights::roboportPostPrepareDetour(), highlights::roboportPostPrepareOriginal(),          \
+     "RoboportInfoRenderer::postPrepare")                                                                              \
+   X(drawOnTilesBetween, highlights::drawOnTilesBetweenDetour(), highlights::drawOnTilesBetweenOriginal(),             \
+     "RenderUtil::drawOnTilesBetween")                                                                                 \
    X(initLuaState, luabridge::initLuaStateDetour(), luabridge::initLuaStateOriginal(), "LuaHelper::initLuaState")      \
    X(versionForDisplay, disclosure::versionDetour(), disclosure::versionOriginal(),                                    \
      "ApplicationVersion::strDetailedNoBuildMode")                                                                     \

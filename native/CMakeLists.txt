@@ -116,6 +116,7 @@ add_library(fa_native SHARED
   src/parts.cpp
   src/ui.cpp
   src/world.cpp
+  src/highlights.cpp
   src/selectedinfo.cpp
   src/luabridge.cpp
   src/hooks.cpp

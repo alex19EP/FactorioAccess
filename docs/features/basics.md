@@ -147,6 +147,20 @@ See the page on blueprints and blueprint books for more info on those special ca
 
 To place a ghost, add `shift`.  Ghosts are entities that mark where something will be built later, and can be placed at any range.  This is useful in the early game because Kruise Kontrol can build them for you; `ctrl + alt + right bracket` on a ghost starts building all ghosts.  In the late game, this is how you interact with construction robots.
 
+### What the preview shows
+
+With something buildable in hand, each cursor move reads what the game's preview shows a sighted player there: why it cannot be built, then what it highlights, each with its distance and direction.
+
+- `power from` the poles that would power it, or `no power`.
+- `wire to` the poles a pole would connect to, or `no wires`.
+- `covers` what a pole's supply area would reach.
+- `works with` the inserters, drills and machines that would put into or take from it.
+- `pairs with` its underground partner.
+- `replaces`, `turns` or `changes` what building it would affect.
+- `links to` the roboports a roboport would connect to, and `in network` or `no network` for a logistic chest.
+
+These are the game's own highlights, so modded entities read the same way.  During a drag only what blocks the build is read.
+
 For a few items, the mod adds special behavior:
 
 - For underground belts, the underground belt will become an exit if it was going to match an entrance.

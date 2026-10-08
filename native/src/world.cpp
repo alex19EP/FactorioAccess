@@ -1,7 +1,7 @@
 #include "world.h"
 
 #include "game.h"
-#include "speech.h"
+#include "highlights.h"
 #include "text.h"
 #include "vocab.h"
 
@@ -373,6 +373,9 @@ int detourPrepareBuilding(void* renderer, const void* player, const Position* cu
       Scope(PreviewKey key) { t_preview = {true, false, key}; }
       ~Scope() { t_preview = {}; }
    } scope({*position, entity, at<uint8_t>(input, layout.simpleBuildInputDirection)});
+   // What the preview highlights is said with its tint's meaning, when that is said.
+   std::optional<highlights::Collecting> collecting;
+   if (g_spokenPreview != t_preview.key) collecting.emplace();
    return g_prepareBuildingOriginal(renderer, player, position, drawQueue);
 }
 
@@ -450,17 +453,16 @@ std::string previewMeaning(const void* settings, const void* entity, Position po
 using SettingsDrawFunction = void (*)(const void* settings, void* drawQueue, const void* entity);
 SettingsDrawFunction g_settingsDrawOriginal = nullptr;
 
-// The entity in hand's preview speaks its tint's meaning after the mod has spoken the cursor's move: the
-// cursor reaches the game in the tick, the preview a frame later.
+// The entity in hand's preview speaks its tint's meaning, then what it highlights, after the mod has
+// spoken the cursor's move: the cursor reaches the game in the tick, the preview a frame later.
 void detourSettingsDraw(const void* settings, void* drawQueue, const void* entity) {
    g_settingsDrawOriginal(settings, drawQueue, entity);
    if (!t_preview.active || t_preview.read || at<const void*>(settings, layout.settingsBlueprint)) return;
    t_preview.read = true;
    if (g_spokenPreview == t_preview.key) return;
    g_spokenPreview = t_preview.key;
-   if (std::string meaning = previewMeaning(settings, entity, t_preview.key.position, localDragging());
-       !meaning.empty())
-      speech::say(std::move(meaning), false);
+   const bool drag = localDragging();
+   highlights::preview(settings, entity, previewMeaning(settings, entity, t_preview.key.position, drag), drag);
 }
 
 // NamedBool<GhostModeTag> is one byte, passed by value.

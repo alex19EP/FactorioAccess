@@ -107,6 +107,41 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.settingsTooFar, "EntityToBeBuiltSettings", "tooFar");
    offset(layout.settingsBlueprint, "EntityToBeBuiltSettings", "blueprint");
    offset(layout.settingsPlayer, "EntityToBeBuiltSettings", "player");
+   address(layout.renderCursorBox,
+           "?renderCursorBox@RenderUtil@@YAXW4CursorBoxType@1@VBoundingBox@@AEAVDrawQueue@@W4Enum@RenderLayer@@CNVColor@@"
+           "@Z");
+   address(layout.renderDoubleCursorBox, "?renderDoubleCursorBox@RenderUtil@@YAXW4CursorBoxType@1@AEBVBoundingBox@@1AEAV"
+                                         "DrawQueue@@W4Enum@RenderLayer@@VColor@@@Z");
+   address(layout.adapterRenderCursorBox, "?renderCursorBox@DrawAdapter@@AEBAXAEBVEntity@@V?$NamedBool@"
+                                          "VSkipSurfaceCheckTag@@@@W4CursorBoxType@RenderUtil@@@Z");
+   address(layout.adapterDestroy, "?destroy@DrawAdapter@@UEBAXPEAVEntity@@@Z");
+   address(layout.adapterSetDirection, "?setDirectionAndMirroring@DrawAdapter@@UEBA?AVActionResult@@PEAVEntity@@"
+                                       "VDirection@@V?$NamedBool@VMirroringTag@@@@@Z");
+   address(layout.drawPoleConnections,
+           "?drawPoleConnections@ElectricEnergySource@@SAXAEAVDrawQueue@@AEBVSurface@@AEBVBoundingBox@@@Z");
+   offset(layout.settingsAddedWires, "EntityToBeBuiltSettings", "wiresInPreview.addedWires");
+   size(layout.wireSize, "Wire");
+   offset(layout.wireSource, "Wire", "source.entity");
+   offset(layout.wireTarget, "Wire", "target.entity");
+   address(layout.roboportPostPrepare, "?postPrepare@RoboportInfoRenderer@@QEAAXAEBV?$vector@PEAVDrawHelper@@V?$"
+                                       "allocator@PEAVDrawHelper@@@std@@@std@@@Z");
+   address(layout.drawOnTilesBetween, "?drawOnTilesBetween@RenderUtil@@YAXAEAVDrawQueue@@AEBVSprite@@AEBVMapPosition@@"
+                                      "2AEBVRealOrientation@@W4Enum@RenderLayer@@VColor@@@Z");
+   address(layout.entitySelectionBox, "?getSelectionBox@Entity@@UEBA?AVBoundingBox@@AEBVSelectionContext@@@Z");
+   address(layout.iteratorStartTile, "?startAdvancedTile@?$HeuristicEntityIterator@$$CBVSurface@@@@AEAAXXZ");
+   address(layout.iteratorMove, "?moveUntilEntityFound@?$HeuristicEntityIterator@$$CBVSurface@@@@AEAAXXZ");
+   size(layout.iteratorSize, "HeuristicEntityIterator<Surface const >");
+   offset(layout.iteratorSurface, "HeuristicEntityIterator<Surface const >", "surface");
+   offset(layout.iteratorLeftTop, "HeuristicEntityIterator<Surface const >", "leftTop");
+   offset(layout.iteratorRightBottom, "HeuristicEntityIterator<Surface const >", "rightBottom");
+   offset(layout.iteratorCurrentTile, "HeuristicEntityIterator<Surface const >", "currentAdvancedTilePosition");
+   offset(layout.iteratorCurrentEntity, "HeuristicEntityIterator<Surface const >", "currentEntity");
+   offset(layout.entitySurface, "Entity", "surface");
+   classSlot(layout.entityPrototypeAsPole, "EntityPrototype", "asElectricPole");
+   address(layout.findMatchingNetwork,
+           "?findMatchingNetworkByPosition@LogisticManager@@QEAAPEAVLogisticNetwork@@AEBVMapPosition@@@Z");
+   offset(layout.logisticNetworkId, "LogisticNetwork", "networkID");
+   offset(layout.logisticNetworkName, "LogisticNetwork", "networkName.value");
    address(layout.initLuaState, "?initLuaState@LuaHelper@@YAXPEAUlua_State@@@Z");
    address(layout.addLocalFlyingText, "?addLocalFlyingText@Map@@QEAAX$$QEAVLocalMapFlyingText@@@Z");
    address(layout.constructGuiFlyingText,
@@ -521,11 +556,12 @@ bool resolve(pdb::SymbolTable& symbols) {
    if (ok && (layout.simpleBuildInputSize > kSimpleBuildInputCapacity ||
               layout.buildingModifierSize > kBuildingModifierCapacity || layout.buildIdSize > kBuildIdCapacity ||
               layout.buildCheckDataSize > kBuildCheckDataCapacity ||
-              layout.buildCheckResultSize > kBuildCheckResultCapacity)) {
+              layout.buildCheckResultSize > kBuildCheckResultCapacity ||
+              layout.iteratorSize > kEntityIteratorCapacity)) {
       log::error("A building structure outgrew its stack buffer: SimpleBuildInput {} bytes, BuildingModifier {}, "
-                 "BuildID {}, BuildCheckData {}, BuildCheckResult {}",
+                 "BuildID {}, BuildCheckData {}, BuildCheckResult {}, HeuristicEntityIterator {}",
                  layout.simpleBuildInputSize, layout.buildingModifierSize, layout.buildIdSize,
-                 layout.buildCheckDataSize, layout.buildCheckResultSize);
+                 layout.buildCheckDataSize, layout.buildCheckResultSize, layout.iteratorSize);
       ok = false;
    }
    if (ok) {

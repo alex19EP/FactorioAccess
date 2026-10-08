@@ -110,6 +110,35 @@ inline constexpr std::string_view kFromIntermediates = "from intermediates";
 inline constexpr std::string_view kOutOfReach = "out of reach";
 inline constexpr std::string_view kAlreadyBuilt = "already built";
 
+// What the preview highlights, each followed by the entity and where it is from the preview: the
+// poles that would power it (or none), the poles it would wire to (or none), what its supply or
+// logistic area would cover, the inserters, drills and machines that would put into or take from
+// it, its underground partner, what it would replace, turn or otherwise change, an entity whose
+// deconstruction it would cancel, the roboports it would link to, and any other highlight.
+inline constexpr std::string_view kPowerFrom = "power from";
+inline constexpr std::string_view kNoPower = "no power";
+inline constexpr std::string_view kWireTo = "wire to";
+inline constexpr std::string_view kNoWires = "no wires";
+inline constexpr std::string_view kCovers = "covers";
+inline constexpr std::string_view kWorksWith = "works with";
+// The logistic network a logistic container would join, by name or number, or none.
+inline constexpr std::string_view kInNetwork = "in network";
+inline constexpr std::string_view kNoNetwork = "no network";
+inline constexpr std::string_view kPairsWith = "pairs with";
+inline constexpr std::string_view kReplaces = "replaces";
+inline constexpr std::string_view kTurns = "turns";
+inline constexpr std::string_view kChanges = "changes";
+inline constexpr std::string_view kKeeps = "keeps";
+inline constexpr std::string_view kLinksTo = "links to";
+inline constexpr std::string_view kHighlights = "highlights";
+// "and 3 more" after the first few of a kind.
+inline constexpr std::string_view kAnd = "and";
+inline constexpr std::string_view kMore = "more";
+inline constexpr std::string_view kTiles = "tiles";
+// The eight directions as the mod says them, north first and clockwise.
+inline constexpr std::string_view kDirections[8] = {"North", "NorthEast", "East", "SouthEast",
+                                                    "South", "SouthWest", "West", "NorthWest"};
+
 // The Y key in the world when the cursor points at no entity and no tile.
 inline constexpr std::string_view kNothingHere = "nothing here";
 

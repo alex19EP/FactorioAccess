@@ -4,6 +4,7 @@
 #include "disclosure.h"
 #include "flyingtext.h"
 #include "game.h"
+#include "highlights.h"
 #include "hook-list.h"
 #include "input.h"
 #include "log.h"

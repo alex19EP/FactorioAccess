@@ -144,6 +144,62 @@ struct Layout {
    uint32_t settingsTooFar = 0;            // EntityToBeBuiltSettings::tooFar, bool
    uint32_t settingsBlueprint = 0;         // EntityToBeBuiltSettings::blueprint, Blueprint const*
    uint32_t settingsPlayer = 0;            // EntityToBeBuiltSettings::player, Player const*
+   // What the preview highlights, drawn while the preview draws. Every highlight box is drawn by
+   // void RenderUtil::renderCursorBox(CursorBoxType, BoundingBox, DrawQueue&, RenderLayer::Enum,
+   // char, double, Color), or RenderUtil::renderDoubleCursorBox(CursorBoxType, BoundingBox const&,
+   // BoundingBox const&, DrawQueue&, RenderLayer::Enum, Color) for an entity with a second box; the
+   // box is the entity's selection box. The preview's trial build marks each entity it would change
+   // through void DrawAdapter::renderCursorBox(Entity const&, NamedBool<SkipSurfaceCheckTag>,
+   // CursorBoxType) const: DrawAdapter::destroy for one it would replace,
+   // DrawAdapter::setDirectionAndMirroring for one it would turn. static void
+   // ElectricEnergySource::drawPoleConnections(DrawQueue&, Surface const&, BoundingBox const&) boxes
+   // the poles that would power an electric preview.
+   uintptr_t renderCursorBox = 0;
+   uintptr_t renderDoubleCursorBox = 0;
+   uintptr_t adapterRenderCursorBox = 0;
+   uintptr_t adapterDestroy = 0;
+   uintptr_t adapterSetDirection = 0;
+   uintptr_t drawPoleConnections = 0;
+   // The poles a pole preview would wire to: EntityToBeBuiltSettings::wiresInPreview.addedWires,
+   // std::vector<Wire>, each Wire two PointerWireEnd (source and target) of an Entity* and a
+   // connector.
+   uint32_t settingsAddedWires = 0;
+   uint32_t wireSize = 0;
+   uint32_t wireSource = 0;                // Wire::source.entity, Entity*
+   uint32_t wireTarget = 0;                // Wire::target.entity, Entity*
+   // A roboport preview adds a RoboportInfoDrawHelper to its DrawQueue; later in the frame void
+   // RoboportInfoRenderer::postPrepare(std::vector<DrawHelper*> const&) draws, through
+   // LogisticNetwork::drawCellConnections, a line from it to each roboport it would link to with
+   // void RenderUtil::drawOnTilesBetween(DrawQueue&, Sprite const&, MapPosition const& from,
+   // MapPosition const& to, RealOrientation const&, RenderLayer::Enum, Color), between the two
+   // roboports' positions.
+   uintptr_t roboportPostPrepare = 0;
+   uintptr_t drawOnTilesBetween = 0;
+   // Naming what a box is on. BoundingBox Entity::getSelectionBox(SelectionContext const&) const
+   // calls the entity's own getSelectionBox(), and ignores the context. Entities on a surface are
+   // walked with HeuristicEntityIterator<Surface const>, over AdvancedTilePositions (two tiles a
+   // side, a MapPosition >> 9) from leftTop to rightBottom inclusive: startAdvancedTile() opens
+   // the first, moveUntilEntityFound() sets currentEntity to each entity in turn whose position
+   // lies in the area, once, then to null.
+   uintptr_t entitySelectionBox = 0;
+   uintptr_t iteratorStartTile = 0;
+   uintptr_t iteratorMove = 0;
+   uint32_t iteratorSize = 0;
+   uint32_t iteratorSurface = 0;           // Surface const*
+   uint32_t iteratorLeftTop = 0;           // AdvancedTilePosition, two ints
+   uint32_t iteratorRightBottom = 0;
+   uint32_t iteratorCurrentTile = 0;
+   uint32_t iteratorCurrentEntity = 0;     // Entity*
+   uint32_t entitySurface = 0;             // Entity::surface, Surface*
+   // ElectricPolePrototype const* EntityPrototype::asElectricPole() const, a virtual slot: null but
+   // for poles.
+   uint32_t entityPrototypeAsPole = 0;
+   // A logistic container's preview draws the network it would join: LogisticNetwork*
+   // LogisticManager::findMatchingNetworkByPosition(MapPosition const&), the network whose logistic
+   // area holds the position, or null; then it highlights that network's roboports.
+   uintptr_t findMatchingNetwork = 0;
+   uint32_t logisticNetworkId = 0;         // LogisticNetwork::networkID, uint32
+   uint32_t logisticNetworkName = 0;       // LogisticNetwork::networkName.value, std::string, empty unless named
    // void LuaHelper::initLuaState(lua_State*): sets up the globals of every Lua state the game
    // creates (log, localised_print, ...).
    uintptr_t initLuaState = 0;
@@ -707,6 +763,17 @@ inline constexpr uint32_t kBuildCheckBuildable = 0;
 inline constexpr uint32_t kBuildCheckIgnorable = 2;
 inline constexpr uint32_t kBuildCheckCollidesWithEntity = 3;
 
+// RenderUtil::CursorBoxType, code constants: the kinds of highlight box.
+inline constexpr uint8_t kCursorBoxEntity = 0;
+inline constexpr uint8_t kCursorBoxElectricity = 1;
+inline constexpr uint8_t kCursorBoxCopy = 2;
+inline constexpr uint8_t kCursorBoxNotAllowed = 3;
+inline constexpr uint8_t kCursorBoxPair = 4;
+inline constexpr uint8_t kCursorBoxLogistics = 5;
+// Also what Entity::drawPotentialInteractionIndications draws on the inserters, drills and
+// machines that would put into or take from an entity.
+inline constexpr uint8_t kCursorBoxTrainVisualization = 6;
+
 // Stack room the building hooks keep for a SimpleBuildInput, a BuildingModifier, a BuildID, a
 // BuildCheckData and a BuildCheckResult; resolve fails when the game's outgrow them.
 inline constexpr uint32_t kSimpleBuildInputCapacity = 128;
@@ -714,6 +781,8 @@ inline constexpr uint32_t kBuildingModifierCapacity = 64;
 inline constexpr uint32_t kBuildIdCapacity = 64;
 inline constexpr uint32_t kBuildCheckDataCapacity = 192;
 inline constexpr uint32_t kBuildCheckResultCapacity = 96;
+// Room for a HeuristicEntityIterator<Surface const>.
+inline constexpr uint32_t kEntityIteratorCapacity = 64;
 
 extern Layout layout;
 
