@@ -6,11 +6,16 @@ overlays on the map: coverage of electric and logistic networks, turret ranges, 
 player and tag names, rail signal states, the recipes machines make and the fluids in pipes. They
 are this client's config, read through fa_native.map_overlays, so they change only what is said.
 
-Worker robots have no words of their own: the cell's summary already counts them.
+Worker robots have no words of their own: the cell's summary counts them while their overlay is on.
+Only the map hides them; zoomed in, the world is drawn with its robots whatever the overlay, so the
+tile reader reads them as before.
 ]]
 local Localising = require("scripts.localising")
 
 local mod = {}
+
+---Worker robots, which the map draws only while its worker robots overlay is on.
+mod.WORKER_ROBOT_TYPES = { ["construction-robot"] = true, ["logistic-robot"] = true }
 
 local TURRET_TYPES = { "ammo-turret", "electric-turret", "fluid-turret", "artillery-turret" }
 local PIPELINE_TYPES = { "pipe", "pipe-to-ground", "pump", "storage-tank" }

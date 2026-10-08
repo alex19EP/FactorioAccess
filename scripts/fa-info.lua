@@ -2210,8 +2210,9 @@ end
 ---@param pindex number
 ---@param left_top fa.Point
 ---@param right_bottom fa.Point
+---@param skip_types table<string, true>? Entity types to leave out of the count
 ---@return LocalisedString
-function mod.area_scan_summary_info(pindex, left_top, right_bottom)
+function mod.area_scan_summary_info(pindex, left_top, right_bottom, skip_types)
    local msg = MessageBuilder.new()
 
    local chunk_lt_x = math.floor(left_top.x / 32)
@@ -2293,7 +2294,9 @@ function mod.area_scan_summary_info(pindex, left_top, right_bottom)
 
    local others_by_proto = {}
    for _, ent in pairs(others) do
-      if ent.valid then others_by_proto[ent.name] = (others_by_proto[ent.name] or 0) + 1 end
+      if ent.valid and not (skip_types and skip_types[ent.type]) then
+         others_by_proto[ent.name] = (others_by_proto[ent.name] or 0) + 1
+      end
    end
 
    for n, c in pairs(others_by_proto) do

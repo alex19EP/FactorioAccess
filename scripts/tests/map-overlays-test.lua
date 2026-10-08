@@ -1,5 +1,6 @@
 local TestRegistry = require("scripts.test-registry")
 local describe, it = TestRegistry.describe, TestRegistry.it
+local FaInfo = require("scripts.fa-info")
 local MapOverlays = require("scripts.map-overlays")
 local Speech = require("scripts.speech")
 
@@ -69,6 +70,30 @@ describe("Map overlays", function()
          for _, e in ipairs(built) do
             e.destroy()
          end
+      end)
+   end)
+
+   it("leaves worker robots out of a cell's count when asked", function(ctx)
+      local player, left_top, right_bottom, robot
+
+      ctx:init(function()
+         player = game.get_player(1)
+         left_top = { x = math.floor(player.position.x / 16) * 16 + 64, y = math.floor(player.position.y / 16) * 16 }
+         right_bottom = { x = left_top.x + 16, y = left_top.y + 16 }
+         robot = player.surface.create_entity({
+            name = "construction-robot",
+            position = { left_top.x + 8, left_top.y + 8 },
+            force = player.force,
+         })
+      end)
+
+      ctx:at_tick(2, function()
+         local with = keys_in(FaInfo.area_scan_summary_info(1, left_top, right_bottom), {})
+         ctx:assert_not_nil(with["entity-name.construction-robot"])
+         local without =
+            keys_in(FaInfo.area_scan_summary_info(1, left_top, right_bottom, MapOverlays.WORKER_ROBOT_TYPES), {})
+         ctx:assert_nil(without["entity-name.construction-robot"])
+         robot.destroy()
       end)
    end)
 

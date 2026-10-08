@@ -34,8 +34,9 @@ function mod.move(pindex, direction, size)
    Graphics.draw_large_cursor(left_top, right_bottom, pindex)
    local player = game.get_player(pindex)
    local message = Speech.MessageBuilder.new()
-   message:fragment(FaInfo.area_scan_summary_info(pindex, left_top, right_bottom))
    local overlays = native and native.map_overlays(pindex)
+   local skip = overlays and not overlays.worker_robots and MapOverlays.WORKER_ROBOT_TYPES or nil
+   message:fragment(FaInfo.area_scan_summary_info(pindex, left_top, right_bottom, skip))
    if overlays then MapOverlays.describe(message, player, left_top, right_bottom, overlays) end
    Speech.speak(pindex, message:build())
    player.play_sound({ path = "Close-Inventory-Sound", position = player.position, volume_modifier = 0.75 })
