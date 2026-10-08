@@ -61,4 +61,12 @@ std::optional<std::string> localisedName(std::string_view kind, std::string_view
    return std::nullopt;
 }
 
+std::optional<Named> identify(const void* prototype) {
+   auto* base = static_cast<const std::byte*>(prototype);
+   std::string_view name = view(*reinterpret_cast<const MsvcString*>(base + layout.prototypeName));
+   for (size_t i = 0; i < game::kNamedPrototypeCount; ++i)
+      if (find(layout.prototypeNames[i], name) == base) return Named{game::kNamedPrototypes[i].tag, std::string(name)};
+   return std::nullopt;
+}
+
 } // namespace fa::prototypes

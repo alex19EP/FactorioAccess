@@ -50,6 +50,8 @@
      "RoboportInfoRenderer::postPrepare")                                                                              \
    X(drawOnTilesBetween, highlights::drawOnTilesBetweenDetour(), highlights::drawOnTilesBetweenOriginal(),             \
      "RenderUtil::drawOnTilesBetween")                                                                                 \
+   X(entityDrawAlert, entityicons::drawAlertDetour(), entityicons::drawAlertOriginal(), "Entity::drawAlert")           \
+   X(drawInfoIcon, entityicons::drawInfoIconDetour(), entityicons::drawInfoIconOriginal(), "DrawQueue::drawInfoIcon")  \
    X(initLuaState, luabridge::initLuaStateDetour(), luabridge::initLuaStateOriginal(), "LuaHelper::initLuaState")      \
    X(versionForDisplay, disclosure::versionDetour(), disclosure::versionOriginal(),                                    \
      "ApplicationVersion::strDetailedNoBuildMode")                                                                     \

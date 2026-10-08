@@ -3,6 +3,7 @@
 #include "agui.h"
 #include "console.h"
 #include "disclosure.h"
+#include "entityicons.h"
 #include "flyingtext.h"
 #include "game.h"
 #include "highlights.h"
