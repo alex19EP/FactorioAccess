@@ -67,13 +67,15 @@ std::optional<DragBuild> dragBuild(int playerIndex);
 // and this only what blocks the build.
 
 // MinHook detours for Player::getCursorMapPosition, PlayerInputSource::getCursorMapPosition,
-// ClientDragBuildingContext::update, ControlInput::isActive, Player::getSimpleBuildInput,
+// GameView::getMapPosition, ClientDragBuildingContext::update, ControlInput::isActive, Player::getSimpleBuildInput,
 // BuildingRenderer::prepareBuildingInGame, Player::buildFromCursor and
 // EntityToBeBuiltSettings::draw, and where MinHook keeps the originals.
 void* playerCursorDetour();
 void** playerCursorOriginal();
 void* sourceCursorDetour();
 void** sourceCursorOriginal();
+void* mapPositionDetour();
+void** mapPositionOriginal();
 void* dragUpdateDetour();
 void** dragUpdateOriginal();
 void* isActiveDetour();

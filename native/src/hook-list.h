@@ -14,6 +14,7 @@
      "Player::getCursorMapPosition")                                                                                   \
    X(sourceCursorPosition, world::sourceCursorDetour(), world::sourceCursorOriginal(),                                 \
      "PlayerInputSource::getCursorMapPosition")                                                                        \
+   X(gameViewMapPosition, world::mapPositionDetour(), world::mapPositionOriginal(), "GameView::getMapPosition")        \
    X(dragBuildingUpdate, world::dragUpdateDetour(), world::dragUpdateOriginal(), "ClientDragBuildingContext::update")  \
    X(controlInputIsActive, world::isActiveDetour(), world::isActiveOriginal(), "ControlInput::isActive")               \
    X(processZoom, zoom::processZoomDetour(), zoom::processZoomOriginal(), "PlayerInputSource::processZoom")            \
@@ -23,6 +24,8 @@
      "PlayerInputSource::processSelectionToolCommon")                                                                  \
    X(processActions, selection::processActionsDetour(), selection::processActionsOriginal(),                           \
      "PlayerInputSource::processActions")                                                                              \
+   X(drawSelectionCounts, selection::drawCountsDetour(), selection::drawCountsOriginal(),                              \
+     "SelectionToolRenderer::drawSelectionCounts")                                                                     \
    X(simpleBuildInput, world::simpleBuildInputDetour(), world::simpleBuildInputOriginal(),                             \
      "Player::getSimpleBuildInput")                                                                                    \
    X(prepareBuildingInGame, world::prepareBuildingDetour(), world::prepareBuildingOriginal(),                          \

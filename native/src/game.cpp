@@ -82,6 +82,55 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.gameViewSelectionSurface, "GameView", "startSelectionSurface");
    offset(layout.gameViewSelectionPosition, "GameView", "selectionPosition");
    offset(layout.gameViewSelectionStartTime, "GameView", "selectionStartTime");
+   address(layout.drawSelectionCounts,
+           "?drawSelectionCounts@SelectionToolRenderer@@QEAAXAEAVDrawQueue@@AEBVColor@@@Z");
+   offset(layout.selectionRendererCursor, "SelectionToolRenderer", "cursorPosition");
+   offset(layout.selectionRendererStart, "SelectionToolRenderer", "selectionStart");
+   offset(layout.selectionRendererDeconstruction, "SelectionToolRenderer", "isDeconstructionPlanner");
+   offset(layout.selectionRendererCounts, "SelectionToolRenderer", "selectionCounts");
+   offset(layout.countsItemsNotToBuild, "SelectionCounts", "itemCountsNotUsedToBuild");
+   offset(layout.countsItemsToBuild, "SelectionCounts", "itemCountsToBuild");
+   offset(layout.countsEntities, "SelectionCounts", "entityCounts");
+   offset(layout.countsEntityUpgrades, "SelectionCounts", "entityUpgradeCounts");
+   offset(layout.countsItemUpgrades, "SelectionCounts", "itemUpgradeCounts");
+   {
+      constexpr const char* kItemNode =
+         "std::_Tree_node<std::pair<IDWithQuality<ID<ItemPrototype,unsigned short> > const ,unsigned int>,void *>";
+      constexpr const char* kEntityNode =
+         "std::_Tree_node<std::pair<IDWithQuality<ID<EntityPrototype,unsigned short> > const ,unsigned int>,void *>";
+      constexpr const char* kItemUpgradeNode =
+         "std::_Tree_node<std::pair<std::pair<IDWithQuality<ID<ItemPrototype,unsigned short> >,"
+         "IDWithQuality<ID<ItemPrototype,unsigned short> > > const ,unsigned int>,void *>";
+      constexpr const char* kEntityUpgradeNode =
+         "std::_Tree_node<std::pair<std::pair<IDWithQuality<ID<EntityPrototype,unsigned short> >,"
+         "IDWithQuality<ID<EntityPrototype,unsigned short> > > const ,unsigned int>,void *>";
+      offset(layout.countNodeId, kItemNode, "_Myval.first");
+      offset(layout.countNodeCount, kItemNode, "_Myval.second");
+      offset(layout.upgradeNodeFrom, kItemUpgradeNode, "_Myval.first.first");
+      offset(layout.upgradeNodeTo, kItemUpgradeNode, "_Myval.first.second");
+      offset(layout.upgradeNodeCount, kItemUpgradeNode, "_Myval.second");
+      offset(layout.idWithQualityBase, "IDWithQuality<ID<ItemPrototype,unsigned short> >", "baseID");
+      offset(layout.idWithQualityQuality, "IDWithQuality<ID<ItemPrototype,unsigned short> >", "qualityID");
+      uint32_t entityId = 0, entityCount = 0, entityFrom = 0, entityTo = 0, entityUpgradeCount = 0;
+      uint32_t entityBase = 0, entityQuality = 0;
+      offset(entityId, kEntityNode, "_Myval.first");
+      offset(entityCount, kEntityNode, "_Myval.second");
+      offset(entityFrom, kEntityUpgradeNode, "_Myval.first.first");
+      offset(entityTo, kEntityUpgradeNode, "_Myval.first.second");
+      offset(entityUpgradeCount, kEntityUpgradeNode, "_Myval.second");
+      offset(entityBase, "IDWithQuality<ID<EntityPrototype,unsigned short> >", "baseID");
+      offset(entityQuality, "IDWithQuality<ID<EntityPrototype,unsigned short> >", "qualityID");
+      if (ok && (entityId != layout.countNodeId || entityCount != layout.countNodeCount ||
+                 entityFrom != layout.upgradeNodeFrom || entityTo != layout.upgradeNodeTo ||
+                 entityUpgradeCount != layout.upgradeNodeCount || entityBase != layout.idWithQualityBase ||
+                 entityQuality != layout.idWithQualityQuality)) {
+         log::error("Entity and item selection count maps no longer share a node layout");
+         ok = false;
+      }
+   }
+   address(layout.gameViewMapPosition, "?getMapPosition@GameView@@QEBA?AVMapPosition@@VPixelPosition@@@Z");
+   offset(layout.inputStateMouseX, "InputState", "mouseState.x");
+   offset(layout.inputStateMouseY, "InputState", "mouseState.y");
    address(layout.simpleBuildInput,
            "?getSimpleBuildInput@Player@@QEBA?AVSimpleBuildInput@@PEBVClientDragBuildingContext@@@Z");
    address(layout.prepareBuildingInGame,

@@ -120,6 +120,43 @@ struct Layout {
    uint32_t gameViewSelectionSurface = 0;
    uint32_t gameViewSelectionPosition = 0;
    uint32_t gameViewSelectionStartTime = 0;
+   // What the open selection takes in. Every frame CursorRenderer::renderSelection (the world) and
+   // SelectionToolChartRenderer::prepare (the map, but not for a deconstruction planner) build a
+   // SelectionToolRenderer for the box between the start corner and the cursor, count what the
+   // selection would act on, and draw the counts with void SelectionToolRenderer::
+   // drawSelectionCounts(DrawQueue&, Color const&): the items a copy or blueprint would build or the
+   // upgrades an upgrade planner would make. A deconstruction planner draws its counts while
+   // selecting (RenderUtil::drawDeconstructionCounts: the entities, then the items they would give)
+   // and returns from drawSelectionCounts at once.
+   uintptr_t drawSelectionCounts = 0;
+   uint32_t selectionRendererCursor = 0;        // SelectionToolRenderer::cursorPosition, MapPosition
+   uint32_t selectionRendererStart = 0;         // SelectionToolRenderer::selectionStart, MapPosition
+   uint32_t selectionRendererDeconstruction = 0; // SelectionToolRenderer::isDeconstructionPlanner, bool
+   uint32_t selectionRendererCounts = 0;        // SelectionToolRenderer::selectionCounts, SelectionCounts
+   // SelectionCounts: std::maps from IDWithQuality to a count (items, entities), or from a pair of
+   // them, what is upgraded and what to, to a count.
+   uint32_t countsItemsNotToBuild = 0; // itemCountsNotUsedToBuild
+   uint32_t countsItemsToBuild = 0;    // itemCountsToBuild
+   uint32_t countsEntities = 0;        // entityCounts
+   uint32_t countsEntityUpgrades = 0;  // entityUpgradeCounts
+   uint32_t countsItemUpgrades = 0;    // itemUpgradeCounts
+   // The stored pair in those maps' nodes (std::_Tree_node): the ID or the pair of IDs, and the count.
+   // Item and entity maps lay their nodes out alike, which game.cpp checks.
+   uint32_t countNodeId = 0;
+   uint32_t countNodeCount = 0;
+   uint32_t upgradeNodeFrom = 0;
+   uint32_t upgradeNodeTo = 0;
+   uint32_t upgradeNodeCount = 0;
+   // IDWithQuality: baseID (an index into the prototypes) and qualityID.
+   uint32_t idWithQualityBase = 0;
+   uint32_t idWithQualityQuality = 0;
+   // MapPosition GameView::getMapPosition(PixelPosition) const: the map position at a pixel of the
+   // game view. The game asks it for the mouse pixel (InputState::mouseState.x and .y) wherever it
+   // wants the world under the mouse: the cursor position the renderers draw at, the selection box
+   // and its counts, the sound a finished selection plays, the tile GameView::update tracks.
+   uintptr_t gameViewMapPosition = 0;
+   uint32_t inputStateMouseX = 0;
+   uint32_t inputStateMouseY = 0;
    // Where this client builds. SimpleBuildInput Player::getSimpleBuildInput(ClientDragBuildingContext
    // const*) const reads the cursor, takes the build direction and snaps the position to the grid,
    // for the build control, drag building and Player::buildFromCursor. ItemToBuildDrawnType

@@ -120,6 +120,32 @@ Position* sourceDetour(const void* source, Position* out) {
    return g_sourceOriginal(source, out);
 }
 
+// PixelPosition: two ints, passed by value in one register.
+struct Pixel {
+   int32_t x;
+   int32_t y;
+};
+
+using MapPositionFunction = Position* (*)(const void* view, Position* out, Pixel pixel);
+MapPositionFunction g_mapPositionOriginal = nullptr;
+
+// The world under the mouse is under the cursor: the game asks this client's view for the map
+// position at the mouse pixel wherever it means the mouse in the world.
+Position* detourMapPosition(const void* view, Position* out, Pixel pixel) {
+   const std::byte* game = currentGame();
+   Position position;
+   if (game && view == at<const void*>(game, layout.gameView) && cursor(game, position)) {
+      auto* context = *reinterpret_cast<const std::byte* const*>(layout.globalContext);
+      const std::byte* input = at<const std::byte*>(context, layout.globalInputState);
+      if (input && pixel.x == at<int32_t>(input, layout.inputStateMouseX) &&
+          pixel.y == at<int32_t>(input, layout.inputStateMouseY)) {
+         *out = position;
+         return out;
+      }
+   }
+   return g_mapPositionOriginal(view, out, pixel);
+}
+
 // NamedBool<Tag> is a one-byte struct, passed by value like a uint8_t.
 using IsActiveFunction = bool (*)(const void* control, bool, uint8_t, bool, uint8_t);
 IsActiveFunction g_isActiveOriginal = nullptr;
@@ -577,6 +603,8 @@ void* playerCursorDetour() { return reinterpret_cast<void*>(&playerDetour); }
 void** playerCursorOriginal() { return reinterpret_cast<void**>(&g_playerOriginal); }
 void* sourceCursorDetour() { return reinterpret_cast<void*>(&sourceDetour); }
 void** sourceCursorOriginal() { return reinterpret_cast<void**>(&g_sourceOriginal); }
+void* mapPositionDetour() { return reinterpret_cast<void*>(&detourMapPosition); }
+void** mapPositionOriginal() { return reinterpret_cast<void**>(&g_mapPositionOriginal); }
 void* dragUpdateDetour() { return reinterpret_cast<void*>(&detourDragUpdate); }
 void** dragUpdateOriginal() { return reinterpret_cast<void**>(&g_dragUpdateOriginal); }
 void* isActiveDetour() { return reinterpret_cast<void*>(&detourIsActive); }

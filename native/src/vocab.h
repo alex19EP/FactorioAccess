@@ -150,6 +150,10 @@ inline constexpr std::string_view kMapTag = "map tag";
 
 // Escape on a selection tool's open selection.
 inline constexpr std::string_view kSelectionCancelled = "selection cancelled";
+// A selection's box, "5 by 3" tiles, and an upgrade it would make, "3 transport belt to fast
+// transport belt".
+inline constexpr std::string_view kBy = "by";
+inline constexpr std::string_view kUpgradeTo = "to";
 
 inline constexpr std::string_view kNoTooltip = "no tooltip";
 inline constexpr std::string_view kNoAction = "no action";
