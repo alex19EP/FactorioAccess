@@ -94,6 +94,32 @@ struct Layout {
    // remote view).
    uint32_t adapterGetZoomer = 0;
    uint32_t zoomerRate = 0;
+   // Selection tools (planners, copy and cut, a blueprint's area). A press of a select control
+   // reaches bool PlayerInputSource::processSelectionToolCommon(SelectionMode, SelectionMode), which
+   // starts a selection at the cursor (GameView::startSelection). Every frame
+   // PlayerInputSource::sendSelectionChanges asks SelectionMode
+   // PlayerInputSource::expectedSelectionModeFromInputs(bool) const which select control is held;
+   // with the mouse none held finishes the selection, with a gamepad it stays open until the next
+   // select press, which processSelectionToolCommon answers with void
+   // PlayerInputSource::finishSelection(): the selection's action, sent like any other input
+   // action. bool PlayerInputSource::processActions(Event const&, bool paused) runs the game's
+   // controls for one input event in a fixed order; ControlInputValue const*
+   // ControlInput::triggeredBy(Event const&, ControlContext const*, unsigned) const tells whether
+   // the event triggers a control.
+   uintptr_t processSelectionToolCommon = 0;
+   uintptr_t expectedSelectionMode = 0;
+   uintptr_t finishSelection = 0;
+   uintptr_t processActions = 0;
+   uintptr_t controlTriggeredBy = 0;
+   uint32_t controlSettingsToggleMenu = 0; // ControlSettings::toggleMenu, Escape
+   // The open selection, on GameView: SelectionMode (Nothing is 0) at the start and now, the
+   // surface it started on (SurfaceIndex), its start corner (Optional<MapPosition>) and start time
+   // (std::chrono::steady_clock::time_point).
+   uint32_t gameViewStartSelectionMode = 0;
+   uint32_t gameViewSelectionMode = 0;
+   uint32_t gameViewSelectionSurface = 0;
+   uint32_t gameViewSelectionPosition = 0;
+   uint32_t gameViewSelectionStartTime = 0;
    // Where this client builds. SimpleBuildInput Player::getSimpleBuildInput(ClientDragBuildingContext
    // const*) const reads the cursor, takes the build direction and snaps the position to the grid,
    // for the build control, drag building and Player::buildFromCursor. ItemToBuildDrawnType

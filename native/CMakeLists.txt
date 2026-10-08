@@ -127,6 +127,7 @@ add_library(fa_native SHARED
   src/popups.cpp
   src/movement.cpp
   src/zoom.cpp
+  src/selection.cpp
   src/chart.cpp
   "${CMAKE_CURRENT_BINARY_DIR}/winmm_forwarders.cpp"
 )

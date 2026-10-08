@@ -9,11 +9,11 @@ Start selecting a blueprint, upgrade, or deconstruction planner's area: `left br
 Directly apply a deconstruction or upgrade planner to what is under your cursor: `[` with a larger cursor
 
 
-Finish selecting: `left bracket` on a second point
+Finish selecting: `left bracket` on a second point. Releasing the key does nothing; the selection stays open until the second press, as on a gamepad.
 
-Finish selecting for a blueprint, but go to the advanced configuration menu instead of creating it: `right bracket`.
+Cancel the selection without doing anything: `escape`
 
-Cancel upgrade or deconstruction: replace the second click with `shift + left bracket`
+Cancel upgrade or deconstruction orders in an area: start the selection with `shift + left bracket`. The first press decides what the selection does; the second only finishes it.
 
 Open the menu for the item: `right bracket` with the item in hand
 
@@ -87,7 +87,7 @@ You can mark everything in an area for deconstruction or upgrade.  To do so, get
 
 If you instead click with a larger cursor, the planner will directly apply to everything under that cursor.
 
-You can "undo" or "cancel" by getting the same kind of planner in the hand, reselecting the same box, but replacing the second click with `alt + left bracket`.
+You can "undo" or "cancel" by getting the same kind of planner in the hand and reselecting the same box, starting it with `shift + left bracket` instead of `left bracket`.
 
 We have alpha quality support for configuring upgrade planners. When configured, the upgrade planner becomes permanent.  You can set an entity rule by clicking one of the slots, or set a module rule by pressing m on one of the slots.  We do not have the bandwidth to put significant effort into fixing bugs here, so use this at your own risk.
 

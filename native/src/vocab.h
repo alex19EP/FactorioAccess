@@ -148,6 +148,9 @@ inline constexpr std::string_view kNothingHere = "nothing here";
 // A map tag the full map selects.
 inline constexpr std::string_view kMapTag = "map tag";
 
+// Escape on a selection tool's open selection.
+inline constexpr std::string_view kSelectionCancelled = "selection cancelled";
+
 inline constexpr std::string_view kNoTooltip = "no tooltip";
 inline constexpr std::string_view kNoAction = "no action";
 

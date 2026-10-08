@@ -12,6 +12,7 @@
 #include "luabridge.h"
 #include "movement.h"
 #include "popups.h"
+#include "selection.h"
 #include "ui.h"
 #include "world.h"
 #include "zoom.h"

@@ -68,6 +68,20 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.zoomTowardsCursor, "InterfaceSettings", "zoomTowardsCursor.value");
    classSlot(layout.adapterGetZoomer, "GameAdapter", "getZoomer");
    offset(layout.zoomerRate, "Zoomer", "config.zoomRate");
+   address(layout.processSelectionToolCommon,
+           "?processSelectionToolCommon@PlayerInputSource@@QEAA_NW4SelectionMode@@0@Z");
+   address(layout.expectedSelectionMode,
+           "?expectedSelectionModeFromInputs@PlayerInputSource@@AEBA?AW4SelectionMode@@_N@Z");
+   address(layout.finishSelection, "?finishSelection@PlayerInputSource@@QEAAXXZ");
+   address(layout.processActions, "?processActions@PlayerInputSource@@QEAA_NAEBVEvent@@_N@Z");
+   address(layout.controlTriggeredBy,
+           "?triggeredBy@ControlInput@@AEBAPEBVControlInputValue@@AEBVEvent@@PEBVControlContext@@I@Z");
+   offset(layout.controlSettingsToggleMenu, "ControlSettings", "toggleMenu");
+   offset(layout.gameViewStartSelectionMode, "GameView", "startSelectionMode");
+   offset(layout.gameViewSelectionMode, "GameView", "selectionMode");
+   offset(layout.gameViewSelectionSurface, "GameView", "startSelectionSurface");
+   offset(layout.gameViewSelectionPosition, "GameView", "selectionPosition");
+   offset(layout.gameViewSelectionStartTime, "GameView", "selectionStartTime");
    address(layout.simpleBuildInput,
            "?getSimpleBuildInput@Player@@QEBA?AVSimpleBuildInput@@PEBVClientDragBuildingContext@@@Z");
    address(layout.prepareBuildingInGame,

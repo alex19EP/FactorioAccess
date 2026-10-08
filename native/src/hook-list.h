@@ -17,6 +17,12 @@
    X(dragBuildingUpdate, world::dragUpdateDetour(), world::dragUpdateOriginal(), "ClientDragBuildingContext::update")  \
    X(controlInputIsActive, world::isActiveDetour(), world::isActiveOriginal(), "ControlInput::isActive")               \
    X(processZoom, zoom::processZoomDetour(), zoom::processZoomOriginal(), "PlayerInputSource::processZoom")            \
+   X(expectedSelectionMode, selection::expectedModeDetour(), selection::expectedModeOriginal(),                        \
+     "PlayerInputSource::expectedSelectionModeFromInputs")                                                             \
+   X(processSelectionToolCommon, selection::selectionToolDetour(), selection::selectionToolOriginal(),                 \
+     "PlayerInputSource::processSelectionToolCommon")                                                                  \
+   X(processActions, selection::processActionsDetour(), selection::processActionsOriginal(),                           \
+     "PlayerInputSource::processActions")                                                                              \
    X(simpleBuildInput, world::simpleBuildInputDetour(), world::simpleBuildInputOriginal(),                             \
      "Player::getSimpleBuildInput")                                                                                    \
    X(prepareBuildingInGame, world::prepareBuildingDetour(), world::prepareBuildingOriginal(),                          \
