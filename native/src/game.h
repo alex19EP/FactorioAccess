@@ -426,6 +426,16 @@ struct Layout {
    uint32_t gameViewAlerts = 0;          // GameView::alertGuis, std::vector<std::unique_ptr<AlertGui>>
    uint32_t alertGuiCategory = 0;        // AlertGui::category, AlertCategory (unsigned char)
    uint32_t alertGuiButton = 0;          // AlertGui::warningSlot, IconButtonWithNumber
+   // The alerts window an alert button opens, one category's alerts. It stacks over whatever window
+   // is open; E or Escape closes it.
+   uint32_t gameViewAlertsOverview = 0;  // GameView::alertsOverview, std::unique_ptr<AlertsOverview>
+   uint32_t alertsOverviewCategory = 0;  // AlertsOverview::category, AlertCategory
+   // AlertsOverview::alertGroupsList, agui::ListBox: per surface (headed by its name when there are
+   // several) a row per group of alerts. A click opens remote view on the group and closes the window.
+   uint32_t alertsOverviewList = 0;
+   // AlertsOverview::pinButtonFlow, agui::VerticalFlow: beside each row of the list, its pin button
+   // (an IconButton, InputAction PinAlertGroup), or for a surface's heading a blank TextButton.
+   uint32_t alertsOverviewPins = 0;
    // IconButtonWithNumber::count. The alert button blinks by setting it to 0 every other half second.
    uint32_t iconButtonCount = 0;
    uint32_t gameViewGoal = 0;            // GameView::goalDescription, std::unique_ptr<GoalDescription>

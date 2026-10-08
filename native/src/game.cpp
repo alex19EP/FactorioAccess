@@ -342,6 +342,10 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.gameViewAlerts, "GameView", "alertGuis");
    offset(layout.alertGuiCategory, "AlertGui", "category");
    offset(layout.alertGuiButton, "AlertGui", "warningSlot");
+   offset(layout.gameViewAlertsOverview, "GameView", "alertsOverview");
+   offset(layout.alertsOverviewCategory, "AlertsOverview", "category");
+   offset(layout.alertsOverviewList, "AlertsOverview", "alertGroupsList");
+   offset(layout.alertsOverviewPins, "AlertsOverview", "pinButtonFlow");
    offset(layout.iconButtonCount, "IconButtonWithNumber", "count");
    offset(layout.gameViewGoal, "GameView", "goalDescription");
    offset(layout.goalLabel, "GoalDescription", "label");

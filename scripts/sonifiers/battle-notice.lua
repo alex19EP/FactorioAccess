@@ -35,6 +35,24 @@ local function has_combat_alerts(player)
    return false
 end
 
+---Where the newest combat alert on the player's surface is, as the game's alerts window lists it
+---@param player LuaPlayer
+---@return MapPosition?
+function mod.newest_combat_alert_position(player)
+   local newest
+   for _, alert_type in ipairs(COMBAT_ALERT_TYPES) do
+      local by_surface = player.get_alerts({ type = alert_type, surface = player.surface })
+      local by_type = by_surface[player.surface.index]
+      for _, alert in ipairs(by_type and by_type[alert_type] or {}) do
+         if not newest or alert.tick > newest.tick then newest = alert end
+      end
+   end
+   if not newest then return nil end
+   -- A destroyed entity's alert keeps only its position
+   if newest.target and newest.target.valid then return newest.target.position end
+   return newest.position
+end
+
 ---On tick handler - checks periodically for battle notifications
 function mod.on_tick()
    local tick = game.tick

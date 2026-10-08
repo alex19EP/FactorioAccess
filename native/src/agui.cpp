@@ -824,6 +824,20 @@ double iconButtonCount(const Widget* button) {
    return at<double>(asBaseChecked(button, ".?AVIconButtonWithNumber@@"), layout.iconButtonCount);
 }
 
+AlertsWindow alertsWindow() {
+   const Widget* window = shownMember(gameView(), layout.gameViewAlertsOverview);
+   if (!window) return {};
+   AlertsWindow alerts{window, at<AlertCategory>(window, layout.alertsOverviewCategory), {}};
+   std::vector<const Widget*> items = listBoxItems(member(window, layout.alertsOverviewList));
+   std::span<const Widget* const> pins = children(member(window, layout.alertsOverviewPins));
+   // The list and the pin column are filled together, a pin per row.
+   for (size_t i = 0; i < items.size(); ++i) {
+      const Widget* pin = i < pins.size() ? pins[i] : nullptr;
+      alerts.rows.push_back({items[i], pin && derivesFrom(pin, "agui::IconButton") ? pin : nullptr});
+   }
+   return alerts;
+}
+
 const Widget* goalLabel() {
    const Widget* goal = shownMember(gameView(), layout.gameViewGoal);
    return goal ? member(goal, layout.goalLabel) : nullptr;

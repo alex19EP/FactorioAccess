@@ -13,7 +13,8 @@ Windows only.
 - **The game's own GUI.** Vanilla windows and menus are read and navigated from the keyboard:
   Tab, the arrows and Enter, following a graph model of each window. The main menu and its
   screens, the character screen, entity windows, the quickbar, the shortcut bar, the side menu, the
-  HUD's status (research, alerts, goal, bars), the crafting queue, Factoriopedia (its entries list,
+  HUD's status (research, alerts, goal, bars), the alerts window an alert button opens, the crafting
+  queue, Factoriopedia (its entries list,
   and each entry's page with the description's icons as links) and other windows each have a
   recipe that gives a fixed order. Any other window is read generically.
   Activating a control replays the same mouse events vanilla gets, so using a window through FA

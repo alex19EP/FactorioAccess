@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <string>
 #include <string_view>
 
@@ -87,6 +88,8 @@ inline constexpr std::string_view kHealth = "health";
 inline constexpr std::string_view kShield = "shield";
 inline constexpr std::string_view kVehicleHealth = "vehicle health";
 inline constexpr std::string_view kVehicleShield = "vehicle shield";
+// The alerts window's button beside a group of alerts, which pins the group to the pins panel.
+inline constexpr std::string_view kPin = "pin";
 // Where leaving a part of the HUD with no window open takes the player.
 inline constexpr std::string_view kMap = "map";
 // An icon in a text that the game lets the mouse click (a Factoriopedia description's).
@@ -115,5 +118,7 @@ std::string position(int index, int count);
 std::string expandedState(bool expanded);
 std::string flyoutHint(int count);
 std::string unlocked(unsigned count);
+// An alert category by its AlertCategory value, from attack to pipelines.
+std::string_view alertCategory(uint8_t category);
 
 } // namespace fa::vocab

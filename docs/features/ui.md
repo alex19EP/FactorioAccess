@@ -81,7 +81,9 @@ Access the normal configuration GUIs of an entity: `left bracket`
 
 For items supporting it, access the item's UI: `right bracket` with the item in hand
 
-Open the warnings and alerts UI: `p`
+Open the production warnings UI: `p`
+
+Open the game's alerts window: `ctrl + tab` to the HUD's status, then `enter` on an alert category. `enter` on an alert opens remote view on it.
 
 Open the prototype lister, primarily used with trains: alt + p
 
