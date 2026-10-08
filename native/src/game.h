@@ -375,6 +375,9 @@ struct Layout {
 
    // The loaded game's view and the scenario message dialog it shows.
    uint32_t gameView = 0;            // Game::gameView
+   // GameView::player, the Player* it shows. Null for a moment while a save loads, when asking
+   // PlayerInputSource for anything of the view aborts the game ("No game view").
+   uint32_t gameViewPlayer = 0;
    uint32_t gameLocalPlayer = 0;     // Game::localPlayer, the Player* of this client
    uint32_t playerIndex = 0;         // Player::index, LuaPlayer::index
    uint32_t gameViewMessage = 0;     // GameView::scenarioMessageDialog, std::unique_ptr<SpeechBubbleGui>

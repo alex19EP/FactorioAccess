@@ -53,7 +53,8 @@ const std::byte* currentGame() {
 }
 
 // This client's PlayerInputSource, when its player is the current game's local player and shows
-// the full map.
+// the full map. The game's view must show that player too: getChartSelection reads it, and aborts
+// the game without it, as just after a save loads.
 const std::byte* chartSource() {
    auto* context = *reinterpret_cast<const std::byte* const*>(layout.globalContext);
    const std::byte* game = currentGame();
@@ -61,6 +62,8 @@ const std::byte* chartSource() {
    const std::byte* source = at<const std::byte*>(context, layout.globalPlayerInputSource);
    const std::byte* player = at<const std::byte*>(game, layout.gameLocalPlayer);
    if (!source || !player || at<const std::byte*>(source, layout.inputSourcePlayer) != player) return nullptr;
+   const std::byte* view = at<const std::byte*>(game, layout.gameView);
+   if (!view || at<const std::byte*>(view, layout.gameViewPlayer) != player) return nullptr;
    return at<uint8_t>(player, layout.playerRenderMode) == game::kRenderModeChart ? source : nullptr;
 }
 

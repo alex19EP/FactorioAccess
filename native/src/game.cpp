@@ -280,6 +280,7 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.appManagerStates, "AppManager", "stateStack");
    offset(layout.appStateGui, "AppManagerStateWithGuiManualConstruction<GameMenuGui>", "gui");
    offset(layout.gameView, "Game", "gameView");
+   offset(layout.gameViewPlayer, "GameView", "player");
    offset(layout.gameLocalPlayer, "Game", "localPlayer");
    offset(layout.playerIndex, "Player", "index");
    offset(layout.gameViewMessage, "GameView", "scenarioMessageDialog");
