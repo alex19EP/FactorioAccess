@@ -85,7 +85,7 @@ jobs:
         run: |
           export COMMIT_SHORT="${GITHUB_SHA::7}"
           export COMMIT_SUBJECT="$(git log -1 --format=%s)"
-          envsubst '${COMMIT_SHORT} ${COMMIT_SUBJECT}' < .github/dev-release-notes.md > notes.md
+          envsubst '${COMMIT_SHORT} ${COMMIT_SUBJECT} ${GITHUB_REPOSITORY} ${GITHUB_SHA}' < .github/dev-release-notes.md > notes.md
           gh release delete dev --yes --cleanup-tag || true
           # A tag left without its release would keep pointing at the old commit.
           gh api -X DELETE "repos/${GITHUB_REPOSITORY}/git/refs/tags/dev" || true

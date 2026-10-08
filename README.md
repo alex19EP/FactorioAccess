@@ -7,112 +7,99 @@ We have had players successfully build post-endgame bases with it in a reasonabl
 
 The mod tries to support multiplayer but game limitations mean that your experience will be laggy and kind of terrible. We cannot do anything about this.  We also have limited ability to do anything about bugs, because that would require two mod developers playing at the same time.
 
-On Windows our launcher is currently flagged as a virus. We are working on fixing this but there is not much we can do. You may need to add your Factorio folder as an exception in Windows Defender.  It moves the mouse and does a bunch of things that look like a virus to antiviruses as part of interacting with the game.  If you run the launcher from source this is not a problem.  Please note that wee build the launcher from source in a GitHub Actions runner, so we are confident that our build is clean.
+The mod needs Factorio 2.1 on Windows. It comes with a DLL, `winmm.dll`, that the game loads from its own folder. The DLL reads the game's screens and speaks through your screen reader. An antivirus may flag it, because it hooks into the game. We build it from source in a GitHub Actions runner, so we are confident that our build is clean. If you need to, add your Factorio folder as an exception in Windows Defender.
 
-Finally, we do not yet support Space Age. If you bought Space Age, you need to disable quality, elevated rails, and Space Age in the launcher's mod menu.
+The DLL turns off the game's automatic crash log upload. Please report crashes to us, not to Wube, because a game with the DLL loaded is not vanilla.
+
+Linux and macOS are not supported by this version. On those systems, use FactorioAccess 0.16 with the launcher on Factorio 2.0, as described in [the README of the main branch](https://github.com/Factorio-Access/FactorioAccess/blob/main/README.md).
+
+Finally, we do not yet support Space Age. If you bought Space Age, you need to disable quality, elevated rails, and Space Age in the Mods menu of the game's main menu.
 
 # Installing Factorio
 
-The game can be purchased from Factorio.com or from Steam. Any purchase gives access to all versions. We recommend installing it using ONLY one of the options below. The zip or standalone versions are recommended, but Steam is easier to configure for multiplayer.  Note that Steam is harder to configure in the first place, and we don't recommend it.
+The game can be purchased from Factorio.com or from Steam. Any purchase gives access to all versions. We recommend installing it using ONLY one of the options below. The zip version keeps the game, its mods and its settings in one folder, which makes troubleshooting easiest. Steam is easier for multiplayer and updates itself. The mod needs Factorio 2.1 or newer.
 
 ## Windows Zip Version / Standalone Version (recommended for easy mod install and troubleshooting)
 
 1. Go to https://www.factorio.com/download
 1. If needed, login using your Factorio account or Steam account.
-1. Among the install options, find the stable releases at the top half of the page. 
+1. Among the install options, find version 2.1 or newer.
 1. Go to the section with "Other download options" and select "Download full game for Windows (ZIP package)". This will download a zip file that is about 1.5 gigabytes in size. It might also be called the manual install. Note that this is different from the regular Windows version, which downloads an exe file.
 1. If you got a .exe or are running an installer at any point in the process you got the wrong thing
 1. Create a folder where you want to keep the game. Extract the zip file into this folder.
 1. If you want, create a desktop shortcut for your Factorio folder.
 1. All done! You need to install the mod next.
 
-## Steam Version (harder to configure the mod, better for multiplayer setup)
+## Steam Version (better for multiplayer setup)
 
 1. Install Factorio using Steam settings, like any other game on Steam.
-1. That is it, pretty much. You next need to install the mod next and then configure Steam settings.
+1. If Steam installs a version older than 2.1, open the Properties menu for Factorio, go to the "Betas" section, and pick the newest version there.
+1. All done! You need to install the mod next.
 
 ## Regular Windows Version (not recommended)
 
 1. Consider if you need to do this. It has no advantage over the standalone zip at all.
 1. Go to https://www.factorio.com/download
 1. If needed, login using your Factorio account or Steam account.
-1. Among the install options, find the stable releases at the top half of the page.
+1. Among the install options, find version 2.1 or newer.
 1. Select "Download full game for Windows". This will download an "exe" file which is the setup application.
 1. Run the exe file and follow the instructions.
 1. All done! You need to install the mod next.
 
-## Linux Version
-
-1. Go to https://www.factorio.com/download
-1. If needed, login using your Factorio account or Steam account.
-1. Among the install options, find the stable releases at the top half of the page.
-1. Go to the section with "Other download options" and select "Download full game for Linux". This will download a "tar.xz" file.
-1. Move the file to the directory where you want to install the game.
-1. Extract the game from the file using a program such as 7zip.
-1. All done! You need to install the mod next.
-
-## Mac Version
-
-1. Go to https://www.factorio.com/download
-1. If needed, login using your Factorio account or Steam account.
-1. Among the install options, find the stable releases at the top half of the page.
-1. Go to the section with "Other download options" and select "Download full game for macOS". This will download a "dmg" file.
-1. Install the "dmg" file like any other.
-
 # Installing Factorio Access
 
-To install a mod release, follow the instructions below, depending on the version of Factorio that you have installed.
+The mod comes in two parts, and you need both: the mod itself, `FactorioAccess_<version>.zip`, and the DLL, `winmm.dll`. Both are attached to each release on [the releases page](../../releases). The same steps work for the zip, Steam and regular Windows versions of the game.
 
-## Windows Zip version: Mod release install
+1. If you use the old launcher, stop using it. The game is now started the usual way. If you use Steam and put the launcher in Factorio's Launch Options, open the Properties menu for Factorio and clear the "Launch Options" field in the "General" section.
+1. Run the game at least once if you have not, and then exit it. This creates the folders for the next steps.
+1. Download `winmm.dll`, `winmm.pdb` and `FactorioAccess_<version>.zip` from the release you want.
+1. Find your game folder, the one that holds the folder `bin`.
+   - Zip version: the folder you extracted the game into.
+   - Steam: in your Steam Library, open the "Manage" menu for Factorio and select "Browse local files". This is usually `C:\Program Files (x86)\Steam\steamapps\common\Factorio`.
+   - Regular Windows version: usually `C:\Program Files\Factorio`.
+1. Copy `winmm.dll` and `winmm.pdb` into the folder `bin\x64` inside the game folder, next to `factorio.exe`. The pdb is optional, but it makes our crash reports readable.
+1. Find your mods folder.
+   - Zip version: the folder `mods` inside the game folder.
+   - Steam and regular Windows version: `%AppData%\Factorio\mods`. You can paste this path into the address bar of File Explorer. The full path is something like `C:\Users\Your_User_Name_Here\AppData\Roaming\Factorio\mods`.
+1. Delete any older `FactorioAccess_*.zip` from the mods folder, then copy the new one there.
+1. Change the game settings that the launcher used to change for you. See "Game settings" below.
+1. Start the game the usual way, from Steam, a shortcut or `factorio.exe`. Speech goes to your screen reader as the game loads.
+1. If you bought Space Age, go into the Mods menu of the game's main menu and disable elevated rails, quality, and Space Age.
 
-1. Download the latest launcher from here: https://github.com/factorio-access/factorio-access-launcher/releases
-1. Put it in the root of the factorio zip, the same folder as bin and config-path.cfg
-1. Launch the launcher and follow the instructions. The launcher now downloads the mod.
-1. The game is ready to play from the launcher when the main menu appears.
-1. If you bought Space Age, go into the launcher's mod menu and disable elevated rails, quality, and Space Age.
+To update, repeat the steps that copy `winmm.dll`, `winmm.pdb` and the mod zip, with the game closed. Always update both parts together. A DLL and a mod from different releases may not work together.
 
-## Windows Steam version or regular Windows version: Mod release install
+To uninstall the DLL, delete `winmm.dll` and `winmm.pdb` from `bin\x64`. The mod does not work without it.
 
-1. Download the latest launcher from here: https://github.com/factorio-access/factorio-access-launcher/releases
-1. Run the game `factorio.exe` at least once if you have not, and then exit it. This is necessary in order to create the folders for the next step. The exe can be found under the folder `bin`.
-1. Navigate to your Factorio game data folder. This is inside a special Windows folder called "AppData". There are two ways to access the AppData folder, you either enter its short name using % signs, or you use the full path name. If you use the short name with the signs, the path is called `%AppData%/Factorio`. If you use the full path, the path depends on your windows user name and it is something like `C:/Users/Your_User_Name_Here/AppData/Roaming/Factorio`.
-1. Put the launcher in this folder.
-1. The mod is now installed, but you still need to configure Steam and also the mod itself. Note that the game is both configured and played using "launcher.exe", which is necessary for the mod to read out the game. If you want, you can create a shortcut for this launcher.
-1. You can run the mod launcher directly or in administrator mode if needed. Running it the first time will generate a Windows security warning because you are running an unsigned application.
-1. The first time you run the launcher, it will ask you to configure Steam launch settings. It will ask you to copy a setup text string. This string should include the path location of the mod launcher application in quotation marks, and also the string "%command%". For example, the setup text string in total could be ` "C:\Users\Your_User_Name_Here\AppData\Roaming\Factorio\launcher.exe" %command% `.
-1. Open your Steam Library and find the Factorio page.
-1. Find the Properties menu for Factorio. On the Steam Library, the Properties menu for a game can be opened by finding the game's name in the library list, and then right clicking it to open the context menu, and then selecting the last option called "Properties...". Alternatively, you can open the game's page in the Steam Library and open the "Manage" menu, which is denoted by a gear symbol that you can left click. From the "Manage" menu you can select the last option called "Properties..."
-1. When the Properties menu is open, you should be immediately at the "General" section. At the bottom of this section is the part called "Launch Options" with a text field that you can type in. Here, you need to paste the mod launcher setup text string that you copied earlier.
-1. Try launching the game from Steam. This should now run the mod launcher instead, and say "Hello Factorio". If not setup correctly, the game might launch directly and you will hear music.
-1. Follow the mod launcher instructions while the game is configured. This may involve launching the game itself temporarily.
-1. The game is ready to play from the launcher when the main menu appears.
-1. If you bought Space Age, go into the launcher's mod menu and disable elevated rails, quality, and Space Age.
+## Game settings
 
-## Linux Version: Mod install and running via Python scripts
+These settings keep keys free for the mod and turn off parts of the game that are not accessible. They live in `config.ini`: for the zip version in the folder `config` inside the game folder, otherwise in `%AppData%\Factorio\config`. Edit the file with the game closed. Find each section, the name in brackets, and set each line under it as shown. Add a line if it is not there.
 
-1. Install speechd and python 3 through your distribution. Note that Instructions vary by distribution.
-1. Use Git or GitHub CLI to get the launcher from the [Factorio-Access-Launcher repository](https://github.com/Factorio-Access/Factorio-Access-Launcher).
-1. CD into the folder.
-1. If you want to use a virtual python environment, or an executable, run build_main.py. If not, run pip to install requirements.txt by: `pip install -r requirements.txt`
-1. Run the executable or main.py
-1. If it complains it can't find your Factorio installation then add the path to the Factorio executable as an argument when launching.
-1. If you bought Space Age, go into the launcher's mod menu and disable elevated rails, quality, and Space Age.
+```
+[other]
+check-updates=false
+enable-mod-settings-load-save-confirmation=false
 
-## MacOS: Mod install and running via Python scripts
+[interface]
+active-quick-bars=1
+shortcut-bar-rows=1
+show-tips-and-tricks-notifications=false
 
-1. Open the terminal.
-1. Run `python3 --version` to check which Python version is installed. You need Python 3.11 specifically.
-1. If you do not have Python 3.11, install it from the official website: https://www.python.org/downloads/release/python-3110/
-1. In the terminal, navigate to the folder you'd like the launcher folder to be inside. For example: `cd ~/Documents`
-1. Clone the launcher repository with its submodules: `git clone --recurse-submodules git@github.com:Factorio-Access/Factorio-Access-Launcher.git`
-1. Go into the newly created folder: `cd Factorio-Access-Launcher`
-1. Ensure all submodules are initialised: `git submodule update --init --recursive`
-1. Create a virtual environment: `python3.11 -m venv venv`
-1. Install the required packages: `./venv/bin/pip install -r requirements.txt`
-1. The mod should now be fully installed. Any time you want to run the launcher, go to the same folder and run: `./venv/bin/python main.py`
-1. The launcher will prompt for permission to use voiceover features. This needs to be allowed.
-1. Follow the launcher's setup steps as instructed by it.
-1. If you bought Space Age, go into the launcher's mod menu and disable elevated rails, quality, and Space Age.
+[controls]
+toggle-map-alternative=
+toggle-driving-alternative=
+
+[input]
+pipette=
+smart-pipette=
+```
+
+The empty values unbind the map toggle, the driving alternative and the pipette, so the mod can use those keys.
+
+## Troubleshooting
+
+- The DLL writes `factorio-access-native.log` next to itself in `bin\x64`. When something goes wrong, send us that file and `factorio-current.log`. That log is in the game folder for the zip version, otherwise in `%AppData%\Factorio`.
+- If the game starts with no speech, check that `winmm.dll` is in `bin\x64` and not in `bin` or the game folder.
+- If the DLL says that it does not support this Factorio version, a game update changed something the DLL needs. Wait for a new release of the DLL.
 
 # Mod Documentation
 
@@ -141,7 +128,7 @@ of users who want to play multiplayer anyway or have different use cases.
 
 When Vanilla Mode mode is toggled on, it disables sonifiers and speech, stops all of the mod's key handling, and closes
 any open mod UIs. Mod data such as fast travel points are left untouched, and so you should be able to toggle Vanilla
-Mode without any penalties. If the sighted person does not install our launcher config tweaks, then their game in
+Mode without any penalties. If the sighted person does not apply our game settings, then their game in
 Vanilla Mode should function as if this mod is not present. If the mod's config tweaks are used and then Vanilla Mode is
 enabled, the keymapping changes of the mod are still present but inactive. In this case one can play using the arrow
 keys and mouse while relying on GUI buttons to open most menus.
