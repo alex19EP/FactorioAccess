@@ -8,7 +8,7 @@ Last reviewed: 2025-12-23
 
 Great!  Find a mod UI close to yours, find the lua file for it, copy/paste.
 
-blueprints-menu.lua is a simple one-tab menu.
+gun-menu.lua is a simple one-tab menu.
 
 The bottom of the file will be a bunch of registration stuff. Change it in the obvious manner to match your UI names.
 
@@ -177,7 +177,8 @@ There are 3 levels to the UI system:
 - Things built on top of the TabList, which are menus etc.
 
 Text boxes and other "small" UIs are sometimes TabList and sometimes not; what you need to know mostly is that there's a
-box selector and a generic textbox both of which you can reuse easily. Both are demonstrated in the blueprint menu.
+box selector and a generic textbox both of which you can reuse easily. The debug menu demonstrates the box selector, the
+fast travel menu the textbox.
 
 To make this work, we amend the event system of Factorio, sending all control.lua events through an EventManager module.
 A second layer of events registers in ui/router.lua, which block further event processing if a UI is open.  Do not use
@@ -294,8 +295,8 @@ UIs declare binds via a `get_binds` callback. The return value has three meaning
 - Return an empty table to signal valid state with no binds. The UI stays open and nothing watches for invalidation.
 - Return a table of binds to register them. The UI closes when any bind is violated.
 
-The nil-vs-empty distinction matters for child UIs. Consider blueprint selection: the parent blueprint-setup UI binds to
-hand contents, then opens a child box selector for area selection. The child doesn't need its own bind since it's
+The nil-vs-empty distinction matters for child UIs. Consider an area selection: the parent UI binds to hand contents,
+then opens a child box selector for the area. The child doesn't need its own bind since it's
 protected by the parent. If the hand changes, the whole stack closes. But the child must return empty, not nil. Nil
 would close it immediately on open.
 

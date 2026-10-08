@@ -6,9 +6,6 @@ These use all the normal keys, with only a few changes:
 
 Start selecting a blueprint, upgrade, or deconstruction planner's area: `left bracket` with a 1x1 cursor
 
-Directly apply a deconstruction or upgrade planner to what is under your cursor: `[` with a larger cursor
-
-
 Finish selecting: `left bracket` on a second point. Releasing the key does nothing; the selection stays open until the second press, as on a gamepad.
 
 While the selection is open, each move of the cursor says the box's size in tiles, such as "5 by 3", and then the counts the game shows beside the box, largest first: the items a copy or blueprint would take, what an upgrade planner would upgrade and to what, or what a deconstruction planner would remove and the items that would give.
@@ -19,7 +16,7 @@ Cancel the selection without doing anything: `escape`
 
 Cancel upgrade or deconstruction orders in an area: start the selection with `shift + left bracket`. The first press decides what the selection does; the second only finishes it.
 
-Open the menu for the item: `right bracket` with the item in hand
+Open a blueprint's or planner's window: `right bracket` on it in an inventory slot
 
 Cycle through blueprints in a blueprint book without opening the GUI: `m` and `dot (.)`
 
@@ -54,16 +51,19 @@ Blueprints are a mechanism to save a group of entities and put it somewhere else
 - `ctrl + x` gives you the cut tool, which is exactly like the copy tool but marks the area selected for deconstruction as well. This is useful to move a bunch of entities by a few tiles, for example.
 - `ctrl + v` gives you a temporary blueprint, whatever you copied or cut last.
 
-To stop selecting if you change your mind, hit `e`.  Blueprint selection is a kind of UI, and so `e` closes it.
+To stop selecting if you change your mind, press `escape`.
 
-Blueprints have names, import/export functionality, descriptions, etc. This is all accessed by pressing `right bracket` with a blueprint in hand.
+When a blank blueprint's selection finishes, the game opens the blueprint's setup window, as it does for sighted players. The same window opens with `right bracket` on a blueprint in an inventory slot. Its stops, moved between with `tab`:
+
+- the blueprint: its name, then buttons to select new contents, copy it, upgrade its entities, parametrise it, export it to a string, and delete it. `enter` on the name starts renaming it: type the name and press `enter`;
+- its four icons in a row, where `enter` opens the chooser and `right bracket` clears one; under them its description, and a button that puts an icon in the description's text;
+- snap to grid: the checkbox, then the grid size, the grid position, and the absolute and relative snapping, one line at a time. The fields say disabled until the box is checked, as the game greys them;
+- the components the blueprint holds, ten to a row. `right bracket` takes every entity of that kind out of the blueprint, and `enter` puts them back; a kind taken out says removed;
+- what to include, such as modules, tiles, trains or fuel, when the blueprint has any of them. For example, you can blueprint only tiles, even if entities are over them;
+- the preview;
+- the button that creates or saves the blueprint.
 
 To build a blueprint, click with `left bracket`.  Rotation, flipping, etc. all work the same as buildings, and you are building from the top left, same as buildings.
-
-For advanced users, Factorio allows controlling what a blueprint will contain. For example it is possible to blueprint
-only tiles, even if entities are over them.  This must be done at blueprint setup time both for blind and sighted users.
-To do so, end your selection with `right bracket`.  This will open the blueprint creation menu, which has checkboxes for
-these options.
 
 Due to API limitations, blueprints always take an inventory slot.  We cannot get access to the blueprint library, which is how sighted players work around this.  See the next section.
 
