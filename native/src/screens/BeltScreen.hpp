@@ -5,7 +5,8 @@
 // The game shows little: the belt's name and status, and in the title bar the circuit and logistic
 // network buttons, each opening a panel beside the window (the circuit one: enable or disable by a
 // condition, and read the belt's contents by pulse or hold). What the belt carries the game shows
-// only on the map, so the mod sends its own views of that (scripts/belt-analyzer.lua).
+// only on the map, so the mod attaches its own views of that to the window
+// (scripts/ui/belt-analyzer.lua).
 //
 // Stops: the window, the open network panel, then the mod's views: this belt's slots, and what the
 // whole belt, the belts feeding it and the belts it feeds carry on each lane.

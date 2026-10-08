@@ -1,11 +1,9 @@
 --[[
-What a transport belt carries, read with the game's own belt window. The game shows a belt's items
-only on the map, so when the window opens this sends the native DLL four views of them, which the
-belt's screen reads after the window (native/src/screens/BeltScreen.hpp): this belt's slots, and
-what the whole belt, the belts feeding it and the belts it feeds carry on each lane. They are taken
-as the window opens; reopening it takes them again.
+What a transport belt carries, beside the game's own belt window (see entity-views.lua). The game
+shows a belt's items only on the map, so four views show them: this belt's slots, and what the whole
+belt, the belts feeding it and the belts it feeds carry on each lane, a column per lane.
 ]]
-local EventManager = require("scripts.event-manager")
+local EntityViews = require("scripts.ui.entity-views")
 local FaUtils = require("scripts.fa-utils")
 local Geometry = require("scripts.geometry")
 local ItemInfo = require("scripts.item-info")
@@ -13,9 +11,6 @@ local Speech = require("scripts.speech")
 local MessageBuilder = Speech.MessageBuilder
 local TH = require("scripts.table-helpers")
 local TransportBelts = require("scripts.transport-belts")
-
----@type fa.Native?
-local native = rawget(_G, "fa_native")
 
 local mod = {}
 
@@ -49,33 +44,33 @@ local function slot_cell(contents, lane, slot)
    return message:build()
 end
 
----@param pindex integer
 ---@param entity LuaEntity
 ---@param node fa.TransportBelts.Node
-local function send_slots(pindex, entity, node)
+---@return fa.EntityViews.View
+local function slots_view(entity, node)
    local contents = node:get_all_contents()
-   native.entity_view(pindex, { "fa.ui-belt-analyzer-tab-local" })
+   local columns = {}
    for lane = 1, 2 do
       local cells = {}
       for slot = 1, 4 do
          cells[slot] = slot_cell(contents, lane, slot)
       end
-      native.entity_view_column(pindex, lane_name(entity, lane), table.unpack(cells))
+      columns[lane] = { title = lane_name(entity, lane), cells = cells }
    end
+   return { title = { "fa.ui-belt-analyzer-tab-local" }, columns = columns }
 end
 
 -- Each lane's items, most first, with their share of the lane's length.
----@param pindex integer
 ---@param entity LuaEntity
 ---@param title LocalisedString
 ---@param lanes fa.NQC[] left lane, then right
 ---@param lengths fa.TransportBelts.LaneLengths
-local function send_totals(pindex, entity, title, lanes, lengths)
-   native.entity_view(pindex, title)
+---@return fa.EntityViews.View
+local function totals_view(entity, title, lanes, lengths)
    if not next(lanes[1]) and not next(lanes[2]) then
-      native.entity_view_column(pindex, "", { "fa.ui-belt-analyzer-no-contents" })
-      return
+      return { title = title, columns = { { cells = { { "fa.ui-belt-analyzer-no-contents" } } } } }
    end
+   local columns = {}
    for lane = 1, 2 do
       local length = lengths[lane == 1 and "left" or "right"]
       local cells = {}
@@ -84,48 +79,35 @@ local function send_totals(pindex, entity, title, lanes, lengths)
          table.insert(cells, { "fa.ui-belt-analyzer-aggregation", ItemInfo.item_info(entry), percent })
       end
       if not cells[1] then cells[1] = { "fa.ui-belt-analyzer-empty" } end
-      native.entity_view_column(pindex, lane_name(entity, lane), table.unpack(cells))
+      columns[lane] = { title = lane_name(entity, lane), cells = cells }
    end
+   return { title = title, columns = columns }
 end
 
----@param pindex integer
 ---@param entity LuaEntity a transport belt
-function mod.send_views(pindex, entity)
+---@return fa.EntityViews.View[]
+function mod.views(entity)
    local node = TransportBelts.Node.create(entity)
    local analysis = node:belt_analyzer_algo()
    local left, right = analysis.left, analysis.right
-   native.entity_views_begin(pindex, entity.unit_number)
-   send_slots(pindex, entity, node)
-   send_totals(pindex, entity, { "fa.ui-belt-analyzer-tab-total" }, { left.total, right.total }, analysis.total_length)
-   send_totals(
-      pindex,
-      entity,
-      { "fa.ui-belt-analyzer-tab-upstream" },
-      { left.upstream, right.upstream },
-      analysis.upstream_length
-   )
-   send_totals(
-      pindex,
-      entity,
-      { "fa.ui-belt-analyzer-tab-downstream" },
-      { left.downstream, right.downstream },
-      analysis.downstream_length
-   )
-   native.entity_views_end(pindex)
+   return {
+      slots_view(entity, node),
+      totals_view(entity, { "fa.ui-belt-analyzer-tab-total" }, { left.total, right.total }, analysis.total_length),
+      totals_view(
+         entity,
+         { "fa.ui-belt-analyzer-tab-upstream" },
+         { left.upstream, right.upstream },
+         analysis.upstream_length
+      ),
+      totals_view(
+         entity,
+         { "fa.ui-belt-analyzer-tab-downstream" },
+         { left.downstream, right.downstream },
+         analysis.downstream_length
+      ),
+   }
 end
 
--- Only clients running the DLL read the views, and sending them changes nothing in the game.
-EventManager.on_event(
-   defines.events.on_gui_opened,
-   ---@param event EventData.on_gui_opened
-   ---@param pindex integer
-   function(event, pindex)
-      local entity = event.entity
-      if native and event.gui_type == defines.gui_type.entity and entity.type == "transport-belt" then
-         mod.send_views(pindex, entity)
-      end
-   end,
-   EventManager.EVENT_KIND.UI
-)
+EntityViews.register({ "transport-belt" }, defines.relative_gui_type.transport_belt_gui, mod.views)
 
 return mod

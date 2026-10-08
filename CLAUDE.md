@@ -169,6 +169,15 @@ The mod requires the native DLL in `native/` (deployed as `winmm.dll`). There is
 - Don't write Lua that guesses what happened from indirect events, and don't add Lua fallbacks for when the DLL is missing. Existing Lua guesses are to be replaced by native reads.
 - Lua-only APIs that do expose the information (events, getters) remain the right tool for it. This does not apply to UI: a game GUI (window, HUD part such as the quickbar, shortcut bar or crafting queue) gets a native screen that reads and clicks the game's own widgets, even when Lua could read the same data.
 
+#### Adding FA's own information to a game window
+When a game window lacks something FA wants to say about its entity (what a belt carries, where a pipe connects, what a pole is wired to), show it in the window as an ordinary mod GUI: a relative GUI element anchored to the window (`player.gui.relative`, `anchor = { gui = defines.relative_gui_type.X, ... }`). Never send it to the DLL through `fa_native`.
+
+- Register the views with `scripts/ui/entity-views.lua`: `EntityViews.register(entity_types, relative_gui_type, function(entity) return views end)`. Each view is a title and columns of cells (LocalisedStrings); the module builds a captioned frame per view to the right of the window as it opens, and destroys it as it closes. See `belt-analyzer.lua`, `fluid-views.lua`, `pole-views.lua`.
+- The game moves a window with anchored elements into a `CustomGuiGameGuiWrapper`; every `EntityWindowScreen` unwraps it and reads each element in the wrapper's flows as a stop after the window's own, with the generic walker. No native code is needed per view.
+- Every player gets the elements, with the DLL or without, so all peers change their GUI identically. Sighted players see them too: keep them plain and useful.
+- The anchor's `relative_gui_type` is the game's window class, not the entity type: pipes and storage tanks share `pipe_gui` (`SingleFluidBoxEntityGui`). `NameToGuiTypeMappingHelpers::buildMapping` in Ghidra lists every class's name.
+- `EventManager` keeps one handler per event and kind, and a second registration is an error: add entity types to `entity-views.lua`'s registry, not another `on_gui_opened` handler.
+
 #### Multiplayer: the DLL is client-only
 Only the blind player runs the DLL. The server and the other players run the same Lua without it, and every peer must change the game identically or the game desyncs.
 

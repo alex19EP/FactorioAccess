@@ -5,8 +5,10 @@
 // topmost such window while the game menu is closed. A screen stays one window: when its window is
 // replaced (choosing a recipe opens the assembler's own window), it goes inactive for a frame, so
 // the manager pops it and attaches afresh.
+//
+// The elements a mod attached to the window (LuaGuiElement anchor), FA's own views of the entity
+// among them, follow the window's stops, a stop each.
 
-#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -46,12 +48,17 @@ protected:
     /// while one is open.
     static void AddSidePanel(graph::GraphBuilder& builder, const agui::Widget* sidePanel);
 
-    /// The mod's own views of the entity (entityviews.h), a stop each, when the mod sent them for
-    /// the entity with this unit number.
-    static void AddModViews(graph::GraphBuilder& builder, uint64_t unitNumber);
-
 private:
-    const agui::Widget* FindWindow() const;
+    /// The window, and the wrapper the game put it in when a mod attached elements to it.
+    struct Found
+    {
+        const agui::Widget* window = nullptr;
+        const agui::Widget* wrapper = nullptr;
+    };
+    Found FindWindow() const;
+
+    /// The mod elements in the wrapper's flows, a stop each.
+    static void AddRelativeElements(graph::GraphBuilder& builder, const agui::Widget* wrapper);
 
     const agui::Widget* _window = nullptr;
     std::string _class;

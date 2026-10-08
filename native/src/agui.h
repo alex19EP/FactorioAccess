@@ -248,13 +248,11 @@ BurnerParts burnerParts(const Widget* burnerInfo);
 // The parts of a window with circuit and logistic network buttons in its title bar
 // (GuiWithSideButtons) that is a transport belt's, a pipe's, a lamp's or another
 // GenericOnOffEntityGui, a splitter's (SplitterGui), or a pump's, a boiler's or another
-// EntityWithEnergySourceGui; all null and 0 for any other window. `titled` is the window titled with
-// the entity's name, `sidePanel` the container the buttons open their panels in, and `unitNumber`
-// the entity's (LuaEntity::unit_number).
+// EntityWithEnergySourceGui; all null for any other window. `titled` is the window titled with the
+// entity's name, `sidePanel` the container the buttons open their panels in.
 struct EntityPanelParts {
    const Widget* titled = nullptr;
    const Widget* sidePanel = nullptr;
-   uint64_t unitNumber = 0;
 };
 EntityPanelParts entityPanelParts(const Widget* window);
 
@@ -270,8 +268,7 @@ FluidBoxParts fluidBoxParts(const Widget* window);
 // The parts of an electric network's window (ElectricNetworkGuiWindow): a pole's network, or every
 // network of the surface. `bars` is the row of bars of how well the network is supplied, `flows`
 // the columns below them: `consumption`, `production` and `storage` (accumulators), each with its
-// graph. `unitNumber` is the pole's (LuaEntity::unit_number), 0 for the surface's window. All null
-// for any other window.
+// graph. All null for any other window.
 struct ElectricNetworkParts {
    const Widget* bars = nullptr;
    const Widget* flows = nullptr;
@@ -279,9 +276,17 @@ struct ElectricNetworkParts {
    const Widget* production = nullptr;
    const Widget* storage = nullptr;
    std::vector<const Widget*> graphs;
-   uint64_t unitNumber = 0;
 };
 ElectricNetworkParts electricNetworkParts(const Widget* window);
+
+// A game window a mod attached relative GUI elements to sits in an invisible window the game puts
+// on the root in its place (CustomGuiGameGuiWrapper). The window it wraps, or null when `widget` is
+// no such wrapper.
+const Widget* wrappedWindow(const Widget* widget);
+
+// The flows of such a wrapper that hold the mod's elements, in reading order: above the window,
+// left of it, right of it, below it.
+std::vector<const Widget*> relativeFlows(const Widget* wrapper);
 
 // The quickbar along the bottom of the screen (QuickBarGui), or null outside a game or while the
 // view has none.

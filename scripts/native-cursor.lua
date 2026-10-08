@@ -15,10 +15,6 @@ local mod = {}
 ---@field build_direction fun(player_index: integer): defines.direction?
 ---@field walking_step fun(player_index: integer): ("full"|"partial"|"none")?, integer?
 ---@field open_selected_info fun(player_index: integer)
----@field entity_views_begin fun(player_index: integer, unit_number: integer)
----@field entity_view fun(player_index: integer, title: LocalisedString)
----@field entity_view_column fun(player_index: integer, title: LocalisedString, ...: LocalisedString)
----@field entity_views_end fun(player_index: integer)
 
 ---@type fa.Native?
 local native = rawget(_G, "fa_native")

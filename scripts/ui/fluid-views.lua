@@ -1,35 +1,21 @@
 --[[
 Where a pipe, a pipe to ground, a storage tank or a pump connects, and what its pipeline reaches,
-read with the game's own window for it. The window shows the fluid and how much there is, but not
-where the pipes go, so when it opens this sends the native DLL views of that, which the entity's
-screen reads after the window (native/src/screens/PipeScreen.hpp, MachineScreen.hpp for pumps):
-each connection of this entity, then, but for pumps, how far the pipeline spans and the buildings
-it reaches. They are taken as the window opens; reopening it takes them again.
+beside the game's own window for it (see entity-views.lua). The window shows the fluid and how much
+there is, but not where the pipes go: these views show each connection of this entity, then, but
+for pumps, how far the pipeline spans and the buildings it reaches. Pumps belong to no pipeline: a
+pump joins two, an offshore pump feeds one, so their windows get the connections alone.
 ]]
-local EventManager = require("scripts.event-manager")
+local EntityViews = require("scripts.ui.entity-views")
 local FaInfo = require("scripts.fa-info")
 local FaUtils = require("scripts.fa-utils")
 local Localising = require("scripts.localising")
 local Speech = require("scripts.speech")
 local MessageBuilder = Speech.MessageBuilder
 
----@type fa.Native?
-local native = rawget(_G, "fa_native")
-
 local mod = {}
 
 -- The entities a pipeline is made of rather than ones it reaches.
 local PIPES = { ["pipe"] = true, ["pipe-to-ground"] = true }
-
--- The windows that get the views. Pumps belong to no pipeline: a pump joins two, an offshore pump
--- feeds one, so their windows get the connections alone.
-local SENT_FOR = {
-   ["pipe"] = true,
-   ["pipe-to-ground"] = true,
-   ["storage-tank"] = true,
-   ["pump"] = true,
-   ["offshore-pump"] = true,
-}
 
 -- Fluid boxes walked at most, so a base wide pipeline does not stall the game as the window opens.
 local WALK_LIMIT = 5000
@@ -130,13 +116,6 @@ function mod.connection_cells(entity)
    return cells
 end
 
----@param pindex integer
----@param entity LuaEntity
-local function send_connections(pindex, entity)
-   native.entity_view(pindex, { "fa.fluid-views-connections" })
-   native.entity_view_column(pindex, "", table.unpack(mod.connection_cells(entity)))
-end
-
 ---@class fa.FluidViews.Reached
 ---@field name string
 ---@field flow FluidFlowDirection
@@ -206,9 +185,9 @@ function mod.walk_pipeline(entity)
    return { pipes = pipes, reached = list, complete = queue[head] == nil }
 end
 
----@param pindex integer
 ---@param entity LuaEntity
-local function send_pipeline(pindex, entity)
+---@return LocalisedString[]
+function mod.pipeline_cells(entity)
    local walk = mod.walk_pipeline(entity)
    local box = entity.get_fluid_segment_extent_bounding_box(1)
    local width = math.ceil(box.right_bottom.x - box.left_top.x)
@@ -225,31 +204,26 @@ local function send_pipeline(pindex, entity)
    end
    if not walk.reached[1] then table.insert(cells, { "fa.fluid-views-no-buildings" }) end
    if not walk.complete then table.insert(cells, { "fa.fluid-views-incomplete" }) end
-   native.entity_view(pindex, { "fa.fluid-views-pipeline" })
-   native.entity_view_column(pindex, "", table.unpack(cells))
+   return cells
 end
 
----@param pindex integer
 ---@param entity LuaEntity a pipe, a pipe to ground, a storage tank, a pump or an offshore pump
-function mod.send_views(pindex, entity)
-   native.entity_views_begin(pindex, entity.unit_number)
-   send_connections(pindex, entity)
-   if entity.has_fluid_segment(1) then send_pipeline(pindex, entity) end
-   native.entity_views_end(pindex)
+---@return fa.EntityViews.View[]
+function mod.views(entity)
+   local views = {
+      { title = { "fa.fluid-views-connections" }, columns = { { cells = mod.connection_cells(entity) } } },
+   }
+   if entity.has_fluid_segment(1) then
+      table.insert(
+         views,
+         { title = { "fa.fluid-views-pipeline" }, columns = { { cells = mod.pipeline_cells(entity) } } }
+      )
+   end
+   return views
 end
 
--- Only clients running the DLL read the views, and sending them changes nothing in the game.
-EventManager.on_event(
-   defines.events.on_gui_opened,
-   ---@param event EventData.on_gui_opened
-   ---@param pindex integer
-   function(event, pindex)
-      local entity = event.entity
-      if native and event.gui_type == defines.gui_type.entity and SENT_FOR[entity.type] then
-         mod.send_views(pindex, entity)
-      end
-   end,
-   EventManager.EVENT_KIND.UI
-)
+EntityViews.register({ "pipe", "pipe-to-ground", "storage-tank" }, defines.relative_gui_type.pipe_gui, mod.views)
+EntityViews.register({ "pump" }, defines.relative_gui_type.pump_gui, mod.views)
+EntityViews.register({ "offshore-pump" }, defines.relative_gui_type.entity_with_energy_source_gui, mod.views)
 
 return mod

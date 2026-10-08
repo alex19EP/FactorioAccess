@@ -96,10 +96,8 @@ void MachineScreen::BuildWindow(graph::GraphBuilder& builder, const Widget* wind
         skip.push_back(panel.sidePanel);
     AddTitledWindow(builder, "entity", parts.entity, std::move(skip), MachineAttachments(parts));
     AddInventory(builder, parts);
-    if (!panel.sidePanel)
-        return;
-    AddSidePanel(builder, panel.sidePanel);
-    AddModViews(builder, panel.unitNumber);
+    if (panel.sidePanel)
+        AddSidePanel(builder, panel.sidePanel);
 }
 
 } // namespace fa::screens

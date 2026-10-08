@@ -3,92 +3,44 @@
 #include <algorithm>
 #include <format>
 #include <iterator>
-#include <memory>
 #include <utility>
 
 #include "GuiDump.hpp"
-#include "entityviews.h"
 #include "game.h"
 
 namespace fa::screens
 {
 
-namespace
-{
-
 using agui::Widget;
 
-graph::ControlId CellId(std::size_t view, std::size_t column, std::size_t row)
-{
-    return graph::ControlId::Structural(std::format("views/{}/{}/{}", view, column, row));
-}
-
-// A view's columns side by side: Up and Down within a column, Left and Right to the next column
-// that has cells, at the same row or its last when it is shorter.
-void AddView(graph::GraphBuilder& builder, std::size_t index, const entityviews::View& view)
-{
-    builder.BeginStop(std::format("views/{}", index));
-    builder.PushContext(view.title);
-    std::vector<std::size_t> filled;
-    for (std::size_t c = 0; c < view.columns.size(); c++)
-    {
-        const entityviews::Column& column = view.columns[c];
-        if (column.cells.empty())
-            continue;
-        filled.push_back(c);
-        if (!column.title.empty())
-            builder.PushContext(column.title);
-        for (std::size_t r = 0; r < column.cells.size(); r++)
-        {
-            graph::NodeVtable vtable;
-            vtable.Announcements.push_back(graph::NodeAnnouncement::Static(column.cells[r]));
-            builder.AddNode(CellId(index, c, r), std::move(vtable));
-            if (r > 0)
-            {
-                builder.Connect(CellId(index, c, r - 1), graph::GraphDir::Down, CellId(index, c, r));
-                builder.Connect(CellId(index, c, r), graph::GraphDir::Up, CellId(index, c, r - 1));
-            }
-        }
-        if (!column.title.empty())
-            builder.PopContext();
-    }
-    for (std::size_t i = 1; i < filled.size(); i++)
-    {
-        std::size_t left = filled[i - 1];
-        std::size_t right = filled[i];
-        std::size_t leftRows = view.columns[left].cells.size();
-        std::size_t rightRows = view.columns[right].cells.size();
-        for (std::size_t r = 0; r < leftRows; r++)
-            builder.Connect(CellId(index, left, r), graph::GraphDir::Right,
-                CellId(index, right, std::min(r, rightRows - 1)));
-        for (std::size_t r = 0; r < rightRows; r++)
-            builder.Connect(CellId(index, right, r), graph::GraphDir::Left,
-                CellId(index, left, std::min(r, leftRows - 1)));
-    }
-    builder.PopContext();
-}
-
-} // namespace
-
-const Widget* EntityWindowScreen::FindWindow() const
+EntityWindowScreen::Found EntityWindowScreen::FindWindow() const
 {
     // Only over plain play: the game menu takes over.
     if (!agui::inGame() || agui::menuStateWindow())
-        return nullptr;
+        return {};
     const agui::Gui* gui = agui::applicationGui();
     const Widget* root = gui ? agui::baseWidget(gui) : nullptr;
     if (!root)
-        return nullptr;
-    const Widget* top = nullptr;
+        return {};
+    Found top;
     for (const Widget* child : agui::children(root))
-        if (agui::visible(child) && Handles(child))
-            top = child;
+    {
+        if (!agui::visible(child))
+            continue;
+        if (const Widget* wrapped = agui::wrappedWindow(child))
+        {
+            if (Handles(wrapped))
+                top = {wrapped, child};
+        }
+        else if (Handles(child))
+            top = {child, nullptr};
+    }
     return top;
 }
 
 bool EntityWindowScreen::IsActive()
 {
-    const Widget* window = FindWindow();
+    const Widget* window = FindWindow().window;
     if (!window)
     {
         _window = nullptr;
@@ -111,10 +63,13 @@ void EntityWindowScreen::Build(graph::GraphBuilder& builder)
 {
     // A click can close the window or replace it, so it is looked up again before anything in it
     // is read.
-    if (!_window || FindWindow() != _window)
+    Found found = FindWindow();
+    if (!_window || found.window != _window)
         return;
     DumpWindow(_window, _class);
     BuildWindow(builder, _window);
+    if (found.wrapper)
+        AddRelativeElements(builder, found.wrapper);
 }
 
 bool EntityWindowScreen::TypingIn(const graph::GraphNode& node) { return TypingInField(node); }
@@ -152,13 +107,18 @@ void EntityWindowScreen::AddSidePanel(graph::GraphBuilder& builder, const Widget
     AddSubtree(builder, "panel", sidePanel);
 }
 
-void EntityWindowScreen::AddModViews(graph::GraphBuilder& builder, uint64_t unitNumber)
+void EntityWindowScreen::AddRelativeElements(graph::GraphBuilder& builder, const Widget* wrapper)
 {
-    std::shared_ptr<const entityviews::Views> views = entityviews::current();
-    if (!views || views->unitNumber != unitNumber)
-        return;
-    for (std::size_t i = 0; i < views->views.size(); i++)
-        AddView(builder, i, views->views[i]);
+    std::size_t index = 0;
+    for (const Widget* flow : agui::relativeFlows(wrapper))
+        for (const Widget* element : VisibleChildren(flow))
+        {
+            if (!HasContent(element))
+                continue;
+            std::string key = std::format("relative/{}", index++);
+            builder.BeginStop(key);
+            AddSubtree(builder, key, element);
+        }
 }
 
 } // namespace fa::screens

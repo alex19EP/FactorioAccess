@@ -667,24 +667,17 @@ BurnerParts burnerParts(const Widget* burnerInfo) {
 EntityPanelParts entityPanelParts(const Widget* window) {
    const std::byte* sideButtons = asBase(window, ".?AVGuiWithSideButtons@@");
    if (!sideButtons) return {};
-   const std::byte* entity = nullptr;
    EntityPanelParts parts;
    if (const std::byte* gui = asBase(window, ".?AVGenericOnOffEntityGui@@")) {
       parts.titled = reinterpret_cast<const Widget*>(gui + layout.onOffEntityWindow);
-      entity = at<const std::byte*>(gui, layout.onOffEntity);
-   } else if (const std::byte* splitter = asBase(window, ".?AVSplitterGui@@")) {
+   } else if (asBase(window, ".?AVSplitterGui@@")) {
       parts.titled = window;
-      entity = at<const std::byte*>(splitter, layout.splitterEntity);
-   } else if (const std::byte* energy = asBase(window, ".?AVEntityWithEnergySourceGui@@")) {
+   } else if (asBase(window, ".?AVEntityWithEnergySourceGui@@")) {
       parts.titled = entityWindowParts(window).entity;
-      entity = at<const std::byte*>(energy, layout.energySourceGuiEntity);
    } else {
       return {};
    }
    parts.sidePanel = reinterpret_cast<const Widget*>(sideButtons + layout.sidePanelContainer);
-   // Every entity these windows are for derives from EntityWithOwner first, so it starts the
-   // object. Only the mod's views are matched by it.
-   if (entity) parts.unitNumber = at<uint64_t>(entity, layout.entityUnitNumber);
    return parts;
 }
 
@@ -709,12 +702,25 @@ ElectricNetworkParts electricNetworkParts(const Widget* window) {
    parts.storage = reinterpret_cast<const Widget*>(gui + layout.electricNetworkStorage);
    for (const Widget* frame : {parts.consumption, parts.production, parts.storage})
       parts.graphs.push_back(member(frame, layout.flowFrameGraph));
-   // A pole derives from EntityWithOwner first, as entityPanelParts' entities do.
-   if (pole) {
-      const std::byte* entity = at<const std::byte*>(pole, layout.electricNetworkObject);
-      parts.unitNumber = at<uint64_t>(entity, layout.entityUnitNumber);
-   }
    return parts;
+}
+
+const Widget* wrappedWindow(const Widget* widget) {
+   const std::byte* wrapper = asBase(widget, ".?AVCustomGuiGameGuiWrapper@@");
+   if (!wrapper) return nullptr;
+   // The table's other cells are the side flows and empty fillers; only the window is a Window.
+   for (const Widget* cell : children(reinterpret_cast<const Widget*>(wrapper + layout.relativeWrapperTable)))
+      if (asBase(cell, ".?AVWindow@agui@@")) return cell;
+   return nullptr;
+}
+
+std::vector<const Widget*> relativeFlows(const Widget* wrapper) {
+   const std::byte* base = asBaseChecked(wrapper, ".?AVCustomGuiGameGuiWrapper@@");
+   std::vector<const Widget*> flows;
+   for (uint32_t offset : {layout.relativeWrapperTop, layout.relativeWrapperLeft, layout.relativeWrapperRight,
+                           layout.relativeWrapperBottom})
+      flows.push_back(reinterpret_cast<const Widget*>(base + offset));
+   return flows;
 }
 
 unsigned selectedRow(const Widget* table) {

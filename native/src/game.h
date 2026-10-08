@@ -365,29 +365,31 @@ struct Layout {
    // a button opens its panel beside the window, inside the side panel container.
    uint32_t sidePanelContainer = 0;   // GuiWithSideButtons::sidePanelContainer, agui::VerticalFlow
    // The small window of a transport belt, a lamp, an accumulator and the like
-   // (GenericOnOffEntityGui): the window titled with the entity's name, and the entity.
+   // (GenericOnOffEntityGui): the window titled with the entity's name.
    uint32_t onOffEntityWindow = 0;    // GenericOnOffEntityGui::entityWindow, agui::Window
-   uint32_t onOffEntity = 0;          // GenericOnOffEntityGui::entity, Entity*
-   uint32_t splitterEntity = 0;       // SplitterGui::splitter, SplitterBase*
-   // A pump's, a boiler's, a radar's window and the like: the entity.
-   uint32_t energySourceGuiEntity = 0; // EntityWithEnergySourceGui::entity, Entity*
    // A pipe's or a storage tank's window: the fluid part, and in it the fluid's icon and the bar
    // of how full the entity is, both beside a label that says the same.
    uint32_t singleFluidBoxGui = 0;    // SingleFluidBoxEntityGui::fluidBoxGui, FluidBoxGui
    uint32_t fluidBoxIcon = 0;         // FluidBoxGui::fluidIcon, SimpleSlot
    uint32_t fluidBoxBar = 0;          // FluidBoxGui::fluidPercentageBar, agui::ProgressBar
-   uint32_t entityUnitNumber = 0;     // EntityWithOwner::unitNumber, LuaEntity::unit_number
    // The electric network window a pole opens (ElectricNetworkGuiWindow<ElectricPole>), and the
    // surface's like it (<Surface>), the same template over another object: the bars of how well the
    // network is supplied, and the columns of what consumes, produces and stores its energy, each a
    // FlowDataFrame with a graph above its table.
-   uint32_t electricNetworkObject = 0;       // ::object, ElectricPole* (Surface* in the surface's)
-   uint32_t electricNetworkBars = 0;         // ::satisfactionFlow, agui::HorizontalFlow
+   uint32_t electricNetworkBars = 0;        // ::satisfactionFlow, agui::HorizontalFlow
    uint32_t electricNetworkFlows = 0;        // ::gui, FlowGui, agui::HorizontalFlow
    uint32_t electricNetworkConsumption = 0;  // ::gui.inputFrame, FlowDataFrame
    uint32_t electricNetworkProduction = 0;   // ::gui.outputFrame, FlowDataFrame
    uint32_t electricNetworkStorage = 0;      // ::gui.storageFrame, FlowDataFrame
    uint32_t flowFrameGraph = 0;              // FlowDataFrame::graph, Graph
+   // A game window a mod attached relative GUI elements to (LuaGuiElement anchor) is taken off the
+   // root into an invisible CustomGuiGameGuiWrapper: a 3 by 3 table with the window in the middle
+   // and a flow on each side holding the mod's elements for that side.
+   uint32_t relativeWrapperTable = 0;        // CustomGuiGameGuiWrapper::table, agui::Table
+   uint32_t relativeWrapperTop = 0;          // ::topFlow, agui::HorizontalFlow
+   uint32_t relativeWrapperLeft = 0;         // ::leftFlow, agui::VerticalFlow
+   uint32_t relativeWrapperRight = 0;        // ::rightFlow, agui::VerticalFlow
+   uint32_t relativeWrapperBottom = 0;       // ::bottomFlow, agui::HorizontalFlow
 
    // The quickbar along the bottom of the screen (QuickBarGui), reached the way the game's own
    // quickbar keys reach it: GameView::controllerView->getQuickBar().

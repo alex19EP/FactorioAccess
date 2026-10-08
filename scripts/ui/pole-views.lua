@@ -1,16 +1,11 @@
 --[[
-What an electric pole is wired to and what its supply area powers, read with the game's window for
-it. The window shows the pole's whole network, but nothing of the pole itself, so when it opens this
-sends the native DLL views of that, which the window's screen reads after it
-(native/src/screens/ElectricNetworkScreen.hpp): the pole's wires, then its supply area. They are
-taken as the window opens; reopening it takes them again.
+What an electric pole is wired to and what its supply area powers, beside the game's window for it
+(see entity-views.lua). The window shows the pole's whole network, but nothing of the pole itself:
+these views show the pole's wires, then its supply area.
 ]]
-local EventManager = require("scripts.event-manager")
+local EntityViews = require("scripts.ui.entity-views")
 local FaUtils = require("scripts.fa-utils")
 local Localising = require("scripts.localising")
-
----@type fa.Native?
-local native = rawget(_G, "fa_native")
 
 local mod = {}
 
@@ -133,29 +128,15 @@ function mod.supply_cells(pole)
    return cells
 end
 
----@param pindex integer
 ---@param pole LuaEntity
-function mod.send_views(pindex, pole)
-   native.entity_views_begin(pindex, pole.unit_number)
-   native.entity_view(pindex, { "fa.pole-views-wires" })
-   native.entity_view_column(pindex, "", table.unpack(mod.wire_cells(pole)))
-   native.entity_view(pindex, { "fa.pole-views-supply" })
-   native.entity_view_column(pindex, "", table.unpack(mod.supply_cells(pole)))
-   native.entity_views_end(pindex)
+---@return fa.EntityViews.View[]
+function mod.views(pole)
+   return {
+      { title = { "fa.pole-views-wires" }, columns = { { cells = mod.wire_cells(pole) } } },
+      { title = { "fa.pole-views-supply" }, columns = { { cells = mod.supply_cells(pole) } } },
+   }
 end
 
--- Only clients running the DLL read the views, and sending them changes nothing in the game.
-EventManager.on_event(
-   defines.events.on_gui_opened,
-   ---@param event EventData.on_gui_opened
-   ---@param pindex integer
-   function(event, pindex)
-      local entity = event.entity
-      if native and event.gui_type == defines.gui_type.entity and entity.type == "electric-pole" then
-         mod.send_views(pindex, entity)
-      end
-   end,
-   EventManager.EVENT_KIND.UI
-)
+EntityViews.register({ "electric-pole" }, defines.relative_gui_type.electric_network_gui, mod.views)
 
 return mod

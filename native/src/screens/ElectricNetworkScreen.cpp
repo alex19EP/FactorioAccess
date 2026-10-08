@@ -32,8 +32,6 @@ void ElectricNetworkScreen::BuildWindow(graph::GraphBuilder& builder, const agui
     AddColumn(builder, "production", parts.production, parts.graphs);
     AddColumn(builder, "consumption", parts.consumption, parts.graphs);
     AddColumn(builder, "storage", parts.storage, parts.graphs);
-    if (parts.unitNumber)
-        AddModViews(builder, parts.unitNumber);
 }
 
 } // namespace fa::screens

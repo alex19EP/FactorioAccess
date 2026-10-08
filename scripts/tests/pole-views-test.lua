@@ -68,4 +68,38 @@ describe("Pole views", function()
          end
       end)
    end)
+
+   it("attaches the views to the pole's window while it is open", function(ctx)
+      local built
+      local player
+
+      ctx:init(function()
+         player = game.get_player(1)
+         built = build(player)
+      end)
+
+      ctx:at_tick(2, function()
+         player.opened = built[1]
+      end)
+
+      ctx:at_tick(3, function()
+         local wires = player.gui.relative["fa-entity-view-1"]
+         local supply = player.gui.relative["fa-entity-view-2"]
+         ctx:assert_not_nil(wires)
+         ctx:assert_not_nil(supply)
+         ctx:assert_equals("fa.pole-views-wires", wires.caption[1])
+         ctx:assert_equals(defines.relative_gui_type.electric_network_gui, wires.anchor.gui)
+         -- One column without a header: a label per cell, the reach then the one pole.
+         ctx:assert_equals(2, #wires.children[1].children)
+         player.opened = nil
+      end)
+
+      ctx:at_tick(4, function()
+         ctx:assert_nil(player.gui.relative["fa-entity-view-1"])
+         ctx:assert_nil(player.gui.relative["fa-entity-view-2"])
+         for _, e in ipairs(built) do
+            e.destroy()
+         end
+      end)
+   end)
 end)

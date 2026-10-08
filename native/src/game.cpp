@@ -306,14 +306,9 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.burnerProgressBar, "BurnerInfo", "burningProgressBar");
    offset(layout.sidePanelContainer, "GuiWithSideButtons", "sidePanelContainer");
    offset(layout.onOffEntityWindow, "GenericOnOffEntityGui", "entityWindow");
-   offset(layout.onOffEntity, "GenericOnOffEntityGui", "entity");
-   offset(layout.splitterEntity, "SplitterGui", "splitter");
-   offset(layout.energySourceGuiEntity, "EntityWithEnergySourceGui", "entity");
    offset(layout.singleFluidBoxGui, "SingleFluidBoxEntityGui", "fluidBoxGui");
    offset(layout.fluidBoxIcon, "FluidBoxGui", "fluidIcon");
    offset(layout.fluidBoxBar, "FluidBoxGui", "fluidPercentageBar");
-   offset(layout.entityUnitNumber, "EntityWithOwner", "unitNumber");
-   offset(layout.electricNetworkObject, "ElectricNetworkGuiWindow<ElectricPole>", "object");
    offset(layout.electricNetworkBars, "ElectricNetworkGuiWindow<ElectricPole>", "satisfactionFlow");
    offset(layout.electricNetworkFlows, "ElectricNetworkGuiWindow<ElectricPole>", "gui");
    offset(layout.electricNetworkConsumption, "ElectricNetworkGuiWindow<ElectricPole>", "gui.inputFrame");
@@ -323,6 +318,11 @@ bool resolve(pdb::SymbolTable& symbols) {
           "FlowDataFrame<FlowStatistics<IDWithQuality<ID<EntityPrototype,unsigned short> >,double,ElectricityTag>,"
           "ElectricPole,FlowGuiEnabler<0> >",
           "graph");
+   offset(layout.relativeWrapperTable, "CustomGuiGameGuiWrapper", "table");
+   offset(layout.relativeWrapperTop, "CustomGuiGameGuiWrapper", "topFlow");
+   offset(layout.relativeWrapperLeft, "CustomGuiGameGuiWrapper", "leftFlow");
+   offset(layout.relativeWrapperRight, "CustomGuiGameGuiWrapper", "rightFlow");
+   offset(layout.relativeWrapperBottom, "CustomGuiGameGuiWrapper", "bottomFlow");
 
    offset(layout.gameViewControllerView, "GameView", "controllerView");
    classSlot(layout.controllerViewQuickBar, "ControllerView", "getQuickBar");

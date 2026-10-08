@@ -111,7 +111,8 @@ function mod.on_event(event_id, handler, priority)
       end)
    end
 
-   -- Only one handler per priority level allowed
+   -- Only one handler per priority level: a second would silently replace the first.
+   assert(not handlers[event_id][priority], string.format("a %s handler for event %s exists", priority, event_id))
    handlers[event_id][priority] = handler
 end
 

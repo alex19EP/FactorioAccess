@@ -118,7 +118,6 @@ add_library(fa_native SHARED
   src/world.cpp
   src/selectedinfo.cpp
   src/luabridge.cpp
-  src/entityviews.cpp
   src/hooks.cpp
   src/disclosure.cpp
   src/flyingtext.cpp

@@ -1,6 +1,5 @@
 #include "luabridge.h"
 
-#include "entityviews.h"
 #include "game.h"
 #include "log.h"
 #include "movement.h"
@@ -15,8 +14,6 @@
 #include <regex>
 #include <string>
 #include <string_view>
-#include <utility>
-#include <vector>
 
 namespace fa::luabridge {
 
@@ -192,36 +189,6 @@ int openSelectedInfo(lua_State* L) {
    return 0;
 }
 
-// The mod's own views of the entity whose window just opened (see entityviews.h):
-// entity_views_begin(player, unit_number), then per view entity_view(player, title) and its
-// entity_view_column(player, title, cell, ...) calls, then entity_views_end(player). Titles and
-// cells are LocalisedStrings.
-int entityViewsBegin(lua_State* L) {
-   if (!world::mayBeLocalPlayer(static_cast<int>(checkInteger(L, 1)))) return 0;
-   entityviews::begin(static_cast<uint64_t>(checkInteger(L, 2)));
-   return 0;
-}
-
-int entityView(lua_State* L) {
-   if (!world::mayBeLocalPlayer(static_cast<int>(checkInteger(L, 1)))) return 0;
-   entityviews::addView(translate(L, 2));
-   return 0;
-}
-
-int entityViewColumn(lua_State* L) {
-   if (!world::mayBeLocalPlayer(static_cast<int>(checkInteger(L, 1)))) return 0;
-   std::vector<std::string> cells;
-   for (int i = 3, top = getTop(L); i <= top; i++) cells.push_back(translate(L, i));
-   entityviews::addColumn(translate(L, 2), std::move(cells));
-   return 0;
-}
-
-int entityViewsEnd(lua_State* L) {
-   if (!world::mayBeLocalPlayer(static_cast<int>(checkInteger(L, 1)))) return 0;
-   entityviews::end();
-   return 0;
-}
-
 struct Function {
    const char* name;
    lua_CFunction function;
@@ -235,10 +202,6 @@ constexpr Function kFunctions[] = {
    {"build_direction", &buildDirection},
    {"walking_step", &walkingStep},
    {"open_selected_info", &openSelectedInfo},
-   {"entity_views_begin", &entityViewsBegin},
-   {"entity_view", &entityView},
-   {"entity_view_column", &entityViewColumn},
-   {"entity_views_end", &entityViewsEnd},
 };
 
 using InitLuaState = void (*)(lua_State*);
