@@ -30,10 +30,6 @@ To trigger buttons or otherwise perform the primary action, you click.
 
 Other menus sometimes use modifiers and right click, which are generally documented in their help text.
 
-You can search all menus.  To set your search pattern, press ctrl f, type what you want to search, and hit enter.
-
-To cycle through search results, use shift enter for next and ctrl shift enter for previous.
-
 A small number of menus support drag.  When dragging is supported, you drag by adding shift to the movement keys.
 
 An even smaller number of menus support typing alternate values. This comes up for example when dealing with circuit conditions.  To type a value, you press m.  Menus tell you when this will work.

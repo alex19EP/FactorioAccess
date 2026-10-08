@@ -321,8 +321,7 @@ The other is to use our shorthands.  In order to make it feasible to type rich t
 starting with `:`.  They take the form `:t.name`.  For example, `:i.iron-plate` is iron plates.  To find the iron-plate
 part, use the prototype lister.  Opened with alt + p, the prototype lister is a tree chooser of all prototypes in the
 game.  Click to get the prototype name, right click to spell it, shift click to copy it to your clipboard, and shift
-right click it to copy the shorthand form to your clipboard.  As a reminder, all mod UIs are searchable.
-
+right click it to copy the shorthand form to your clipboard.
 If you prefer to get this data from the internet, Factorio wiki pages usually list the prototype name for a given item.
 There is also the [data.raw](https://wiki.factorio.com/Data.raw) page with a complete listing, though without further
 descriptions to go with them.

@@ -111,7 +111,6 @@ local function build_signal_tree(ctx)
          label = function(ctx)
             ctx.message:fragment(signal_type.label)
          end,
-         exclude_from_search = true,
       })
 
       -- Add signals of this type

@@ -92,7 +92,7 @@ No blueprints
 
 ### Chapter Text
 
-Now that we have covered the overall approach for the game, it is time to talk about your initial goals. This chapter teaches you these essential skills: approaching problems by working your way backwards, using the scanner to find things in the world, using Kruise Kontrol to automate movement and mining, and searching through your inventory.
+Now that we have covered the overall approach for the game, it is time to talk about your initial goals. This chapter teaches you these essential skills: approaching problems by working your way backwards, using the scanner to find things in the world, using Kruise Kontrol to automate movement and mining, and reading your inventory.
 
 This is how you think about goals in Factorio.  You find your goal, then you work backward from it until you get to something you can do now.
 
@@ -130,17 +130,9 @@ Inventories are presented as 10-by-x grids, where the last row is truncated if t
 
 They sort so that all items are at the beginning.
 
-It is awkward to navigate it in this form, which is why we also support search functionality.  That is what you will use here.
+Move through the slots to find your coal.  Each slot reads the item in it and how many there are.
 
-With the inventory open, press control f, type coal, and press enter.  This sets the search pattern, but does not yet move you to it.
-
-To cycle through search results, press shift enter for next and control enter for previous.
-
-These controls are odd for technical reasons.  To remember it, shift is next because shift is above control.
-
-Search results update automatically.  You don't need to worry about that now, but once you start crafting you don't need to repeatedly press control f to find out if something showed up, just keep using shift enter.
-
-If you get no search results for coal, you have not found any yet.  You have two choices.  The first choice is to mine some more rocks.  The second choice is to mine from resource patches instead, which is covered in the next chapter.
+If you find no coal, you have not found any yet.  You have two choices.  The first choice is to mine some more rocks.  The second choice is to mine from resource patches instead, which is covered in the next chapter.
 
 ### Example Blueprints
 
@@ -315,8 +307,6 @@ Open your main menu, then go over to the research tab.  This is composed of 3 ro
 Use w and s to switch rows, and a and d to explore the row.
 
 Many of our UIs take a non-obvious shape like this, so you don't have to scroll through long menus.
-
-Fortunately, every UI is searchable just like you searched your inventory earlier.
 
 Right now you have two researchable technologies, steam power and electronics.
 
@@ -1107,8 +1097,6 @@ Splitters also have an output priority, which functions the same way.  If there 
 The third thing splitters can do is filter items.  After setting the output priority, you can click the priority button again to set a filter.
 
 This opens the item chooser, which is a tree-like control.  Moving left and right changes category, and moving downward drills down to more specific categories until you get to actual items at the bottom.
-
-Like all others, this menu is also searchable.
 
 To clear the filter, use backspace.
 

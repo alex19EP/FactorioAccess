@@ -54,8 +54,6 @@ The third thing splitters can do is filter items.  After setting the output prio
 
 This opens the item chooser, which is a tree-like control.  Moving left and right changes category, and moving downward drills down to more specific categories until you get to actual items at the bottom.
 
-Like all others, this menu is also searchable.
-
 To clear the filter, use backspace.
 
 When the filter is set, the output priority stops being a priority.  Instead, it is the direction of the filter.

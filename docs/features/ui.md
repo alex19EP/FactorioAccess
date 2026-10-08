@@ -41,12 +41,6 @@ Move between subtabs: `tab`, add `shift` to go backward
 
 Move between tabs: `ctrl + tab`, add `shift` for back
 
-Set search: `ctrl + f`
-
-Next search item: `shift + enter`
-
-Previous search item: `ctrl + enter`
-
 In queues: cancel one: `left bracket`
 
 In queues, cancel 5: `shift + left bracket`
@@ -97,7 +91,6 @@ The mod offers a rich UI system composed of a number of standard widgets, organi
 Before we get started, some important rules:
 
 - When the UI is open, what is in your hand no longer matters. You will be operating on whatever is selected instead. So for example ctrl + backspace can delete a planner from the inventory, even if your hand is empty
-- Search works in literally every last menu even if you don't think it would
 - UIs may close unexpectedly if the entity they are for goes away or your hand changes, because often they require that entity or item to function
 - When manipulating things like equipment, you are (un)equipping the currently open entity.  This is different from 1.1.
   - Note: for now you need to drop equipment into an inventory and equip it from there. We will have proper equipment grids soon rather than the old 1.1 functions.
@@ -146,7 +139,7 @@ As a concrete example, the crafting menu breaks recipes down by category and the
 
 You switch category with `w`/`s` and move in the category with `a`/`d`.
 
-It does still support all other operations, e.g. `ctrl + a` moves to start of category, search works, etc.
+It does still support all other operations, e.g. `ctrl + a` moves to start of category.
 
 ### Item Selectors
 
@@ -161,5 +154,3 @@ An example makes this clearer.  Suppose I wanted to select transport belt.  I wo
 - Use `a`/`d` to find item, then `s` to go down
 - Use `a`/`d` to find logistics, then `s` to go down
 - Use `a`/`d` to find transport belt, then `left bracket` to click
-
-The item selectors do support search just like everything else, but only on the selectable nodes.  So your search could find "logistic robot", but not "logistics" if you searched for "log".

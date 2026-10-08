@@ -178,7 +178,6 @@ local function build_prototype_tree(ctx)
          label = function(label_ctx)
             label_ctx.message:fragment(proto_type.label)
          end,
-         exclude_from_search = true,
       })
 
       proto_type.add_func()

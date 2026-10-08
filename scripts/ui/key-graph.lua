@@ -21,7 +21,6 @@ After much thought, one can observe that all UI can be represented as:
 - A set of controls, each with a label and possible associated sounds.
 - A set of transitions between controls.  The majority are silent and speechless, but some (e.g. transport belts) want
   to add text that only speaks when transitioning.
-- The ability to search the menu.
 
 # The Solution
 
@@ -50,10 +49,6 @@ render returns nil, the graph closes.  Since it is guaranteed that render is alw
 there is no gap between render and using the value it returns, performing checks at the top of render is sufficient and
 they do not necessarily need to propagate to the rest of it.
 
-Here is the trick for search: start at the graph's start node and then traverse outward to gather all keys and search
-labels, with a heuristic that prefers right/down first over up/left.  That'll order correctly for all UIs as of
-2024-04-06.
-
 And here is the trick for graphical rendering: rendering is simpler.  If a graph supports rendering the "shape" can be
 inferred from right/down connections, each as a box.  That won't capture weird up/left transitions but will capture the
 case of grids, menus, categorized named rows, etc.  We just have to possibly implement a "graphical type" and tag UIs
@@ -63,8 +58,8 @@ perspective it's just a normal tree.
 # The down-right contstraint
 
 Graphs must support modification out from under the player e.g. because a blueprint got imported or because someone else
-changed values.  They must also support search.  In both cases one must define a total order over the graph's nodes (if
-it is unobvious why you need that for modification, it's because the player goes to the "most valid" key).
+changed values.  For that one must define a total order over the graph's nodes, because the player goes to the "most
+valid" key.
 
 We define this total order as follows: go right until not possible.  Go down from everything we just found.  For each go
 right until not possible...etc.  This naturally suits most UIs because it is usually up/left that get weird, e.g. a
@@ -77,9 +72,6 @@ naturally with how the UX for a UI should be.
 ]]
 local TH = require("scripts.table-helpers")
 local UiSounds = require("scripts.ui.sounds")
-local Speech = require("scripts.speech")
-local MessageBuilder = Speech.MessageBuilder
-local UiRouter = require("scripts.ui.router")
 
 local mod = {}
 
@@ -134,7 +126,6 @@ local mod = {}
 ---@field on_toggle_supertype fa.ui.graph.SimpleCallback? Handler for toggling supertype (j key)
 ---@field on_set_filter fa.ui.graph.SimpleCallback? Handler for set filter (alt+leftbracket)
 ---@field on_clear_filter fa.ui.graph.SimpleCallback? Handler for clear filter (alt+rightbracket)
----@field exclude_from_search boolean? If true, this node won't be included in search results. Default false.
 
 ---@class fa.ui.graph.TransitionVtable
 ---@field label fa.ui.graph.SimpleCallback?
@@ -752,121 +743,6 @@ function Graph:on_clear_filter(ctx)
       local n = self.render.nodes[ctx.state.cur_key]
       self:_maybe_call(n, ctx, "on_clear_filter", NO_MODIFIERS)
    end)
-end
-
--- Search support
-
----Check if this UI supports search (always true for KeyGraph)
----@param _ctx fa.ui.TabContext
----@return boolean
-function Graph:supports_search(_ctx)
-   return true
-end
-
----Hint localised strings for caching
----@param ctx fa.ui.graph.InternalTabCtx
----@param hint_callback fun(localised_string: LocalisedString)
-function Graph:search_hint(ctx, hint_callback)
-   self:_with_render(ctx, function()
-      local render = self.render
-      local key_order = ctx.state.key_order or {}
-
-      for _, key in ipairs(key_order) do
-         local node = render.nodes[key]
-         if node and not node.vtable.exclude_from_search then
-            -- Create a temporary message builder
-            local temp_message = MessageBuilder.new()
-            ---@diagnostic disable-next-line: param-type-mismatch
-            local temp_ctx = self:_wrap_ctx(ctx, self.name, NO_MODIFIERS)
-            temp_ctx.message = temp_message
-
-            -- Call the label to collect localised strings
-            node.vtable.label(temp_ctx)
-
-            -- Extract localised strings from the message
-            local built = temp_message:build()
-            if built and type(built) == "table" then hint_callback(built) end
-         end
-      end
-   end)
-end
-
----Move to next/previous search result
----@param message fa.MessageBuilder Message builder to populate with announcement
----@param ctx fa.ui.graph.InternalTabCtx
----@param direction integer 1 for next, -1 for previous
----@param matcher fun(localised_string: LocalisedString): boolean Function to test if a localised string matches
----@return fa.ui.SearchResult
-function Graph:search_move(message, ctx, direction, matcher)
-   local result = UiRouter.SEARCH_RESULT.DIDNT_MOVE
-   self:_with_render(ctx, function()
-      local render = self.render
-      local key_order = ctx.state.key_order or {}
-      local current_key = ctx.state.cur_key
-
-      -- Find current position
-      local current_index = nil
-      for i, key in ipairs(key_order) do
-         if key == current_key then
-            current_index = i
-            break
-         end
-      end
-
-      if not current_index then return end
-
-      local start_index = current_index
-      local i = current_index
-      local wrapped = false
-
-      -- Search loop
-      while true do
-         i = i + direction
-         if direction > 0 and i > #key_order then
-            i = 1
-            wrapped = true
-         elseif direction < 0 and i < 1 then
-            i = #key_order
-            wrapped = true
-         end
-
-         local key = key_order[i]
-         local node = render.nodes[key]
-         if node and not node.vtable.exclude_from_search then
-            -- Build the label as a localised string
-            local temp_msg = MessageBuilder.new()
-            ---@diagnostic disable-next-line: param-type-mismatch
-            local msg_ctx = self:_wrap_ctx(ctx, self.name, NO_MODIFIERS)
-            msg_ctx.message = temp_msg
-            node.vtable.label(msg_ctx)
-            local label_localised = temp_msg:build()
-
-            if label_localised and matcher(label_localised) then
-               -- Found a match
-               ctx.state.cur_key = key
-               -- Build announcement into provided message
-               msg_ctx.message = message
-               node.vtable.label(msg_ctx)
-
-               result = wrapped and UiRouter.SEARCH_RESULT.WRAPPED or UiRouter.SEARCH_RESULT.MOVED
-               return
-            end
-         end
-
-         -- If we've wrapped and returned to start, no more matches
-         if i == start_index then break end
-      end
-   end)
-
-   return result
-end
-
----Search from the start and move to first match
----@param ctx fa.ui.TabContext
----@return fa.ui.SearchResult
-function Graph:search_all_from_start(ctx)
-   -- TODO: Implement with matcher callback pattern when needed
-   return UiRouter.SEARCH_RESULT.DIDNT_MOVE
 end
 
 ---@class fa.ui.graph.Declaration

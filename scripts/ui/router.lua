@@ -34,7 +34,6 @@ local GameGui = require("scripts.ui.game-gui")
 local UiSounds = require("scripts.ui.sounds")
 local Speech = require("scripts.speech")
 local MessageBuilder = Speech.MessageBuilder
-local LocalisedStringCache = require("scripts.localised-string-cache")
 local RichText = require("scripts.rich-text")
 
 local mod = {}
@@ -111,9 +110,6 @@ end
 ---@field on_set_filter? fun(self, pindex: number, modifiers: table?, controller: fa.ui.RouterController)
 ---@field on_clear_filter? fun(self, pindex: number, modifiers: table?, controller: fa.ui.RouterController)
 ---@field get_help_metadata? fun(self, pindex: number): fa.ui.help.HelpItem[]?
----@field supports_search? fun(self, pindex: number, controller: fa.ui.RouterController): boolean Check if this UI supports search
----@field search_hint? fun(self, pindex: number, hint_callback: fun(localised_string: LocalisedString), controller: fa.ui.RouterController) Submit searchable strings for cache population
----@field search_move? fun(self, message: fa.MessageBuilder, pindex: number, direction: integer, matcher: fun(localised_string: LocalisedString): boolean, controller: fa.ui.RouterController): integer Move to next/prev search result, returns fa.ui.SEARCH_RESULT
 ---@field get_binds? fun(self, pindex: number, parameters: table): fa.ui.Bind[]? Return binds for this UI, nil closes immediately
 
 ---@enum fa.ui.UiName
@@ -150,7 +146,6 @@ mod.UI_NAMES = {
    PROGRAMMABLE_SPEAKER = "programmable_speaker",
    BOX_SELECTOR = "box_selector",
    SIMPLE_TEXTBOX = "simple_textbox",
-   SEARCH_SETTER = "search_setter",
    CURSOR_COORDINATE_INPUT = "cursor_coordinate_input",
    SYNTRAX_INPUT = "syntrax_input",
    RAIL_BUILDER = "rail_builder",
@@ -181,14 +176,6 @@ mod.ACCELERATORS = {
    PREVIEW_SPEAKER = "preview_speaker",
 }
 
----@enum fa.ui.SearchResult
-mod.SEARCH_RESULT = {
-   NO_SUPPORT = 1, -- UI doesn't support search
-   DIDNT_MOVE = 2, -- Supports search but no match or already on it
-   MOVED = 3, -- Moved to a match
-   WRAPPED = 4, -- Wrapped around to find a match
-}
-
 ---@enum fa.ui.BindKind
 mod.BIND_KIND = {
    NONE = "none", -- Default, no binding
@@ -208,12 +195,10 @@ mod.BIND_KIND = {
 
 ---@class fa.ui.RouterState
 ---@field ui_stack fa.ui.StackEntry[] Stack of open UIs with contexts (top is last)
----@field search_pattern string? Current search pattern (literal substring)
 
 ---@type table<number, fa.ui.RouterState>
 local router_state = StorageManager.declare_storage_module("ui_router", {
    ui_stack = {},
-   search_pattern = nil,
 }, {
    ephemeral_state_version = 3,
 })
@@ -271,69 +256,6 @@ end
 ---@param options fa.ui.TextboxOptions? Options for the textbox (intro_message, rich_text)
 function RouterController:open_textbox(initial_text, context, options)
    GameGui.open_textbox(self.pindex, initial_text, context, options)
-end
-
----Set the search pattern for the current player
----@param pattern string?
-function RouterController:set_search_pattern(pattern)
-   router_state[self.pindex].search_pattern = pattern
-end
-
----Get the current search pattern for the current player
----@return string?
-function RouterController:get_search_pattern()
-   return router_state[self.pindex].search_pattern
-end
-
----Clear the search pattern for the current player
-function RouterController:clear_search_pattern()
-   router_state[self.pindex].search_pattern = nil
-end
-
----Refresh the search cache for the current top UI
----Populates LocalisedStringCache with all searchable strings from the UI
-function RouterController:refresh_search_cache()
-   local stack = router_state[self.pindex].ui_stack
-   if #stack == 0 then return end
-
-   local top_entry = stack[#stack]
-   local ui_name = top_entry.name
-   local ui = registered_uis[ui_name]
-   if not ui or not ui.search_hint then return end
-
-   ui:search_hint(self.pindex, function(localised_string)
-      LocalisedStringCache.hint_submit(self.pindex, localised_string)
-   end, self)
-end
-
----Called when player inventory changes
----Refreshes search cache if there's an active search pattern and UI is open
----@param pindex integer
-function mod.on_inventory_changed(pindex)
-   local stack = router_state[pindex].ui_stack
-   if #stack == 0 then return end
-
-   -- Only refresh if there's an active search pattern
-   local pattern = router_state[pindex].search_pattern
-   if not pattern or pattern == "" then return end
-
-   local top_entry = stack[#stack]
-   local ui = registered_uis[top_entry.name]
-   if not ui or not ui.search_hint then return end
-
-   -- Refresh the cache using the generic method
-   local router = mod.get_router(pindex)
-   local controller = create_controller_for_event(router)
-   controller:refresh_search_cache()
-end
-
----Suggest that search strings should be re-hinted (e.g., after tab switch)
----Only re-hints if there's an active search pattern
-function RouterController:suggest_search_rehint()
-   local pattern = self:get_search_pattern()
-   if not pattern or pattern == "" then return end
-
-   self:refresh_search_cache()
 end
 
 ---@param name fa.ui.UiName
@@ -416,9 +338,6 @@ function Router:_push_ui(name, params, context)
    local controller = create_controller_for_event(self)
    ui:open(self.pindex, params or {}, controller)
    controller:finalize()
-
-   -- Populate search cache for the new UI
-   controller:refresh_search_cache()
 end
 
 ---Pop the top UI from the stack (close it)
@@ -445,9 +364,6 @@ function Router:_pop_ui()
    -- Update GUI to show new top (or clear if empty)
    if #stack > 0 then
       GameGui.set_active_ui(self.pindex, stack[#stack].name)
-      -- Populate search cache for the UI we're returning to
-      local controller = create_controller_for_event(self)
-      controller:refresh_search_cache()
    else
       GameGui.clear_active_ui(self.pindex)
    end
@@ -919,113 +835,6 @@ EventManager.on_event(defines.events.on_gui_confirmed, function(event)
    return nil
 end, EventManager.EVENT_KIND.UI)
 
--- Search navigation handlers
--- fa-s-enter: Next search result
-register_ui_event("fa-s-enter", function(event, pindex)
-   local router = mod.get_router(pindex)
-   local stack = router_state[pindex].ui_stack
-
-   if #stack > 0 then
-      local top_entry = stack[#stack]
-      local ui_name = top_entry.name
-      if registered_uis[ui_name] then
-         local ui = registered_uis[ui_name]
-         local controller = create_controller_for_event(router)
-         if ui.supports_search and ui:supports_search(pindex, controller) then
-            local pattern = controller:get_search_pattern()
-            if not pattern or pattern == "" then
-               UiSounds.play_ui_edge(pindex)
-               Speech.speak(pindex, { "fa.search-no-more-results" })
-               return EventManager.FINISHED
-            end
-
-            -- Refresh cache to pick up items that appeared since search was set
-            controller:refresh_search_cache()
-
-            local pattern_lower = string.lower(pattern)
-            local matcher = function(localised_string)
-               local text = LocalisedStringCache.get(pindex, localised_string)
-               if not text then return false end
-               return string.find(string.lower(text), pattern_lower, 1, true) ~= nil
-            end
-
-            local message = MessageBuilder.new()
-            local result = ui:search_move(message, pindex, 1, matcher, controller)
-            if result == mod.SEARCH_RESULT.MOVED then
-               UiSounds.play_menu_move(pindex)
-               local msg = message:build()
-               if msg then Speech.speak(pindex, msg) end
-               return EventManager.FINISHED
-            elseif result == mod.SEARCH_RESULT.WRAPPED then
-               UiSounds.play_menu_wrap(pindex)
-               local msg = message:build()
-               if msg then Speech.speak(pindex, msg) end
-               return EventManager.FINISHED
-            elseif result == mod.SEARCH_RESULT.DIDNT_MOVE then
-               UiSounds.play_ui_edge(pindex)
-               Speech.speak(pindex, { "fa.search-no-more-results" })
-               return EventManager.FINISHED
-            end
-            -- NO_SUPPORT falls through
-         end
-      end
-   end
-   return nil
-end)
-
--- fa-c-enter: Previous search result
-register_ui_event("fa-c-enter", function(event, pindex)
-   local router = mod.get_router(pindex)
-   local stack = router_state[pindex].ui_stack
-
-   if #stack > 0 then
-      local top_entry = stack[#stack]
-      local ui_name = top_entry.name
-      if registered_uis[ui_name] then
-         local ui = registered_uis[ui_name]
-         local controller = create_controller_for_event(router)
-         if ui.supports_search and ui:supports_search(pindex, controller) then
-            local pattern = controller:get_search_pattern()
-            if not pattern or pattern == "" then
-               UiSounds.play_ui_edge(pindex)
-               Speech.speak(pindex, { "fa.search-no-more-results" })
-               return EventManager.FINISHED
-            end
-
-            -- Refresh cache to pick up items that appeared since search was set
-            controller:refresh_search_cache()
-
-            local pattern_lower = string.lower(pattern)
-            local matcher = function(localised_string)
-               local text = LocalisedStringCache.get(pindex, localised_string)
-               if not text then return false end
-               return string.find(string.lower(text), pattern_lower, 1, true) ~= nil
-            end
-
-            local message = MessageBuilder.new()
-            local result = ui:search_move(message, pindex, -1, matcher, controller)
-            if result == mod.SEARCH_RESULT.MOVED then
-               UiSounds.play_menu_move(pindex)
-               local msg = message:build()
-               if msg then Speech.speak(pindex, msg) end
-               return EventManager.FINISHED
-            elseif result == mod.SEARCH_RESULT.WRAPPED then
-               UiSounds.play_menu_wrap(pindex)
-               local msg = message:build()
-               if msg then Speech.speak(pindex, msg) end
-               return EventManager.FINISHED
-            elseif result == mod.SEARCH_RESULT.DIDNT_MOVE then
-               UiSounds.play_ui_edge(pindex)
-               Speech.speak(pindex, { "fa.search-no-more-results" })
-               return EventManager.FINISHED
-            end
-            -- NO_SUPPORT falls through
-         end
-      end
-   end
-   return nil
-end)
-
 -- Equipment/inventory accelerators (only work when UI is open)
 -- CTRL+SHIFT+R: Unload guns/ammo
 register_ui_event("fa-cs-r", function(event, pindex)
@@ -1053,38 +862,6 @@ end)
 
 -- SHIFT+LEFTBRACKET is handled directly by UI on_click handlers (e.g., inventory-grid.lua)
 -- Falls through to world handler (equip from hand) when no UI is open
-
--- fa-c-f: Open search pattern setter
-register_ui_event("fa-c-f", function(event, pindex)
-   local router = mod.get_router(pindex)
-   local stack = router_state[pindex].ui_stack
-
-   if #stack > 0 then
-      local top_entry = stack[#stack]
-      local ui_name = top_entry.name
-      if registered_uis[ui_name] then
-         local ui = registered_uis[ui_name]
-         -- Check if this UI supports search
-         if ui.supports_search then
-            local controller = create_controller_for_event(router)
-            local supports = ui:supports_search(pindex, controller)
-            if supports then
-               -- Populate the search cache by requesting translations (async, in background)
-               controller:refresh_search_cache()
-
-               -- Open search setter (translations populate in background while user types)
-               router:open_child_ui(mod.UI_NAMES.SEARCH_SETTER, {}, { node = "search_setter" })
-               return EventManager.FINISHED
-            end
-         end
-      end
-   end
-
-   -- UI doesn't support search
-   UiSounds.play_ui_edge(pindex)
-   Speech.speak(pindex, { "fa.search-not-supported" })
-   return EventManager.FINISHED
-end)
 
 -- Bar controls (inventory slot locking)
 register_ui_event("fa-minus", create_ui_handler("on_bar_down_small"))

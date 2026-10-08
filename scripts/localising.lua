@@ -1,6 +1,5 @@
 --Here: localisation functions, including event handlers
 local Speech = require("scripts.speech")
-local LocalisedStringCache = require("scripts.localised-string-cache")
 local MessageLists = require("scripts.message-lists")
 local FaUtils = require("scripts.fa-utils")
 
@@ -28,9 +27,6 @@ function mod.handler(event)
    local pindex = event.player_index
    local player = storage.players[pindex]
    local successful = event.translated
-
-   -- Check if this is a localised string cache request
-   if successful and LocalisedStringCache.handle_translation(pindex, event.id, event.result) then return end
 
    -- Check if this is a message list request
    if successful then MessageLists.on_string_translated(event) end

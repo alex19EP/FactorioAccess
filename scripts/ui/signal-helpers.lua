@@ -90,7 +90,6 @@ local function add_signals_with_hierarchy(
          label = function(ctx)
             ctx.message:fragment(Localising.get_localised_name_with_fallback(group))
          end,
-         exclude_from_search = true,
       })
 
       -- Sort subgroups by order
@@ -111,7 +110,6 @@ local function add_signals_with_hierarchy(
             label = function(ctx)
                ctx.message:fragment(Localising.get_localised_name_with_fallback(subgroup))
             end,
-            exclude_from_search = true,
          })
 
          -- Sort signals by order, then by name
@@ -147,7 +145,6 @@ local function add_signals_with_hierarchy(
          label = function(ctx)
             ctx.message:fragment({ "fa.ungrouped-signals" })
          end,
-         exclude_from_search = true,
       })
 
       -- Sort ungrouped signals by order, then by name

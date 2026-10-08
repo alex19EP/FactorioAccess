@@ -103,7 +103,6 @@ local function build_entity_tree(ctx)
          label = function(lctx)
             lctx.message:fragment(Localising.get_localised_name_with_fallback(group))
          end,
-         exclude_from_search = true,
       })
 
       -- Sort subgroups
@@ -125,7 +124,6 @@ local function build_entity_tree(ctx)
             label = function(lctx)
                lctx.message:fragment(Localising.get_localised_name_with_fallback(subgroup))
             end,
-            exclude_from_search = true,
          })
 
          -- Sort entities
@@ -157,7 +155,6 @@ local function build_entity_tree(ctx)
          label = function(lctx)
             lctx.message:fragment({ "fa.ungrouped-entities" })
          end,
-         exclude_from_search = true,
       })
 
       table.sort(ungrouped, function(a, b)
