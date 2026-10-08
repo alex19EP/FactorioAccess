@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 // The game world under the FA cursor. The mod reports where its cursor is, and the game's own
 // cursor position follows it: hover selection, building, mining, opening entities and every
 // selection tool act there as they would at the mouse. The keys that do so are the game's own
@@ -20,11 +22,50 @@ bool mayBeLocalPlayer(int playerIndex);
 // sees the key. A blueprint keeps its own rotation, which this is not.
 int buildDirection(int playerIndex);
 
-// MinHook detours for Player::getCursorMapPosition and PlayerInputSource::getCursorMapPosition,
-// and where MinHook keeps the originals.
+// The entity or blueprint in hand as this client would build it: rotate and flip change it as soon
+// as the game reads the key, before the mod's Lua sees the key.
+struct HeldBuild {
+   bool blueprint = false;
+   int direction = 0;          // 16-way defines.direction; a blueprint's rotation
+   int width = 0;              // tiles east to west, as built
+   int height = 0;             // tiles north to south, as built
+   bool flippable = false;     // an entity: whether the flip keys change it at all
+   bool mirrored = false;      // an entity that flips by mirroring: whether it is mirrored
+   bool flipHorizontal = false; // a blueprint: flipped east to west, as it lies on the map
+   bool flipVertical = false;   // a blueprint: flipped north to south, as it lies on the map
+};
+// Nothing when `playerIndex` is not this client's player or the hand holds no entity on the grid
+// or blueprint: tiles, the rail planner and anything else.
+std::optional<HeldBuild> heldBuild(int playerIndex);
+
+// Buildings are held by their north-west corner: while the mod drives the cursor, this client
+// builds and draws an entity or blueprint in hand so that the north-west corner of its footprint,
+// rotated and flipped as it is built, is the cursor tile. Hover, mining and opening stay at the
+// cursor. The position is changed before the build action is made, so the action carries it to
+// every client; Player::buildFromCursor, which scripts run in the game state, is left alone. Tiles,
+// the rail planner, off-grid entities, rail supports, diagonal directions, blueprints with a
+// snapping grid and blueprints of only off-grid entities build as vanilla does.
+
+// The build preview says what its tint means, never the colour: when the entity in hand's preview
+// moves, turns or changes entity while the mod drives the cursor, this client says the game's
+// reason it cannot be built, out of reach or already built, after what the mod says of the move;
+// nothing where it can be built. While the build control drags, the mod says nothing of the move
+// and this only what blocks the build.
+
+// MinHook detours for Player::getCursorMapPosition, PlayerInputSource::getCursorMapPosition,
+// Player::getSimpleBuildInput, BuildingRenderer::prepareBuildingInGame, Player::buildFromCursor
+// and EntityToBeBuiltSettings::draw, and where MinHook keeps the originals.
 void* playerCursorDetour();
 void** playerCursorOriginal();
 void* sourceCursorDetour();
 void** sourceCursorOriginal();
+void* simpleBuildInputDetour();
+void** simpleBuildInputOriginal();
+void* prepareBuildingDetour();
+void** prepareBuildingOriginal();
+void* buildFromCursorDetour();
+void** buildFromCursorOriginal();
+void* settingsDrawDetour();
+void** settingsDrawOriginal();
 
 } // namespace fa::world

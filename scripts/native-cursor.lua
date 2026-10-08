@@ -13,8 +13,19 @@ local mod = {}
 ---@field speak fun(player_index: integer, message: LocalisedString)
 ---@field next_part fun(player_index: integer, direction: integer)
 ---@field build_direction fun(player_index: integer): defines.direction?
+---@field held_build fun(player_index: integer): fa.NativeHeldBuild?
 ---@field walking_step fun(player_index: integer): ("full"|"partial"|"none")?, integer?
 ---@field open_selected_info fun(player_index: integer)
+
+---@class fa.NativeHeldBuild
+---@field blueprint boolean
+---@field direction defines.direction A blueprint's rotation
+---@field width integer Tiles east to west, as built
+---@field height integer Tiles north to south, as built
+---@field flippable boolean An entity: whether the flip keys change it
+---@field mirrored boolean An entity that flips by mirroring: whether it is mirrored
+---@field flip_horizontal boolean A blueprint: flipped east to west on the map
+---@field flip_vertical boolean A blueprint: flipped north to south on the map
 
 ---@type fa.Native?
 local native = rawget(_G, "fa_native")
@@ -44,17 +55,36 @@ function mod.build_direction(pindex)
    return native and native.build_direction(pindex)
 end
 
+---The entity or blueprint in hand as the game builds it, already turned or flipped by a rotate or
+---flip key the mod is handling; nil for anything else in hand. Only this client knows it: speak it,
+---never change the game by it.
+---@param pindex integer
+---@return fa.NativeHeldBuild?
+function mod.held_build(pindex)
+   return native and native.held_build(pindex)
+end
+
+---@param pindex integer
+---@param position fa.Point
+local function report(pindex, position)
+   if not native then return end
+   if VanillaMode.is_enabled(pindex) then
+      native.release_cursor(pindex)
+   else
+      native.set_cursor(pindex, position.x + 0.5, position.y + 0.5)
+   end
+end
+
+-- A key pressed right after a cursor move must reach the game with the new position, so a move is
+-- reported at once instead of on the next tick.
+Viewpoint.register_listener("cursor_moved", report)
+
 ---Called every tick. Reports each cursor as the centre of its tile.
 function mod.on_tick()
    if not native then return end
    for _, p in pairs(game.connected_players) do
       local pindex = p.index
-      if VanillaMode.is_enabled(pindex) then
-         native.release_cursor(pindex)
-      else
-         local position = Viewpoint.get_viewpoint(pindex):get_cursor_pos()
-         native.set_cursor(pindex, position.x + 0.5, position.y + 0.5)
-      end
+      report(pindex, Viewpoint.get_viewpoint(pindex):get_cursor_pos())
    end
 end
 

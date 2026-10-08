@@ -53,6 +53,57 @@ bool resolve(pdb::SymbolTable& symbols) {
    address(layout.playerCursorPosition,
            "?getCursorMapPosition@Player@@QEBA?AV?$Optional@VMapPosition@@U?$OptionalEmptyValue@VMapPosition@@@@@@XZ");
    address(layout.sourceCursorPosition, "?getCursorMapPosition@PlayerInputSource@@QEBA?AVMapPosition@@XZ");
+   offset(layout.inputSourceDragContext, "PlayerInputSource", "manualBuilder.dragBuildingContext");
+   offset(layout.dragStartPosition, "ClientDragBuildingContext", "startPosition");
+   address(layout.simpleBuildInput,
+           "?getSimpleBuildInput@Player@@QEBA?AVSimpleBuildInput@@PEBVClientDragBuildingContext@@@Z");
+   address(layout.prepareBuildingInGame,
+           "?prepareBuildingInGame@BuildingRenderer@@AEAA?AW4ItemToBuildDrawnType@@PEBVPlayer@@AEBVMapPosition@@"
+           "AEAVDrawQueue@@@Z");
+   address(layout.playerBuildFromCursor,
+           "?buildFromCursor@Player@@QEAA_NAEBV?$Optional@VMapPosition@@U?$OptionalEmptyValue@VMapPosition@@@@@@V?$"
+           "NamedBool@VGhostModeTag@@@@PEBVClientDragBuildingContext@@@Z");
+   size(layout.simpleBuildInputSize, "SimpleBuildInput");
+   offset(layout.simpleBuildInputEntity, "SimpleBuildInput", "BuildID.entityID");
+   offset(layout.simpleBuildInputRailPlanner, "SimpleBuildInput", "BuildID.isRailPlanner");
+   offset(layout.simpleBuildInputClick, "SimpleBuildInput", "originalClickPosition");
+   offset(layout.simpleBuildInputDirection, "SimpleBuildInput", "direction");
+   offset(layout.simpleBuildInputPosition, "SimpleBuildInput", "position");
+   offset(layout.simpleBuildInputTile, "SimpleBuildInput", "BuildID.placeAsTile");
+   offset(layout.entityPrototypeFlags, "EntityPrototype", "flags");
+   classSlot(layout.entityTileGridSize, "EntityPrototype", "tileGridSize");
+   classSlot(layout.adapterCursorAdapter, "GameAdapter", "getCursorAdapter");
+   classSlot(layout.readAdapterDestructor, "ReadAdapter", "~ReadAdapter");
+   address(layout.buildableBlueprint, "?getBuildableBlueprint@ReadAdapter@@QEBAPEBVBlueprint@@XZ");
+   address(layout.blueprintBuildingModifier,
+           "?getBuildingModifier@Blueprint@@QEBA?AVBuildingModifier@@VMapPosition@@VDirection@@VFlip@@AEBV?$Optional@"
+           "VMapPosition@@U?$OptionalEmptyValue@VMapPosition@@@@@@@Z");
+   address(layout.blueprintTileBox, "?getTileBoxIgnoreSnapGrid@Blueprint@@QEBA?AVTileBox@@XZ");
+   size(layout.buildingModifierSize, "BuildingModifier");
+   offset(layout.buildingModifierCentre, "BuildingModifier", "afterRotationShift");
+   offset(layout.blueprintRotation, "Blueprint", "rotation");
+   offset(layout.blueprintFlip, "Blueprint", "flip");
+   offset(layout.blueprintSnapToGrid, "Blueprint", "snapToGrid._Has_value");
+   address(layout.playerBuildId, "?getBuildID@Player@@QEBA?AVBuildID@@XZ");
+   size(layout.buildIdSize, "BuildID");
+   offset(layout.buildIdEntity, "BuildID", "entityID");
+   offset(layout.buildIdTile, "BuildID", "placeAsTile");
+   offset(layout.buildIdRailPlanner, "BuildID", "isRailPlanner");
+   offset(layout.gameViewEntityMirrored, "GameView", "entityMirrored");
+   offset(layout.entityFlipping, "EntityPrototype", "flipping");
+   address(layout.settingsDraw, "?draw@EntityToBeBuiltSettings@@QEBAXAEAVDrawQueue@@PEBVEntity@@@Z");
+   address(layout.settingsBuildCheckData, "?getBuildCheckData@EntityToBeBuiltSettings@@AEBA?AVBuildCheckData@@XZ");
+   address(layout.buildCheckMessage, "?getMessage@BuildCheckResult@@QEBA?AVLocalisedString@@XZ");
+   classSlot(layout.adapterBuildabilityCheck, "GameAdapter", "entityBuildabilityCheck");
+   size(layout.buildCheckDataSize, "BuildCheckData");
+   size(layout.buildCheckResultSize, "BuildCheckResult");
+   offset(layout.buildCheckResultType, "BuildCheckResult", "type");
+   offset(layout.buildCheckResultEntity, "BuildCheckResult", "entity");
+   offset(layout.entityPosition, "Entity", "position");
+   offset(layout.entityPrototypeOf, "Entity", "prototype");
+   offset(layout.settingsTooFar, "EntityToBeBuiltSettings", "tooFar");
+   offset(layout.settingsBlueprint, "EntityToBeBuiltSettings", "blueprint");
+   offset(layout.settingsPlayer, "EntityToBeBuiltSettings", "player");
    address(layout.initLuaState, "?initLuaState@LuaHelper@@YAXPEAUlua_State@@@Z");
    address(layout.addLocalFlyingText, "?addLocalFlyingText@Map@@QEAAX$$QEAVLocalMapFlyingText@@@Z");
    address(layout.constructGuiFlyingText,
@@ -100,6 +151,8 @@ bool resolve(pdb::SymbolTable& symbols) {
    address(layout.luaPushLString, "lua_pushlstring");
    address(layout.luaRawSetI, "lua_rawseti");
    address(layout.luaPushByte, "??$lua_pushnumber@E@@YAXPEAUlua_State@@E@Z");
+   address(layout.luaPushInt, "??$lua_pushnumber@H@@YAXPEAUlua_State@@H@Z");
+   address(layout.luaPushBoolean, "lua_pushboolean");
    address(layout.parseLocalisedString, "?parseLocalisedString@LuaHelper@@YA?AVLocalisedString@@PEAUlua_State@@H_N@Z");
    address(layout.localisedStringDestroy, "??1LocalisedString@@QEAA@XZ");
    size(layout.localisedStringSize, "LocalisedString");
@@ -258,6 +311,9 @@ bool resolve(pdb::SymbolTable& symbols) {
    address(layout.itemPrototypes,
            "?indexToPrototype@?$PrototypeList@VItemPrototype@@@@2V?$vector@PEAVItemPrototype@@V?$allocator@"
            "PEAVItemPrototype@@@std@@@std@@A");
+   address(layout.entityPrototypes,
+           "?indexToPrototype@?$PrototypeList@VEntityPrototype@@@@2V?$vector@PEAVEntityPrototype@@V?$allocator@"
+           "PEAVEntityPrototype@@@std@@@std@@A");
    offset(layout.recipeListSlots, "SelectListGui<ID<RecipePrototype,unsigned short> >", "slots");
    address(layout.qualityPrototypes,
            "?indexToPrototype@?$PrototypeList@VQualityPrototype@@@@2V?$vector@PEAVQualityPrototype@@V?$allocator@"
@@ -459,6 +515,16 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.boolSettingItem, "BoolGuiSetting", "setting");
    offset(layout.boolSettingWidget, "BoolGuiSetting", "widget");
 
+   if (ok && (layout.simpleBuildInputSize > kSimpleBuildInputCapacity ||
+              layout.buildingModifierSize > kBuildingModifierCapacity || layout.buildIdSize > kBuildIdCapacity ||
+              layout.buildCheckDataSize > kBuildCheckDataCapacity ||
+              layout.buildCheckResultSize > kBuildCheckResultCapacity)) {
+      log::error("A building structure outgrew its stack buffer: SimpleBuildInput {} bytes, BuildingModifier {}, "
+                 "BuildID {}, BuildCheckData {}, BuildCheckResult {}",
+                 layout.simpleBuildInputSize, layout.buildingModifierSize, layout.buildIdSize,
+                 layout.buildCheckDataSize, layout.buildCheckResultSize);
+      ok = false;
+   }
    if (ok) {
       log::info("Layout: Gui baseWidget {:#x} focused {:#x} modals {:#x} (entry {} bytes); Widget parent {:#x} "
                 "children {:#x} privateChildren {:#x} text {:#x} usage {:#x}; Label text {:#x}; vtable slots keyDown "
@@ -467,6 +533,15 @@ bool resolve(pdb::SymbolTable& symbols) {
                 layout.widgetChildren, layout.widgetPrivateChildren, layout.widgetText, layout.widgetUsageBits,
                 layout.labelText, layout.slotKeyDown, layout.slotKeyUp, layout.slotFocus, layout.slotIsFocusable,
                 layout.keyEventSize);
+      log::info("Building: SimpleBuildInput {} bytes, entity {:#x} rail planner {:#x} click {:#x} direction {:#x}; "
+                "EntityPrototype flags {:#x}, tileGridSize slot {}; getCursorAdapter slot {}, ~ReadAdapter slot {}; "
+                "BuildingModifier {} bytes, centre {:#x}; Blueprint rotation {:#x} flip {:#x} snapToGrid {:#x}; "
+                "entityBuildabilityCheck slot {}",
+                layout.simpleBuildInputSize, layout.simpleBuildInputEntity, layout.simpleBuildInputRailPlanner,
+                layout.simpleBuildInputClick, layout.simpleBuildInputDirection, layout.entityPrototypeFlags,
+                layout.entityTileGridSize, layout.adapterCursorAdapter, layout.readAdapterDestructor,
+                layout.buildingModifierSize, layout.buildingModifierCentre, layout.blueprintRotation,
+                layout.blueprintFlip, layout.blueprintSnapToGrid, layout.adapterBuildabilityCheck);
    }
    return ok;
 }

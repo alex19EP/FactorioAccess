@@ -49,8 +49,6 @@ function mod.on_cursor_stack_changed(event, pindex, read_hand)
       storage.players[pindex].previous_hand_item_name = new_item_name
 
       vp:set_cursor_rotation_offset(0)
-      vp:set_flipped_horizontal(false)
-      vp:set_flipped_vertical(false)
 
       read_hand(pindex)
    end

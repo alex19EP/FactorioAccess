@@ -59,6 +59,84 @@ struct Layout {
    // the mouse.
    uintptr_t playerCursorPosition = 0; // Optional<MapPosition> Player::getCursorMapPosition() const
    uintptr_t sourceCursorPosition = 0; // MapPosition PlayerInputSource::getCursorMapPosition() const
+   // Drag building: while a build control is held, the game builds at the cursor and along the
+   // cursor's path, in a straight line. Releasing the control runs
+   // ClientDragBuildingContext::stopped, which empties startPosition.
+   uint32_t inputSourceDragContext = 0; // PlayerInputSource::manualBuilder.dragBuildingContext
+   uint32_t dragStartPosition = 0;      // ClientDragBuildingContext::startPosition, Optional<MapPosition>
+   // Where this client builds. SimpleBuildInput Player::getSimpleBuildInput(ClientDragBuildingContext
+   // const*) const reads the cursor, takes the build direction and snaps the position to the grid,
+   // for the build control, drag building and Player::buildFromCursor. ItemToBuildDrawnType
+   // BuildingRenderer::prepareBuildingInGame(Player const*, MapPosition const&, DrawQueue&) draws
+   // the item in hand at a position its caller takes from the cursor. bool
+   // Player::buildFromCursor(Optional<MapPosition> const&, NamedBool<GhostModeTag>,
+   // ClientDragBuildingContext const*) runs only from LuaPlayer::luaRawBuildFromCursor, in the game
+   // state on every client.
+   uintptr_t simpleBuildInput = 0;
+   uintptr_t prepareBuildingInGame = 0;
+   uintptr_t playerBuildFromCursor = 0;
+   uint32_t simpleBuildInputSize = 0;      // sizeof(SimpleBuildInput)
+   uint32_t simpleBuildInputEntity = 0;    // SimpleBuildInput's BuildID::entityID, ID<EntityPrototype> first
+   uint32_t simpleBuildInputRailPlanner = 0; // SimpleBuildInput's BuildID::isRailPlanner, bool
+   uint32_t simpleBuildInputClick = 0;     // SimpleBuildInput::originalClickPosition, the cursor before snapping
+   uint32_t simpleBuildInputDirection = 0; // SimpleBuildInput::direction, Direction
+   uint32_t simpleBuildInputPosition = 0;  // SimpleBuildInput::position, Optional<MapPosition>
+   uint32_t simpleBuildInputTile = 0;      // SimpleBuildInput's BuildID::placeAsTile, PlaceAsTile const*
+   uint32_t entityPrototypeFlags = 0;      // EntityPrototype::flags, EntityPrototypeFlags (uint32)
+   // TilePosition EntityPrototype::tileGridSize(Direction) const, a virtual slot: the tiles the
+   // entity covers when built facing that direction, width and height swapped for east and west.
+   uint32_t entityTileGridSize = 0;
+   // The blueprint in hand. std::unique_ptr<ReadAdapter> GameAdapter::getCursorAdapter() const, a
+   // virtual slot, reads the player's cursor; Blueprint const* ReadAdapter::getBuildableBlueprint()
+   // const finds the blueprint there (an item's or a library record's). The ReadAdapter is deleted
+   // through its virtual destructor.
+   uint32_t adapterCursorAdapter = 0;
+   uint32_t readAdapterDestructor = 0;
+   uintptr_t buildableBlueprint = 0;
+   // Where a blueprint goes. BuildingModifier Blueprint::getBuildingModifier(MapPosition, Direction,
+   // Flip, Optional<MapPosition> const&) const centres the blueprint's tile box on the grid nearest
+   // the cursor: its afterRotationShift is the centre. A blueprint of only off-grid entities is
+   // centred on the cursor itself. TileBox Blueprint::getTileBoxIgnoreSnapGrid() const is that box,
+   // before the blueprint is rotated. Blueprints with a snapping grid are placed by other rules.
+   uintptr_t blueprintBuildingModifier = 0;
+   uintptr_t blueprintTileBox = 0;
+   uint32_t buildingModifierSize = 0;
+   uint32_t buildingModifierCentre = 0;    // BuildingModifier::afterRotationShift, MapPosition
+   uint32_t blueprintRotation = 0;         // Blueprint::rotation, Direction
+   uint32_t blueprintFlip = 0;             // Blueprint::flip, Flip (one byte)
+   uint32_t blueprintSnapToGrid = 0;       // Blueprint::snapToGrid's has-value flag, bool
+   // What is in hand to build. BuildID Player::getBuildID() const: the entity an item places, or the
+   // tile, or neither for a blueprint or anything else. The game turns an entity in hand with
+   // GameView::buildDirection and, for entities that flip by mirroring, GameView::entityMirrored;
+   // EntityPrototype::flipping says how the entity flips, if at all.
+   uintptr_t playerBuildId = 0;
+   uint32_t buildIdSize = 0;
+   uint32_t buildIdEntity = 0;             // BuildID::entityID, ID<EntityPrototype> first
+   uint32_t buildIdTile = 0;               // BuildID::placeAsTile, PlaceAsTile const*
+   uint32_t buildIdRailPlanner = 0;        // BuildID::isRailPlanner, bool
+   uint32_t gameViewEntityMirrored = 0;    // GameView::entityMirrored, bool
+   uint32_t entityFlipping = 0;            // EntityPrototype::flipping, EntityFlipping (one byte)
+   // The build preview's colour. void EntityToBeBuiltSettings::draw(DrawQueue&, Entity const*) const
+   // draws one preview entity, the one in hand or one of a blueprint's (EntityToBeBuiltSettings::
+   // blueprint set), tinted by BuildCheckResult GameAdapter::entityBuildabilityCheck(Entity const&,
+   // BuildCheckData const&) const, a virtual slot, on BuildCheckData
+   // EntityToBeBuiltSettings::getBuildCheckData() const. Buildable is green, or the out-of-reach
+   // tint with EntityToBeBuiltSettings::tooFar; Ignorable has a tint of its own; anything else is
+   // red. LocalisedString BuildCheckResult::getMessage() const is the game's reason, empty for those
+   // three.
+   uintptr_t settingsDraw = 0;
+   uintptr_t settingsBuildCheckData = 0;
+   uintptr_t buildCheckMessage = 0;
+   uint32_t adapterBuildabilityCheck = 0;
+   uint32_t buildCheckDataSize = 0;
+   uint32_t buildCheckResultSize = 0;
+   uint32_t buildCheckResultType = 0;      // BuildCheckResult::type, BuildCheckResult::Type (uint32)
+   uint32_t buildCheckResultEntity = 0;    // BuildCheckResult::entity, Entity*: what is in the way
+   uint32_t entityPosition = 0;            // Entity::position, MapPosition
+   uint32_t entityPrototypeOf = 0;         // Entity::prototype, EntityPrototype*
+   uint32_t settingsTooFar = 0;            // EntityToBeBuiltSettings::tooFar, bool
+   uint32_t settingsBlueprint = 0;         // EntityToBeBuiltSettings::blueprint, Blueprint const*
+   uint32_t settingsPlayer = 0;            // EntityToBeBuiltSettings::player, Player const*
    // void LuaHelper::initLuaState(lua_State*): sets up the globals of every Lua state the game
    // creates (log, localised_print, ...).
    uintptr_t initLuaState = 0;
@@ -116,6 +194,8 @@ struct Layout {
    // void lua_pushnumber<unsigned char>(lua_State*, unsigned char): the game pushes numbers through
    // templates like this one; there is no plain lua_pushnumber to call.
    uintptr_t luaPushByte = 0;
+   uintptr_t luaPushInt = 0;     // void lua_pushnumber<int>(lua_State*, int)
+   uintptr_t luaPushBoolean = 0; // void lua_pushboolean(lua_State*, int)
    // LocalisedString LuaHelper::parseLocalisedString(lua_State*, int index, bool strict): what
    // localised_print reads its argument with. It throws ScriptException, a Lua error to the caller,
    // on a malformed string.
@@ -314,6 +394,7 @@ struct Layout {
    uint32_t recipeListSlots = 0;
    // PrototypeList<T>::indexToPrototype, the std::vector<T*> an ID indexes.
    uintptr_t itemPrototypes = 0;
+   uintptr_t entityPrototypes = 0;
    uintptr_t qualityPrototypes = 0;
    uintptr_t recipePrototypes = 0;
    // PrototypeList<T>::nameToPrototype, the std::map<std::string, T*, std::less<>> of a type's
@@ -599,6 +680,33 @@ inline constexpr uint8_t kDirectionCount = 16;
 
 // MapPosition coordinates are fixed point with 8 fractional bits.
 inline constexpr int32_t kMapPositionScale = 256;
+
+// Bits of EntityPrototypeFlags, read from the game's entityPrototypeFlagMapping table in 2.1.21:
+// code constants, like the widget bits above.
+inline constexpr uint32_t kEntityNotRotatable = 0x1;              // "not-rotatable"
+inline constexpr uint32_t kEntityPlaceableOffGrid = 0x10;         // "placeable-off-grid"
+inline constexpr uint32_t kEntitySnapToRailSupportSpot = 0x10000000; // "snap-to-rail-support-spot"
+
+// EntityFlipping, code constants: NotAvailable 0, Simple 1, DirectionTransform 2,
+// DirectionAndMirroring 3. Only the last uses GameView::entityMirrored.
+inline constexpr uint8_t kEntityFlippingNotAvailable = 0;
+inline constexpr uint8_t kEntityFlippingMirroring = 3;
+// Flip, a one-byte bitfield: horizontal, then vertical, in the blueprint's own unrotated frame.
+inline constexpr uint8_t kFlipHorizontal = 0x1;
+inline constexpr uint8_t kFlipVertical = 0x2;
+
+// BuildCheckResult::Type, code constants.
+inline constexpr uint32_t kBuildCheckBuildable = 0;
+inline constexpr uint32_t kBuildCheckIgnorable = 2;
+inline constexpr uint32_t kBuildCheckCollidesWithEntity = 3;
+
+// Stack room the building hooks keep for a SimpleBuildInput, a BuildingModifier, a BuildID, a
+// BuildCheckData and a BuildCheckResult; resolve fails when the game's outgrow them.
+inline constexpr uint32_t kSimpleBuildInputCapacity = 128;
+inline constexpr uint32_t kBuildingModifierCapacity = 64;
+inline constexpr uint32_t kBuildIdCapacity = 64;
+inline constexpr uint32_t kBuildCheckDataCapacity = 192;
+inline constexpr uint32_t kBuildCheckResultCapacity = 96;
 
 extern Layout layout;
 

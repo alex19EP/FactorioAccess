@@ -13,6 +13,13 @@
      "Player::getCursorMapPosition")                                                                                   \
    X(sourceCursorPosition, world::sourceCursorDetour(), world::sourceCursorOriginal(),                                 \
      "PlayerInputSource::getCursorMapPosition")                                                                        \
+   X(simpleBuildInput, world::simpleBuildInputDetour(), world::simpleBuildInputOriginal(),                             \
+     "Player::getSimpleBuildInput")                                                                                    \
+   X(prepareBuildingInGame, world::prepareBuildingDetour(), world::prepareBuildingOriginal(),                          \
+     "BuildingRenderer::prepareBuildingInGame")                                                                        \
+   X(playerBuildFromCursor, world::buildFromCursorDetour(), world::buildFromCursorOriginal(),                          \
+     "Player::buildFromCursor")                                                                                        \
+   X(settingsDraw, world::settingsDrawDetour(), world::settingsDrawOriginal(), "EntityToBeBuiltSettings::draw")        \
    X(initLuaState, luabridge::initLuaStateDetour(), luabridge::initLuaStateOriginal(), "LuaHelper::initLuaState")      \
    X(versionForDisplay, disclosure::versionDetour(), disclosure::versionOriginal(),                                    \
      "ApplicationVersion::strDetailedNoBuildMode")                                                                     \

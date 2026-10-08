@@ -105,6 +105,11 @@ inline constexpr std::string_view kTreeControls = "tree controls";
 inline constexpr std::string_view kMissing = "missing";
 inline constexpr std::string_view kFromIntermediates = "from intermediates";
 
+// What the build preview's tint means where the item in hand would go, besides the game's own
+// reason it cannot be built: buildable but out of reach, and an identical entity already there.
+inline constexpr std::string_view kOutOfReach = "out of reach";
+inline constexpr std::string_view kAlreadyBuilt = "already built";
+
 // The Y key in the world when the cursor points at no entity and no tile.
 inline constexpr std::string_view kNothingHere = "nothing here";
 

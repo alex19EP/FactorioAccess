@@ -36,8 +36,6 @@ local mod = {}
 ---@field cursor_tile_highlight_box LuaRenderObject?
 ---@field cursor_rotation_offset  number
 ---@field cursor_jumping boolean
----@field flipped_horizontal boolean
----@field flipped_vertical boolean
 
 ---@type table<number, fa.viewpoint.ViewpointState>
 local viewpoint_storage = StorageManager.declare_storage_module("viewpoint", {
@@ -48,9 +46,29 @@ local viewpoint_storage = StorageManager.declare_storage_module("viewpoint", {
    cursor_bookmark = { x = 0, y = 0 },
    cursor_ent_highlight_box = nil,
    cursor_tile_highlight_box = nil,
-   flipped_horizontal = false,
-   flipped_vertical = false,
 })
+
+-- Listener system for cursor events
+---@type table<string, function[]>
+local listeners = {}
+
+---Notify listeners of an event
+---@param event_name string
+---@param pindex number
+---@param data table?
+local function notify_listeners(event_name, pindex, data)
+   if listeners[event_name] then
+      for _, callback in ipairs(listeners[event_name]) do
+         callback(pindex, data)
+      end
+   end
+end
+
+---@param pindex number
+local function cursor_moved(pindex)
+   local pos = viewpoint_storage[pindex].cursor_pos
+   notify_listeners("cursor_moved", pindex, { x = pos.x, y = pos.y })
+end
 
 ---@class fa.Viewpoint
 ---@field pindex number
@@ -70,6 +88,7 @@ end
 function Viewpoint:set_cursor_pos(point)
    assert(point and point.x and point.y)
    viewpoint_storage[self.pindex].cursor_pos = { x = math.floor(point.x), y = math.floor(point.y) }
+   cursor_moved(self.pindex)
 end
 
 ---@return number
@@ -159,28 +178,6 @@ function Viewpoint:set_cursor_jumping(jumping)
    viewpoint_storage[self.pindex].cursor_jumping = jumping
 end
 
----@return boolean
-function Viewpoint:get_flipped_horizontal()
-   return viewpoint_storage[self.pindex].flipped_horizontal
-end
-
----@param flipped boolean
-function Viewpoint:set_flipped_horizontal(flipped)
-   assert(type(flipped) == "boolean")
-   viewpoint_storage[self.pindex].flipped_horizontal = flipped
-end
-
----@return boolean
-function Viewpoint:get_flipped_vertical()
-   return viewpoint_storage[self.pindex].flipped_vertical
-end
-
----@param flipped boolean
-function Viewpoint:set_flipped_vertical(flipped)
-   assert(type(flipped) == "boolean")
-   viewpoint_storage[self.pindex].flipped_vertical = flipped
-end
-
 local viewpoint_cache = {}
 
 ---@param pindex number
@@ -197,28 +194,13 @@ function mod.get_viewpoint(pindex)
    return viewpoint_cache[pindex]
 end
 
--- Listener system for cursor events
----@type table<string, function[]>
-local listeners = {}
-
----Register a listener for cursor events
----@param event_name string "cursor_moved_continuous" or "cursor_jumped"
+---Register a listener for cursor events. "cursor_moved" fires on every change of the cursor
+---position with the new position; "cursor_moved_continuous" fires only for WASD movement.
+---@param event_name string "cursor_moved", "cursor_moved_continuous" or "cursor_jumped"
 ---@param callback function
 function mod.register_listener(event_name, callback)
    if not listeners[event_name] then listeners[event_name] = {} end
    table.insert(listeners[event_name], callback)
-end
-
----Notify listeners of an event
----@param event_name string
----@param pindex number
----@param data table?
-local function notify_listeners(event_name, pindex, data)
-   if listeners[event_name] then
-      for _, callback in ipairs(listeners[event_name]) do
-         callback(pindex, data)
-      end
-   end
 end
 
 ---Set cursor position for continuous movement (called only from WASD handlers)
@@ -231,6 +213,7 @@ function Viewpoint:set_cursor_pos_continuous(point, direction)
 
    local old_pos = self:get_cursor_pos()
    viewpoint_storage[self.pindex].cursor_pos = { x = math.floor(point.x), y = math.floor(point.y) }
+   cursor_moved(self.pindex)
 
    -- Notify listeners of continuous movement
    notify_listeners("cursor_moved_continuous", self.pindex, {

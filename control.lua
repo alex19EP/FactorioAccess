@@ -1809,7 +1809,7 @@ local function kb_read_character_coords(event)
 end
 
 EventManager.on_event(
-   "fa-c-k",
+   "fa-a-j",
    ---@param event EventData.CustomInputEvent
    function(event, pindex)
       kb_read_character_coords(event)
@@ -2686,7 +2686,7 @@ EventManager.on_event(
    "fa-h",
    ---@param event EventData.CustomInputEvent
    function(event, pindex)
-      BuildingTools.flip_item_in_hand_horizontal(event)
+      BuildingTools.flip_item_in_hand(event)
    end
 )
 
@@ -2719,7 +2719,7 @@ EventManager.on_event(
    "fa-v",
    ---@param event EventData.CustomInputEvent
    function(event, pindex)
-      BuildingTools.flip_item_in_hand_vertical(event)
+      BuildingTools.flip_item_in_hand(event)
    end
 )
 

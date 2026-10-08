@@ -14,6 +14,9 @@
 #include <regex>
 #include <string>
 #include <string_view>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
 namespace fa::luabridge {
 
@@ -58,6 +61,10 @@ void rawSetI(lua_State* L, int index, int n) {
 }
 void pushByte(lua_State* L, uint8_t value) {
    reinterpret_cast<void (*)(lua_State*, uint8_t)>(layout.luaPushByte)(L, value);
+}
+void pushInt(lua_State* L, int value) { reinterpret_cast<void (*)(lua_State*, int)>(layout.luaPushInt)(L, value); }
+void pushBoolean(lua_State* L, bool value) {
+   reinterpret_cast<void (*)(lua_State*, int)>(layout.luaPushBoolean)(L, value ? 1 : 0);
 }
 
 struct MsvcString {
@@ -162,6 +169,31 @@ int buildDirection(lua_State* L) {
    return 1;
 }
 
+// The entity or blueprint in hand as this client builds it (see world::HeldBuild), as a table
+// {blueprint, direction, width, height, flippable, mirrored, flip_horizontal, flip_vertical}, or
+// nil. Only this client knows it, so the mod may speak it but must not change the game by it.
+int heldBuild(lua_State* L) {
+   const auto held = world::heldBuild(static_cast<int>(checkInteger(L, 1)));
+   if (!held) return 0;
+   createTable(L, 0, 8);
+   const auto field = [&](const char* name, auto value) {
+      if constexpr (std::is_same_v<decltype(value), bool>)
+         pushBoolean(L, value);
+      else
+         pushInt(L, value);
+      setField(L, -2, name);
+   };
+   field("blueprint", held->blueprint);
+   field("direction", held->direction);
+   field("width", held->width);
+   field("height", held->height);
+   field("flippable", held->flippable);
+   field("mirrored", held->mirrored);
+   field("flip_horizontal", held->flipHorizontal);
+   field("flip_vertical", held->flipVertical);
+   return 1;
+}
+
 // How this client's character's walking went this tick or the last: "full", "partial" (slid along
 // something) or "none" (blocked), then a step count that wraps at 256; nothing for another
 // client's player or when it did not walk. The mod may play sounds by it but must not change the
@@ -200,6 +232,7 @@ constexpr Function kFunctions[] = {
    {"speak", &speak},
    {"next_part", &nextPart},
    {"build_direction", &buildDirection},
+   {"held_build", &heldBuild},
    {"walking_step", &walkingStep},
    {"open_selected_info", &openSelectedInfo},
 };

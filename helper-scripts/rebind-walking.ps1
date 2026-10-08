@@ -1,14 +1,17 @@
 <#
 .SYNOPSIS
-Moves vanilla walking from WASD to the arrow keys, leaving WASD to the FactorioAccess cursor.
+Moves vanilla controls off the keys FactorioAccess uses: walking from WASD to the arrow keys, and
+connect and disconnect train from J and K to CONTROL + J and CONTROL + K.
 
 .DESCRIPTION
 Edits the [controls] section of Factorio's config.ini: move-up, move-down, move-left and
-move-right become UP, DOWN, LEFT and RIGHT. Their -alternative and -controller bindings are left
-alone. A copy of the old file is kept beside it. Close Factorio first: it rewrites config.ini when
-it exits.
+move-right become UP, DOWN, LEFT and RIGHT, leaving WASD to the cursor; connect-train and
+disconnect-train become CONTROL + J and CONTROL + K, leaving J (cursor to the character) and K
+(cursor coordinates) to the mod, where pressing K otherwise has the game answer that it cannot
+disconnect rolling stock. Their -alternative and -controller bindings are left alone. A copy of
+the old file is kept beside it. Close Factorio first: it rewrites config.ini when it exits.
 
-With -Revert the four controls go back to the game's defaults (W, S, A, D).
+With -Revert the controls go back to the game's defaults (W, S, A, D, J, K).
 
 .PARAMETER ConfigPath
 config.ini to edit. Defaults to the one in %APPDATA%\Factorio\config, the location of the
@@ -25,11 +28,13 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-$walking = [ordered]@{
-   'move-up'    = @{ Arrow = 'UP'; Default = 'W' }
-   'move-down'  = @{ Arrow = 'DOWN'; Default = 'S' }
-   'move-left'  = @{ Arrow = 'LEFT'; Default = 'A' }
-   'move-right' = @{ Arrow = 'RIGHT'; Default = 'D' }
+$controls = [ordered]@{
+   'move-up'          = @{ Key = 'UP'; Default = 'W' }
+   'move-down'        = @{ Key = 'DOWN'; Default = 'S' }
+   'move-left'        = @{ Key = 'LEFT'; Default = 'A' }
+   'move-right'       = @{ Key = 'RIGHT'; Default = 'D' }
+   'connect-train'    = @{ Key = 'CONTROL + J'; Default = 'J' }
+   'disconnect-train' = @{ Key = 'CONTROL + K'; Default = 'K' }
 }
 
 if (Get-Process -Name factorio -ErrorAction SilentlyContinue) {
@@ -58,10 +63,10 @@ for ($i = $start + 2; $i -lt $lines.Count; $i += 2) {
 
 # Missing lines go right after the section header, in order.
 $insertAt = $start + 2
-foreach ($control in $walking.Keys) {
+foreach ($control in $controls.Keys) {
    # A set binding reads "move-up=UP"; one left at its default is commented out as "; move-up=W".
    $pattern = '^(; )?' + [regex]::Escape($control) + '='
-   $wanted = if ($Revert) { "; $control=$($walking[$control].Default)" } else { "$control=$($walking[$control].Arrow)" }
+   $wanted = if ($Revert) { "; $control=$($controls[$control].Default)" } else { "$control=$($controls[$control].Key)" }
    $found = $false
    for ($i = $start + 2; $i -lt $end; $i += 2) {
       if ($lines[$i] -match $pattern) {

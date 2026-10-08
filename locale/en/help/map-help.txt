@@ -40,7 +40,7 @@ Add shift to the cursor movement keys to move up to 100 tiles in any given direc
 
 Use control plus the cursor keys to move by the width or height of your item in hand, which can be used to easily build lines.
 
-To build, click with left bracket.
+To build, click with left bracket. A building or blueprint in hand is held by its north-west corner, so that corner goes on the cursor tile whichever way it faces.
 
 Add shift to place a ghost instead.
 
@@ -51,6 +51,8 @@ To rotate items clockwise press r.  This rotates your hand or the selected entit
 Add shift to rotate counterclockwise.
 
 h and v flip horizontally and vertically, respectively. A flip is not always the same as rotating by 180 degrees.
+
+Rotating or flipping what is in hand reads its direction, its size, and the sides its pipes and heat connections leave from, with the tile counted from the west along the north and south sides and from the north along the east and west sides.
 
 You can get to a variety of UIs from this view.
 
