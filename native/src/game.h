@@ -750,6 +750,17 @@ struct Layout {
    // AlertsOverview::pinButtonFlow, agui::VerticalFlow: beside each row of the list, its pin button
    // (an IconButton, InputAction PinAlertGroup), or for a surface's heading a blank TextButton.
    uint32_t alertsOverviewPins = 0;
+   // The map search's results in remote view (GameView::chartSearchResultGui, a Window at the right):
+   // what the search box in remote view's title bar found, filled as the player types. Like the
+   // alerts window, a ListBox of rows and a flow of their pin buttons.
+   uint32_t gameViewChartSearch = 0;     // std::unique_ptr<ChartSearchResultGui>
+   // ChartSearchResultGui::listbox, agui::ListBox: a row per result, as the game words it ("[item=
+   // iron-ore] Iron ore 402k"). Recipes in machines first, then map tags, train stops, resource
+   // patches and tiles. A click moves the camera to the result.
+   uint32_t chartSearchList = 0;
+   // ChartSearchResultGui::pinButtonFlow, agui::VerticalFlow: beside each row its pin button (an
+   // IconButton, gui.pin-search-result), which pins the result to the pins panel.
+   uint32_t chartSearchPins = 0;
    // IconButtonWithNumber::count. The alert button blinks by setting it to 0 every other half second.
    uint32_t iconButtonCount = 0;
    uint32_t gameViewGoal = 0;            // GameView::goalDescription, std::unique_ptr<GoalDescription>

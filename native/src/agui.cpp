@@ -877,6 +877,18 @@ AlertsWindow alertsWindow() {
    return alerts;
 }
 
+ChartSearchResults chartSearchResults() {
+   const Widget* window = shownMember(gameView(), layout.gameViewChartSearch);
+   if (!window) return {};
+   ChartSearchResults results{window, {}};
+   std::vector<const Widget*> items = listBoxItems(member(window, layout.chartSearchList));
+   std::span<const Widget* const> pins = children(member(window, layout.chartSearchPins));
+   // The list and the pin column are filled together, a pin per row.
+   for (size_t i = 0; i < items.size(); ++i)
+      results.rows.push_back({items[i], i < pins.size() ? pins[i] : nullptr});
+   return results;
+}
+
 const Widget* goalLabel() {
    const Widget* goal = shownMember(gameView(), layout.gameViewGoal);
    return goal ? member(goal, layout.goalLabel) : nullptr;

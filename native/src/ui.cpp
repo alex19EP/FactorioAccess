@@ -23,6 +23,7 @@
 #include "screens/GameDialogScreen.hpp"
 #include "screens/MachineScreen.hpp"
 #include "screens/MapGeneratorScreen.hpp"
+#include "screens/MapSearchScreen.hpp"
 #include "screens/ElectricNetworkScreen.hpp"
 #include "screens/MenuScreen.hpp"
 #include "screens/ModSettingsScreen.hpp"
@@ -129,6 +130,8 @@ void start() {
    manager.Register(std::make_unique<screens::CraftingQueueScreen>());
    // The game's info panel for what the cursor points at, which the Y key opens over the map.
    manager.Register(std::make_unique<screens::SelectedInfoScreen>());
+   // Remote view's map search, while its field shows.
+   manager.Register(std::make_unique<screens::MapSearchScreen>());
    // The technology window, over the window it stacks on.
    manager.Register(std::make_unique<screens::TechnologyScreen>());
    // The alerts window an alert button opens, over the window it stacks on.

@@ -389,6 +389,20 @@ struct AlertsWindow {
 };
 AlertsWindow alertsWindow();
 
+// The map search's results in remote view (GameView::chartSearchResultGui) while they show, else a
+// null window: a row per result of what the search box in remote view's title bar found, as the
+// game words it ("[item=iron-ore] Iron ore 402k"), with its pin button. Clicking a row moves the
+// camera to the result; the pin button pins it to the pins panel. Main thread only.
+struct ChartSearchRow {
+   const Widget* item = nullptr; // the list's TextButton
+   const Widget* pin = nullptr;  // its pin button
+};
+struct ChartSearchResults {
+   const Widget* window = nullptr;
+   std::vector<ChartSearchRow> rows;
+};
+ChartSearchResults chartSearchResults();
+
 // The scenario's goal at the top left (GoalDescription's label), while it shows one.
 const Widget* goalLabel();
 
