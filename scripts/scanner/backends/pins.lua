@@ -3,7 +3,6 @@ Pins: the places, entities, tags, players and alerts a player pinned, which the 
 right of the screen with a small camera each. They are read from the player when the scanner
 refreshes, so there is nothing to track.
 ]]
-local Alerts = require("scripts.alerts")
 local ChartTags = require("scripts.scanner.backends.chart-tags")
 local FaInfo = require("scripts.fa-info")
 local FaUtils = require("scripts.fa-utils")
@@ -12,6 +11,27 @@ local SC = require("scripts.scanner.scanner-consts")
 local Speech = require("scripts.speech")
 
 local mod = {}
+
+-- The gui-alert-tooltip locale key for each alert type, which takes the count
+local ALERT_TOOLTIP_KEYS = {
+   [defines.alert_type.entity_destroyed] = "destroyed",
+   [defines.alert_type.entity_under_attack] = "attack",
+   [defines.alert_type.turret_fire] = "turret-fire",
+   [defines.alert_type.turret_out_of_ammo] = "turret-out-of-ammo",
+   [defines.alert_type.train_no_path] = "train-no-path",
+   [defines.alert_type.train_out_of_fuel] = "train-out-of-fuel",
+   [defines.alert_type.no_material_for_construction] = "no-material-for-construction",
+   [defines.alert_type.not_enough_construction_robots] = "not-enough-construction-robots",
+   [defines.alert_type.not_enough_repair_packs] = "not-enough-repair-packs",
+   [defines.alert_type.no_storage] = "no-storage",
+   [defines.alert_type.no_platform_storage] = "no-platform-storage",
+   [defines.alert_type.no_roboport_storage] = "no-roboport-storage",
+   [defines.alert_type.collector_path_blocked] = "collector-path-blocked",
+   [defines.alert_type.platform_tile_building_blocked] = "platform-tile-building-blocked",
+   [defines.alert_type.pipeline_overextended] = "pipeline-overextended",
+   [defines.alert_type.unclaimed_cargo] = "unclaimed-cargo",
+   [defines.alert_type.custom] = "custom-alert",
+}
 
 ---The surface a pin is on: its own, or that of what it points to. Nil for a pin that is on no
 ---surface.
@@ -75,7 +95,7 @@ local function describe_target(message, player, pin)
    local alert_type = pin.alert_type
    if alert_type then
       local count = #pin.alert_positions
-      message:list_item({ "gui-alert-tooltip." .. Alerts.get_alert_locale_key(alert_type), count })
+      message:list_item({ "gui-alert-tooltip." .. ALERT_TOOLTIP_KEYS[alert_type], count })
    end
 end
 
