@@ -89,8 +89,9 @@ describe("Pole views", function()
          ctx:assert_not_nil(supply)
          ctx:assert_equals("fa.pole-views-wires", wires.caption[1])
          ctx:assert_equals(defines.relative_gui_type.electric_network_gui, wires.anchor.gui)
-         -- One column without a header: a label per cell, the reach then the one pole.
-         ctx:assert_equals(2, #wires.children[1].children)
+         -- In the inset panel, one column without a header: a label per cell, the reach then the
+         -- one pole.
+         ctx:assert_equals(2, #wires.children[1].children[1].children)
          player.opened = nil
       end)
 

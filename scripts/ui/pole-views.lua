@@ -137,6 +137,7 @@ function mod.views(pole)
    }
 end
 
-EntityViews.register({ "electric-pole" }, defines.relative_gui_type.electric_network_gui, mod.views)
+-- The network window spans nearly the whole screen, so the views beside it are narrow.
+EntityViews.register({ "electric-pole" }, defines.relative_gui_type.electric_network_gui, mod.views, 150)
 
 return mod

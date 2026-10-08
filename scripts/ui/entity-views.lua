@@ -23,20 +23,26 @@ local mod = {}
 ---@class fa.EntityViews.Source
 ---@field gui defines.relative_gui_type the game's window for the entities
 ---@field views fun(entity: LuaEntity): fa.EntityViews.View[]
+---@field column_width integer
 
 ---@type table<string, fa.EntityViews.Source>
 local sources = {}
 
 local NAME_PREFIX = "fa-entity-view-"
 
--- Registers what to show beside the windows of entities of these types.
+-- How wide a column's text runs before it wraps, in GUI pixels, unless a registration says.
+local COLUMN_WIDTH = 240
+
+-- Registers what to show beside the windows of entities of these types. `column_width` narrows the
+-- columns beside a window that leaves little of the screen free.
 ---@param types string[]
 ---@param gui defines.relative_gui_type
 ---@param views fun(entity: LuaEntity): fa.EntityViews.View[]
-function mod.register(types, gui, views)
+---@param column_width integer?
+function mod.register(types, gui, views, column_width)
    for _, t in ipairs(types) do
       assert(not sources[t], "entity views for " .. t .. " are registered twice")
-      sources[t] = { gui = gui, views = views }
+      sources[t] = { gui = gui, views = views, column_width = column_width or COLUMN_WIDTH }
    end
 end
 
@@ -47,18 +53,31 @@ function mod.destroy(player)
    end
 end
 
+-- A cell's label, wrapping its text at the column's width: a line that runs on would leave the
+-- screen beside a wide window.
+---@param grid LuaGuiElement
+---@param caption LocalisedString
+---@param width integer
+---@param style string?
+local function add_cell(grid, caption, width, style)
+   local label = grid.add({ type = "label", caption = caption, style = style })
+   label.style.single_line = false
+   label.style.maximal_width = width
+end
+
 ---@param player LuaPlayer
----@param gui defines.relative_gui_type
+---@param source fa.EntityViews.Source
 ---@param index integer
 ---@param view fa.EntityViews.View
-local function add_view(player, gui, index, view)
+local function add_view(player, source, index, view)
    local frame = player.gui.relative.add({
       type = "frame",
       name = NAME_PREFIX .. index,
       caption = view.title,
       direction = "vertical",
-      anchor = { gui = gui, position = defines.relative_gui_position.right },
+      anchor = { gui = source.gui, position = defines.relative_gui_position.right },
    })
+   local inside = frame.add({ type = "frame", style = "inside_shallow_frame_with_padding", direction = "vertical" })
    local columns = {}
    local rows = 0
    local titled = false
@@ -69,15 +88,17 @@ local function add_view(player, gui, index, view)
          titled = titled or column.title ~= nil
       end
    end
-   local grid = frame.add({ type = "table", column_count = #columns })
+   local grid = inside.add({ type = "table", column_count = #columns })
+   grid.style.horizontal_spacing = 16
+   grid.style.vertical_spacing = 6
    if titled then
       for _, column in ipairs(columns) do
-         grid.add({ type = "label", caption = column.title or "" })
+         add_cell(grid, column.title or "", source.column_width, "caption_label")
       end
    end
    for row = 1, rows do
       for _, column in ipairs(columns) do
-         grid.add({ type = "label", caption = column.cells[row] or "" })
+         add_cell(grid, column.cells[row] or "", source.column_width)
       end
    end
 end
@@ -90,7 +111,7 @@ function mod.show(player, entity)
    local source = sources[entity.type]
    if not source then return end
    for i, view in ipairs(source.views(entity)) do
-      add_view(player, source.gui, i, view)
+      add_view(player, source, i, view)
    end
 end
 
