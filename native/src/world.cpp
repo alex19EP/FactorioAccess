@@ -4,6 +4,7 @@
 #include "highlights.h"
 #include "text.h"
 #include "vocab.h"
+#include "zoom.h"
 
 #include <atomic>
 #include <cmath>
@@ -117,6 +118,15 @@ Position* sourceDetour(const void* source, Position* out) {
       return out;
    }
    return g_sourceOriginal(source, out);
+}
+
+// NamedBool<Tag> is a one-byte struct, passed by value like a uint8_t.
+using IsActiveFunction = bool (*)(const void* control, bool, uint8_t, bool, uint8_t);
+IsActiveFunction g_isActiveOriginal = nullptr;
+
+bool detourIsActive(const void* control, bool a, uint8_t gui, bool b, uint8_t modifiers) {
+   if (zoom::isZoomControl(control)) return zoom::isActive(control, g_isActiveOriginal(control, a, gui, b, modifiers));
+   return g_isActiveOriginal(control, a, gui, b, modifiers);
 }
 
 // This client's drag building context. There is one PlayerInputSource, this client's.
@@ -491,6 +501,11 @@ void releaseCursor(int playerIndex) {
    if (gameOfLocalPlayer(playerIndex)) g_hasCursor.store(false);
 }
 
+bool drivesCursor() {
+   Position position;
+   return cursor(currentGame(), position);
+}
+
 bool mayBeLocalPlayer(int playerIndex) {
    const std::byte* game = currentGame();
    const std::byte* player = game ? localPlayer(game) : nullptr;
@@ -564,6 +579,8 @@ void* sourceCursorDetour() { return reinterpret_cast<void*>(&sourceDetour); }
 void** sourceCursorOriginal() { return reinterpret_cast<void**>(&g_sourceOriginal); }
 void* dragUpdateDetour() { return reinterpret_cast<void*>(&detourDragUpdate); }
 void** dragUpdateOriginal() { return reinterpret_cast<void**>(&g_dragUpdateOriginal); }
+void* isActiveDetour() { return reinterpret_cast<void*>(&detourIsActive); }
+void** isActiveOriginal() { return reinterpret_cast<void**>(&g_isActiveOriginal); }
 void* simpleBuildInputDetour() { return reinterpret_cast<void*>(&detourSimpleBuildInput); }
 void** simpleBuildInputOriginal() { return reinterpret_cast<void**>(&g_simpleBuildInputOriginal); }
 void* prepareBuildingDetour() { return reinterpret_cast<void*>(&detourPrepareBuilding); }

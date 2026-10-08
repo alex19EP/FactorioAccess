@@ -50,6 +50,10 @@ struct Layout {
    uintptr_t dispatchClick = 0;
    uintptr_t dispatchMouseUp = 0;
    uintptr_t dispatchMouseLeave = 0;
+   // Pair<bool, agui::Widget*> determineWidgetUnderMouse(): whether the real mouse is over a GUI
+   // rather than the game view. A GUI control bound like a world control (craft and build on the
+   // left button, craft-5 and mine on the right) is held only while it says so.
+   uintptr_t determineWidgetUnderMouse = 0;
    // bool PlayerInputSource::processNextDialog(): what the Confirm message control runs, closing
    // the scenario message dialog shown over the game.
    uintptr_t processNextDialog = 0;
@@ -71,6 +75,25 @@ struct Layout {
    uint32_t inputSourceDragContext = 0; // PlayerInputSource::manualBuilder.dragBuildingContext
    uint32_t dragStartPosition = 0;      // ClientDragBuildingContext::startPosition, Optional<MapPosition>
    uint32_t dragTurnPending = 0;        // ClientDragBuildingContext::belt.applySmartDirectionChangeWhenPossible
+   // bool ControlInput::isActive(bool, NamedBool<GuiCheckTag>, bool, NamedBool<CheckModifiersTag>)
+   // const: whether a control is held, as every held control is read.
+   uintptr_t controlInputIsActive = 0;
+   // Zoom. bool PlayerInputSource::processZoom(Event const&) takes a zoom control triggered while
+   // not held, a wheel notch, and calls void PlayerInputSource::zoom(ZoomDirection, double steps),
+   // which makes the ZoomAroundPoint action. A held key zooms instead from
+   // PlayerInputSource::sendStateChanges, a little every tick it reads the control as held.
+   uintptr_t processZoom = 0;
+   uintptr_t playerInputSourceZoom = 0;
+   uint32_t controlSettingsZoomIn = 0;  // ControlSettings::zoomIn, the embedded ControlInput
+   uint32_t controlSettingsZoomOut = 0; // ControlSettings::zoomOut
+   // InterfaceSettings::zoomTowardsCursor.value, bool: zoom around the mouse rather than the middle
+   // of the screen, where the camera can move (remote view, the map).
+   uint32_t zoomTowardsCursor = 0;
+   // The current controller's zoom: slot of Zoomer* GameAdapter::getZoomer(), and Zoomer::config.
+   // zoomRate, double, the factor of one wheel notch (2^(1/7) for the character, 2^(1/3) for the
+   // remote view).
+   uint32_t adapterGetZoomer = 0;
+   uint32_t zoomerRate = 0;
    // Where this client builds. SimpleBuildInput Player::getSimpleBuildInput(ClientDragBuildingContext
    // const*) const reads the cursor, takes the build direction and snaps the position to the grid,
    // for the build control, drag building and Player::buildFromCursor. ItemToBuildDrawnType
@@ -272,8 +295,14 @@ struct Layout {
    uint32_t globalAppManager = 0;       // AppManager*
    uint32_t globalPlayerInputSource = 0; // PlayerInputSource*
    uint32_t globalInputState = 0;        // InputState*
-   // InputState::mouseState.buttons: the SDL mouse button mask, bit n-1 for button n.
+   uint32_t globalControlSettings = 0;   // ControlSettings*
+   // InputState::mouseState.buttons: the held mouse buttons, bit n-1 for the game's button n (left
+   // 1, right 2, middle 3).
    uint32_t inputStateMouseButtons = 0;
+   // InputState::mouseBlocks, one InputState::MouseBlock per button in the same order: the control a
+   // press was used by, which blocks every other control on the button until the real release.
+   uint32_t inputStateMouseBlocks = 0;
+   uint32_t mouseBlockSize = 0;
 
    // AppManager: the stack of app states (InGame, InGameMenu, InSettingsMenu, ...), the top last.
    uint32_t appManagerStates = 0; // std::vector<std::unique_ptr<AppManagerState>>
@@ -725,6 +754,34 @@ struct Layout {
    uint32_t otherSettingsBools = 0;
    uint32_t boolSettingItem = 0;      // BoolGuiSetting::setting, SimpleConfigItem<bool>*
    uint32_t boolSettingWidget = 0;    // BoolGuiSetting::widget, an embedded agui::CheckBox
+
+   // The full map (see chart.h).
+   uint32_t playerRenderMode = 0;     // Player::renderMode, GameRenderMode
+   // ChartSelection PlayerInputSource::getChartSelection() const: what the map selects at the
+   // cursor, nothing off the map.
+   uintptr_t chartSelection = 0;
+   uint32_t chartSelectionSize = 0;
+   uint32_t chartSelectionTarget = 0; // ChartSelection::target, EntityWithOwner*: a vehicle or display panel
+   uint32_t chartSelectionTag = 0;    // ChartSelection::customTagTarget, CustomChartTag*
+   uint32_t chartSelectionPatch = 0;  // ChartSelection::resourcePatch, ResourceEntity*: one resource of the patch
+   uint32_t chartTagText = 0;         // CustomChartTag::text, std::string
+   // ResourcePatchInfo, which finds a whole resource patch from one resource as the map does to
+   // outline and label it.
+   uint32_t patchInfoSize = 0;
+   uintptr_t patchInfoConstruct = 0; // ResourcePatchInfo::ResourcePatchInfo(bool useClockLimiter)
+   uintptr_t patchInfoDestroy = 0;   // ResourcePatchInfo::~ResourcePatchInfo()
+   // bool ResourcePatchInfo::update(ResourceEntity const*, ForceData const&, bool keepIfUnchanged)
+   uintptr_t patchInfoUpdate = 0;
+   // static std::string ResourcePatchInfo::getFormattedNameFor(MaterialID const&, double amount,
+   // ResourceEntityPrototype const*): a line of the map's label, "[item=iron-ore] 1.2M".
+   uintptr_t patchFormattedName = 0;
+   uint32_t patchInfoCounts = 0;    // ResourcePatchInfo::expectedMiningAmount.counts, std::map<MaterialID, double>
+   uint32_t patchInfoPrototype = 0; // ResourcePatchInfo::resourcePrototype
+   uint32_t materialIdSize = 0;     // sizeof(MaterialID)
+   uint32_t playerForce = 0;        // Player::forceID.index, uint8_t
+   // Map::forceManager.sortedForceDataList.begin_, ForceData**, indexed by ForceID.
+   uint32_t mapForceData = 0;
+   uintptr_t gameOperatorDelete = 0; // the game's operator delete(void*), which frees what its strings hold
 };
 
 // Bits of agui::Widget::usageBitMask, read from Widget::setVisible and Widget::isEnabled in
@@ -774,6 +831,10 @@ inline constexpr uint8_t kCursorBoxLogistics = 5;
 // machines that would put into or take from an entity.
 inline constexpr uint8_t kCursorBoxTrainVisualization = 6;
 
+// GameRenderMode, code constants: nothing 0, game 1, chart 2 (the full map), chart zoomed in 3
+// (remote view drawing the world).
+inline constexpr uint8_t kRenderModeChart = 2;
+
 // Stack room the building hooks keep for a SimpleBuildInput, a BuildingModifier, a BuildID, a
 // BuildCheckData and a BuildCheckResult; resolve fails when the game's outgrow them.
 inline constexpr uint32_t kSimpleBuildInputCapacity = 128;
@@ -783,6 +844,9 @@ inline constexpr uint32_t kBuildCheckDataCapacity = 192;
 inline constexpr uint32_t kBuildCheckResultCapacity = 96;
 // Room for a HeuristicEntityIterator<Surface const>.
 inline constexpr uint32_t kEntityIteratorCapacity = 64;
+// Room for a ChartSelection, and for the ResourcePatchInfo the chart keeps (see chart.h).
+inline constexpr uint32_t kChartSelectionCapacity = 64;
+inline constexpr uint32_t kPatchInfoCapacity = 256;
 
 extern Layout layout;
 

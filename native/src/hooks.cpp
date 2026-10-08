@@ -1,5 +1,6 @@
 #include "hooks.h"
 
+#include "agui.h"
 #include "console.h"
 #include "disclosure.h"
 #include "flyingtext.h"
@@ -13,6 +14,7 @@
 #include "popups.h"
 #include "ui.h"
 #include "world.h"
+#include "zoom.h"
 
 #include <MinHook.h>
 

@@ -49,6 +49,7 @@ bool resolve(pdb::SymbolTable& symbols) {
    address(layout.dispatchClick, "?dispatchClick@Widget@agui@@QEAAXAEBVMouseEvent@2@@Z");
    address(layout.dispatchMouseUp, "?dispatchMouseUp@Widget@agui@@QEAAXAEBVMouseEvent@2@@Z");
    address(layout.dispatchMouseLeave, "?dispatchMouseLeave@Widget@agui@@QEAAXAEBVMouseEvent@2@@Z");
+   address(layout.determineWidgetUnderMouse, "?determineWidgetUnderMouse@@YA?AU?$Pair@_NPEAVWidget@agui@@@@XZ");
    address(layout.processNextDialog, "?processNextDialog@PlayerInputSource@@QEAA_NXZ");
    address(layout.playerCursorPosition,
            "?getCursorMapPosition@Player@@QEBA?AV?$Optional@VMapPosition@@U?$OptionalEmptyValue@VMapPosition@@@@@@XZ");
@@ -58,6 +59,15 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.inputSourceDragContext, "PlayerInputSource", "manualBuilder.dragBuildingContext");
    offset(layout.dragStartPosition, "ClientDragBuildingContext", "startPosition");
    offset(layout.dragTurnPending, "ClientDragBuildingContext", "belt.applySmartDirectionChangeWhenPossible");
+   address(layout.controlInputIsActive,
+           "?isActive@ControlInput@@QEBA_N_NV?$NamedBool@VGuiCheckTag@@@@0V?$NamedBool@VCheckModifiersTag@@@@@Z");
+   address(layout.processZoom, "?processZoom@PlayerInputSource@@AEAA_NAEBVEvent@@@Z");
+   address(layout.playerInputSourceZoom, "?zoom@PlayerInputSource@@AEAAXW4ZoomDirection@@N@Z");
+   offset(layout.controlSettingsZoomIn, "ControlSettings", "zoomIn");
+   offset(layout.controlSettingsZoomOut, "ControlSettings", "zoomOut");
+   offset(layout.zoomTowardsCursor, "InterfaceSettings", "zoomTowardsCursor.value");
+   classSlot(layout.adapterGetZoomer, "GameAdapter", "getZoomer");
+   offset(layout.zoomerRate, "Zoomer", "config.zoomRate");
    address(layout.simpleBuildInput,
            "?getSimpleBuildInput@Player@@QEBA?AVSimpleBuildInput@@PEBVClientDragBuildingContext@@@Z");
    address(layout.prepareBuildingInGame,
@@ -200,7 +210,10 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.globalAppManager, "GlobalContext", "appManager");
    offset(layout.globalPlayerInputSource, "GlobalContext", "playerInputSource");
    offset(layout.globalInputState, "GlobalContext", "inputState.value");
+   offset(layout.globalControlSettings, "GlobalContext", "controlSettings.value");
    offset(layout.inputStateMouseButtons, "InputState", "mouseState.buttons");
+   offset(layout.inputStateMouseBlocks, "InputState", "mouseBlocks");
+   size(layout.mouseBlockSize, "InputState::MouseBlock");
    offset(layout.appManagerStates, "AppManager", "stateStack");
    offset(layout.appStateGui, "AppManagerStateWithGuiManualConstruction<GameMenuGui>", "gui");
    offset(layout.gameView, "Game", "gameView");
@@ -553,6 +566,32 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.boolSettingItem, "BoolGuiSetting", "setting");
    offset(layout.boolSettingWidget, "BoolGuiSetting", "widget");
 
+   offset(layout.playerRenderMode, "Player", "renderMode");
+   address(layout.chartSelection, "?getChartSelection@PlayerInputSource@@QEBA?AVChartSelection@@XZ");
+   size(layout.chartSelectionSize, "ChartSelection");
+   offset(layout.chartSelectionTarget, "ChartSelection", "target");
+   offset(layout.chartSelectionTag, "ChartSelection", "customTagTarget");
+   offset(layout.chartSelectionPatch, "ChartSelection", "resourcePatch");
+   offset(layout.chartTagText, "CustomChartTag", "text");
+   size(layout.patchInfoSize, "ResourcePatchInfo");
+   address(layout.patchInfoConstruct, "??0ResourcePatchInfo@@QEAA@_N@Z");
+   address(layout.patchInfoDestroy, "??1ResourcePatchInfo@@QEAA@XZ");
+   address(layout.patchInfoUpdate, "?update@ResourcePatchInfo@@QEAA_NPEBVResourceEntity@@AEBVForceData@@_N@Z");
+   address(layout.patchFormattedName,
+           "?getFormattedNameFor@ResourcePatchInfo@@SA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@"
+           "AEBVMaterialID@@NPEBVResourceEntityPrototype@@@Z");
+   offset(layout.patchInfoCounts, "ResourcePatchInfo", "expectedMiningAmount.counts");
+   offset(layout.patchInfoPrototype, "ResourcePatchInfo", "resourcePrototype");
+   size(layout.materialIdSize, "MaterialID");
+   offset(layout.playerForce, "Player", "forceID.index");
+   offset(layout.mapForceData, "Map", "forceManager.sortedForceDataList.begin_");
+   address(layout.gameOperatorDelete, "??3@YAXPEAX@Z");
+
+   if (ok && (layout.chartSelectionSize > kChartSelectionCapacity || layout.patchInfoSize > kPatchInfoCapacity)) {
+      log::error("A chart structure outgrew its buffer: ChartSelection {} bytes, ResourcePatchInfo {}",
+                 layout.chartSelectionSize, layout.patchInfoSize);
+      ok = false;
+   }
    if (ok && (layout.simpleBuildInputSize > kSimpleBuildInputCapacity ||
               layout.buildingModifierSize > kBuildingModifierCapacity || layout.buildIdSize > kBuildIdCapacity ||
               layout.buildCheckDataSize > kBuildCheckDataCapacity ||

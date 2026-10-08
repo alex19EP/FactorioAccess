@@ -1,6 +1,7 @@
 #include "ui.h"
 
 #include "agui.h"
+#include "chart.h"
 #include "devserver.h"
 #include "disclosure.h"
 #include "input.h"
@@ -53,6 +54,7 @@ void tick(const agui::Gui* gui) {
    screens::WindowScreen::SetGui(gui);
    nav::ScreenManager::Get().Update();
    screens::QuickBarScreen::WatchPage();
+   chart::tick();
    dev::pump();
 }
 

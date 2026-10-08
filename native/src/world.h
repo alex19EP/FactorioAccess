@@ -13,6 +13,9 @@ namespace fa::world {
 void setCursor(int playerIndex, double x, double y);
 // Gives the game cursor back to the mouse.
 void releaseCursor(int playerIndex);
+// Whether the mod drives the game cursor in the current game. The real mouse then plays no part in
+// the world: a blind player does not know where it rests.
+bool drivesCursor();
 // Whether `playerIndex` may be this client's player: false only once a game with a local player
 // is up and that player is someone else.
 bool mayBeLocalPlayer(int playerIndex);
@@ -64,7 +67,7 @@ std::optional<DragBuild> dragBuild(int playerIndex);
 // and this only what blocks the build.
 
 // MinHook detours for Player::getCursorMapPosition, PlayerInputSource::getCursorMapPosition,
-// ClientDragBuildingContext::update, Player::getSimpleBuildInput,
+// ClientDragBuildingContext::update, ControlInput::isActive, Player::getSimpleBuildInput,
 // BuildingRenderer::prepareBuildingInGame, Player::buildFromCursor and
 // EntityToBeBuiltSettings::draw, and where MinHook keeps the originals.
 void* playerCursorDetour();
@@ -73,6 +76,8 @@ void* sourceCursorDetour();
 void** sourceCursorOriginal();
 void* dragUpdateDetour();
 void** dragUpdateOriginal();
+void* isActiveDetour();
+void** isActiveOriginal();
 void* simpleBuildInputDetour();
 void** simpleBuildInputOriginal();
 void* prepareBuildingDetour();

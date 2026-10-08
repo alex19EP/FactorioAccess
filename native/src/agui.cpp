@@ -1,6 +1,7 @@
 #include "agui.h"
 
 #include "game.h"
+#include "world.h"
 
 #include <windows.h>
 
@@ -1255,7 +1256,37 @@ bool inTree(const Widget* root, const Widget* widget, int depth = 0) {
    return false;
 }
 
+// The widget a press is replaying a click on, while it runs. Presses run on the main thread, inside
+// a Gui's logic.
+thread_local const Widget* t_pressed = nullptr;
+
+struct UnderMouse {
+   bool overGui;
+   const Widget* widget;
+};
+using DetermineWidgetUnderMouse = UnderMouse* (*)(UnderMouse* out);
+DetermineWidgetUnderMouse g_underMouseOriginal = nullptr;
+
+UnderMouse* detourUnderMouse(UnderMouse* out) {
+   if (t_pressed) {
+      *out = {true, t_pressed};
+      return out;
+   }
+   // The game ignores the world wherever the real mouse rests on a GUI: no hover or map selection,
+   // no drag building, selection tools or world controls. While the mod drives the cursor, the
+   // mouse is nowhere.
+   if (world::drivesCursor()) {
+      *out = {false, nullptr};
+      return out;
+   }
+   return g_underMouseOriginal(out);
+}
+
 } // namespace
+
+void* underMouseDetour() { return reinterpret_cast<void*>(&detourUnderMouse); }
+
+void** underMouseOriginal() { return reinterpret_cast<void**>(&g_underMouseOriginal); }
 
 void pressOver(const Widget* widget, const Widget* over, MouseButton button, bool shift, bool control) {
    using Dispatch = void (*)(const Widget* widget, const void* event);
@@ -1299,16 +1330,29 @@ void pressOver(const Widget* widget, const Widget* over, MouseButton button, boo
 
    // Handlers that ask whether a control is held (crafting checks craft, craft5 and craftAll) read
    // the mouse buttons from the InputState, not the event: hold the button down there until the
-   // release, as a real click would.
+   // release, as a real click would. A handler that acts on the press also marks the button used
+   // by its control (an inventory slot by cursor-transfer), which blocks every other control on
+   // the button until InputState::setMouseUp clears it on the real release; the release puts the
+   // block back as it was.
    struct HeldButton {
-      uint32_t* buttons;
-      uint32_t saved;
+      uint32_t* buttons = nullptr;
+      uint32_t saved = 0;
+      std::byte* block = nullptr;
+      std::byte savedBlock[32] = {};
       void release() {
          if (buttons) *buttons = saved;
+         if (block) std::memcpy(block, savedBlock, layout.mouseBlockSize);
          buttons = nullptr;
+         block = nullptr;
       }
       ~HeldButton() { release(); }
-   } held{nullptr, 0};
+   } held;
+
+   // Those handlers also ask whether the mouse is over a GUI, which a real click on the widget is.
+   struct Pressing {
+      const Widget* saved;
+      ~Pressing() { t_pressed = saved; }
+   } pressing{std::exchange(t_pressed, over)};
 
    // A widget the real mouse rests on is hovered already, and must stay so.
    bool hover = gui && widgetUnderMouse(gui) != widget;
@@ -1316,11 +1360,16 @@ void pressOver(const Widget* widget, const Widget* over, MouseButton button, boo
    // Entered with no button down, so a slot starts no drag.
    auto* context = *reinterpret_cast<std::byte* const*>(layout.globalContext);
    if (auto* state = context ? at<std::byte*>(context, layout.globalInputState) : nullptr) {
-      // SDL_BUTTON_LMASK, SDL_BUTTON_MMASK, SDL_BUTTON_RMASK
-      uint32_t mask = button == MouseButton::Left ? 1 : button == MouseButton::Middle ? 2 : 4;
+      // The game's own numbering, not SDL's (Event::convertSDLMouseButton): left 1, right 2, middle
+      // 3, each held as bit n-1. "mouse-button-2" in a binding is the right button.
+      uint32_t index = button == MouseButton::Left ? 0 : button == MouseButton::Right ? 1 : 2;
       held.buttons = reinterpret_cast<uint32_t*>(state + layout.inputStateMouseButtons);
       held.saved = *held.buttons;
-      *held.buttons |= mask;
+      *held.buttons |= 1u << index;
+      if (layout.mouseBlockSize <= sizeof(held.savedBlock)) {
+         held.block = state + layout.inputStateMouseBlocks + index * layout.mouseBlockSize;
+         std::memcpy(held.savedBlock, held.block, layout.mouseBlockSize);
+      }
    }
    if (!send(layout.dispatchMouseDown, kDown)) return;
    // A click-on-press widget clicked inside dispatchMouseDown; the Gui sends no second click.

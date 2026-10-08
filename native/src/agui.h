@@ -507,6 +507,12 @@ void press(const Widget* widget, MouseButton button, bool shift, bool control);
 // The same, but at the centre of `over`, a widget inside `widget`: for widgets that act on where
 // they were clicked, such as a table selecting the row under the mouse.
 void pressOver(const Widget* widget, const Widget* over, MouseButton button, bool shift, bool control);
+// Detour for determineWidgetUnderMouse: during a press the mouse is over the pressed widget, so the
+// controls its handlers ask about (craft, craft-5, craft-all) hold wherever the real mouse is. While
+// the mod drives the cursor the mouse is over no GUI otherwise, so the world answers the FA cursor
+// wherever the real mouse rests.
+void* underMouseDetour();
+void** underMouseOriginal();
 
 // The DropDown whose list is open as the top modal, or null.
 const Widget* openDropDown(const Gui* gui);

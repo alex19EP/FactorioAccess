@@ -9,11 +9,14 @@
    X(guiLogic, reinterpret_cast<void*>(&detourGuiLogic), reinterpret_cast<void**>(&g_originalGuiLogic),                \
      "agui::Gui::logic")                                                                                               \
    X(sdlPollEvent, input::pollEventDetour(), input::pollEventOriginal(), "SDL_PollEvent")                              \
+   X(determineWidgetUnderMouse, agui::underMouseDetour(), agui::underMouseOriginal(), "determineWidgetUnderMouse")     \
    X(playerCursorPosition, world::playerCursorDetour(), world::playerCursorOriginal(),                                 \
      "Player::getCursorMapPosition")                                                                                   \
    X(sourceCursorPosition, world::sourceCursorDetour(), world::sourceCursorOriginal(),                                 \
      "PlayerInputSource::getCursorMapPosition")                                                                        \
    X(dragBuildingUpdate, world::dragUpdateDetour(), world::dragUpdateOriginal(), "ClientDragBuildingContext::update")  \
+   X(controlInputIsActive, world::isActiveDetour(), world::isActiveOriginal(), "ControlInput::isActive")               \
+   X(processZoom, zoom::processZoomDetour(), zoom::processZoomOriginal(), "PlayerInputSource::processZoom")            \
    X(simpleBuildInput, world::simpleBuildInputDetour(), world::simpleBuildInputOriginal(),                             \
      "Player::getSimpleBuildInput")                                                                                    \
    X(prepareBuildingInGame, world::prepareBuildingDetour(), world::prepareBuildingOriginal(),                          \
