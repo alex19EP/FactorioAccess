@@ -5,7 +5,7 @@
 // The game world under the FA cursor. The mod reports where its cursor is, and the game's own
 // cursor position follows it: hover selection, building, mining, opening entities and every
 // selection tool act there as they would at the mouse. The keys that do so are the game's own
-// controls; helper-scripts/bind-mouse-keys.ps1 gives every mouse button binding a key.
+// controls; helper-scripts/factorio-access-keys.ps1 gives every mouse button binding a key.
 namespace fa::world {
 
 // From the mod's Lua, on whatever thread runs it. `playerIndex` is LuaPlayer::index; only the

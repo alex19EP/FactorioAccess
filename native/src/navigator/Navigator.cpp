@@ -189,7 +189,7 @@ void Navigator::HandleKey(const input::KeyEvent& e)
         if (!e.repeat)
             HandleHomeEnd(false);
         break;
-    // [ and ] are the left and right mouse buttons, as in the world (bind-mouse-keys.ps1).
+    // [ and ] are the left and right mouse buttons, as in the world (factorio-access-keys.ps1).
     case input::keys::Return:
     case input::keys::LeftBracket:
         if (!e.repeat)

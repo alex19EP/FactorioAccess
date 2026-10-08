@@ -48,52 +48,46 @@ The game can be purchased from Factorio.com or from Steam. Any purchase gives ac
 
 # Installing Factorio Access
 
-The mod comes in two parts, and you need both: the mod itself, `FactorioAccess_<version>.zip`, and the DLL, `winmm.dll`. Both are attached to each release on [the releases page](../../releases). The same steps work for the zip, Steam and regular Windows versions of the game.
+The mod comes in two parts, and you need both. Both are attached to each release on [the releases page](../../releases).
+
+- `FactorioAccess_<version>.zip` is the mod itself. It goes in the mods folder as it is, without extracting it.
+- `FactorioAccess-native.zip` holds the DLL, `bin\x64\winmm.dll`, and the keys script, `factorio-access-keys.cmd`. It is extracted into the game folder.
+
+The same steps work for the zip, Steam and regular Windows versions of the game.
 
 1. If you use the old launcher, stop using it. The game is now started the usual way. If you use Steam and put the launcher in Factorio's Launch Options, open the Properties menu for Factorio and clear the "Launch Options" field in the "General" section.
 1. Run the game at least once if you have not, and then exit it. This creates the folders for the next steps.
-1. Download `winmm.dll`, `winmm.pdb` and `FactorioAccess_<version>.zip` from the release you want.
+1. Download both files from the release you want.
 1. Find your game folder, the one that holds the folder `bin`.
    - Zip version: the folder you extracted the game into.
    - Steam: in your Steam Library, open the "Manage" menu for Factorio and select "Browse local files". This is usually `C:\Program Files (x86)\Steam\steamapps\common\Factorio`.
-   - Regular Windows version: usually `C:\Program Files\Factorio`.
-1. Copy `winmm.dll` and `winmm.pdb` into the folder `bin\x64` inside the game folder, next to `factorio.exe`. The pdb is optional, but it makes our crash reports readable.
+   - Regular Windows version: usually `C:\Program Files\Factorio`. Windows asks for administrator permission to change files there.
+1. Extract `FactorioAccess-native.zip` into the game folder, and replace the files if asked. `winmm.dll` and `winmm.pdb` land in `bin\x64`, next to `factorio.exe`, and `factorio-access-keys.cmd` and `factorio-access-keys.ps1` land in the game folder itself.
 1. Find your mods folder.
    - Zip version: the folder `mods` inside the game folder.
    - Steam and regular Windows version: `%AppData%\Factorio\mods`. You can paste this path into the address bar of File Explorer. The full path is something like `C:\Users\Your_User_Name_Here\AppData\Roaming\Factorio\mods`.
 1. Delete any older `FactorioAccess_*.zip` from the mods folder, then copy the new one there.
-1. Change the game settings that the launcher used to change for you. See "Game settings" below.
-1. Start the game the usual way, from Steam, a shortcut or `factorio.exe`. Speech goes to your screen reader as the game loads.
+1. Start the game the usual way, from Steam, a shortcut or `factorio.exe`. Speech goes to your screen reader as the game loads. When the main menu appears, exit the game. The game now lists the mod's controls in its settings file.
+1. Run `factorio-access-keys.cmd` from the game folder. It moves the game's controls to the keys the mod expects. See "Keys" below.
+1. Start the game again. It is ready to play.
 1. If you bought Space Age, go into the Mods menu of the game's main menu and disable elevated rails, quality, and Space Age.
 
-To update, repeat the steps that copy `winmm.dll`, `winmm.pdb` and the mod zip, with the game closed. Always update both parts together. A DLL and a mod from different releases may not work together.
+To update, close the game, extract the new `FactorioAccess-native.zip` into the game folder and replace the mod zip in the mods folder. Always update both parts together. A DLL and a mod from different releases may not work together. Then start the game once, exit it, and run `factorio-access-keys.cmd` again, so new controls get their keys too.
 
 To uninstall the DLL, delete `winmm.dll` and `winmm.pdb` from `bin\x64`. The mod does not work without it.
 
-## Game settings
+## Keys
 
-These settings keep keys free for the mod and turn off parts of the game that are not accessible. They live in `config.ini`: for the zip version in the folder `config` inside the game folder, otherwise in `%AppData%\Factorio\config`. Edit the file with the game closed. Find each section, the name in brackets, and set each line under it as shown. Add a line if it is not there.
+`factorio-access-keys.cmd` changes the game's controls in its settings file, `config.ini`, so they do not collide with the mod and every mouse action has a key:
 
-```
-[other]
-check-updates=false
-enable-mod-settings-load-save-confirmation=false
+- Walking moves from W, A, S and D to the arrow keys, leaving W, A, S and D to the cursor.
+- Connect and disconnect train move from J and K to CONTROL + J and CONTROL + K.
+- Zoom in and zoom out get EQUALS and MINUS.
+- Every control on a mouse button also gets a key: left button LEFTBRACKET, right button RIGHTBRACKET, middle button BACKSLASH, with the same modifiers. The key goes in the control's free second slot, so the mouse keeps working.
 
-[interface]
-active-quick-bars=1
-shortcut-bar-rows=1
-show-tips-and-tricks-notifications=false
+Close the game before running it, since the game rewrites `config.ini` when it exits. It works out which `config.ini` the game uses: for the zip version the one in the game folder, for Steam and the regular Windows version the one in `%AppData%\Factorio\config`. It says what it changed, and keeps a copy of the old file beside it. Running it again changes only what is missing.
 
-[controls]
-toggle-map-alternative=
-toggle-driving-alternative=
-
-[input]
-pipette=
-smart-pipette=
-```
-
-The empty values unbind the map toggle, the driving alternative and the pipette, so the mod can use those keys.
+To undo the changes, run it with `-Revert` from a command prompt in the game folder: `factorio-access-keys.cmd -Revert`. If you run the script from somewhere other than the game folder, give it the game folder: `factorio-access-keys.cmd -GameDir "D:\Games\Factorio"`.
 
 ## Troubleshooting
 
@@ -128,7 +122,7 @@ of users who want to play multiplayer anyway or have different use cases.
 
 When Vanilla Mode mode is toggled on, it disables sonifiers and speech, stops all of the mod's key handling, and closes
 any open mod UIs. Mod data such as fast travel points are left untouched, and so you should be able to toggle Vanilla
-Mode without any penalties. If the sighted person does not apply our game settings, then their game in
+Mode without any penalties. If the sighted person does not run our keys script, then their game in
 Vanilla Mode should function as if this mod is not present. If the mod's config tweaks are used and then Vanilla Mode is
 enabled, the keymapping changes of the mod are still present but inactive. In this case one can play using the arrow
 keys and mouse while relying on GUI buttons to open most menus.

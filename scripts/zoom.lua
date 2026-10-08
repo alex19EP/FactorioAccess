@@ -1,7 +1,7 @@
 --[[
 Zoom.
 
-The game's own zoom controls change the zoom (helper-scripts/bind-mouse-keys.ps1 puts zoom in and
+The game's own zoom controls change the zoom (helper-scripts/factorio-access-keys.ps1 puts zoom in and
 zoom out on EQUALS and MINUS). This reads it as the number of tiles across the screen, speaks each
 change, and gives the area the sound model searches.
 ]]

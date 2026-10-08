@@ -1,6 +1,6 @@
 --Hands the FA cursor to the FactorioAccess native DLL when it is loaded. The game's own cursor
 --then follows the FA cursor, so vanilla hover selection, building, mining and the selection tools
---act there; helper-scripts/bind-mouse-keys.ps1 gives every mouse button control a key.
+--act there; helper-scripts/factorio-access-keys.ps1 gives every mouse button control a key.
 --fa_native exists only on clients that run the DLL, and its calls change nothing in the game.
 local VanillaMode = require("scripts.vanilla-mode")
 local Viewpoint = require("scripts.viewpoint")
