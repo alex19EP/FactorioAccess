@@ -40,6 +40,7 @@ local GameNotices = require("scripts.game-notices")
 local GhostPlaced = require("scripts.ghost-placed")
 local Graphics = require("scripts.graphics")
 local InventoryTransfers = require("scripts.inventory-transfers")
+local SelectionResults = require("scripts.selection-results")
 local InventoryUtils = require("scripts.inventory-utils")
 local ItemInfo = require("scripts.item-info")
 local KruiseKontrol = require("scripts.kruise-kontrol-wrapper")
@@ -274,6 +275,7 @@ function on_tick(event)
    BattleNotice.on_tick()
    ForceGhostEnabler.on_tick()
    Zoom.on_tick()
+   SelectionResults.on_tick()
 
    move_characters(event)
 
@@ -836,6 +838,10 @@ if script.feature_flags.space_travel then
    )
 end
 
+EventManager.on_event(defines.events.on_marked_for_deconstruction, SelectionResults.on_marked_for_deconstruction)
+EventManager.on_event(defines.events.on_cancelled_deconstruction, SelectionResults.on_cancelled_deconstruction)
+EventManager.on_event(defines.events.on_marked_for_upgrade, SelectionResults.on_marked_for_upgrade)
+EventManager.on_event(defines.events.on_cancelled_upgrade, SelectionResults.on_cancelled_upgrade)
 EventManager.on_event(defines.events.on_achievement_gained, GameNotices.on_achievement_gained)
 EventManager.on_event(defines.events.on_chart_tag_added, GameNotices.on_chart_tag_added)
 EventManager.on_event(defines.events.on_space_platform_changed_state, GameNotices.on_space_platform_changed_state)

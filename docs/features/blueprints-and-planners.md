@@ -13,6 +13,8 @@ Finish selecting: `left bracket` on a second point. Releasing the key does nothi
 
 While the selection is open, each move of the cursor says the box's size in tiles, such as "5 by 3", and then the counts the game shows beside the box, largest first: the items a copy or blueprint would take, what an upgrade planner would upgrade and to what, or what a deconstruction planner would remove and the items that would give.
 
+When a deconstruction or upgrade selection finishes, you hear how many entities it changed, such as "12 marked for deconstruction" or "3 upgrade cancelled". Building a blueprint over entities that it marks is said the same way.
+
 Cancel the selection without doing anything: `escape`
 
 Cancel upgrade or deconstruction orders in an area: start the selection with `shift + left bracket`. The first press decides what the selection does; the second only finishes it.
