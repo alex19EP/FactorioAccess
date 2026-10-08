@@ -489,6 +489,10 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.deconTileMode, "DeconstructionItemGui", "tileFiltersWidgets.modeSwitch");
    offset(layout.deconTileSelection, "DeconstructionItemGui", "tileFiltersWidgets.tileModeDropdown");
    offset(layout.deconTileFilters, "DeconstructionItemGui", "tileFiltersWidgets.table");
+   offset(layout.upgradeItemFrame, "UpgradeItemGui", "upgradeItemFrame");
+   offset(layout.upgradeItemName, "UpgradeItemGui::UpgradeItemFrame", "nameLabel");
+   offset(layout.upgradeDescription, "UpgradeItemGui", "descriptionLabel");
+   offset(layout.upgradeRules, "UpgradeItemGui", "mappersWidgets.table");
    offset(layout.sidePanelContainer, "GuiWithSideButtons", "sidePanelContainer");
    offset(layout.onOffEntityWindow, "GenericOnOffEntityGui", "entityWindow");
    offset(layout.singleFluidBoxGui, "SingleFluidBoxEntityGui", "fluidBoxGui");

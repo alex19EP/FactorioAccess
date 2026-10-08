@@ -102,6 +102,7 @@ add_library(fa_native SHARED
   src/screens/CharacterScreen.cpp
   src/screens/EntityWindowScreen.cpp
   src/screens/DeconstructionPlannerScreen.cpp
+  src/screens/UpgradePlannerScreen.cpp
   src/screens/GameDialogScreen.cpp
   src/screens/MachineScreen.cpp
   src/screens/BeltScreen.cpp

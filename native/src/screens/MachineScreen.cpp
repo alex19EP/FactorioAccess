@@ -61,7 +61,7 @@ Attachments MachineAttachments(const agui::EntityWindowParts& parts)
 bool MachineScreen::Handles(const Widget* window) const
 {
     // The planners' windows have recipes of their own.
-    if (agui::derivesFrom(window, "DeconstructionItemGui"))
+    if (agui::derivesFrom(window, "DeconstructionItemGui") || agui::derivesFrom(window, "UpgradeItemGui"))
         return false;
     return agui::derivesFrom(window, "GameGuiWithControllerInventory")
         || agui::derivesFrom(window, "AssemblingMachineSelectRecipeGui");

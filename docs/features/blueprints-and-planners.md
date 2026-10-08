@@ -98,6 +98,10 @@ To configure a deconstruction planner, put it in a slot of your inventory and pr
 
 You can "undo" or "cancel" by getting the same kind of planner in the hand and reselecting the same box, starting it with `shift + left bracket` instead of `left bracket`.
 
-We have alpha quality support for configuring upgrade planners. When configured, the upgrade planner becomes permanent.  You can set an entity rule by clicking one of the slots, or set a module rule by pressing m on one of the slots.  We do not have the bandwidth to put significant effort into fixing bugs here, so use this at your own risk.
+An upgrade planner is configured the same way, with `right bracket` on it in a slot. Its window has three stops:
+
+- the planner: its name and the same buttons as the deconstruction planner's;
+- the rules, one row per rule: its From slot, then its To slot. `up` and `down` say the rule's number with the slot, such as "2, From, wooden chest"; `left` and `right` say only the other side. `enter` opens the chooser, `right bracket` clears a slot;
+- your inventory.
 
 You can pull planners into blueprint books and use them from the book as if they were directly in your hand.

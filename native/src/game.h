@@ -621,6 +621,15 @@ struct Layout {
    uint32_t deconTileMode = 0;        // tileFiltersWidgets.modeSwitch
    uint32_t deconTileSelection = 0;   // tileFiltersWidgets.tileModeDropdown, agui::DropDown
    uint32_t deconTileFilters = 0;     // tileFiltersWidgets.table
+   // The upgrade planner's window (UpgradeItemGui), beside the player's inventory. Its item frame
+   // (UpgradeItemGui::UpgradeItemFrame, a FrameWithSubheader) names the planner and holds the
+   // buttons for it, as the deconstruction planner's does.
+   uint32_t upgradeItemFrame = 0;     // upgradeItemFrame
+   uint32_t upgradeItemName = 0;      // UpgradeItemFrame::nameLabel, agui::Label
+   uint32_t upgradeDescription = 0;   // descriptionLabel, agui::Label
+   // The rules, a DragPaneWidget<agui::Table> four to a row: first a "From To" pair of header
+   // labels per column, then a HorizontalFlow per rule holding its From and To ChooseButtons.
+   uint32_t upgradeRules = 0;         // mappersWidgets.table
    // The windows with circuit and logistic network buttons in the title bar (GuiWithSideButtons):
    // a button opens its panel beside the window, inside the side panel container.
    uint32_t sidePanelContainer = 0;   // GuiWithSideButtons::sidePanelContainer, agui::VerticalFlow
