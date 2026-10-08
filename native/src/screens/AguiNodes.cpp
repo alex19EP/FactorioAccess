@@ -3,13 +3,16 @@
 #include <algorithm>
 #include <cmath>
 #include <format>
+#include <iterator>
 #include <optional>
 #include <span>
 #include <string_view>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
 #include "GuiDump.hpp"
+#include "blueprints.h"
 #include "game.h"
 #include "log.h"
 #include "speech.h"
@@ -754,13 +757,35 @@ std::string SlotText(const Widget* slot)
     std::string_view name;
     std::string_view quality;
     double count = 0;
+    agui::SlotItem item;
     if (agui::derivesFrom(slot, "InventoryGuiSlot"))
     {
-        agui::SlotItem item = agui::slotItem(slot);
+        item = agui::slotItem(slot);
         name = item.name;
         quality = item.quality;
         count = item.count;
     }
+    // A blueprint, a book or a planner is told apart by its name and the icons over it; one to a
+    // slot, it shows no count.
+    if (std::optional<blueprints::Shown> shown = item.data ? blueprints::shown(item.data) : std::nullopt)
+    {
+        std::vector<std::string> parts;
+        if (!shown->label.empty())
+            parts.push_back(shown->label);
+        parts.emplace_back(name);
+        std::ranges::move(shown->icons, std::back_inserter(parts));
+        if (item.active)
+            parts.emplace_back(vocab::kActive);
+        if (item.inHand)
+            parts.emplace_back(vocab::kInHand);
+        std::string text;
+        for (const std::string& part : parts)
+            text += (text.empty() ? "" : ", ") + part;
+        return text;
+    }
+    // The slot keeps its place while its item is held, and shows a hand there.
+    if (item.inHand && count == 0)
+        return std::string(vocab::kInHand);
     // An empty item slot can still name its filter, or the ingredient a machine expects in it.
     if (count == 0)
     {

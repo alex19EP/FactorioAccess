@@ -533,20 +533,31 @@ SlotItem slotItem(const Widget* slot) {
    SlotItem item;
    // As InventoryGuiSlot::getStack reads it.
    const std::byte* stack = at<const std::byte*>(self, layout.slotItemStack);
+   uint16_t index = at<uint16_t>(self, layout.slotIndex);
    if (const std::byte* inventory = at<const std::byte*>(self, layout.slotInventory)) {
-      uint16_t index = at<uint16_t>(self, layout.slotIndex);
       if (index >= at<uint16_t>(inventory, layout.inventorySize)) return item;
       stack = at<const std::byte*>(inventory, layout.inventoryData) + size_t{index} * layout.itemStackSize;
+      // As InventoryGuiSlot::paintComponent draws the hand.
+      item.inHand = at<uint16_t>(inventory, layout.inventoryHand) == index;
    }
    if (!stack) return item;
    item.count = at<uint32_t>(stack, layout.itemStackCount);
    if (item.count == 0) return item;
+   item.data = at<const void*>(stack, layout.itemStackData);
+   // As BlueprintBookSlot::paintComponent highlights it.
+   if (const std::byte* bookSlot = asBase(slot, ".?AVBlueprintBookSlot@@"))
+      if (const std::byte* book = at<const std::byte*>(bookSlot, layout.bookSlotBook))
+         item.active = at<uint16_t>(book, layout.bookActiveIndex) == index;
    if (const std::byte* prototype = prototypeAt(layout.itemPrototypes, at<uint16_t>(stack, layout.itemStackItem)))
       item.name = localisedName(prototype);
    if (const std::byte* quality = prototypeAt(layout.qualityPrototypes, at<uint8_t>(stack, layout.itemStackQuality));
        quality && readString(quality, layout.prototypeName) != "normal")
       item.quality = localisedName(quality);
    return item;
+}
+
+bool blueprintsListView(const Widget* list) {
+   return at<uint32_t>(asBaseChecked(list, ".?AVBlueprintsList@@"), layout.listViewMode) == layout.listViewList;
 }
 
 InventoryBar inventoryBar(const Widget* widget) {

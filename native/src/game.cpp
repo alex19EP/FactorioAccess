@@ -650,6 +650,58 @@ bool resolve(pdb::SymbolTable& symbols) {
            "?indexToPrototype@?$PrototypeList@VAsteroidChunkPrototype@@@@2V?$vector@PEAVAsteroidChunkPrototype@@V?$"
            "allocator@PEAVAsteroidChunkPrototype@@@std@@@std@@A");
 
+   offset(layout.itemStackData, "ItemStack", "item");
+   offset(layout.inventoryHand, "Inventory", "handPosition");
+   offset(layout.itemLabel, "ItemWithLabel", "labelData.label.value");
+   size(layout.signalSize, "SignalID");
+   offset(layout.blueprintItemIcons, "BlueprintItem", "blueprint.previewIcons.data");
+   offset(layout.blueprintItemDescription, "BlueprintItem", "blueprint.description.value");
+   offset(layout.bookIcons, "BlueprintBook", "previewIcons.data");
+   offset(layout.bookDescription, "BlueprintBook", "description.value");
+   offset(layout.bookActiveIndex, "BlueprintBook", "activeIndex");
+   offset(layout.bookInventory, "BlueprintBook", "inventory");
+   offset(layout.deconItemIcons, "DeconstructionItem", "deconstructionData.previewIcons.data");
+   offset(layout.deconItemDescription, "DeconstructionItem", "deconstructionData.description.value");
+   offset(layout.deconItemTreesAndRocks, "DeconstructionItem", "deconstructionData.treesAndRocksOnly");
+   offset(layout.deconItemEntityMode, "DeconstructionItem", "deconstructionData.entityFilterMode");
+   offset(layout.deconItemEntities, "DeconstructionItem", "deconstructionData.entityFilters");
+   offset(layout.deconItemTileMode, "DeconstructionItem", "deconstructionData.tileSelectionMode");
+   offset(layout.deconItemTiles, "DeconstructionItem", "deconstructionData.tileFilters");
+   enumerator(layout.entityFilterWhitelist, "DeconstructionData::EntityFilterMode", "Whitelist");
+   enumerator(layout.entityFilterBlacklist, "DeconstructionData::EntityFilterMode", "Blacklist");
+   enumerator(layout.tileSelectionOnly, "DeconstructionData::TileSelectionMode", "Only");
+   enumerator(layout.tileSelectionNever, "DeconstructionData::TileSelectionMode", "Never");
+   {
+      const char* filter = "IDWithQualityFilter<ID<EntityPrototype,unsigned short> >";
+      size(layout.entityFilterSize, filter);
+      offset(layout.entityFilterId, filter, "baseID");
+      offset(layout.entityFilterQuality, filter, "qualityCondition.qualityID");
+      offset(layout.entityFilterComparison, filter, "qualityCondition.comparison");
+   }
+   enumerator(layout.comparisonEquals, "Comparison::Enum", "Equals");
+   offset(layout.upgradeItemIcons, "UpgradeItem", "upgradeData.previewIcons.data");
+   offset(layout.upgradeItemDescription, "UpgradeItem", "upgradeData.description.value");
+   offset(layout.upgradeItemMappings, "UpgradeItem", "upgradeData.mappings");
+   size(layout.mappingSize, "UpgradeMapping");
+   offset(layout.mappingSourceId, "UpgradeMapping", "source.filter.baseID.itemID");
+   offset(layout.mappingSourceQuality, "UpgradeMapping", "source.filter.qualityCondition.qualityID");
+   offset(layout.mappingSourceEntity, "UpgradeMapping", "source.entityFilter.baseID");
+   offset(layout.mappingSourceEntityQuality, "UpgradeMapping", "source.entityFilter.qualityCondition.qualityID");
+   offset(layout.mappingDestinationType, "UpgradeMapping", "destination.upgradeID.baseID.type");
+   offset(layout.mappingDestinationId, "UpgradeMapping", "destination.upgradeID.baseID.itemID");
+   offset(layout.mappingDestinationQuality, "UpgradeMapping", "destination.upgradeID.qualityID");
+   enumerator(layout.upgradeTypeEntity, "UpgradeIDBase::Type", "Entity");
+   offset(layout.bookSlotBook, "BlueprintBookSlot", "book");
+   offset(layout.bookGuiHeader, "BlueprintBookGui", "headerFrame");
+   offset(layout.bookGuiInside, "BlueprintBookGui", "insideFrame");
+   offset(layout.bookGuiNavigation, "BlueprintBookGui", "navigationFlow");
+   offset(layout.bookGuiName, "BlueprintBookGui", "blueprintBookLabel");
+   offset(layout.bookGuiRename, "BlueprintBookGui", "editButton");
+   offset(layout.bookGuiDescription, "BlueprintBookGui", "descriptionLabel");
+   offset(layout.bookGuiList, "BlueprintBookGui", "blueprintsList");
+   offset(layout.listViewMode, "BlueprintsList", "viewMode");
+   enumerator(layout.listViewList, "BlueprintsListViewMode", "List");
+
    offset(layout.customInputs, "ControlSettings", "customInputs");
    size(layout.controlInputSize, "ControlInput");
    offset(layout.controlInputPrototype, "ControlInput", "customInputPrototype");

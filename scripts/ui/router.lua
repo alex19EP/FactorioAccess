@@ -130,7 +130,6 @@ mod.UI_NAMES = {
    TRAVEL = "travel",
    GUNS = "guns", -- Keep for backward compatibility with gun_menu registration
    WARNINGS = "warnings",
-   BLUEPRINT_BOOK = "blueprint_book",
    SIGNAL_SELECTOR = "signal_selector",
    SPIDERTRON = "spidertron",
    SPIDERTRON_AUTOPILOT = "spidertron_autopilot",

@@ -75,21 +75,19 @@ Due to API limitations, blueprints always take an inventory slot.  We cannot get
 
 ### Blueprint Books
 
-A blueprint book is a bunch of blueprints grouped together.  Like blueprints API limitations means that it takes an inventory slot, but only one no matter how many blueprints are in it.
+A blueprint book is a bunch of blueprints, planners and other books grouped together.  It takes one inventory slot, no matter how many blueprints are in it.
 
-In terms of building, blueprint books work almost identically to blueprints.  The difference is that a blueprint book has a concept of active blueprint.  There are two ways to change the active blueprint:
+A blueprint, book or planner in a slot reads as sighted players see it: its name if it has one, what it is, then the up to four icons its owner chose, such as "Smelting, Blueprint, Stone furnace, Iron plate". A book with no icons of its own shows those of its active blueprint, and a planner with no icons its first filters. The slot of whatever you hold reads in hand.
 
-- Hit `right bracket` and select the one you want, or
-- Use `m` and `dot` to cycle to the one you want without opening a GUI
+In terms of building, blueprint books work almost identically to blueprints.  The difference is that a blueprint book has an active blueprint, the one you build.  Use `m` and `dot` to cycle to the one you want without opening the book, or open the book.
 
-Blueprint books also have blueprint book level config. To get to it press `tab` as with other UIs.
+To open a book, press `right bracket` on it in an inventory slot. Its window has these stops, moved between with `tab`:
 
-To get a blueprint into a book, use the labeled row in the blueprint book's config tab to pull them from your inventory.
-
-We do not support all blueprint books.  We only support those consisting of blueprints.  Some sighted blueprint books
-contain blueprints in folders, and for a variety of reasons we cannot read those accurately, nor do we guarantee we
-won't crash on it.  This is an unfortunate limitation of the API which is too big of a problem to work around given the
-effort it would take.
+- the book: its name and the button to edit its name, description and icons, its description, then where the book is, such as "Inventory: name". When the book is inside another book, each book above it is a button that goes up to it;
+- the book's buttons: copy it, upgrade every blueprint in it (press it holding an upgrade planner), export it to a string, and destroy it;
+- the contents, laid out as the game lays them out in the view you chose. Each slot reads like an inventory slot, and the active one says active. `enter` takes or puts a slot's item, as a click does, and `right bracket` opens it: a blueprint's setup window, or a book inside the book;
+- the view: the game's hint on cycling, and the List, Grid and Slots buttons. In List view each item is a row and reads its description too;
+- your inventory. Take a blueprint here with `enter` and put it into an empty slot of the contents to add it to the book.
 
 ### Planners
 

@@ -97,6 +97,14 @@ inline constexpr Word kLockFromHere{"fa.native-lock-from-here"};
 
 // A blueprint's component the player took out of it: the game shows it red with a count of 0.
 inline constexpr Word kRemoved{"fa.native-removed"};
+// A slot whose item the player holds: the game draws a hand on it.
+inline constexpr Word kInHand{"fa.native-in-hand"};
+// A book's slot it builds from while held, highlighted in the book's window.
+inline constexpr Word kActive{"fa.native-active"};
+// A deconstruction planner for trees and rocks only, which shows a tree, crossed out when it
+// removes everything else.
+inline constexpr Word kTreesAndRocks{"fa.native-trees-and-rocks"};
+inline constexpr Word kNotTreesAndRocks{"fa.native-not-trees-and-rocks"};
 // The button inside a text box that opens the chooser of an icon to put in its text; the game
 // shows only an icon on it.
 inline constexpr Word kInsertIcon{"fa.native-insert-icon"};

@@ -5,7 +5,6 @@ local mod = {}
 
 -- Set of valid message list names for O(1) lookup
 mod.MESSAGE_LISTS = {
-   ["blueprint-book-help"] = true,
    ["category-rows-help"] = true,
    ["ch1"] = true,
    ["ch10"] = true,
@@ -36,6 +35,6 @@ mod.MESSAGE_LISTS = {
    ["warnings-menu-help"] = true,
 }
 
-mod.MESSAGE_LISTS_HASH = "180e77e804aee516982234b615675adb39b91957b7adb4ef736cbefeab4e6ee9"
+mod.MESSAGE_LISTS_HASH = "65d1ff97b917e6b59bc4e850f058208ca2a5e372ee2d07db0ea5e0c81945edc6"
 
 return mod

@@ -169,13 +169,22 @@ std::string_view iconName(const Widget* widget);
 
 // What an item slot of the game's inventory windows (InventoryGuiSlot) holds: the item's name and
 // count, and its quality unless that is normal; an empty slot has a count of 0 and no name. Names
-// are translated, so main thread only.
+// are translated, so main thread only. `data` is the stack's own Item (a blueprint, a book), null
+// for plain items. A slot whose item is in the player's hand shows a hand (`inHand`); a book's slot
+// is highlighted while it is the book's active one (`active`).
 struct SlotItem {
    std::string_view name;
    std::string_view quality;
    uint32_t count = 0;
+   const void* data = nullptr;
+   bool inHand = false;
+   bool active = false;
 };
 SlotItem slotItem(const Widget* slot);
+
+// Whether a list of blueprints (BlueprintsList, in a book's window or the library) is in List
+// view, a row per item with its name and description beside the slot, rather than Grid or Slots.
+bool blueprintsListView(const Widget* list);
 
 // A chest's slot limit, for any widget in the window part that sets it (an InventoryWithBarGui):
 // its red X `button`, whether the player is `choosing` the first slot to lock (after a click on

@@ -822,6 +822,73 @@ struct Layout {
    uintptr_t fluidPrototypes = 0;
    uintptr_t asteroidChunkPrototypes = 0;
 
+   // What the slot of a blueprint, a book or a planner shows (BlueprintItem::draw and the like): the
+   // item's icon under the up to four icons its owner chose (PreviewIcons, a std::vector<SignalID>),
+   // its name on hover. A book without icons shows its active item, drawn small inside it; a planner
+   // without icons shows its first filters (DeconstructionData::getIcons, UpgradeData::getIcons).
+   uint32_t itemStackData = 0;         // ItemStack::item, Item*: the stack's own data, null for plain items
+   uint32_t inventoryHand = 0;         // Inventory::handPosition: the slot whose item is in the hand
+   uint32_t itemLabel = 0;             // ItemWithLabel::labelData.label.value, std::string
+   uint32_t signalSize = 0;            // sizeof(SignalID)
+   uint32_t blueprintItemIcons = 0;    // BlueprintItem::blueprint.previewIcons.data
+   uint32_t blueprintItemDescription = 0; // BlueprintItem::blueprint.description.value
+   uint32_t bookIcons = 0;             // BlueprintBook::previewIcons.data
+   uint32_t bookDescription = 0;       // BlueprintBook::description.value
+   uint32_t bookActiveIndex = 0;       // BlueprintBook::activeIndex, the slot built from
+   uint32_t bookInventory = 0;         // BlueprintBook::inventory, an Inventory
+   uint32_t deconItemIcons = 0;        // DeconstructionItem::deconstructionData.previewIcons.data
+   uint32_t deconItemDescription = 0;  // ::deconstructionData.description.value
+   uint32_t deconItemTreesAndRocks = 0; // ::deconstructionData.treesAndRocksOnly, bool
+   uint32_t deconItemEntityMode = 0;   // ::deconstructionData.entityFilterMode
+   uint32_t deconItemEntities = 0;     // ::deconstructionData.entityFilters, std::vector<IDWithQualityFilter<EntityID>>
+   uint32_t deconItemTileMode = 0;     // ::deconstructionData.tileSelectionMode
+   uint32_t deconItemTiles = 0;        // ::deconstructionData.tileFilters, std::vector<ID<TilePrototype>>
+   uint32_t entityFilterWhitelist = 0; // DeconstructionData::EntityFilterMode Whitelist
+   uint32_t entityFilterBlacklist = 0; // DeconstructionData::EntityFilterMode Blacklist
+   uint32_t tileSelectionOnly = 0;     // DeconstructionData::TileSelectionMode Only
+   uint32_t tileSelectionNever = 0;    // DeconstructionData::TileSelectionMode Never
+   uint32_t entityFilterSize = 0;      // sizeof(IDWithQualityFilter<ID<EntityPrototype>>)
+   uint32_t entityFilterId = 0;        // ::baseID
+   uint32_t entityFilterQuality = 0;   // ::qualityCondition.qualityID
+   uint32_t entityFilterComparison = 0; // ::qualityCondition.comparison, Comparison::Enum
+   uint32_t comparisonEquals = 0;      // Comparison::Enum Equals: only then is the quality drawn
+   uint32_t upgradeItemIcons = 0;      // UpgradeItem::upgradeData.previewIcons.data
+   uint32_t upgradeItemDescription = 0; // ::upgradeData.description.value
+   uint32_t upgradeItemMappings = 0;   // ::upgradeData.mappings, std::vector<UpgradeMapping>
+   uint32_t mappingSize = 0;           // sizeof(UpgradeMapping)
+   // A rule counts when its source is set; its destination, an UpgradeID (UpgradeIDBase {type,
+   // an item or entity ID}, quality), is the icon.
+   uint32_t mappingSourceId = 0;       // UpgradeMapping::source.filter.baseID.itemID
+   uint32_t mappingSourceQuality = 0;  // ::source.filter.qualityCondition.qualityID
+   uint32_t mappingSourceEntity = 0;   // ::source.entityFilter.baseID
+   uint32_t mappingSourceEntityQuality = 0; // ::source.entityFilter.qualityCondition.qualityID
+   uint32_t mappingDestinationType = 0; // ::destination.upgradeID.baseID.type, UpgradeIDBase::Type
+   uint32_t mappingDestinationId = 0;  // ::destination.upgradeID.baseID.itemID
+   uint32_t mappingDestinationQuality = 0; // ::destination.upgradeID.qualityID
+   uint32_t upgradeTypeEntity = 0;     // UpgradeIDBase::Type Entity
+   // A book's slot (BlueprintBookSlot, an InventoryGuiSlot) is highlighted when it is the book's
+   // active one.
+   uint32_t bookSlotBook = 0;          // BlueprintBookSlot::book, BlueprintBook*
+
+   // A blueprint book's window (BlueprintBookGui), beside the player's inventory. The header frame
+   // (a FrameWithSubheader) has the book's buttons in its subheader (copy, upgrade, export,
+   // destroy) and the navigation flow in its body: a row with the go-to-root arrow and where the
+   // book is ("Inventory: name"), a row per book it is inside with an arrow and that book's name,
+   // and the book's own row (an arrow, its name and the rename button); then the description. The
+   // inside frame's subheader has the cycling hint and the view buttons, its body the contents:
+   // a BlueprintsList, a Table of one BlueprintBookSlot per slot of the book.
+   uint32_t bookGuiHeader = 0;         // BlueprintBookGui::headerFrame, FrameWithSubheader
+   uint32_t bookGuiInside = 0;         // ::insideFrame, FrameWithSubheader
+   uint32_t bookGuiNavigation = 0;     // ::navigationFlow, agui::VerticalFlow
+   uint32_t bookGuiName = 0;           // ::blueprintBookLabel, agui::Label
+   uint32_t bookGuiRename = 0;         // ::editButton, IconButton
+   uint32_t bookGuiDescription = 0;    // ::descriptionLabel, agui::Label
+   uint32_t bookGuiList = 0;           // ::blueprintsList, BlueprintsList
+   // How the list lays its items out (the player's choice, kept across books): List puts each
+   // slot in a row with its name and description, Grid its name under it, Slots the slot alone.
+   uint32_t listViewMode = 0;          // BlueprintsList::viewMode, BlueprintsListViewMode
+   uint32_t listViewList = 0;          // BlueprintsListViewMode List
+
    // The keys of a mod's custom input: ControlSettings::customInputs, std::vector<ControlInput>,
    // each naming its CustomInputPrototype and holding the player's two keyboard bindings
    // (SimpleConfigItem<ControlInputValue>): a ControlInputValue::Type (Keyboard for a key), an
