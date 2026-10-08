@@ -261,10 +261,32 @@ void addAlwaysShown(std::vector<std::string>& parts, const std::byte* entity, bo
    }
 }
 
+// Whether the picture draws the recipe crossed out: the player's force has not unlocked it, and
+// the player is not in the map editor. As CraftingMachine::draw decides it for a blueprint.
+bool recipeLocked(const std::byte* widget, uint16_t recipe) {
+   const std::byte* player = at<const std::byte*>(widget, layout.picturePlayer);
+   uint8_t force = player ? at<uint8_t>(player, layout.playerForce) : 0;
+   if (!recipe || !force) return false;
+   const std::byte* controller = at<const std::byte*>(player, layout.playerControllerBeforePause);
+   if (!controller) controller = at<const std::byte*>(player, layout.playerController);
+   if (controller && agui::objectAsBase(controller, ".?AVEditorController@@")) return false;
+   const std::byte* map = at<const std::byte*>(player, layout.playerMap);
+   const std::byte* forceData = at<const std::byte* const*>(map, layout.mapForces)[force];
+   const std::byte* recipes = forceData ? at<const std::byte*>(forceData, layout.forceRecipes) : nullptr;
+   if (!recipes) return false;
+   const auto& instances = at<MsvcVector<const std::byte>>(recipes, layout.recipeInstances);
+   const std::byte* instance = instances.first + size_t{recipe} * layout.recipeSize;
+   return instance < instances.last && !at<bool>(instance, layout.recipeEnabled);
+}
+
 // The details alt mode draws on an entity.
-void addAltDetails(std::vector<std::string>& parts, const std::byte* entity) {
+void addAltDetails(std::vector<std::string>& parts, const std::byte* widget, const std::byte* entity) {
    if (const std::byte* machine = agui::objectAsBase(entity, ".?AVCraftingMachine@@")) {
-      parts.push_back(idName(layout.recipePrototypes, machine + layout.craftingRecipe));
+      const std::byte* recipe = machine + layout.craftingRecipe;
+      std::string name = idName(layout.recipePrototypes, recipe);
+      if (!name.empty() && recipeLocked(widget, at<uint16_t>(recipe, layout.idWithQualityBase)))
+         name = std::format("{} {}", name, vocab::kLocked);
+      parts.push_back(std::move(name));
    } else if (const std::byte* inserter = agui::objectAsBase(entity, ".?AVInserter@@")) {
       uint16_t flags = at<uint16_t>(inserter, layout.inserterFlags);
       if (flags & kInserterUseFilters)
@@ -366,7 +388,7 @@ std::string describeEntity(const std::byte* widget, const std::byte* entity, uin
    }
    if (removed(widget, layout.parametersEntities, index)) parts.emplace_back(vocab::kRemoved);
    addAlwaysShown(parts, entity, alt);
-   if (alt) addAltDetails(parts, entity);
+   if (alt) addAltDetails(parts, widget, entity);
    addDeliveries(parts, blueprintOf(widget), index);
    return join(parts);
 }

@@ -549,6 +549,12 @@ bool resolve(pdb::SymbolTable& symbols) {
    classSlot(layout.entityHasDirection, "Entity", "hasDirection");
    offset(layout.entityQuality, "EntityWithOwner", "qualityID");
    offset(layout.craftingRecipe, "CraftingMachine", "recipeID");
+   offset(layout.playerControllerBeforePause, "Player", "controllerManager.controllerBeforePause");
+   offset(layout.mapForces, "Map", "forceManager.sortedForceDataList.begin_");
+   offset(layout.forceRecipes, "ForceData", "recipes");
+   offset(layout.recipeInstances, "Recipes", "indexToInstance");
+   size(layout.recipeSize, "Recipe");
+   offset(layout.recipeEnabled, "Recipe", "enabled");
    size(layout.itemFilterSize, "IDWithQualityFilter<ID<ItemPrototype,unsigned short> >");
    offset(layout.itemFilterId, "IDWithQualityFilter<ID<ItemPrototype,unsigned short> >", "baseID");
    offset(layout.itemFilterQuality, "IDWithQualityFilter<ID<ItemPrototype,unsigned short> >",
