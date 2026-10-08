@@ -213,6 +213,24 @@ bool resolve(pdb::SymbolTable& symbols) {
    classSlot(layout.entityPrototypeAsPole, "EntityPrototype", "asElectricPole");
    address(layout.findMatchingNetwork,
            "?findMatchingNetworkByPosition@LogisticManager@@QEAAPEAVLogisticNetwork@@AEBVMapPosition@@@Z");
+   offset(layout.gameViewRenderer, "GameView", "renderer");
+   offset(layout.gameRendererParameters, "GameRenderer", "renderParameters");
+   offset(layout.renderParametersFlags, "RenderParameters", "flags");
+   size(layout.drawQueueSize, "DrawQueue");
+   offset(layout.drawQueueRenderParameters, "DrawQueue", "renderParameters");
+   address(layout.drawQueueConstruct, "??0DrawQueue@@QEAA@AEBVRenderParameters@@@Z");
+   address(layout.drawQueueClear, "?clear@DrawQueue@@QEAAXXZ");
+   classSlot(layout.entityDraw, "Entity", "draw");
+   address(layout.entityDrawAlert, "?drawAlert@Entity@@QEBAXAEAVDrawQueue@@AEBVSprite@@AEBVMapPosition@@_N@Z");
+   offset(layout.globalUtilitySprites, "GlobalContext", "utilitySprites.value");
+   size(layout.utilitySpritesSize, "UtilitySprites");
+   offset(layout.utilitySpritesMapping, "UtilitySprites", "spritesMapping");
+   address(layout.drawInfoIcon, "?drawInfoIcon@DrawQueue@@QEAAXPEBVSprite@@VQualityCondition@@AEBVMapPosition@@NVDrawingFlags@@"
+                                "W4Enum@RenderLayer@@AEBVVector@@CVColor@@@Z");
+   offset(layout.qualityDrawByDefault, "QualityPrototype", "drawSpriteByDefault");
+   address(layout.comparisonStr, "?str@Comparison@@QEBAPEBDXZ");
+   address(layout.luaParamEntity,
+           "??$getParamOrDefault@PEAVEntity@@@LuaHelper@@YAPEAVEntity@@PEAUlua_State@@HPEBDPEAV1@@Z");
    offset(layout.logisticNetworkId, "LogisticNetwork", "networkID");
    offset(layout.logisticNetworkName, "LogisticNetwork", "networkName.value");
    address(layout.initLuaState, "?initLuaState@LuaHelper@@YAXPEAUlua_State@@@Z");
@@ -723,6 +741,8 @@ bool resolve(pdb::SymbolTable& symbols) {
                 layout.entityTileGridSize, layout.adapterCursorAdapter, layout.readAdapterDestructor,
                 layout.buildingModifierSize, layout.buildingModifierCentre, layout.blueprintRotation,
                 layout.blueprintFlip, layout.blueprintSnapToGrid, layout.adapterBuildabilityCheck);
+      log::info("Entity icons: Entity::draw slot {}, DrawQueue {} bytes, renderParameters {:#x}",
+                layout.entityDraw, layout.drawQueueSize, layout.drawQueueRenderParameters);
    }
    return ok;
 }

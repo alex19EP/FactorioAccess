@@ -139,6 +139,10 @@ Note that some entities take a while to mine.  An example of such is the rocket 
 
 What the game calls the hand is not your character's hand, but your virtual hand.  Your hand's position is always at the cursor.
 
+### Alt mode and status icons
+
+The cursor reads the icons the game draws on an entity, as a sighted player sees them.  Status icons such as no power, no fuel or no ammo are read whenever the game shows them.  The rest are alt mode icons: a machine's recipe and modules, a chest's contents, filters, the fluid in a pipe, a turret's ammo, a combinator's signals.  These are read only while alt mode is on, which the game's own key toggles (`alt` by default).  An icon shown more than once is read once, an item with its count, and a quality badge is read with its icon.  Toggling alt mode says so.  These are the game's own icons, so modded entities read the same way.
+
 ### Building
 
 To build, you click with `left bracket` with something buildable in hand.  This will place the entity.  You are holding the top left corner.  It is important to note that the sighted build from the center.  This isn't keyboard friendly, so we changed it, but it sometimes matters when reading things or discussing with the sighted.

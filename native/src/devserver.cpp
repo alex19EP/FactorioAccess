@@ -114,6 +114,7 @@ std::optional<uint32_t> keyNamed(std::string_view name) {
       {"pageup", PageUp},   {"pagedown", PageDown}, {"up", Up},          {"down", Down},     {"left", Left},
       {"right", Right},     {"f1", F1},         {"[", LeftBracket},     {"]", RightBracket},
       {"\\", Backslash},    {"backslash", Backslash}, {"=", Equals}, {"-", Minus},
+      {"lalt", LeftAlt}, // alone, as the game's alt mode key
    };
    for (const auto& [n, key] : named)
       if (n == name) return key;

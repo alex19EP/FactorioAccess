@@ -1,5 +1,6 @@
 #include "luabridge.h"
 
+#include "entityicons.h"
 #include "game.h"
 #include "log.h"
 #include "movement.h"
@@ -235,6 +236,51 @@ int openSelectedInfo(lua_State* L) {
    return 0;
 }
 
+using ParamEntity = const void* (*)(lua_State*, int index, const char* name, const void* fallback);
+
+// What an entity shows on the map, as the game draws it now (see entityicons.h): a table {status =
+// {utility sprite names}, icons = {{kind, name, quality, comparison, any_quality, denied}}}, kind
+// absent for a utility sprite; nil for another client's player. Only this client draws, so the mod
+// may speak it but must not change the game by it.
+int entityIcons(lua_State* L) {
+   if (!world::mayBeLocalPlayer(static_cast<int>(checkInteger(L, 1)))) return 0;
+   const void* entity = reinterpret_cast<ParamEntity>(layout.luaParamEntity)(L, 2, "entity", nullptr);
+   if (!entity) return 0;
+   const auto drawn = entityicons::read(entity);
+   if (!drawn) return 0;
+   createTable(L, 0, 2);
+   createTable(L, static_cast<int>(drawn->status.size()), 0);
+   for (size_t i = 0; i < drawn->status.size(); ++i) {
+      pushString(L, drawn->status[i]);
+      rawSetI(L, -2, static_cast<int>(i + 1));
+   }
+   setField(L, -2, "status");
+   createTable(L, static_cast<int>(drawn->icons.size()), 0);
+   for (size_t i = 0; i < drawn->icons.size(); ++i) {
+      const entityicons::Icon& icon = drawn->icons[i];
+      createTable(L, 0, 6);
+      const auto text = [&](const char* field, std::string_view value) {
+         if (value.empty()) return;
+         pushString(L, value);
+         setField(L, -2, field);
+      };
+      const auto flag = [&](const char* field, bool value) {
+         if (!value) return;
+         pushBoolean(L, true);
+         setField(L, -2, field);
+      };
+      text("kind", icon.kind);
+      text("name", icon.name);
+      text("quality", icon.quality);
+      text("comparison", icon.comparison);
+      flag("any_quality", icon.anyQuality);
+      flag("denied", icon.denied);
+      rawSetI(L, -2, static_cast<int>(i + 1));
+   }
+   setField(L, -2, "icons");
+   return 1;
+}
+
 struct Function {
    const char* name;
    lua_CFunction function;
@@ -250,6 +296,7 @@ constexpr Function kFunctions[] = {
    {"drag_build", &dragBuild},
    {"walking_step", &walkingStep},
    {"open_selected_info", &openSelectedInfo},
+   {"entity_icons", &entityIcons},
 };
 
 using InitLuaState = void (*)(lua_State*);

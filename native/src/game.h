@@ -286,6 +286,42 @@ struct Layout {
    uintptr_t findMatchingNetwork = 0;
    uint32_t logisticNetworkId = 0;         // LogisticNetwork::networkID, uint32
    uint32_t logisticNetworkName = 0;       // LogisticNetwork::networkName.value, std::string, empty unless named
+   // What an entity shows on the map, read by drawing it again into a DrawQueue of our own with the
+   // main view's render parameters: GameView::renderer (std::unique_ptr<GameRenderer>) keeps the
+   // last frame's in GameRenderer::renderParameters, whose flags say whether alt mode
+   // (ShowEntityInfo) and status icons (ShowStatusIcons) are on. DrawQueue::DrawQueue(RenderParameters
+   // const&) and clear(); the entity draws itself through the virtual Entity::draw(DrawQueue&) const.
+   uint32_t gameViewRenderer = 0;          // GameView::renderer, GameRenderer*
+   uint32_t gameRendererParameters = 0;    // GameRenderer::renderParameters, RenderParameters
+   uint32_t renderParametersFlags = 0;     // RenderParameters::flags, RenderParameters::Flags (uint32)
+   uint32_t drawQueueSize = 0;
+   uint32_t drawQueueRenderParameters = 0; // DrawQueue::renderParameters, RenderParameters const*
+   uintptr_t drawQueueConstruct = 0;
+   uintptr_t drawQueueClear = 0;
+   uint32_t entityDraw = 0;                // virtual slot of Entity::draw
+   // Status icons: void Entity::drawAlert(DrawQueue&, Sprite const&, MapPosition const&, bool
+   // blinking) const draws each (no power, no fuel, no ammo ...), when ShowStatusIcons is on; the
+   // overload without a position calls it. Sprites are UtilitySprites members, named by
+   // UtilitySprites::spritesMapping (std::map<std::string, Sprite*, std::less<void>>), the
+   // utility sprite names of the prototype ("electricity_icon").
+   uintptr_t entityDrawAlert = 0;
+   uint32_t globalUtilitySprites = 0;      // GlobalContext::utilitySprites.value, UtilitySprites*
+   uint32_t utilitySpritesSize = 0;
+   uint32_t utilitySpritesMapping = 0;
+   // Alt mode icons: void DrawQueue::drawInfoIcon(Sprite const*, QualityCondition, MapPosition const&,
+   // double scale, DrawingFlags, RenderLayer::Enum, Vector const&, signed char, Color) draws every
+   // one (recipe, contents, filters, modules, fluid, ammo, signals ...), its Sprite owned by the
+   // prototype it depicts (Sprite::owner). A pass with kDrawingFlagIconBackground draws only the
+   // icon's dark backing. Then drawQualityPartOfInfoIcon draws the quality badge: none for no
+   // quality (unless the flags say a filter or any quality), none for a quality that is not drawn
+   // by default compared with Equals; otherwise the quality's icon, after Comparison::str() unless
+   // Equals, or UtilitySprites::anyQuality without a quality.
+   uintptr_t drawInfoIcon = 0;
+   uint32_t qualityDrawByDefault = 0;      // QualityPrototype::drawSpriteByDefault, bool
+   uintptr_t comparisonStr = 0;            // char const* Comparison::str() const
+   // Entity* LuaHelper::getParamOrDefault<Entity*>(lua_State*, int index, char const* name, Entity*
+   // default): the entity of a LuaEntity argument.
+   uintptr_t luaParamEntity = 0;
    // void LuaHelper::initLuaState(lua_State*): sets up the globals of every Lua state the game
    // creates (log, localised_print, ...).
    uintptr_t initLuaState = 0;
@@ -958,6 +994,18 @@ inline constexpr uint8_t kCursorBoxLogistics = 5;
 // Also what Entity::drawPotentialInteractionIndications draws on the inserters, drills and
 // machines that would put into or take from an entity.
 inline constexpr uint8_t kCursorBoxTrainVisualization = 6;
+
+// RenderParameters::Flags::Enum bits, code constants: ShowEntityInfo 8 (alt mode) and
+// ShowStatusIcons 17.
+inline constexpr uint32_t kRenderShowEntityInfo = 1u << 8;
+inline constexpr uint32_t kRenderShowStatusIcons = 1u << 17;
+// DrawingFlags bits, code constants: the backing pass of an info icon, and a filter or any-quality
+// icon, which shows a quality badge even without a quality.
+inline constexpr uint32_t kDrawingFlagIconBackground = 0x400;
+inline constexpr uint32_t kDrawingFlagQualityFilter = 0x2000;
+inline constexpr uint32_t kDrawingFlagAnyQuality = 0x4000;
+// Comparison::Enum, code constants.
+inline constexpr uint8_t kComparisonEquals = 2;
 
 // GameRenderMode, code constants: nothing 0, game 1, chart 2 (the full map), chart zoomed in 3
 // (remote view drawing the world).

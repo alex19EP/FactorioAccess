@@ -821,6 +821,14 @@ EventManager.on_event(defines.events.on_marked_for_deconstruction, SelectionResu
 EventManager.on_event(defines.events.on_cancelled_deconstruction, SelectionResults.on_cancelled_deconstruction)
 EventManager.on_event(defines.events.on_marked_for_upgrade, SelectionResults.on_marked_for_upgrade)
 EventManager.on_event(defines.events.on_cancelled_upgrade, SelectionResults.on_cancelled_upgrade)
+EventManager.on_event(
+   defines.events.on_player_toggled_alt_mode,
+   ---@param event EventData.on_player_toggled_alt_mode
+   ---@param pindex integer
+   function(event, pindex)
+      Speech.speak(pindex, { "fa.alt-mode-toggled", event.alt_mode and 1 or 0 })
+   end
+)
 EventManager.on_event(defines.events.on_achievement_gained, GameNotices.on_achievement_gained)
 EventManager.on_event(defines.events.on_chart_tag_added, GameNotices.on_chart_tag_added)
 EventManager.on_event(defines.events.on_space_platform_changed_state, GameNotices.on_space_platform_changed_state)

@@ -127,6 +127,7 @@ add_library(fa_native SHARED
   src/ui.cpp
   src/world.cpp
   src/highlights.cpp
+  src/entityicons.cpp
   src/selectedinfo.cpp
   src/luabridge.cpp
   src/hooks.cpp
