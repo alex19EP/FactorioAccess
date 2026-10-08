@@ -3,6 +3,7 @@
 #include "agui.h"
 #include "game.h"
 #include "log.h"
+#include "vocab.h"
 
 #include <windows.h>
 
@@ -17,12 +18,11 @@ namespace {
 
 using game::layout;
 
+// The version and the log line name the DLL to Wube, so they read the same in every language.
 const std::string kVersionSuffix = " with FactorioAccess native " FA_NATIVE_VERSION;
 constexpr const char* kLogLine = "FactorioAccess native " FA_NATIVE_VERSION
                                  " is loaded as winmm.dll. Crash log uploading is off; report crashes at "
                                  "https://github.com/Factorio-Access/FactorioAccess/issues";
-const std::string kToolTip = "FactorioAccess native turns this off. Wube asked that a game running it never "
-                             "uploads crash logs. Report crashes to FactorioAccess instead.";
 
 // LogLevel::Notice: printed without level or source file, like the game's own version line.
 constexpr int kLogNotice = 7;
@@ -102,7 +102,7 @@ void tick() {
       std::string text(vanilla.title);
       if (!vanilla.text.empty()) text += (text.empty() ? "" : "\n") + std::string(vanilla.text);
       if (!text.empty()) text += "\n\n";
-      agui::setToolTip(checkbox, text + kToolTip);
+      agui::setToolTip(checkbox, text + std::string(vocab::kCrashLogUploadOff));
    }
    markVersionLabel();
 }

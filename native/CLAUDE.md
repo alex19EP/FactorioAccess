@@ -92,9 +92,10 @@ mod's locale, which the game translates into the player's language:
 - Translation runs where the game translates (GUI logic and game hooks), never on a thread of our
   own.
 - `python lint_localisation.py lint` checks the keys `native/src` uses against the locale files.
-- The one exception is a failure message said when the game's locale may be out of reach (the
-  version and hook failures in `dllmain.cpp`, the navigator's crash in `ui.cpp`); these stay
-  English.
+- Two exceptions stay English:
+  - a failure message said when the game's locale may be out of reach: the version and hook
+    failures in `dllmain.cpp`, and the navigator's crash in `ui.cpp`;
+  - the text that names the DLL to Wube: the version suffix and the log line in `disclosure.cpp`.
 
 ### Input and GUI interaction
 

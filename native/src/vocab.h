@@ -228,6 +228,9 @@ inline constexpr Word kSelectMinimum{"fa.native-select-minimum"};
 // The Y key in the world when the cursor points at no entity and no tile.
 inline constexpr Word kNothingHere{"fa.native-nothing-here"};
 
+// Settings > Other: why the crash log upload checkbox is off and greyed out.
+inline constexpr Word kCrashLogUploadOff{"fa.native-crash-log-upload-off"};
+
 // A map tag the full map selects.
 inline constexpr Word kMapTag{"fa.native-map-tag"};
 
