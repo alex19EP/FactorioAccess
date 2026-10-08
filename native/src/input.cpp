@@ -138,6 +138,8 @@ uint32_t scancode(uint32_t key) {
    case keys::Backspace: return 42;
    case keys::Tab: return 43;
    case keys::Space: return 44;
+   case keys::Minus: return 45;
+   case keys::Equals: return 46;
    case keys::LeftBracket: return 47;
    case keys::RightBracket: return 48;
    case keys::Backslash: return 49;
@@ -223,11 +225,10 @@ std::vector<KeyEvent> drain() {
    return std::exchange(g_navigator.queue, {});
 }
 
-void injectKey(uint32_t key, bool shift, bool ctrl, bool alt) {
+void injectKey(uint32_t key, bool shift, bool ctrl, bool alt, bool down) {
    uint16_t mod = (shift ? kModLeftShift : 0) | (ctrl ? kModLeftCtrl : 0) | (alt ? kModLeftAlt : 0);
    std::scoped_lock lock(g_mutex);
-   g_injected.push_back({key, mod, true});
-   g_injected.push_back({key, mod, false});
+   g_injected.push_back({key, mod, down});
 }
 
 void injectModifiers(bool shift, bool ctrl, bool alt, bool down) {

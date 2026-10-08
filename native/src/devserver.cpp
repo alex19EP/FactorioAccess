@@ -113,7 +113,7 @@ std::optional<uint32_t> keyNamed(std::string_view name) {
       {"space", Space},     {"backspace", Backspace}, {"delete", Delete}, {"home", Home}, {"end", End},
       {"pageup", PageUp},   {"pagedown", PageDown}, {"up", Up},          {"down", Down},     {"left", Left},
       {"right", Right},     {"f1", F1},         {"[", LeftBracket},     {"]", RightBracket},
-      {"\\", Backslash},    {"backslash", Backslash},
+      {"\\", Backslash},    {"backslash", Backslash}, {"=", Equals}, {"-", Minus},
    };
    for (const auto& [n, key] : named)
       if (n == name) return key;
@@ -164,6 +164,9 @@ constexpr uint64_t kFramesBetweenKeys = 6;
 constexpr uint64_t kFramesAfterKeys = 20;
 // Frames a chord's modifiers are held before and after its key.
 constexpr uint64_t kFramesForModifiers = 3;
+// Frames a key is held, long enough for the game's checks that it is held to see it (a quick
+// press lasts about six).
+constexpr uint64_t kFramesHeld = 4;
 
 std::string runKeys(std::string_view spec) {
    struct Step {
@@ -208,7 +211,9 @@ std::string runKeys(std::string_view spec) {
          input::injectModifiers(chord.shift, chord.ctrl, chord.alt, true);
          waitFrames(kFramesForModifiers);
       }
-      input::injectKey(chord.key, chord.shift, chord.ctrl, chord.alt);
+      input::injectKey(chord.key, chord.shift, chord.ctrl, chord.alt, true);
+      waitFrames(kFramesHeld);
+      input::injectKey(chord.key, chord.shift, chord.ctrl, chord.alt, false);
       if (modified) {
          waitFrames(kFramesForModifiers);
          input::injectModifiers(chord.shift, chord.ctrl, chord.alt, false);

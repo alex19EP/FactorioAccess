@@ -16,6 +16,8 @@ inline constexpr uint32_t Tab = 0x09;
 inline constexpr uint32_t Return = 0x0d;
 inline constexpr uint32_t Escape = 0x1b;
 inline constexpr uint32_t Space = 0x20;
+inline constexpr uint32_t Minus = 0x2d;
+inline constexpr uint32_t Equals = 0x3d;
 inline constexpr uint32_t LeftBracket = 0x5b;
 inline constexpr uint32_t Backslash = 0x5c;
 inline constexpr uint32_t RightBracket = 0x5d;
@@ -77,9 +79,12 @@ void keepAlive();
 // The queued key events, oldest first.
 std::vector<KeyEvent> drain();
 
-// Queues a press and release into the game's own event stream, where they are routed exactly like
-// typed keys: to the navigator while it claims the key, to the game otherwise. For the dev server.
-void injectKey(uint32_t key, bool shift, bool ctrl, bool alt);
+// Queues a key going down or up into the game's own event stream, where it is routed exactly like a
+// typed key: to the navigator while it claims the key, to the game otherwise. For the dev server.
+// The game marks a key held from its down event to its up event, and controls that ask whether
+// their key is held (`ControlInput::isActive`) read that mark frames later, so the up goes in
+// frames after the down, as a person's does.
+void injectKey(uint32_t key, bool shift, bool ctrl, bool alt, bool down);
 
 // Queues the left modifier keys going down or up, as separate key events: the game reads a held
 // modifier from its own key state, not from the flags on the key it modifies.
