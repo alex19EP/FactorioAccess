@@ -1992,31 +1992,6 @@ EventManager.on_event(
    end
 )
 
----Teleports to the newest attack the game alerts about on this surface
----@param event EventData.CustomInputEvent
-local function kb_cs_p(event)
-   local pindex = event.player_index
-   local vp = Viewpoint.get_viewpoint(pindex)
-   local alert_pos = BattleNotice.newest_combat_alert_position(game.get_player(pindex))
-   if alert_pos == nil then
-      Speech.speak(pindex, { "fa.no-target" })
-      return
-   end
-   vp:set_cursor_pos(alert_pos)
-   Teleport.teleport_to_cursor(pindex, false, true, true)
-   Graphics.draw_cursor_highlight(pindex, nil, nil)
-   Graphics.sync_build_cursor_graphics(pindex)
-   EntitySelection.reset_entity_index(pindex)
-end
-
-EventManager.on_event(
-   "fa-cs-p",
-   ---@param event EventData.CustomInputEvent
-   function(event, pindex)
-      kb_cs_p(event)
-   end
-)
-
 ---Toggles cursor mode on or off. Appropriately affects other modes such as build lock or remote view.
 ---@param pindex number
 ---@param muted boolean
