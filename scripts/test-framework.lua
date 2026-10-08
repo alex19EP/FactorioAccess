@@ -59,7 +59,6 @@ local test_files = {
    "pump-spots-test", -- Test the scanner's offshore pump build spots
    "pins-tags-scanner-test", -- Test the scanner's pins and map tags
    "view-limit-test", -- Test the cursor kept on the screen in the character view
-   "ghost-placed-test", -- Test that a ghost placed from the hand is said
    "fluid-views-test", -- Test the views read with a pipe's window
    "pole-views-test", -- Test the views read with an electric pole's window
 }

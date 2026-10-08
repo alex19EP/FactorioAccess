@@ -37,7 +37,6 @@ local Hand = require("scripts.hand")
 local F = require("scripts.field-ref")
 local Filters = require("scripts.filters")
 local GameNotices = require("scripts.game-notices")
-local GhostPlaced = require("scripts.ghost-placed")
 local Graphics = require("scripts.graphics")
 local InventoryTransfers = require("scripts.inventory-transfers")
 local SelectionResults = require("scripts.selection-results")
@@ -792,18 +791,9 @@ EventManager.on_event(
    end
 )
 
-local scanner_on_built = ScannerEntrypoint.build_new_entity_handler("entity")
-EventManager.on_event(
-   defines.events.on_built_entity,
-   ---@param event EventData.on_built_entity
-   function(event)
-      scanner_on_built(event)
-      GhostPlaced.on_built_entity(event)
-   end
-)
-
 -- Scanner: entity creation events (most use "entity" field)
 EventManager.on_event({
+   defines.events.on_built_entity,
    defines.events.on_robot_built_entity,
    defines.events.script_raised_built,
    defines.events.on_entity_spawned,

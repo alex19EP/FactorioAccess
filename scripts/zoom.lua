@@ -102,7 +102,7 @@ function mod.on_tick()
             local message = Speech.MessageBuilder.new()
             message:fragment({ "fa.zoom-view-" .. view, tiles, cell_size })
             local hand = Hand.describe(pindex)
-            if hand then message:list_item(hand) end
+            if hand then message:list_item_forced_comma(hand) end
             Speech.speak(pindex, message:build())
          else
             Speech.speak(pindex, { "fa.zoom-set", tiles, cell_size })
