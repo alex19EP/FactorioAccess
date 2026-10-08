@@ -8,6 +8,7 @@
 #include "log.h"
 #include "navigator/ScreenManager.hpp"
 #include "screens/BeltScreen.hpp"
+#include "screens/AlertsScreen.hpp"
 #include "screens/CharacterScreen.hpp"
 #include "screens/ControlSettingsScreen.hpp"
 #include "screens/CraftingQueueScreen.hpp"
@@ -119,6 +120,8 @@ void start() {
    manager.Register(std::make_unique<screens::SelectedInfoScreen>());
    // The technology window, over the window it stacks on.
    manager.Register(std::make_unique<screens::TechnologyScreen>());
+   // The alerts window an alert button opens, over the window it stacks on.
+   manager.Register(std::make_unique<screens::AlertsScreen>());
    // Factoriopedia, over the window it stacks on, the technology window's too.
    manager.Register(std::make_unique<screens::FactoriopediaScreen>());
    // Over it or a window, the chooser of a filter one of their slots opened.

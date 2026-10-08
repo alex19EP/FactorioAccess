@@ -189,13 +189,6 @@ data:extend({
 
    {
       type = "custom-input",
-      name = "fa-cs-p",
-      key_sequence = "CONTROL + SHIFT + P",
-      consuming = "none",
-   },
-
-   {
-      type = "custom-input",
       name = "fa-i",
       key_sequence = "I",
       consuming = "none",

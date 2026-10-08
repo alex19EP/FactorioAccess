@@ -12,4 +12,10 @@ std::string flyoutHint(int count) { return std::format("submenu, {} {}", count, 
 
 std::string unlocked(unsigned count) { return std::format("{} unlocked", count); }
 
+std::string_view alertCategory(uint8_t category) {
+   constexpr std::string_view names[] = {kAttack, kConstruction, kPlatformConstruction, kCustom,
+                                         kLogistics, kTrains, kPipelines};
+   return category < std::size(names) ? names[category] : std::string_view();
+}
+
 } // namespace fa::vocab

@@ -375,6 +375,20 @@ std::vector<AlertButton> alertButtons();
 // reads 0 while the button blinks.
 double iconButtonCount(const Widget* button);
 
+// The alerts window an alert button opens (GameView::alertsOverview) while it shows, else a null
+// window. `rows` pairs each row of its list with what stands beside it: a group of alerts with its
+// pin button, or a surface's name heading the groups on it (pin null). Main thread only.
+struct AlertsRow {
+   const Widget* item = nullptr; // the list's TextButton: "[icon] Turret is under attack (3)", or the surface
+   const Widget* pin = nullptr;  // the group's pin button, which pins it to the pins panel
+};
+struct AlertsWindow {
+   const Widget* window = nullptr;
+   AlertCategory category = AlertCategory::Attack;
+   std::vector<AlertsRow> rows;
+};
+AlertsWindow alertsWindow();
+
 // The scenario's goal at the top left (GoalDescription's label), while it shows one.
 const Widget* goalLabel();
 

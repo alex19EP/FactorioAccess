@@ -7,7 +7,6 @@ local TabList = require("scripts.ui.tab-list")
 local UiRouter = require("scripts.ui.router")
 
 local trains_overview = require("scripts.ui.tabs.trains-overview")
-local alerts_tabs = require("scripts.ui.tabs.alerts")
 
 local mod = {}
 
@@ -16,11 +15,6 @@ mod.world_menu = TabList.declare_tablist({
    resets_to_first_tab_on_open = true,
    tabs_callback = function(pindex, params)
       local sections = {
-         {
-            name = "alerts",
-            title = { "fa.section-alerts" },
-            tabs = alerts_tabs.build_alert_tabs(pindex),
-         },
          {
             name = "trains",
             title = { "fa.section-trains" },

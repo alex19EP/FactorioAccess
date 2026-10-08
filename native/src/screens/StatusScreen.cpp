@@ -15,30 +15,7 @@ namespace fa::screens
 namespace
 {
 
-using agui::AlertCategory;
 using agui::Widget;
-
-std::string_view CategoryName(AlertCategory category)
-{
-    switch (category)
-    {
-    case AlertCategory::Attack:
-        return vocab::kAttack;
-    case AlertCategory::Construction:
-        return vocab::kConstruction;
-    case AlertCategory::PlatformConstruction:
-        return vocab::kPlatformConstruction;
-    case AlertCategory::Custom:
-        return vocab::kCustom;
-    case AlertCategory::Logistics:
-        return vocab::kLogistics;
-    case AlertCategory::Trains:
-        return vocab::kTrains;
-    case AlertCategory::Pipelines:
-        return vocab::kPipelines;
-    }
-    return {};
-}
 
 // Replaces a node's value, its first live part, with `text`, read when the node is reached rather
 // than watched: research progress and counts move too often to be spoken on every change.
@@ -108,7 +85,8 @@ void StatusScreen::Build(graph::GraphBuilder& builder)
         for (const agui::AlertButton& alert : alerts)
         {
             graph::NodeVtable vtable =
-                ControlNode(alert.button, [name = CategoryName(alert.category)]() { return std::string(name); });
+                ControlNode(alert.button, [name = vocab::alertCategory(static_cast<uint8_t>(alert.category))]()
+                    { return std::string(name); });
             SetValue(vtable, [this, button = alert.button]() { return std::format("{:.0f}", AlertCount(button)); });
             vtable.OnActivate = [this, button = alert.button]() { Open(button); };
             builder.AddItem(graph::ControlId::Referenced(
