@@ -9,7 +9,8 @@ namespace {
 
 // In the order Ctrl+Tab visits them, None first.
 constexpr Part kOrder[] = {
-   Part::None, Part::QuickBar, Part::ShortcutBar, Part::SideMenu, Part::Status, Part::CraftingQueue};
+   Part::None,   Part::QuickBar, Part::ShortcutBar,  Part::SideMenu,
+   Part::MapViewOptions, Part::Status,   Part::CraftingQueue};
 constexpr int kCount = static_cast<int>(std::size(kOrder));
 
 // Set from Lua on the game's update and from the navigator on the Gui's logic.

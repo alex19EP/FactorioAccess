@@ -5,13 +5,16 @@ Zoomed out to the map, a tile is a fraction of a pixel, so the movement keys mov
 cell: a square of tiles about a thirtieth of the screen across, rounded to a power of two (8 tiles at
 240 tiles across, 512 at 15360). Cells lie on a grid aligned to their size, so one is inside a chunk
 or made of whole chunks. The cursor stands at the centre of its cell, and moving reads what the cell
-holds.
+holds, then what the map's overlays that are on show over it (map-overlays.lua).
 ]]
 local FaInfo = require("scripts.fa-info")
 local FaUtils = require("scripts.fa-utils")
 local Graphics = require("scripts.graphics")
+local MapOverlays = require("scripts.map-overlays")
 local Speech = require("scripts.speech")
 local Viewpoint = require("scripts.viewpoint")
+
+local native = rawget(_G, "fa_native")
 
 local mod = {}
 
@@ -29,8 +32,12 @@ function mod.move(pindex, direction, size)
    local left_top = { x = left, y = top }
    local right_bottom = { x = left + size, y = top + size }
    Graphics.draw_large_cursor(left_top, right_bottom, pindex)
-   Speech.speak(pindex, FaInfo.area_scan_summary_info(pindex, left_top, right_bottom))
    local player = game.get_player(pindex)
+   local message = Speech.MessageBuilder.new()
+   message:fragment(FaInfo.area_scan_summary_info(pindex, left_top, right_bottom))
+   local overlays = native and native.map_overlays(pindex)
+   if overlays then MapOverlays.describe(message, player, left_top, right_bottom, overlays) end
+   Speech.speak(pindex, message:build())
    player.play_sound({ path = "Close-Inventory-Sound", position = player.position, volume_modifier = 0.75 })
 end
 

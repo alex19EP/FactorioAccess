@@ -11,6 +11,7 @@ enum class Part {
    QuickBar,
    ShortcutBar,
    SideMenu,
+   MapViewOptions, // in remote view only
    Status,
    CraftingQueue,
 };

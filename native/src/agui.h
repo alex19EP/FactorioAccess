@@ -417,6 +417,10 @@ struct ChartSearchResults {
 };
 ChartSearchResults chartSearchResults();
 
+// The map view options at the right in remote view (MapViewOptionsGui) while they show: the add
+// tag and add ping buttons, and on the map the overlay toggles. Null in the character view.
+const Widget* mapViewOptions();
+
 // The scenario's goal at the top left (GoalDescription's label), while it shows one.
 const Widget* goalLabel();
 

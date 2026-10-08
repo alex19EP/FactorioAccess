@@ -281,6 +281,48 @@ int entityIcons(lua_State* L) {
    return 1;
 }
 
+// The overlays this client's map draws, as its map view options toggle them: a table with each
+// overlay that is on set to true (logistic_network, electric_network, turret_range, pollution,
+// station_names, player_names, tags, worker_robots, rail_signal_states, recipe_icons, pipelines);
+// nil for another client's player. They are this client's config, so the mod may speak them but
+// must not change the game by them.
+int mapOverlays(lua_State* L) {
+   if (!world::mayBeLocalPlayer(static_cast<int>(checkInteger(L, 1)))) return 0;
+   const auto* context = *reinterpret_cast<const std::byte* const*>(layout.globalContext);
+   const auto* settings = context ? *reinterpret_cast<const std::byte* const*>(context + layout.globalMapViewSettings)
+                                  : nullptr;
+   if (!settings) return 0;
+   const auto on = [&](uint32_t item) {
+      return *reinterpret_cast<const bool*>(settings + item + layout.configBoolValue);
+   };
+   // The game hides every overlay but these three while the nonstandard map info is off.
+   const bool nonstandard = on(layout.mapViewNonstandardInfo);
+   const struct {
+      const char* name;
+      uint32_t item;
+      bool always;
+   } overlays[] = {
+      {"logistic_network", layout.mapViewLogisticNetwork, false},
+      {"electric_network", layout.mapViewElectricNetwork, false},
+      {"turret_range", layout.mapViewTurretRange, false},
+      {"pollution", layout.mapViewPollution, false},
+      {"station_names", layout.mapViewStationNames, true},
+      {"player_names", layout.mapViewPlayerNames, true},
+      {"tags", layout.mapViewTags, true},
+      {"worker_robots", layout.mapViewWorkerRobots, false},
+      {"rail_signal_states", layout.mapViewRailSignalStates, false},
+      {"recipe_icons", layout.mapViewRecipeIcons, false},
+      {"pipelines", layout.mapViewPipelines, false},
+   };
+   createTable(L, 0, static_cast<int>(std::size(overlays)));
+   for (const auto& overlay : overlays) {
+      if (!on(overlay.item) || !(overlay.always || nonstandard)) continue;
+      pushBoolean(L, true);
+      setField(L, -2, overlay.name);
+   }
+   return 1;
+}
+
 struct Function {
    const char* name;
    lua_CFunction function;
@@ -297,6 +339,7 @@ constexpr Function kFunctions[] = {
    {"walking_step", &walkingStep},
    {"open_selected_info", &openSelectedInfo},
    {"entity_icons", &entityIcons},
+   {"map_overlays", &mapOverlays},
 };
 
 using InitLuaState = void (*)(lua_State*);

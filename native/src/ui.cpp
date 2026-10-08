@@ -37,6 +37,7 @@
 #include "screens/SettingsScreen.hpp"
 #include "screens/ShortcutBarScreen.hpp"
 #include "screens/SideMenuScreen.hpp"
+#include "screens/MapViewOptionsScreen.hpp"
 #include "screens/SplitterScreen.hpp"
 #include "screens/StatusScreen.hpp"
 #include "screens/TechnologyScreen.hpp"
@@ -127,6 +128,8 @@ void start() {
    manager.Register(std::make_unique<screens::ShortcutBarScreen>());
    // The side menu, the part after that.
    manager.Register(std::make_unique<screens::SideMenuScreen>());
+   // Remote view's map view options, the part after the side menu.
+   manager.Register(std::make_unique<screens::MapViewOptionsScreen>());
    // The HUD's status, the part after that.
    manager.Register(std::make_unique<screens::StatusScreen>());
    // The crafting queue, the part after the status.

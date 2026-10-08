@@ -61,6 +61,7 @@ local test_files = {
    "view-limit-test", -- Test the cursor kept on the screen in the character view
    "fluid-views-test", -- Test the views read with a pipe's window
    "pole-views-test", -- Test the views read with an electric pole's window
+   "map-overlays-test", -- Test what the map's overlays say over a map cell
 }
 
 -- Test execution state

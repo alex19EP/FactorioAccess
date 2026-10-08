@@ -900,6 +900,8 @@ ChartSearchResults chartSearchResults() {
    return results;
 }
 
+const Widget* mapViewOptions() { return shownMember(gameView(), layout.gameViewMapViewOptions); }
+
 const Widget* goalLabel() {
    const Widget* goal = shownMember(gameView(), layout.gameViewGoal);
    return goal ? member(goal, layout.goalLabel) : nullptr;

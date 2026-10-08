@@ -1010,6 +1010,28 @@ struct Layout {
    // ChartSearchResultGui::pinButtonFlow, agui::VerticalFlow: beside each row its pin button (an
    // IconButton, gui.pin-search-result), which pins the result to the pins panel.
    uint32_t chartSearchPins = 0;
+   // The map view options at the right in remote view (MapViewOptionsGui, a VerticalFlow): a frame
+   // with the add tag and add ping buttons, and on the map a frame with a table of the overlay
+   // toggles (IconButtons named by their tooltips: logistic network, electric network, turret range,
+   // pollution, station names, player names, tags, worker robots, rail signal states, recipe icons,
+   // pipelines). A toggle flips its MapViewSettings item, which is this client's alone.
+   uint32_t gameViewMapViewOptions = 0;  // GameView::mapViewOptionsGui, std::unique_ptr<MapViewOptionsGui>
+   // What the map draws (MapViewSettings, the client's config, not game state). Each item is a
+   // SimpleConfigItem<bool>; every overlay but station names, player names and tags shows only while
+   // showNonstandardMapInfo is also on, as MapViewOptionsGui::updateToggleState shows them.
+   uint32_t globalMapViewSettings = 0;   // GlobalContext::mapViewSettings.value, MapViewSettings*
+   uint32_t mapViewLogisticNetwork = 0;
+   uint32_t mapViewElectricNetwork = 0;
+   uint32_t mapViewTurretRange = 0;
+   uint32_t mapViewPollution = 0;
+   uint32_t mapViewStationNames = 0;
+   uint32_t mapViewPlayerNames = 0;
+   uint32_t mapViewTags = 0;
+   uint32_t mapViewWorkerRobots = 0;
+   uint32_t mapViewRailSignalStates = 0;
+   uint32_t mapViewRecipeIcons = 0;
+   uint32_t mapViewPipelines = 0;
+   uint32_t mapViewNonstandardInfo = 0;
    // IconButtonWithNumber::count. The alert button blinks by setting it to 0 every other half second.
    uint32_t iconButtonCount = 0;
    uint32_t gameViewGoal = 0;            // GameView::goalDescription, std::unique_ptr<GoalDescription>
