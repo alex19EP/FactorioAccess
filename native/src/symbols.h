@@ -76,6 +76,7 @@ public:
 
 private:
    PdbFile* pdb();
+   std::string cacheHeader() const;
    void loadCache();
 
    HMODULE image_;

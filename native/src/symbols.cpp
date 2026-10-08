@@ -647,11 +647,16 @@ SymbolTable::SymbolTable(HMODULE image, std::filesystem::path exePath, std::file
 
 SymbolTable::~SymbolTable() { finish(); }
 
+// The cache's first line: the PDB it was resolved from, and the lookup rules it was resolved by. Bump
+// kResolverRules when a rule changes, so a cache made under the old one is resolved afresh.
+constexpr int kResolverRules = 2; // 2: a class's own members hide its bases'
+std::string SymbolTable::cacheHeader() const { return std::format("{} rules {}", identity_->key(), kResolverRules); }
+
 void SymbolTable::loadCache() {
    if (!identity_ || cacheFile_.empty()) return;
    std::ifstream in(cacheFile_);
    std::string line;
-   if (!std::getline(in, line) || line != identity_->key()) return;
+   if (!std::getline(in, line) || line != cacheHeader()) return;
    while (std::getline(in, line)) {
       auto tab = line.rfind('\t');
       if (tab == std::string::npos) continue;
@@ -756,7 +761,7 @@ std::vector<InlinedCopies> SymbolTable::inlinedCopies(std::span<const uintptr_t>
 void SymbolTable::finish() {
    if (cacheDirty_ && identity_ && !cacheFile_.empty()) {
       std::ofstream out(cacheFile_, std::ios::trunc);
-      out << identity_->key() << '\n';
+      out << cacheHeader() << '\n';
       for (const auto& [key, value] : cache_) out << key << '\t' << value << '\n';
       cacheDirty_ = false;
    }
