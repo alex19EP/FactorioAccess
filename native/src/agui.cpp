@@ -557,6 +557,23 @@ SlotItem slotItem(const Widget* slot) {
    return item;
 }
 
+AchievementCard achievementCard(const Widget* card) {
+   const std::byte* self = asBaseChecked(card, ".?AVAchievementCard@@");
+   AchievementCard result;
+   result.prototype = at<const void*>(self, layout.achievementCardPrototype);
+   uint32_t state = at<uint32_t>(self, layout.achievementCardState);
+   result.state = state == layout.achievementCompleted ? AchievementState::Earned
+                  : state == layout.achievementFailed  ? AchievementState::Failed
+                                                       : AchievementState::Normal;
+   result.description = reinterpret_cast<const Widget*>(self + layout.achievementCardDescription);
+   // AchievementCard::updateRightFlow puts the track button there for a normal card, a warning
+   // icon for a failed one, and nothing for an earned one.
+   if (result.state == AchievementState::Normal)
+      for (const Widget* child : children(reinterpret_cast<const Widget*>(self + layout.achievementCardRight)))
+         if (kind(child) == Kind::Button) result.track = child;
+   return result;
+}
+
 bool blueprintsListView(const Widget* list) {
    return at<uint32_t>(asBaseChecked(list, ".?AVBlueprintsList@@"), layout.listViewMode) == layout.listViewList;
 }

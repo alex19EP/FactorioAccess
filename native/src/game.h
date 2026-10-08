@@ -952,6 +952,27 @@ struct Layout {
    uint32_t bookHeaderName = 0;        // BlueprintBookHeader::nameLabel, agui::Label
    uint32_t bookHeaderRename = 0;      // ::editButton, IconButton
 
+   // The achievements window (AchievementGui), opened from the side menu in place of the inventory.
+   // Its inside frame's subheader holds the bar and the "Earned 12 of 47" label; the modded-game
+   // and played-too-little labels show over the frame when they apply. The card holder (a scroll
+   // pane) lists an AchievementCard per achievement, earned first, then normal, then failed, the
+   // hidden ones left out until earned; the title bar's search hides the cards that do not match.
+   // A card's description flow holds the name, the description and the progress (labels and a
+   // progress bar whose text is "12.3k/1.0M"), or the failure's reason; its right flow holds the
+   // track toggle (normal cards) or a warning icon (failed ones). The game refreshes a card's
+   // description each second while it is scrolled into view.
+   uint32_t achievementsHolder = 0;    // AchievementGui::achievementHolder, AchievementCardHolder
+   uint32_t achievementsProgress = 0;  // ::progressLabel, agui::Label
+   uint32_t achievementsBar = 0;       // ::progressBar, agui::ProgressBar
+   uint32_t achievementsModded = 0;    // ::moddedGame, agui::Label
+   uint32_t achievementsPlaytime = 0;  // ::notInGameLongEnoughLabel, agui::Label
+   uint32_t achievementCardPrototype = 0; // AchievementCard::achievementPrototype, AchievementPrototype*
+   uint32_t achievementCardState = 0;  // ::state, AchievementState
+   uint32_t achievementCardRight = 0;  // ::rightFlow, agui::VerticalFlow
+   uint32_t achievementCardDescription = 0; // ::descriptionFlow, agui::VerticalFlow
+   uint32_t achievementCompleted = 0;  // AchievementState Completed
+   uint32_t achievementFailed = 0;     // AchievementState Failed
+
    // The keys of a mod's custom input: ControlSettings::customInputs, std::vector<ControlInput>,
    // each naming its CustomInputPrototype and holding the player's two keyboard bindings
    // (SimpleConfigItem<ControlInputValue>): a ControlInputValue::Type (Keyboard for a key), an

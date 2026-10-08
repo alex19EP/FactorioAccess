@@ -155,6 +155,12 @@ inline constexpr Word kOmitted{"fa.native-omitted"};
 // the technology tree's title bar.
 inline constexpr Word kSelectedTechnology{"fa.native-selected-technology"};
 inline constexpr Word kTreeControls{"fa.native-tree-controls"};
+// The achievements window: what the game shows only by a card's frame (earned, failed), and the
+// achievements the player tracks on the HUD.
+inline constexpr Word kEarned{"fa.native-earned"};
+inline constexpr Word kFailed{"fa.native-failed"};
+inline constexpr Word kTracked{"fa.native-tracked"};
+inline constexpr Word kNotTracked{"fa.native-not-tracked"};
 
 // A recipe tooltip's ingredient count in red (not enough, and none to make) or in orange (not
 // enough, made from intermediates when crafted).

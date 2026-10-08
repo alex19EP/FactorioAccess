@@ -741,6 +741,17 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.bookRecordGuiList, "BlueprintBookRecordWidget", "blueprintsList");
    offset(layout.bookHeaderName, "BlueprintBookHeader", "nameLabel");
    offset(layout.bookHeaderRename, "BlueprintBookHeader", "editButton");
+   offset(layout.achievementsHolder, "AchievementGui", "achievementHolder");
+   offset(layout.achievementsProgress, "AchievementGui", "progressLabel");
+   offset(layout.achievementsBar, "AchievementGui", "progressBar");
+   offset(layout.achievementsModded, "AchievementGui", "moddedGame");
+   offset(layout.achievementsPlaytime, "AchievementGui", "notInGameLongEnoughLabel");
+   offset(layout.achievementCardPrototype, "AchievementCard", "achievementPrototype");
+   offset(layout.achievementCardState, "AchievementCard", "state");
+   offset(layout.achievementCardRight, "AchievementCard", "rightFlow");
+   offset(layout.achievementCardDescription, "AchievementCard", "descriptionFlow");
+   enumerator(layout.achievementCompleted, "AchievementState", "Completed");
+   enumerator(layout.achievementFailed, "AchievementState", "Failed");
 
    offset(layout.customInputs, "ControlSettings", "customInputs");
    size(layout.controlInputSize, "ControlInput");

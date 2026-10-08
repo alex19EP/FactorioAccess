@@ -200,6 +200,18 @@ RecordSlot recordSlot(const Widget* slot);
 // player's choice for a book on the game's shelf or another player's.
 uint16_t bookRecordActiveIndex(const void* book, const void* player);
 
+// An achievement's card (AchievementCard) in the achievements window: the AchievementPrototype it
+// shows, its state as its frame draws it, the flow of its texts (name, description, progress or
+// why it failed), and a normal one's track button (null on the others).
+enum class AchievementState { Normal, Earned, Failed };
+struct AchievementCard {
+   const void* prototype = nullptr;
+   AchievementState state = AchievementState::Normal;
+   const Widget* description = nullptr;
+   const Widget* track = nullptr;
+};
+AchievementCard achievementCard(const Widget* card);
+
 // Whether a list of blueprints (BlueprintsList, in a book's window or the library) is in List
 // view, a row per item with its name and description beside the slot, rather than Grid or Slots.
 bool blueprintsListView(const Widget* list);
