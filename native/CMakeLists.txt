@@ -14,6 +14,8 @@ set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" CACHE STR
 
 set(FA_FACTORIO_BIN "" CACHE PATH
     "Factorio bin/x64 directory; when set, every build copies winmm.dll there")
+set(FA_BUILD_ID "" CACHE STRING
+    "Appended to the version the game shows, so a tester's build can be told apart (CI sets dev.<commit>)")
 
 if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/vendor/prism/CMakeLists.txt")
   message(FATAL_ERROR "Submodules are missing; run: git submodule update --init native/vendor")
@@ -135,7 +137,11 @@ add_library(fa_native SHARED
 )
 set_target_properties(fa_native PROPERTIES OUTPUT_NAME winmm)
 # Shown in the game's version text and log (src/disclosure.cpp).
-target_compile_definitions(fa_native PRIVATE FA_NATIVE_VERSION="${PROJECT_VERSION}")
+set(FA_NATIVE_VERSION "${PROJECT_VERSION}")
+if(FA_BUILD_ID)
+  string(APPEND FA_NATIVE_VERSION "+${FA_BUILD_ID}")
+endif()
+target_compile_definitions(fa_native PRIVATE FA_NATIVE_VERSION="${FA_NATIVE_VERSION}")
 # dbghelp only for UnDecorateSymbolName on RTTI names; symbol lookup goes through raw_pdb.
 target_link_libraries(fa_native PRIVATE fa_core minhook prism dbghelp ws2_32)
 

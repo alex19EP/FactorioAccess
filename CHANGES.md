@@ -1,3 +1,11 @@
+# 0.17.0 (in development)
+
+- Factorio 2.1.
+- The launcher is replaced by a native DLL, `winmm.dll` in the game's `bin/x64`, which the mod requires. It speaks through any screen reader Prism supports.
+- The game's own windows, menus and HUD are read and used from the keyboard: the main menu, the character screen, entity windows, the technology screen, Factoriopedia, the quickbar, the shortcut bar, alerts, the crafting queue and others.
+- Flying text, console lines and pop-ups are spoken as they appear.
+- Building, mining and selection tools act where the FA cursor is. Selection tools work with two presses, as on a gamepad.
+
 # 0.16.57 (2026-03-04))
 
 - Some multiplayer fixes

@@ -1,0 +1,96 @@
+name: Dev build
+
+# Every push to native rebuilds the mod and the DLL, then moves the dev tag and its pre-release to
+# that commit, so testers always find the newest build in one place.
+on:
+  push:
+    branches: [native]
+  workflow_dispatch: {}
+
+concurrency:
+  group: dev-build
+  cancel-in-progress: true
+
+jobs:
+  native:
+    # The native build uses the Visual Studio 2026 generator (native/CMakePresets.json).
+    runs-on: windows-2025-vs2026
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Configure
+        shell: bash
+        run: cmake -S native --preset default -DFA_BUILD_ID="dev.${GITHUB_SHA::7}"
+
+      - name: Build
+        run: cmake --build native/build --config RelWithDebInfo
+
+      - name: Graph tests
+        run: ctest --test-dir native/build -C RelWithDebInfo --output-on-failure
+
+      - name: Upload DLL
+        uses: actions/upload-artifact@v4
+        with:
+          name: native
+          path: |
+            native/build/RelWithDebInfo/winmm.dll
+            native/build/RelWithDebInfo/winmm.pdb
+          if-no-files-found: error
+
+  mod:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install fmtk
+        run: npm install -g factoriomod-debug
+
+      - name: Build package
+        run: fmtk package
+
+      - name: Upload mod
+        uses: actions/upload-artifact@v4
+        with:
+          name: mod
+          path: FactorioAccess_*.zip
+          if-no-files-found: error
+
+  release:
+    needs: [native, mod]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download builds
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Move the dev pre-release to this commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          export COMMIT_SHORT="${GITHUB_SHA::7}"
+          export COMMIT_SUBJECT="$(git log -1 --format=%s)"
+          envsubst '${COMMIT_SHORT} ${COMMIT_SUBJECT}' < .github/dev-release-notes.md > notes.md
+          gh release delete dev --yes --cleanup-tag || true
+          # A tag left without its release would keep pointing at the old commit.
+          gh api -X DELETE "repos/${GITHUB_REPOSITORY}/git/refs/tags/dev" || true
+          gh release create dev dist/* \
+            --prerelease \
+            --target "$GITHUB_SHA" \
+            --title "Development build ${COMMIT_SHORT}" \
+            --notes-file notes.md
