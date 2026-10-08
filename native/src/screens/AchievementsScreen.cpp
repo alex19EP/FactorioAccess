@@ -91,8 +91,13 @@ graph::NodeVtable CardNode(const Widget* card)
     vtable.Announcements.emplace_back(
         [card]()
         {
+            agui::AchievementCard parts = agui::achievementCard(card);
             std::vector<std::string> lines;
-            CollectLines(agui::achievementCard(card).description, lines);
+            CollectLines(parts.description, lines);
+            // Why it failed shows only as the warning icon's tooltip.
+            if (parts.warning)
+                if (std::string reason = text::speakable(agui::toolTip(parts.warning).title); !reason.empty())
+                    lines.push_back(std::move(reason));
             return Join(lines);
         },
         false, Kinds::Label);

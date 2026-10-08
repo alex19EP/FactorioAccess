@@ -201,14 +201,16 @@ RecordSlot recordSlot(const Widget* slot);
 uint16_t bookRecordActiveIndex(const void* book, const void* player);
 
 // An achievement's card (AchievementCard) in the achievements window: the AchievementPrototype it
-// shows, its state as its frame draws it, the flow of its texts (name, description, progress or
-// why it failed), and a normal one's track button (null on the others).
+// shows, its state as its frame draws it, the flow of its texts (name, description, progress), a
+// normal one's track button and a failed one's warning icon, whose tooltip says why it failed
+// (null on the others).
 enum class AchievementState { Normal, Earned, Failed };
 struct AchievementCard {
    const void* prototype = nullptr;
    AchievementState state = AchievementState::Normal;
    const Widget* description = nullptr;
    const Widget* track = nullptr;
+   const Widget* warning = nullptr;
 };
 AchievementCard achievementCard(const Widget* card);
 

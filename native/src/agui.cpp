@@ -568,9 +568,10 @@ AchievementCard achievementCard(const Widget* card) {
    result.description = reinterpret_cast<const Widget*>(self + layout.achievementCardDescription);
    // AchievementCard::updateRightFlow puts the track button there for a normal card, a warning
    // icon for a failed one, and nothing for an earned one.
-   if (result.state == AchievementState::Normal)
-      for (const Widget* child : children(reinterpret_cast<const Widget*>(self + layout.achievementCardRight)))
-         if (kind(child) == Kind::Button) result.track = child;
+   for (const Widget* child : children(reinterpret_cast<const Widget*>(self + layout.achievementCardRight))) {
+      if (result.state == AchievementState::Normal && kind(child) == Kind::Button) result.track = child;
+      if (result.state == AchievementState::Failed && derivesFrom(child, "agui::ImageWidget")) result.warning = child;
+   }
    return result;
 }
 
