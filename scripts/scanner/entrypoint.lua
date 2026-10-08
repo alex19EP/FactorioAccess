@@ -62,6 +62,7 @@ local mod = {}
 ---@field entries table<fa.scanner.Category, fa.scanner.SubcategoryData[]>
 ---@field pending_refresh_counter number? used to delay refreshes by a tick.
 ---@field pending_direction_filter defines.direction?
+---@field origin fa.Point? Where the entries were last sorted from.
 
 ---@returns fa.scanner.GlobalPlayerState
 local function new_player_state(pindex)
@@ -90,6 +91,7 @@ local player_state = GlobalManager.declare_storage_module("scanner", new_player_
 ---@param pstate fa.scanner.GlobalPlayerState
 local function apply_sort(player, pstate)
    local px, py = player.position.x, player.position.y
+   pstate.origin = { x = px, y = py }
 
    for cat, sortable in pairs(pstate.entries) do
       Memosort.memosort(sortable, function(subcat)
@@ -448,6 +450,10 @@ local function announce_cursor_pos(pindex, ps)
 
    ::do_announce::
    if announcing then
+      -- In remote view the camera follows the cursor onto each entry, so distances are from where
+      -- the scan was sorted, such as the place a map search jumped to
+      local from = pobj.position
+      if pobj.controller_type == defines.controllers.remote and ps.origin then from = ps.origin end
       -- Update the entry first so position is current
       EntitySelection.reset_entity_index(pindex)
       announcing.backend:update_entry(pobj, announcing)
@@ -459,7 +465,7 @@ local function announce_cursor_pos(pindex, ps)
       Speech.speak(pindex, {
          "fa.scanner-full-presentation",
          announcing.backend:readout_entry(pobj, announcing),
-         FaUtils.dir_dist_locale(pobj.position, announcing.position),
+         FaUtils.dir_dist_locale(from, announcing.position),
          tostring(ps.scanner_cursor.entry_index),
          tostring(count),
       })
