@@ -56,24 +56,13 @@ Attachments MachineAttachments(const agui::EntityWindowParts& parts)
     return attachments;
 }
 
-void AddInventory(graph::GraphBuilder& builder, const agui::EntityWindowParts& parts)
-{
-    if (!parts.inventory || !Shows(parts.inventory))
-        return;
-    builder.BeginStop("inventory");
-    std::string title = parts.inventoryTitle && Shows(parts.inventoryTitle) ? LabelText(parts.inventoryTitle)
-                                                                            : std::string();
-    if (!title.empty())
-        builder.PushContext(title);
-    AddSubtree(builder, "inventory", parts.inventory);
-    if (!title.empty())
-        builder.PopContext();
-}
-
 } // namespace
 
 bool MachineScreen::Handles(const Widget* window) const
 {
+    // The planners' windows have recipes of their own.
+    if (agui::derivesFrom(window, "DeconstructionItemGui"))
+        return false;
     return agui::derivesFrom(window, "GameGuiWithControllerInventory")
         || agui::derivesFrom(window, "AssemblingMachineSelectRecipeGui");
 }

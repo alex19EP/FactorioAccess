@@ -425,6 +425,11 @@ struct Layout {
    uint32_t sliderMax = 0;
    uint32_t sliderStep = 0;    // double
    uint32_t switchState = 0;   // agui::SwitchState
+   // LabeledSwitch, a HorizontalFlow: the switch between a label for each side ("Whitelist",
+   // "Blacklist").
+   uint32_t labeledSwitchSwitch = 0; // switchWidget, agui::Switch
+   uint32_t labeledSwitchLeft = 0;   // leftValueLabel, agui::Label
+   uint32_t labeledSwitchRight = 0;  // rightValueLabel, agui::Label
    uint32_t textBoxReadOnly = 0;
    uint32_t textBoxText = 0;   // std::string
    uint32_t tableColumns = 0;  // agui::Table::columnCount
@@ -597,6 +602,25 @@ struct Layout {
    uint32_t burnerSlots = 0;          // BurnerInfo::burnerSlotsTable, agui::Table
    uint32_t burntResultSlots = 0;     // BurnerInfo::burntResultSlotsTable, agui::Table
    uint32_t burnerProgressBar = 0;    // BurnerInfo::burningProgressBar: what is left of the fuel burning
+   // The deconstruction planner's window (DeconstructionItemGui), beside the player's inventory.
+   // Its item part (DeconstructionItemGui::ItemPartHelper, a FrameWithSubheader) names the planner
+   // and holds the buttons for it: rename, copy, export to a string, delete.
+   uint32_t deconItemPart = 0;        // itemPart
+   uint32_t deconItemPartName = 0;    // ItemPartHelper::nameLabel, agui::Label
+   // The bar under a FrameWithSubheader's title, which holds the name and the buttons; the rest
+   // of the window is the frame's body.
+   uint32_t frameSubheader = 0;       // FrameWithSubheader::subheader, agui::Frame
+   uint32_t deconDescription = 0;     // descriptionLabel, agui::Label
+   uint32_t deconTreesAndRocks = 0;   // treesAndRocksOnlyCheckbox, agui::CheckBox
+   uint32_t deconEntityTab = 0;       // entityTab, agui::Tab
+   uint32_t deconTileTab = 0;         // tileTab, agui::Tab
+   // Each tab's content: the whitelist/blacklist switch (LabeledSwitch) and the filter slots, a
+   // DragPaneWidget<agui::Table> of ChooseButtons; the tiles tab also the tile mode dropdown.
+   uint32_t deconEntityMode = 0;      // entityFiltersWidgets.modeSwitch
+   uint32_t deconEntityFilters = 0;   // entityFiltersWidgets.table
+   uint32_t deconTileMode = 0;        // tileFiltersWidgets.modeSwitch
+   uint32_t deconTileSelection = 0;   // tileFiltersWidgets.tileModeDropdown, agui::DropDown
+   uint32_t deconTileFilters = 0;     // tileFiltersWidgets.table
    // The windows with circuit and logistic network buttons in the title bar (GuiWithSideButtons):
    // a button opens its panel beside the window, inside the side panel container.
    uint32_t sidePanelContainer = 0;   // GuiWithSideButtons::sidePanelContainer, agui::VerticalFlow

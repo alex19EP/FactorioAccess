@@ -17,6 +17,8 @@
 #include "screens/FilterSelectScreen.hpp"
 #include "screens/GenericWindowScreen.hpp"
 #include "screens/LoadGameScreen.hpp"
+#include "screens/DeconstructionPlannerScreen.hpp"
+#include "screens/GameDialogScreen.hpp"
 #include "screens/MachineScreen.hpp"
 #include "screens/MapGeneratorScreen.hpp"
 #include "screens/ElectricNetworkScreen.hpp"
@@ -98,6 +100,10 @@ void start() {
    manager.Register(std::make_unique<screens::CharacterScreen>());
    // An entity's window (a chest, a furnace, a drill, ...), opened by the game's own open-gui control.
    manager.Register(std::make_unique<screens::MachineScreen>());
+   // The deconstruction planner's window, opened from the planner's slot.
+   manager.Register(std::make_unique<screens::DeconstructionPlannerScreen>());
+   // Any other dialog over a game: a planner's or blueprint's name, description and icons.
+   manager.Register(std::make_unique<screens::GameDialogScreen>());
    // A transport belt's window, with the mod's views of what the belt carries.
    manager.Register(std::make_unique<screens::BeltScreen>());
    manager.Register(std::make_unique<screens::SplitterScreen>());

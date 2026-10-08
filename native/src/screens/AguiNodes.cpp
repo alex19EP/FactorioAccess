@@ -10,6 +10,7 @@
 #include <utility>
 
 #include "GuiDump.hpp"
+#include "game.h"
 #include "log.h"
 #include "speech.h"
 #include "text.h"
@@ -411,6 +412,11 @@ public:
     {
         if (depth > kMaxDepth || Skipped(widget) || !Shows(widget))
             return;
+        if (agui::derivesFrom(widget, "LabeledSwitch"))
+        {
+            Add(Key(path), LabeledSwitchNode(widget));
+            return;
+        }
         Kind kind = KindOf(widget);
         switch (kind)
         {
@@ -766,6 +772,9 @@ std::string SlotText(const Widget* slot)
     if (name.empty())
         return std::string(vocab::kEmpty);
     std::string spoken = quality.empty() ? std::string(name) : std::format("{} {}", quality, name);
+    // A choose button (a filter, a planner's rule) holds a choice, not a stack.
+    if (count == 0 && agui::derivesFrom(slot, "ChooseButtonBase"))
+        return spoken;
     if (count == 0)
         return std::format("{}, {}", spoken, vocab::kEmpty);
     // Fluid amounts are fractional; the game rounds what it draws too.
@@ -940,6 +949,7 @@ graph::NodeVtable ControlNode(const Widget* widget, std::function<std::string()>
     case Kind::RadioButton:
     case Kind::Tab:
     case Kind::DropDown:
+    case Kind::Switch:
         // Pressed as a mouse would, so everything behaves and sounds as in vanilla. A dropdown
         // opens its list, which DropDownScreen then reads.
         vtable.OnActivate = [widget]() { agui::press(widget, agui::MouseButton::Left, false, false); };
@@ -970,6 +980,32 @@ graph::NodeVtable ControlNode(const Widget* widget, const Widget* label)
     // A slot's own tooltip is the game's description of what it holds, kept over the label's.
     if (!agui::isSlotButton(widget))
         SetTooltip(vtable, {label, widget});
+    return vtable;
+}
+
+graph::NodeVtable LabeledSwitchNode(const Widget* labeledSwitch)
+{
+    const Widget* toggle = agui::member(labeledSwitch, game::layout.labeledSwitchSwitch);
+    const Widget* left = agui::member(labeledSwitch, game::layout.labeledSwitchLeft);
+    const Widget* right = agui::member(labeledSwitch, game::layout.labeledSwitchRight);
+    auto side = [toggle, left, right]()
+    {
+        switch (agui::switchState(toggle))
+        {
+        case agui::SwitchState::Left:
+            return Phrase(left);
+        case agui::SwitchState::Right:
+            return Phrase(right);
+        default:
+            return std::string();
+        }
+    };
+    graph::NodeVtable vtable = ControlNode(toggle, []() { return std::string(); });
+    for (graph::NodeAnnouncement& part : vtable.Announcements)
+        if (part.Kind == Value)
+            part.Text = side;
+    vtable.StateText = side;
+    SetTooltip(vtable, {left, toggle, right});
     return vtable;
 }
 

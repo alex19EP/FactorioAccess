@@ -25,8 +25,11 @@ const Widget* FindWindow()
     const Widget* root = gui ? agui::baseWidget(gui) : nullptr;
     if (!root)
         return nullptr;
+    // Every chooser is a SelectListGui<T>; the assembler's recipe list is one too, read with its
+    // machine's window.
     for (const Widget* child : agui::children(root))
-        if (agui::visible(child) && agui::derivesFromTemplate(child, "FilterSelectGui"))
+        if (agui::visible(child) && agui::derivesFromTemplate(child, "SelectListGui")
+            && !agui::derivesFrom(child, "AssemblingMachineSelectRecipeGui"))
             return child;
     return nullptr;
 }

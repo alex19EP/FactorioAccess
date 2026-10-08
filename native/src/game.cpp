@@ -318,6 +318,9 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.sliderMax, "agui::Slider", "max");
    offset(layout.sliderStep, "agui::Slider", "valueStep");
    offset(layout.switchState, "agui::Switch", "state");
+   offset(layout.labeledSwitchSwitch, "LabeledSwitch", "switchWidget");
+   offset(layout.labeledSwitchLeft, "LabeledSwitch", "leftValueLabel");
+   offset(layout.labeledSwitchRight, "LabeledSwitch", "rightValueLabel");
    offset(layout.textBoxReadOnly, "agui::TextBox", "readOnly");
    offset(layout.textBoxText, "agui::TextBox", "resizableText.data");
    offset(layout.tableColumns, "agui::Table", "columnCount");
@@ -474,6 +477,18 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.burnerSlots, "BurnerInfo", "burnerSlotsTable");
    offset(layout.burntResultSlots, "BurnerInfo", "burntResultSlotsTable");
    offset(layout.burnerProgressBar, "BurnerInfo", "burningProgressBar");
+   offset(layout.deconItemPart, "DeconstructionItemGui", "itemPart");
+   offset(layout.deconItemPartName, "DeconstructionItemGui::ItemPartHelper", "nameLabel");
+   offset(layout.frameSubheader, "FrameWithSubheader", "subheader");
+   offset(layout.deconDescription, "DeconstructionItemGui", "descriptionLabel");
+   offset(layout.deconTreesAndRocks, "DeconstructionItemGui", "treesAndRocksOnlyCheckbox");
+   offset(layout.deconEntityTab, "DeconstructionItemGui", "entityTab");
+   offset(layout.deconTileTab, "DeconstructionItemGui", "tileTab");
+   offset(layout.deconEntityMode, "DeconstructionItemGui", "entityFiltersWidgets.modeSwitch");
+   offset(layout.deconEntityFilters, "DeconstructionItemGui", "entityFiltersWidgets.table");
+   offset(layout.deconTileMode, "DeconstructionItemGui", "tileFiltersWidgets.modeSwitch");
+   offset(layout.deconTileSelection, "DeconstructionItemGui", "tileFiltersWidgets.tileModeDropdown");
+   offset(layout.deconTileFilters, "DeconstructionItemGui", "tileFiltersWidgets.table");
    offset(layout.sidePanelContainer, "GuiWithSideButtons", "sidePanelContainer");
    offset(layout.onOffEntityWindow, "GenericOnOffEntityGui", "entityWindow");
    offset(layout.singleFluidBoxGui, "SingleFluidBoxEntityGui", "fluidBoxGui");

@@ -13,6 +13,7 @@
 //   - a row of texts only is one line ("Map version: 2.0.72"), and a label leading a row with a
 //     single control names that control
 //   - a multi-line label reads a line per node
+//   - a switch with a label at each side (whitelist, blacklist) is one switch reading its side
 //
 // Activation never touches the mouse: buttons, toggles, tabs and dropdowns are pressed the way the
 // Gui presses the widget under a real click (agui::press), sliders step on the arrow keys through
@@ -49,6 +50,9 @@ graph::NodeVtable ControlNode(const agui::Widget* widget, std::function<std::str
 /// the label's usually explains the setting.
 graph::NodeVtable ControlNode(const agui::Widget* widget, const agui::Widget* label);
 
+/// The node for a LabeledSwitch: its switch, its value the label of the side it is on
+/// ("Whitelist, switch"). Enter flips it as a click does.
+graph::NodeVtable LabeledSwitchNode(const agui::Widget* labeledSwitch);
 /// A read-only line of text, re-read live. `tag` is the widget scrolled into view when focused,
 /// and its tooltip is what the tooltip key reads.
 graph::NodeVtable TextNode(const agui::Widget* tag, std::function<std::string()> text);

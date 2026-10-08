@@ -89,7 +89,12 @@ effort it would take.
 
 You can mark everything in an area for deconstruction or upgrade.  To do so, get the planner, then click the corners of the box.
 
-If you instead click with a larger cursor, the planner will directly apply to everything under that cursor.
+To configure a deconstruction planner, put it in a slot of your inventory and press `right bracket` on it, as a sighted player right-clicks it. Its window has four stops, moved between with `tab`:
+
+- the planner: its name, then buttons to edit its name, description and icons, copy it, export it to a string, and delete it;
+- the settings: trees and rocks only, the Entities and Tiles tabs, whitelist or blacklist (`enter` flips it), and on the Tiles tab the tile mode;
+- the chosen tab's filters, ten to a row: `enter` opens the chooser, `right bracket` clears a slot;
+- your inventory.
 
 You can "undo" or "cancel" by getting the same kind of planner in the hand and reselecting the same box, starting it with `shift + left bracket` instead of `left bracket`.
 

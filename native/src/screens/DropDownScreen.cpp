@@ -4,7 +4,6 @@
 #include <vector>
 
 #include "AguiNodes.hpp"
-#include "WindowScreen.hpp"
 #include "vocab.h"
 
 namespace fa::screens
@@ -12,7 +11,8 @@ namespace fa::screens
 
 bool DropDownScreen::IsActive()
 {
-    _dropDown = WindowScreen::TopWindow() ? agui::openDropDown(agui::applicationGui()) : nullptr;
+    // In a menu window or a game window alike: a list is open only while a window holds it.
+    _dropDown = agui::openDropDown(agui::applicationGui());
     return _dropDown != nullptr;
 }
 

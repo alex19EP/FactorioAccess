@@ -44,6 +44,9 @@ protected:
     static void AddTitledWindow(graph::GraphBuilder& builder, const std::string& key, const agui::Widget* window,
         std::vector<const agui::Widget*> skip = {}, Attachments attachments = {});
 
+    /// The player's inventory beside the window, in its title's context ("Character"), as a stop of
+    /// its own.
+    static void AddInventory(graph::GraphBuilder& builder, const agui::EntityWindowParts& parts);
     /// The panel a network button in the title bar opened beside the window, as a stop of its own,
     /// while one is open.
     static void AddSidePanel(graph::GraphBuilder& builder, const agui::Widget* sidePanel);

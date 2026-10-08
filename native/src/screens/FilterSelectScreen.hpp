@@ -1,8 +1,9 @@
 #pragma once
 
-// The game's chooser of an item, entity, signal or upgrade (FilterSelectGui<T>), opened by a slot
-// that takes a filter: an empty quickbar slot clicked with an empty hand, a filter slot of an
-// inserter or a constant combinator, and the like.
+// The game's chooser of an item, entity, signal or upgrade (a SelectListGui<T>: FilterSelectGui<T>,
+// IDWithQualityIDSelectListGui<T>), opened by a slot that takes a filter or an icon: an empty
+// quickbar slot clicked with an empty hand, a filter slot of an inserter, a planner or a constant
+// combinator, a blueprint's icon, and the like.
 //
 // One stop in the window's title ("Set filter"): its item group tabs, ended by the search button,
 // above a grid of the selected group's choices, one row per subgroup line as the game lays them out.

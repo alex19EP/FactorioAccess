@@ -2,8 +2,9 @@
 
 // The game's window for an entity over a loaded game, opened by its own open-gui control: a chest,
 // a furnace, a mining drill, an assembler, an inserter, a boiler, a lab, and every other entity the
-// game builds a GameGuiWithControllerInventory for. Also the recipe list an assembler without a
-// recipe opens instead (AssemblingMachineSelectRecipeGui).
+// game builds a GameGuiWithControllerInventory for, but the deconstruction planner's
+// (DeconstructionPlannerScreen). Also the recipe list an assembler without a recipe opens instead
+// (AssemblingMachineSelectRecipeGui).
 //
 // Two stops, or more. The entity's part, in its name's context, read by the generic walker: its status,
 // progress bars, fuel, input, output and module slots, recipe, filters and settings. Then the
