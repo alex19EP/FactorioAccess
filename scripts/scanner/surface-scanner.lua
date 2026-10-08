@@ -1,5 +1,7 @@
+local ChartTagsBackend = require("scripts.scanner.backends.chart-tags")
 local Functools = require("scripts.functools")
 local Memosort = require("scripts.memosort")
+local PinsBackend = require("scripts.scanner.backends.pins")
 local ResourcePatchesBackend = require("scripts.scanner.backends.resource-patches")
 local SimpleBackend = require("scripts.scanner.backends.simple")
 local ScannerConsts = require("scripts.scanner.scanner-consts")
@@ -388,6 +390,10 @@ function mod.get_entries_snapshot(surface_index, player, callback)
 
    state.backends.iceberg_backend:dump_entries_to_callback(player, callback)
    state.backends.water_backend:dump_entries_to_callback(player, callback)
+
+   -- These read the game when asked, so they keep no state on the surface.
+   PinsBackend.PinsBackend.new():dump_entries_to_callback(player, callback)
+   ChartTagsBackend.ChartTagsBackend.new():dump_entries_to_callback(player, callback)
 end
 
 function mod.on_new_surface(index)

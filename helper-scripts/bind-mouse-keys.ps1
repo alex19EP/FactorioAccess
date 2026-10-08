@@ -1,6 +1,7 @@
 <#
 .SYNOPSIS
 Gives every mouse button control in Factorio a key: left button [, right button ], middle button \.
+Zoom in and zoom out, on the mouse wheel, get = and -.
 
 .DESCRIPTION
 Edits the [controls] section of Factorio's config.ini. Every control bound to mouse button 1, 2 or 3
@@ -14,12 +15,16 @@ config.ini is read without that check, and a key binding triggers a control like
 Inventory and crafting slots are the exception: the game turns their controls into the mouse
 buttons slot buttons react to, so their keys do nothing there. They are bound anyway.
 
+Zoom in and zoom out are bound on the wheel in both slots (plain and with SHIFT). Their alternative
+slot gets EQUALS and MINUS, so the plain wheel keeps working. FactorioAccess speaks each zoom change.
+
 A copy of the old file is kept beside it. Close Factorio first: it rewrites config.ini when it
 exits.
 
 With -Revert the keys come off again: added alternatives are cleared and replaced bindings go back
 to their mouse buttons. A bracket or backslash binding of your own on a control that also has the
-matching mouse binding is treated as one of ours.
+matching mouse binding is treated as one of ours. The zoom alternatives go back to SHIFT and the
+wheel when they still hold EQUALS and MINUS.
 
 .PARAMETER ConfigPath
 config.ini to edit. Defaults to the one in %APPDATA%\Factorio\config, the location of the
@@ -133,6 +138,24 @@ foreach ($name in @($entries.Keys)) {
       if ($primaryKey) { Set-Binding $name $primaryKey }
       if ($altKey) { Set-Binding $altName $altKey }
       $replaced.Add($name)
+   }
+}
+
+# Zoom has only wheel bindings, which the loop above leaves alone; its alternative slot takes a key.
+$zoomControls = @(
+   @{ Name = 'zoom-in'; Key = 'EQUALS'; Default = 'SHIFT + mouse-wheel-up' },
+   @{ Name = 'zoom-out'; Key = 'MINUS'; Default = 'SHIFT + mouse-wheel-down' }
+)
+foreach ($zoom in $zoomControls) {
+   $altName = "$($zoom.Name)-alternative"
+   if ($Revert) {
+      if ($entries.Contains($altName) -and $entries[$altName].Value -eq $zoom.Key) {
+         Set-Binding $altName $zoom.Default $true
+      }
+   } elseif ($entries.Contains($altName)) {
+      Set-Binding $altName $zoom.Key
+   } else {
+      $inserts.Add(@{ After = $entries[$zoom.Name].Index; Line = "$altName=$($zoom.Key)" })
    }
 }
 

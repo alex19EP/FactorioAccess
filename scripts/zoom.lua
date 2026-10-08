@@ -1,79 +1,32 @@
 --[[
-Zoom control.
+Zoom.
 
-Provides functions to set and read zoom levels calibrated to show a specific number of tiles.
+The game's own zoom controls change the zoom (helper-scripts/bind-mouse-keys.ps1 puts zoom in and
+zoom out on EQUALS and MINUS). This reads it as the number of tiles across the screen, speaks each
+change, and gives the area the sound model searches.
 ]]
+local Hand = require("scripts.hand")
 local SoundModel = require("scripts.sound-model")
 local Speech = require("scripts.speech")
 
 local mod = {}
 
--- Zoom levels in tiles (diameter - full distance across screen). This list is calibrated to the default zoom limits for
--- the character view.
-mod.ZOOM_LEVELS = { 20, 50, 100, 200 }
-
 -- The base pixels per tile at zoom=1.
 local base_pixels_per_tile = 32
 
----Get the zoom value needed to see t tiles across the screen.
----@param pindex integer
----@param t number Number of tiles (diameter)
----@return number zoom The zoom value that shows t tiles
-function mod.zoom_for_tiles(pindex, t)
-   local player = game.get_player(pindex)
-   local screen = player.display_resolution
-   local screen_dimension = math.max(screen.width, screen.height)
-   return screen_dimension / (t * base_pixels_per_tile * player.display_density_scale)
-end
-
----Find the closest index in ZOOM_LEVELS to the current player zoom.
----@param pindex integer
----@return integer index The 1-based index into ZOOM_LEVELS
-function mod.get_closest_zoom_index(pindex)
-   local player = game.get_player(pindex)
-   local current_zoom = player.zoom
-
-   local best_index = 1
-   local best_diff = math.huge
-
-   for i, tiles in ipairs(mod.ZOOM_LEVELS) do
-      local target_zoom = mod.zoom_for_tiles(pindex, tiles)
-      local diff = math.abs(current_zoom - target_zoom)
-      if diff < best_diff then
-         best_diff = diff
-         best_index = i
-      end
-   end
-
-   return best_index
-end
-
----Set zoom to a specific tile count and announce result.
----Warns if the actual zoom differs from expected (due to player's zoom limits).
----@param pindex integer
----@param tiles number The target tile count (diameter)
-local function set_zoom_and_announce(pindex, tiles)
-   local player = game.get_player(pindex)
-   local target_zoom = mod.zoom_for_tiles(pindex, tiles)
-
-   -- Set the zoom
-   player.zoom = target_zoom
-
-   -- Read back and compare
-   local actual_zoom = player.zoom
-
-   local epsilon = 1e-3
-
-   if math.abs(actual_zoom - target_zoom) > epsilon then
-      -- Zoom was clamped by player's limits
-      Speech.speak(pindex, { "fa.zoom-limited", tiles })
-   else
-      Speech.speak(pindex, { "fa.zoom-set", tiles })
-   end
-end
+-- The zoom each player last heard, so each change is spoken once. It only drives speech, so it may
+-- differ between peers.
+---@type table<integer, number>
+local spoken_zoom = {}
+-- The zoom seen on the previous tick: a change is spoken once it has held for a tick, when the
+-- render mode has caught up with it and a burst of wheel steps has ended.
+---@type table<integer, number>
+local seen_zoom = {}
+-- Views each player entered and has yet to hear, with the zoom they open at.
+---@type table<integer, "remote"|"character">
+local entered_view = {}
 
 ---Get the current zoom level in tiles.
----Inverse of zoom_for_tiles.
 ---@param pindex integer
 ---@return integer tiles The tile count for the current zoom
 function mod.get_current_zoom_tiles(pindex)
@@ -81,6 +34,24 @@ function mod.get_current_zoom_tiles(pindex)
    local screen = player.display_resolution
    local screen_dimension = math.max(screen.width, screen.height)
    return math.floor(screen_dimension / (player.zoom * base_pixels_per_tile * player.display_density_scale) + 0.5)
+end
+
+-- Map cells across the screen; see map-cells.lua.
+local CELLS_PER_SCREEN = 30
+
+---The size in tiles of a map cell on a screen `tiles` across.
+---@param tiles number
+---@return integer
+function mod.map_cell_size_for(tiles)
+   return 2 ^ math.floor(math.log(tiles / CELLS_PER_SCREEN, 2) + 0.5)
+end
+
+---The size in tiles of a map cell, by which the cursor moves on the full map. Nil off the full map.
+---@param pindex integer
+---@return integer?
+function mod.get_map_cell_size(pindex)
+   if game.get_player(pindex).render_mode ~= defines.render_mode.chart then return nil end
+   return mod.map_cell_size_for(mod.get_current_zoom_tiles(pindex))
 end
 
 ---Append zoom info to a MessageBuilder
@@ -91,29 +62,52 @@ function mod.append_zoom_info(pindex, mb)
    mb:fragment({ "fa.zoom-current", tiles })
 end
 
----Handle zoom out (minus key)
+---Whether the player entered a view they have yet to hear about.
 ---@param pindex integer
-function mod.zoom_out(pindex)
-   local current_index = mod.get_closest_zoom_index(pindex)
-   local new_index = math.min(current_index + 1, #mod.ZOOM_LEVELS)
+---@return boolean
+function mod.view_pending(pindex)
+   return entered_view[pindex] ~= nil
+end
 
-   if new_index == current_index then
-      Speech.speak(pindex, { "fa.zoom-at-max", mod.ZOOM_LEVELS[current_index] })
-   else
-      set_zoom_and_announce(pindex, mod.ZOOM_LEVELS[new_index])
+---Says the view the player entered, with the zoom it opens at and what is now in hand, once the zoom
+---has settled.
+---@param event EventData.on_player_controller_changed
+function mod.on_controller_changed(event)
+   local controller = game.get_player(event.player_index).controller_type
+   if controller == defines.controllers.remote then
+      entered_view[event.player_index] = "remote"
+   elseif controller == defines.controllers.character then
+      entered_view[event.player_index] = "character"
    end
 end
 
----Handle zoom in (equals key)
----@param pindex integer
-function mod.zoom_in(pindex)
-   local current_index = mod.get_closest_zoom_index(pindex)
-   local new_index = math.max(current_index - 1, 1)
-
-   if new_index == current_index then
-      Speech.speak(pindex, { "fa.zoom-at-min", mod.ZOOM_LEVELS[current_index] })
-   else
-      set_zoom_and_announce(pindex, mod.ZOOM_LEVELS[new_index])
+---Speaks each player's zoom when it changed since they last heard it, and the view they entered. The
+---first check after a load only records the zoom.
+function mod.on_tick()
+   for _, player in pairs(game.connected_players) do
+      local pindex = player.index
+      local zoom = player.zoom
+      local previous = seen_zoom[pindex]
+      seen_zoom[pindex] = zoom
+      local last = spoken_zoom[pindex]
+      if not last then spoken_zoom[pindex] = zoom end
+      local view = entered_view[pindex]
+      if previous == zoom and (view or last and math.abs(zoom - last) > 1e-6) then
+         spoken_zoom[pindex] = zoom
+         entered_view[pindex] = nil
+         local tiles = mod.get_current_zoom_tiles(pindex)
+         -- 0 off the full map
+         local cell_size = mod.get_map_cell_size(pindex) or 0
+         if view then
+            local message = Speech.MessageBuilder.new()
+            message:fragment({ "fa.zoom-view-" .. view, tiles, cell_size })
+            local hand = Hand.describe(pindex)
+            if hand then message:list_item(hand) end
+            Speech.speak(pindex, message:build())
+         else
+            Speech.speak(pindex, { "fa.zoom-set", tiles, cell_size })
+         end
+      end
    end
 end
 

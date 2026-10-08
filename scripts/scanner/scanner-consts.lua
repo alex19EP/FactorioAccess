@@ -7,6 +7,9 @@ mod.CATEGORIES = {
    ALL = "all",
    -- Places the item in hand can be built, such as the shore for an offshore pump.
    BUILD_SPOTS = "build_spots",
+   PINS = "pins",
+   -- Map tags.
+   TAGS = "tags",
    RESOURCES = "resources",
    ENEMIES = "enemies",
    LOGISTICSAndPower = "logistics_and_power",
@@ -28,6 +31,8 @@ mod.CATEGORIES = {
 mod.CATEGORY_ORDER = {
    mod.CATEGORIES.ALL,
    mod.CATEGORIES.BUILD_SPOTS,
+   mod.CATEGORIES.PINS,
+   mod.CATEGORIES.TAGS,
    mod.CATEGORIES.RESOURCES,
    mod.CATEGORIES.ENEMIES,
    mod.CATEGORIES.REMNANTS,

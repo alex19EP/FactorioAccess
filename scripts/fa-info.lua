@@ -2127,27 +2127,28 @@ function mod.area_scan_summary_info(pindex, left_top, right_bottom)
 
    local chunk_lt_x = math.floor(left_top.x / 32)
    local chunk_lt_y = math.floor(left_top.y / 32)
-   local chunk_rb_x = math.ceil(right_bottom.x / 32)
-   local chunk_rb_y = math.ceil(right_bottom.y / 32)
+   -- right_bottom is exclusive
+   local chunk_rb_x = math.ceil(right_bottom.x / 32) - 1
+   local chunk_rb_y = math.ceil(right_bottom.y / 32) - 1
 
    local player = assert(game.get_player(pindex))
    ---@cast player LuaPlayer
    local surf = player.surface
 
-   local generated_chunk_count = 0
+   local charted_chunk_count = 0
    local total_chunks_covered = 0
    for cx = chunk_lt_x, chunk_rb_x do
       for cy = chunk_lt_y, chunk_rb_y do
-         if surf.is_chunk_generated({ cx, cy }) then generated_chunk_count = generated_chunk_count + 1 end
+         if player.force.is_chunk_charted(surf, { cx, cy }) then charted_chunk_count = charted_chunk_count + 1 end
          total_chunks_covered = total_chunks_covered + 1
       end
    end
-   if total_chunks_covered > 0 and generated_chunk_count < 1 then
+   if total_chunks_covered > 0 and charted_chunk_count < 1 then
       return { "fa.area-scan-charted-zero" }
-   elseif total_chunks_covered > 0 and generated_chunk_count < total_chunks_covered then
+   elseif total_chunks_covered > 0 and charted_chunk_count < total_chunks_covered then
       msg:fragment({
          "fa.area-scan-charted-percent",
-         tostring(math.floor(generated_chunk_count / total_chunks_covered * 100)),
+         tostring(math.floor(charted_chunk_count / total_chunks_covered * 100)),
       })
    end
 

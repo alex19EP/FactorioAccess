@@ -33,15 +33,18 @@ local EventManager = require("scripts.event-manager")
 require("scripts.fa-commands") -- registers FA's console commands
 local FaInfo = require("scripts.fa-info")
 local FaUtils = require("scripts.fa-utils")
+local Hand = require("scripts.hand")
 local F = require("scripts.field-ref")
 local Filters = require("scripts.filters")
 local GameNotices = require("scripts.game-notices")
+local GhostPlaced = require("scripts.ghost-placed")
 local Graphics = require("scripts.graphics")
 local InventoryTransfers = require("scripts.inventory-transfers")
 local InventoryUtils = require("scripts.inventory-utils")
 local ItemInfo = require("scripts.item-info")
 local KruiseKontrol = require("scripts.kruise-kontrol-wrapper")
 local Localising = require("scripts.localising")
+local MapCells = require("scripts.map-cells")
 local NativeCursor = require("scripts.native-cursor")
 local NoHover = require("scripts.no-hover")
 local Speech = require("scripts.speech")
@@ -73,6 +76,7 @@ local ForceGhostEnabler = require("scripts.force-ghost-enabler")
 local AimAssist = require("scripts.combat.aim-assist")
 local Capsules = require("scripts.combat.capsules")
 local PlayerWeapon = require("scripts.combat.player-weapon")
+local ViewLimit = require("scripts.view-limit")
 local Zoom = require("scripts.zoom")
 
 -- UI modules (required for registration with router)
@@ -171,71 +175,9 @@ local function read_hand(pindex)
       storage.players[pindex].skip_read_hand = false
       return
    end
-   local cursor_stack = game.get_player(pindex).cursor_stack
-   local cursor_ghost = game.get_player(pindex).cursor_ghost
-   if cursor_stack and cursor_stack.valid_for_read then
-      if cursor_stack.is_blueprint then
-         --Blueprint extra info
-         Speech.speak(pindex, Blueprints.get_blueprint_info(cursor_stack, true, pindex))
-      elseif cursor_stack.is_blueprint_book then
-         Speech.speak(pindex, Blueprints.get_blueprint_book_info(cursor_stack, true))
-      elseif cursor_stack.is_upgrade_item then
-         local message = MessageBuilder.new()
-         UpgradePlanner.describe_planner(message, cursor_stack)
-         Speech.speak(pindex, message:build())
-      elseif cursor_stack.is_deconstruction_item then
-         local label = cursor_stack.label
-         if label and label ~= "" then
-            Speech.speak(pindex, { "fa.item-decon-planner-labeled", label })
-         else
-            Speech.speak(pindex, { "item-name.deconstruction-planner" })
-         end
-      else
-         --Any other valid item
-         local out = { "fa.cursor-description" }
-         table.insert(out, cursor_stack.prototype.localised_name)
-         local build_entity = cursor_stack.prototype.place_result
-         local direction = NativeCursor.build_direction(pindex)
-         if build_entity and build_entity.supports_direction and direction then
-            table.insert(out, 1)
-            table.insert(out, { "fa.facing-direction", FaUtils.direction_lookup(direction) })
-         else
-            table.insert(out, 0)
-            table.insert(out, "")
-         end
-         table.insert(out, cursor_stack.count)
-         local extra = game.get_player(pindex).get_main_inventory().get_item_count(cursor_stack.name)
-         if extra > 0 then
-            table.insert(out, cursor_stack.count + extra)
-         else
-            table.insert(out, 0)
-         end
-         Speech.speak(pindex, out)
-      end
-   elseif cursor_ghost ~= nil then
-      --Any ghost
-      local out = { "fa.cursor-description" }
-      table.insert(out, cursor_ghost.localised_name)
-      local build_entity = cursor_ghost.place_result
-      local direction = NativeCursor.build_direction(pindex)
-      if build_entity and build_entity.supports_direction and direction then
-         table.insert(out, 1)
-         table.insert(out, { "fa.facing-direction", FaUtils.direction_lookup(direction) })
-      else
-         table.insert(out, 0)
-         table.insert(out, "")
-      end
-      table.insert(out, 0)
-      local extra = 0
-      if extra > 0 then
-         table.insert(out, cursor_stack.count + extra)
-      else
-         table.insert(out, 0)
-      end
-      Speech.speak(pindex, out)
-   else
-      Speech.speak(pindex, { "fa.empty_cursor" })
-   end
+   -- Entering or leaving remote view changes the hand, and the view's announcement says it
+   if Zoom.view_pending(pindex) then return end
+   Speech.speak(pindex, Hand.describe(pindex) or { "fa.empty_cursor" })
 end
 
 --Checks if the storage players table has been created, and if the table entry for this player exists. Otherwise it is initialized.
@@ -323,6 +265,7 @@ end
 function on_tick(event)
    MessageLists.try_translate_all_players()
    NoHover.on_tick()
+   ViewLimit.on_tick()
    NativeCursor.on_tick()
    ScannerEntrypoint.on_tick()
    MovementHistory.update_all_players()
@@ -330,6 +273,7 @@ function on_tick(event)
    SonifierTickHandler.on_tick()
    BattleNotice.on_tick()
    ForceGhostEnabler.on_tick()
+   Zoom.on_tick()
 
    move_characters(event)
 
@@ -857,9 +801,18 @@ EventManager.on_event(
    end
 )
 
+local scanner_on_built = ScannerEntrypoint.build_new_entity_handler("entity")
+EventManager.on_event(
+   defines.events.on_built_entity,
+   ---@param event EventData.on_built_entity
+   function(event)
+      scanner_on_built(event)
+      GhostPlaced.on_built_entity(event)
+   end
+)
+
 -- Scanner: entity creation events (most use "entity" field)
 EventManager.on_event({
-   defines.events.on_built_entity,
    defines.events.on_robot_built_entity,
    defines.events.script_raised_built,
    defines.events.on_entity_spawned,
@@ -886,6 +839,10 @@ end
 EventManager.on_event(defines.events.on_achievement_gained, GameNotices.on_achievement_gained)
 EventManager.on_event(defines.events.on_chart_tag_added, GameNotices.on_chart_tag_added)
 EventManager.on_event(defines.events.on_space_platform_changed_state, GameNotices.on_space_platform_changed_state)
+EventManager.on_event(defines.events.on_player_controller_changed, function(event)
+   ViewLimit.on_controller_changed(event)
+   Zoom.on_controller_changed(event)
+end)
 -- New input event definitions
 
 --Moves the cursor, and conducts an area scan for larger cursors. If the player is in a slow moving vehicle, it is stopped.
@@ -901,6 +858,10 @@ local function move_large_cursor_by(pindex, direction, tiles, prefix_text)
    local p = game.get_player(pindex)
 
    cursor_pos = FaUtils.offset_position_legacy(cursor_pos, direction, tiles)
+   if not ViewLimit.allows(pindex, cursor_pos) then
+      ViewLimit.say_edge(pindex)
+      return
+   end
    vp:set_cursor_pos(cursor_pos)
 
    local scan_left_top = {
@@ -934,6 +895,17 @@ local function cursor_mode_move(direction, pindex, single_only)
    local diff = cursor_size * 2 + 1
    if single_only then diff = 1 end
    local p = game.get_player(pindex)
+
+   local cell_size = Zoom.get_map_cell_size(pindex)
+   if cell_size then
+      MapCells.move(pindex, direction, cell_size)
+      return
+   end
+
+   if not ViewLimit.allows(pindex, FaUtils.offset_position_legacy(cursor_pos, direction, diff)) then
+      ViewLimit.say_edge(pindex)
+      return
+   end
 
    if cursor_size == 0 then
       -- Cursor size 0 ("1 by 1"): Read tile
@@ -1029,6 +1001,10 @@ EventManager.on_event(
    end
 )
 
+-- cursor_skip_iteration's result when the next tile is off the screen: the cursor stays on the last
+-- tile it reached.
+local SKIP_AT_EDGE = -2
+
 --Moves the cursor in the same direction multiple times until the reported entity changes. Change includes: new entity name or new direction for entites with the same name, or changing between nil and ent. Returns move count.
 local function cursor_skip_iteration(pindex, direction, iteration_limit)
    local p = game.get_player(pindex)
@@ -1069,7 +1045,9 @@ local function cursor_skip_iteration(pindex, direction, iteration_limit)
                math.ceil(util.distance(start.position, con.target.get_fluid_box_pipe_connections(1)[1].position))
             local dir_neighbor = FaUtils.get_direction_biased(con.target_position, start.position)
             if con.connection_type == "underground" and dir_neighbor == direction then
-               vp:set_cursor_pos(con.target.get_fluid_box_pipe_connections(1)[1].position)
+               local other_end = con.target.get_fluid_box_pipe_connections(1)[1].position
+               if not ViewLimit.allows(pindex, other_end) then return SKIP_AT_EDGE end
+               vp:set_cursor_pos(other_end)
                EntitySelection.reset_entity_index(pindex)
                current = EntitySelection.get_first_ent_at_tile(pindex)
                return dist
@@ -1084,6 +1062,7 @@ local function cursor_skip_iteration(pindex, direction, iteration_limit)
          local dist = math.ceil(util.distance(start.position, other_end.position))
          local dir_neighbor = FaUtils.get_direction_biased(other_end.position, start.position)
          if dir_neighbor == direction then
+            if not ViewLimit.allows(pindex, other_end.position) then return SKIP_AT_EDGE end
             vp:set_cursor_pos(other_end.position)
             EntitySelection.reset_entity_index(pindex)
             current = EntitySelection.get_first_ent_at_tile(pindex)
@@ -1095,6 +1074,7 @@ local function cursor_skip_iteration(pindex, direction, iteration_limit)
       local selected_tile_is_water = nil
       --Iterate first_tile
       cursor_pos = FaUtils.offset_position_legacy(cursor_pos, direction, 1)
+      if not ViewLimit.allows(pindex, cursor_pos) then return SKIP_AT_EDGE end
       vp:set_cursor_pos(cursor_pos)
       selected_tile_is_water = FaUtils.tile_is_water(p.surface, cursor_pos)
 
@@ -1114,6 +1094,7 @@ local function cursor_skip_iteration(pindex, direction, iteration_limit)
             end
             --Iterate again
             cursor_pos = FaUtils.offset_position_legacy(cursor_pos, direction, 1)
+            if not ViewLimit.allows(pindex, cursor_pos) then return SKIP_AT_EDGE end
             vp:set_cursor_pos(cursor_pos)
             selected_tile_is_water = FaUtils.tile_is_water(p.surface, cursor_pos)
             moved = moved + 1
@@ -1124,6 +1105,7 @@ local function cursor_skip_iteration(pindex, direction, iteration_limit)
    end
    --Iterate first tile
    cursor_pos = FaUtils.offset_position_legacy(cursor_pos, direction, 1)
+   if not ViewLimit.allows(pindex, cursor_pos) then return SKIP_AT_EDGE end
    vp:set_cursor_pos(cursor_pos)
 
    current = compute_current()
@@ -1204,6 +1186,7 @@ local function cursor_skip_iteration(pindex, direction, iteration_limit)
       end
       --Skip case: Move 1 more tile
       cursor_pos = FaUtils.offset_position_legacy(cursor_pos, direction, 1)
+      if not ViewLimit.allows(pindex, cursor_pos) then return SKIP_AT_EDGE end
       vp:set_cursor_pos(cursor_pos)
       moved = moved + 1
       current = compute_current()
@@ -1225,22 +1208,20 @@ local function apply_skip_by_preview_size(pindex, direction, build_direction)
    local stack = p.cursor_stack
    local width, height = BuildDimensions.get_stack_build_dimensions(stack, build_direction)
 
-   --Default to cursor size if not something else
-   if not width or not height or (width + height <= 2) then
-      local shift = (vp:get_cursor_size() * 2 + 1)
-      vp:set_cursor_pos(FaUtils.offset_position_legacy(cursor_pos, direction, shift))
-      return shift
-   end
-
-   --For entities/blueprints larger than 1x1, move by the appropriate dimension
    local shift
-   if direction == dirs.east or direction == dirs.west then
+   if not width or not height or (width + height <= 2) then
+      --Default to cursor size if not something else
+      shift = vp:get_cursor_size() * 2 + 1
+   elseif direction == dirs.east or direction == dirs.west then
+      --For entities/blueprints larger than 1x1, move by the appropriate dimension
       shift = width
    elseif direction == dirs.north or direction == dirs.south then
       shift = height
    end
 
-   vp:set_cursor_pos(FaUtils.offset_position_legacy(cursor_pos, direction, shift))
+   local target = FaUtils.offset_position_legacy(cursor_pos, direction, shift)
+   if not ViewLimit.allows(pindex, target) then return SKIP_AT_EDGE end
+   vp:set_cursor_pos(target)
    return shift
 end
 
@@ -1271,7 +1252,11 @@ local function cursor_skip(pindex, direction, iteration_limit, use_preview_size,
 
    cursor_pos = vp:get_cursor_pos()
 
-   if use_preview_size then
+   if moved_count == SKIP_AT_EDGE then
+      ViewLimit.say_edge(pindex)
+      Graphics.sync_build_cursor_graphics(pindex)
+      return
+   elseif use_preview_size then
       --Rolling always plays the regular moving sound
       if storage.players[pindex].remote_view then
          sounds.play_building_placement(p.index, cursor_pos)
@@ -3243,15 +3228,6 @@ end, EventManager.EVENT_KIND.WORLD)
 -- EventManager.on_event("fa-shift-dot", function(event)
 --    VirtualTrainDriving.on_kb_descriptive_action_name(event)
 -- end, EventManager.EVENT_KIND.WORLD)
-
--- Zoom controls (WORLD priority so UI bar handlers take precedence)
-EventManager.on_event("fa-minus", function(event, pindex)
-   Zoom.zoom_out(pindex)
-end, EventManager.EVENT_KIND.WORLD)
-
-EventManager.on_event("fa-equals", function(event, pindex)
-   Zoom.zoom_in(pindex)
-end, EventManager.EVENT_KIND.WORLD)
 
 EventManager.on_event("fa-a-z", function(event, pindex)
    local mb = MessageBuilder.new()
