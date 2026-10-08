@@ -167,6 +167,20 @@ struct NodeVtable
     /// moving off. Kernel-inert; the navigator owns the mode.
     bool AdjustOnEnter = false;
 
+    /// Optional. A CANVAS: the control keeps a cursor of its own over a picture (a blueprint's
+    /// tiles), which the arrows move instead of the focus. Returns whether the cursor moved; at the
+    /// canvas's edge it does not, and the arrow moves the focus on through the graph. `skip`
+    /// (Shift+arrow) jumps to the next place that reads differently, or to the edge.
+    std::function<bool(GraphDir dir, bool skip)> OnMoveWithin;
+
+    /// Optional, with OnMoveWithin: Home/End move the canvas cursor to the start or end of its
+    /// row, and never the focus. Returns whether it moved.
+    std::function<bool(bool home)> OnEdgeWithin;
+
+    /// Optional, with OnMoveWithin: where the canvas cursor is, spoken on the player's
+    /// read-coordinates key.
+    std::function<std::string()> PositionText;
+
     /// Optional. The control's state line, spoken IMMEDIATELY (interrupting) after an
     /// activation/adjust that changes state — the synchronous feedback path for rapid key
     /// repeats. Asynchronous/game-driven changes ride the Live announcement watch instead.

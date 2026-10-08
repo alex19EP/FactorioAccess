@@ -147,29 +147,44 @@ void Navigator::HandleKey(const input::KeyEvent& e)
     if (!e.down)
         return;
 
+    if (!e.repeat && MatchesPositionKey(e))
+    {
+        HandlePosition();
+        return;
+    }
+
     switch (e.key)
     {
     // Arrows act on autorepeat too (held-key scrolling). WASD mirrors them, as it moves the FA
-    // cursor in the world; Shift+WASD is taken only to keep it from the world cursor.
+    // cursor in the world. With Shift they skip across a canvas as the FA cursor skips across the
+    // map; elsewhere Shift+WASD is taken only to keep it from the world cursor.
     case input::keys::Up:
     case input::keys::W:
         if (!e.shift)
             HandleArrow(graph::GraphDir::Up, e.ctrl);
+        else if (!e.ctrl)
+            HandleSkip(graph::GraphDir::Up);
         break;
     case input::keys::Down:
     case input::keys::S:
         if (!e.shift)
             HandleArrow(graph::GraphDir::Down, e.ctrl);
+        else if (!e.ctrl)
+            HandleSkip(graph::GraphDir::Down);
         break;
     case input::keys::Left:
     case input::keys::A:
         if (!e.shift)
             HandleArrow(graph::GraphDir::Left, e.ctrl);
+        else if (!e.ctrl)
+            HandleSkip(graph::GraphDir::Left);
         break;
     case input::keys::Right:
     case input::keys::D:
         if (!e.shift)
             HandleArrow(graph::GraphDir::Right, e.ctrl);
+        else if (!e.ctrl)
+            HandleSkip(graph::GraphDir::Right);
         break;
     // One-shot chords act on the fresh press only.
     case input::keys::Tab:
@@ -236,9 +251,16 @@ void Navigator::HandleArrow(graph::GraphDir dir, bool ctrl)
         return;
     }
 
+    // A canvas moves its own cursor until its edge, where the arrow moves the focus on.
+    graph::GraphNode* node = _graph->CurrentNode();
+    if (!ctrl && node && node->Vtable.OnMoveWithin && node->Vtable.OnMoveWithin(dir, false))
+    {
+        SpeakWithin(node);
+        return;
+    }
+
     // §7.1: a focused adjustable control adjusts on Left/Right instead of navigating; one among
     // the cells of a grid row only while its adjust mode is on.
-    graph::GraphNode* node = _graph->CurrentNode();
     bool gated = node && node->Vtable.AdjustOnEnter && node->Id != _adjusting;
     if ((dir == graph::GraphDir::Left || dir == graph::GraphDir::Right) && !gated)
     {
@@ -274,9 +296,46 @@ void Navigator::HandleTab(bool back)
         AnnounceMove(r);
 }
 
+void Navigator::HandleSkip(graph::GraphDir dir)
+{
+    graph::GraphNode* node = _graph->CurrentNode();
+    if (node && node->Vtable.OnMoveWithin && node->Vtable.OnMoveWithin(dir, true))
+        SpeakWithin(node);
+}
+
+void Navigator::SpeakWithin(graph::GraphNode* node)
+{
+    Speak(graph::GraphAnnouncer::LeafText(node), kInterruptOnKeypress);
+    // The node stays focused; what changed is where its cursor is, which the move just said.
+    _liveBaselineId = node->Id;
+    _liveBaseline = ResolveLiveParts(node);
+}
+
+bool Navigator::MatchesPositionKey(const input::KeyEvent& e) const
+{
+    for (const bindings::Key& key : _positionKeys)
+        if (e.key == key.key && e.shift == key.shift && e.ctrl == key.ctrl && e.alt == key.alt)
+            return true;
+    return false;
+}
+
+void Navigator::HandlePosition()
+{
+    graph::GraphNode* node = _graph->CurrentNode();
+    if (node && node->Vtable.PositionText)
+        Speak(node->Vtable.PositionText(), kInterruptOnKeypress);
+}
+
 void Navigator::HandleHomeEnd(bool home)
 {
     graph::GraphNode* node = _graph->CurrentNode();
+    // A canvas keeps the focus; at the row's end already, it says the tile again.
+    if (node && node->Vtable.OnEdgeWithin)
+    {
+        node->Vtable.OnEdgeWithin(home);
+        SpeakWithin(node);
+        return;
+    }
     // Inside a tree or a flyout column, Home/End mean the first/last SIBLING at this level; the
     // plain edge walk would climb out of the column through its head.
     graph::MoveResult r =
@@ -511,7 +570,10 @@ void Navigator::UpdateClaims(bool haveRender)
         _adjusting = {};
     bool typing = node && _screen->TypingIn(*node);
     bool adjusting = _adjusting.IsValid();
-    if (_claimsActive && typing == _claimsTyping && adjusting == _claimsAdjusting)
+    bool canvas = !typing && node && node->Vtable.OnMoveWithin;
+    bool positional = !typing && node && node->Vtable.PositionText;
+    if (_claimsActive && typing == _claimsTyping && adjusting == _claimsAdjusting && canvas == _claimsCanvas
+        && positional == _claimsPositional)
     {
         input::keepAlive();
         return;
@@ -521,6 +583,7 @@ void Navigator::UpdateClaims(bool haveRender)
     constexpr uint8_t plain = mods::None;
     constexpr uint8_t shiftable = mods::None | mods::Shift;
     std::vector<Claim> claims;
+    _positionKeys.clear();
     if (typing)
     {
         // The field edits with everything else; these are the ways out of it.
@@ -529,9 +592,11 @@ void Navigator::UpdateClaims(bool haveRender)
     else
     {
         // Escape is deliberately absent: the game's own Back handling stays live (§7.3). Alt
-        // chords never match, so Alt+F4 and friends always reach the game.
-        claims = {{keys::Up, plain | mods::Ctrl}, {keys::Down, plain | mods::Ctrl},
-            {keys::Left, plain | mods::Ctrl}, {keys::Right, plain | mods::Ctrl}, {keys::Tab, shiftable | mods::Ctrl},
+        // chords never match, so Alt+F4 and friends always reach the game. Shift+arrows skip
+        // across a canvas.
+        auto arrows = static_cast<uint8_t>(plain | mods::Ctrl | (canvas ? mods::Shift : 0));
+        claims = {{keys::Up, arrows}, {keys::Down, arrows},
+            {keys::Left, arrows}, {keys::Right, arrows}, {keys::Tab, shiftable | mods::Ctrl},
             {keys::Home, plain}, {keys::End, plain}, {keys::Return, plain | mods::Shift | mods::Ctrl},
             {keys::KeypadEnter, plain | mods::Shift | mods::Ctrl}, {keys::Y, plain},
             {keys::LeftBracket, plain | mods::Shift | mods::Ctrl},
@@ -547,11 +612,24 @@ void Navigator::UpdateClaims(bool haveRender)
         // the HUD.
         if (adjusting || _screen->ClaimsEscape())
             claims.push_back({keys::Escape, plain});
+        // The mod's read-coordinates control, wherever the player bound it, says where a canvas's
+        // cursor is; the game must not see it, or the mod would read the world cursor's place.
+        if (positional)
+        {
+            _positionKeys = bindings::customInput(kReadCoordinatesInput);
+            for (const bindings::Key& key : _positionKeys)
+            {
+                uint8_t state = key.alt ? mods::Alt : key.ctrl ? mods::Ctrl : key.shift ? mods::Shift : mods::None;
+                claims.push_back({key.key, state});
+            }
+        }
     }
     input::setClaims(std::move(claims));
     _claimsActive = true;
     _claimsTyping = typing;
     _claimsAdjusting = adjusting;
+    _claimsCanvas = canvas;
+    _claimsPositional = positional;
 }
 
 void Navigator::Speak(const std::string& text, bool interrupt)

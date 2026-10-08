@@ -655,6 +655,141 @@ struct Layout {
    uint32_t editableLabelText = 0;    // EditableLabel::label, agui::Label
    uint32_t editableLabelField = 0;   // EditableLabel::labelEdit, unique_ptr<TextFieldWithChatIconSelector>
    uint32_t editableLabelButton = 0;  // EditableLabel::switchEditLabelMode, IconButton
+
+   // The blueprint's picture (BlueprintWidget). Every frame its paint asks BlueprintSelectionResult
+   // Blueprint::selectionFromPosition(MapPosition const&, SetupBlueprintParameters const&) const
+   // what lies under the mouse (the entity the game's hover would pick, honouring the include
+   // checkboxes, else the tile) and keeps it in blueprintSelection, emptied while the mouse is off
+   // the picture. A left click restores that entity or tile (remove = false), a right click
+   // removes it, through the build and mine controls' buttons; Shift with the left button sets
+   // blueprintShiftSelected, the grid position, from the click's place. editEnabled is off in
+   // the previews of a book or the library. Map positions in the picture: the pixel less
+   // PixelPosition getPixelShift(agui::Point const& absolute) const, over renderParameters.scale
+   // times 32, from renderParameters.boundingBox.leftTop. Those are the blueprint's own
+   // coordinates, which getTileBoxIgnoreSnapGrid (blueprintTileBox) measures it in.
+   uint32_t pictureBlueprint = 0;      // BlueprintWidget::blueprint, Blueprint*
+   uint32_t pictureParameters = 0;     // ::blueprintParameters, SetupBlueprintParameters
+   uint32_t pictureSelection = 0;      // ::blueprintSelection, BlueprintSelectionResult
+   uint32_t pictureEditEnabled = 0;    // ::editEnabled, bool
+   uint32_t pictureScale = 0;          // ::renderParameters.scale, double
+   uint32_t pictureViewLeftTop = 0;    // ::renderParameters.boundingBox.leftTop, MapPosition
+   // Alt mode, as the paint reads it: bool GameAdapter::getShowEntityInfo() const, a virtual slot,
+   // on the player's latency adapter or else its game state adapter. (The picture's own render
+   // flags have it forced on between a click and the next paint.)
+   uint32_t picturePlayer = 0;         // ::context.player, Player*
+   uint32_t adapterShowEntityInfo = 0;
+   uintptr_t blueprintSelectionAt = 0;
+   uintptr_t picturePixelShift = 0;
+   uint32_t selectionResultSize = 0;   // sizeof(BlueprintSelectionResult)
+   uint32_t selectionEntity = 0;       // BlueprintSelectionResult::entity, Entity*
+   uint32_t selectionTile = 0;         // ::tileID, ID<TilePrototype>
+   uint32_t selectionIndex = 0;        // ::index into the blueprint's entities or tiles
+   // Which entities and tiles are removed: std::vector<ConfigureBlueprintEntityItem> and
+   // <ConfigureBlueprintTileItem>, a bool remove each, by index; shorter than the blueprint when
+   // the last ones were never touched.
+   uint32_t parametersEntities = 0;    // SetupBlueprintParameters::entitiesData
+   uint32_t parametersTiles = 0;       // ::tilesData
+   // The blueprint's entities, std::vector<BlueprintEntities::EntityData>: each an Entity* the
+   // picture draws and the items to be delivered to it (InsertPlan, a FlatMap from an item
+   // IDWithQuality to its ItemInventoryPositions: a grid count and the stacks it goes into, each
+   // with a count). Its tiles, std::vector<TileWithPosition>.
+   uint32_t blueprintEntityList = 0;   // Blueprint::entities.data
+   uint32_t entityDataSize = 0;
+   uint32_t entityDataInsertPlan = 0;  // EntityData::insertPlan.data.data, the pairs' vector
+   uint32_t insertPairSize = 0;        // Pair<IDWithQuality<ItemID>, ItemInventoryPositions>
+   uint32_t insertPairPositions = 0;   // ::second
+   uint32_t positionsGridCount = 0;    // ItemInventoryPositions::gridCount
+   uint32_t positionsStacks = 0;       // ::inventoryPositions, std::vector<ItemStackLocationWithCount>
+   uint32_t stackLocationSize = 0;
+   uint32_t stackLocationCount = 0;
+   // What the picture shows of an entity. Direction Entity::getDirection() const and bool
+   // Entity::hasDirection() const, virtual slots; the quality badge (EntityWithOwner::qualityID)
+   // and the details only while alt mode is on, as the game draws them.
+   uint32_t entityGetDirection = 0;
+   uint32_t entityHasDirection = 0;
+   uint32_t entityQuality = 0;         // EntityWithOwner::qualityID, ID<QualityPrototype>
+   uint32_t craftingRecipe = 0;        // CraftingMachine::recipeID, IDWithQuality<RecipeID>
+   // Item filters, IDWithQualityFilter: an item ID and a QualityCondition (quality, comparison).
+   uint32_t itemFilterSize = 0;
+   uint32_t itemFilterId = 0;          // ::baseID, ID<ItemPrototype>
+   uint32_t itemFilterQuality = 0;     // ::qualityCondition.qualityID, 0 for any quality
+   uint32_t inserterFilters = 0;       // Inserter::filter, std::array of 5
+   uint32_t inserterFlags = 0;         // Inserter::flags, InserterFlags
+   uint32_t splitterLogic = 0;         // Splitter::leftLogic, SplitterLogic
+   uint32_t laneSplitterLogic = 0;     // LaneSplitter::logic
+   uint32_t splitterInputLocked = 0;   // SplitterLogic::inputLocked, bool
+   uint32_t splitterOutputLocked = 0;  // ::outputLocked, bool
+   uint32_t splitterTakeFrom = 0;      // ::takeNextItemFrom, SplitterDirection
+   uint32_t splitterGoesTo = 0;        // ::nextItemGoesTo, SplitterDirection
+   uint32_t splitterFilter = 0;        // ::filter
+   uint32_t splitterRight = 0;         // SplitterDirection Right
+   uint32_t loaderFilters = 0;         // Loader::filter, std::array of 5
+   uint32_t loaderFilterMode = 0;      // Loader::filterMode, Loader::FilterMode
+   uint32_t loaderType = 0;            // Loader::type, LoaderType
+   uint32_t loaderPerLane = 0;         // LoaderPrototype::perLaneFilters, bool
+   uint32_t loaderWhitelist = 0;       // Loader::FilterMode Whitelist
+   uint32_t loaderBlacklist = 0;       // Loader::FilterMode Blacklist
+   uint32_t loaderOutput = 0;          // LoaderType Output
+   uint32_t undergroundType = 0;       // UndergroundBelt::type, UndergroundBeltType
+   uint32_t undergroundOutput = 0;     // UndergroundBeltType Output
+   // Combinators. Their operation shows on their display always; the signals only with alt mode
+   // and the interface setting "show combinator settings" on.
+   uint32_t showCombinatorSettings = 0; // InterfaceSettings::showCombinatorSettingsWhenDetailedInfoIsOn.value
+   uint32_t arithmeticParameters = 0;  // ArithmeticCombinator::controlBehavior.parameters
+   uint32_t arithmeticFirst = 0;       // ArithmeticCombinatorParameters::first, SignalOrConstant
+   uint32_t arithmeticSecond = 0;      // ::second
+   uint32_t arithmeticOperation = 0;   // ::operation, ArithmeticCombinatorParameters::Operation
+   uint32_t arithmeticOutput = 0;      // ::output, SignalID
+   uint32_t signalOrConstantType = 0;  // SignalOrConstant::type, SignalOrConstant::Type
+   uint32_t signalOrConstantSignal = 0; // ::signal, SignalID
+   uint32_t signalOrConstantIsSignal = 0; // SignalOrConstant::Type Signal
+   uint32_t deciderConditions = 0;     // DeciderCombinator::controlBehavior.parameters.conditions
+   uint32_t deciderOutputs = 0;        // ::outputs, std::vector<DeciderCombinatorParameters::Output>
+   uint32_t conditionFirst = 0;        // DeciderCombinatorParameters::Condition::first, SignalID
+   uint32_t conditionComparator = 0;   // ::comparator, Comparison
+   uint32_t conditionSecond = 0;       // ::second, SignalOrConstant
+   uint32_t deciderOutputSignal = 0;   // DeciderCombinatorParameters::Output::signalId
+   uint32_t selectorParameters = 0;    // SelectorCombinator::controlBehavior.parameters
+   uint32_t selectorOperation = 0;     // SelectorCombinatorParameters::operation
+   uint32_t selectorMax = 0;           // ::selectMax, bool
+   uint32_t selectorIndexSignal = 0;   // ::index.signal, SignalID
+   uint32_t selectorCountSignal = 0;   // ::countSignalID
+   uint32_t constantSignals = 0;       // ConstantCombinator::controlBehavior.sections.compiled
+   uint32_t compiledFilterSize = 0;    // CompiledLogisticFilter, its SignalFilter first
+   // The enumerators of the operations, in the order vocab names them.
+   uint32_t arithmeticOperations[11] = {};
+   uint32_t comparisons[6] = {};
+   uint32_t selectorOperations[9] = {};
+   uint32_t selectorSelect = 0;
+   uint32_t selectorCount = 0;
+   // SignalID: an IDWithQuality<SignalIDBase>, the base a type and an index packed in 32 bits.
+   // PrototypeBase const* SignalIDBase::getPrototypeSafe() const resolves it, or null.
+   uint32_t signalQuality = 0;         // IDWithQuality<SignalIDBase>::qualityID
+   uintptr_t signalPrototype = 0;
+   uint32_t pumpFilter = 0;            // Pump::fluidBox.buffer.filter.fluidID, ID<FluidPrototype>
+   uint32_t collectorFilters = 0;      // AsteroidCollector::chunkFilters, std::vector<ID<AsteroidChunkPrototype>>
+   uint32_t panelIcon = 0;             // DisplayPanel::icon, SignalID
+   uint32_t panelText = 0;             // DisplayPanel::text, std::string
+   uint32_t panelAlwaysShow = 0;       // DisplayPanel::alwaysShow, bool
+   uintptr_t tilePrototypes = 0;
+   uintptr_t fluidPrototypes = 0;
+   uintptr_t asteroidChunkPrototypes = 0;
+
+   // The keys of a mod's custom input: ControlSettings::customInputs, std::vector<ControlInput>,
+   // each naming its CustomInputPrototype and holding the player's two keyboard bindings
+   // (SimpleConfigItem<ControlInputValue>): a ControlInputValue::Type (Keyboard for a key), an
+   // SDL_Scancode and the modifiers held with it. SDL_Keycode SDL_GetKeyFromScancode(SDL_Scancode,
+   // SDL_Keymod, bool), the game's own SDL, turns the scancode into the key events' keycode.
+   uint32_t customInputs = 0;
+   uint32_t controlInputSize = 0;
+   uint32_t controlInputPrototype = 0; // ControlInput::customInputPrototype
+   uint32_t controlInputKey1 = 0;      // ::keyboardAndMouseInput1.value
+   uint32_t controlInputKey2 = 0;      // ::keyboardAndMouseInput2.value
+   uint32_t inputValueType = 0;        // ControlInputValue::type
+   uint32_t inputValueScancode = 0;    // ::scancode
+   uint32_t inputValueModifiers = 0;   // ::modifiers
+   uint32_t inputValueKeyboard = 0;    // ControlInputValue::Type Keyboard
+   uintptr_t keyFromScancode = 0;
    // The windows with circuit and logistic network buttons in the title bar (GuiWithSideButtons):
    // a button opens its panel beside the window, inside the side panel container.
    uint32_t sidePanelContainer = 0;   // GuiWithSideButtons::sidePanelContainer, agui::VerticalFlow

@@ -236,6 +236,23 @@ public:
       return total;
    }
 
+   std::optional<int64_t> enumeratorValue(std::string_view type, std::string_view enumerator) {
+      if (classes_.empty()) indexTypes();
+      auto it = enums_.find(type);
+      if (it == enums_.end()) {
+         log::error("Enum not found: {}", type);
+         return std::nullopt;
+      }
+      std::optional<int64_t> found;
+      forEachField(it->second, [&](const TPI::FieldList& field, const char* name, uint64_t value) {
+         if (field.kind != TypeRecordKind::LF_ENUMERATE || !name || name != enumerator) return true;
+         found = static_cast<int64_t>(value);
+         return false;
+      });
+      if (!found) log::error("Enumerator not found: {}::{}", type, enumerator);
+      return found;
+   }
+
    std::optional<uint32_t> classSize(std::string_view type) {
       if (classes_.empty()) indexTypes();
       auto index = definitionOf(type);
@@ -398,6 +415,10 @@ private:
       for (uint32_t i = 0; i < types_.size(); ++i) {
          auto info = classInfo(types_[i]);
          if (info && !info->forwardRef) classes_.try_emplace(info->name, firstType_ + i);
+         const auto* record = types_[i];
+         if (record->header.kind == TypeRecordKind::LF_ENUM &&
+             !(*reinterpret_cast<const uint16_t*>(&record->data.LF_ENUM.property) & kForwardRef))
+            enums_.try_emplace(record->data.LF_ENUM.name, record->data.LF_ENUM.field);
       }
       log::info("Indexed {} type records, {} class definitions in {} ms", types_.size(), classes_.size(),
                 elapsedMs(started));
@@ -561,6 +582,7 @@ private:
             numericSize = readNumeric(field->data.LF_ENUMERATE.value, value);
             if (numericSize == 0) return false;
             const char* name = field->data.LF_ENUMERATE.value + numericSize;
+            if (!visit(*field, name, value)) return false;
             next = name + std::strlen(name) + 1;
             break;
          }
@@ -588,6 +610,7 @@ private:
    uint32_t firstType_ = 0;
    std::vector<const TPI::Record*> types_;
    std::unordered_map<std::string_view, uint32_t> classes_;
+   std::unordered_map<std::string_view, uint32_t> enums_; // name to field list
 };
 
 std::string Identity::key() const {
@@ -687,6 +710,18 @@ std::optional<uint32_t> SymbolTable::size(std::string_view type) {
    cache_[key] = *size;
    cacheDirty_ = true;
    return size;
+}
+
+std::optional<int64_t> SymbolTable::enumValue(std::string_view type, std::string_view enumerator) {
+   auto key = std::format("enum {} {}", type, enumerator);
+   if (auto it = cache_.find(key); it != cache_.end()) return static_cast<int64_t>(it->second);
+   auto* file = pdb();
+   if (!file) return std::nullopt;
+   auto value = file->enumeratorValue(type, enumerator);
+   if (!value) return std::nullopt;
+   cache_[key] = static_cast<uint64_t>(*value);
+   cacheDirty_ = true;
+   return value;
 }
 
 std::optional<uint32_t> SymbolTable::virtualSlot(std::string_view type, std::string_view method) {

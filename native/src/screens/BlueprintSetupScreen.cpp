@@ -164,6 +164,27 @@ void AddSnapping(graph::GraphBuilder& builder, const Widget* settings)
     }
 }
 
+// The snapping table's grid position line as it shows ("Grid position, X:, -1, Y:, 1"): its second
+// line, after the grid size.
+std::string GridPositionText(const Widget* settings)
+{
+    const Widget* table = agui::parent(agui::member(settings, layout.blueprintGridWidth));
+    const unsigned columns = agui::tableColumns(table);
+    auto cells = agui::children(table);
+    std::string text;
+    for (std::size_t i = columns; columns > 0 && i < cells.size() && i < 2 * columns; ++i)
+    {
+        const Widget* leaf = agui::visible(cells[i]) ? CellLeaf(cells[i]) : nullptr;
+        if (!leaf)
+            continue;
+        std::string part = agui::kind(leaf) == Kind::TextBox ? std::string(agui::textBoxText(leaf)) : LabelText(leaf);
+        if (part.empty())
+            part = vocab::kBlank;
+        text += text.empty() ? part : ", " + part;
+    }
+    return text;
+}
+
 // A component as the game shows it, and as taken out of the blueprint where the game shows the slot
 // red with a count of 0.
 std::string ComponentText(const Widget* slot)
@@ -237,9 +258,10 @@ void AddInclude(graph::GraphBuilder& builder, const Widget* settings)
 }
 
 // The preview's header as the context of the game's hint beside it.
-void AddPreview(graph::GraphBuilder& builder, const Widget* window)
+void AddPreview(graph::GraphBuilder& builder, const Widget* window, const Widget* settings, PreviewCanvas& canvas)
 {
-    const Widget* frame = agui::member(window, layout.blueprintPreview);
+    const Widget* picture = agui::member(window, layout.blueprintPreview);
+    const Widget* frame = picture;
     while (frame && !agui::derivesFrom(frame, "FrameWithSubheader"))
         frame = agui::parent(frame);
     if (!frame)
@@ -255,6 +277,7 @@ void AddPreview(graph::GraphBuilder& builder, const Widget* window)
         builder.AddItem(graph::ControlId::Referenced(label, std::format("preview/{}", i)),
             TextNode(label, [label]() { return LabelText(label); }));
     }
+    canvas.Add(builder, picture, "preview/picture", [settings]() { return GridPositionText(settings); });
     builder.PopContext();
 }
 
@@ -273,7 +296,7 @@ void BlueprintSetupScreen::BuildWindow(graph::GraphBuilder& builder, const Widge
     AddSnapping(builder, settings);
     AddComponents(builder, settings);
     AddInclude(builder, settings);
-    AddPreview(builder, window);
+    AddPreview(builder, window, settings, _canvas);
 
     const Widget* footer = agui::dialogButtons(window);
     if (footer && Shows(footer) && HasContent(footer))

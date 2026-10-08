@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <span>
 #include <string>
@@ -135,6 +136,10 @@ bool derivesFrom(const Widget* widget, std::string_view className);
 // The same for any instantiation of a class template, e.g. "FilterSelectGui" for every
 // FilterSelectGui<T>; the name is unscoped.
 bool derivesFromTemplate(const Widget* widget, std::string_view templateName);
+
+// The base class of any polymorphic game object (an entity as well as a widget) by its decorated
+// RTTI name, e.g. ".?AVInserter@@", or null when the object's class does not derive from it.
+const std::byte* objectAsBase(const void* object, std::string_view decoratedBase);
 
 // A widget the game keeps as a member at `offset` inside `owner`, by value or (for `pointer`)
 // through a pointer; offsets come from game::layout.
@@ -535,6 +540,9 @@ void press(const Widget* widget, MouseButton button, bool shift, bool control);
 // The same, but at the centre of `over`, a widget inside `widget`: for widgets that act on where
 // they were clicked, such as a table selecting the row under the mouse.
 void pressOver(const Widget* widget, const Widget* over, MouseButton button, bool shift, bool control);
+// The same at a point of the widget, in its own coordinates: for widgets that act on the place
+// clicked inside them, such as a blueprint's picture.
+void pressAt(const Widget* widget, int x, int y, MouseButton button, bool shift, bool control);
 // Detour for determineWidgetUnderMouse: during a press the mouse is over the pressed widget, so the
 // controls its handlers ask about (craft, craft-5, craft-all) hold wherever the real mouse is. While
 // the mod drives the cursor the mouse is over no GUI otherwise, so the world answers the FA cursor

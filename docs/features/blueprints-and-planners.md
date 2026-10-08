@@ -60,8 +60,14 @@ When a blank blueprint's selection finishes, the game opens the blueprint's setu
 - snap to grid: the checkbox, then the grid size, the grid position, and the absolute and relative snapping, one line at a time. The fields say disabled until the box is checked, as the game greys them;
 - the components the blueprint holds, ten to a row. `right bracket` takes every entity of that kind out of the blueprint, and `enter` puts them back; a kind taken out says removed;
 - what to include, such as modules, tiles, trains or fuel, when the blueprint has any of them. For example, you can blueprint only tiles, even if entities are over them;
-- the preview;
+- the preview: the game's hint, then the picture itself, which you read a tile at a time;
 - the button that creates or saves the blueprint.
+
+In the picture, the arrows or `WASD` move a cursor one tile, and `shift` with them skips to the next tile that reads differently, as the map cursor skips. `home` and `end` go to the ends of the row, and `k` (or wherever you bound read coordinates) says the tile's place, counted from the top left corner. Past the top of the picture you are back at the hint.
+
+Each tile reads what the game draws there: the entity, its direction, which way an underground belt or loader faces, a combinator's operation, and the items to be delivered to it ("with 2 speed module"). A tile with no entity reads its floor tile, or empty. While alt mode is on you also hear what alt mode shows on the entity, as sighted players see it in the picture: its quality, an assembler's recipe, inserter, loader, splitter, pump and asteroid collector filters, splitter priorities, and with the interface setting for combinator settings, a combinator's signals.
+
+`right bracket` takes the entity or tile out of the blueprint and it reads removed; `enter` puts it back. `shift + enter` makes the tile the grid's position and reads the grid position fields.
 
 To build a blueprint, click with `left bracket`.  Rotation, flipping, etc. all work the same as buildings, and you are building from the top left, same as buildings.
 

@@ -23,6 +23,7 @@
 #include <vector>
 
 #include "Screen.hpp"
+#include "bindings.h"
 #include "graph/KeyGraph.hpp"
 #include "input.h"
 
@@ -58,6 +59,13 @@ private:
 
     void HandleKey(const input::KeyEvent& e);
     void HandleArrow(graph::GraphDir dir, bool ctrl);
+    /// Shift+arrow: a canvas's cursor skips to the next change.
+    void HandleSkip(graph::GraphDir dir);
+    /// After a canvas's cursor moved: say where it is now, keeping the focus.
+    void SpeakWithin(graph::GraphNode* node);
+    bool MatchesPositionKey(const input::KeyEvent& e) const;
+    /// The read-coordinates key: the focused canvas's cursor position.
+    void HandlePosition();
     void HandleTab(bool back);
     void HandleHomeEnd(bool home);
     void HandleEnter(bool shift, bool ctrl);
@@ -105,6 +113,12 @@ private:
     bool _claimsActive = false;
     bool _claimsTyping = false;                // the published set is the reduced typing one
     bool _claimsAdjusting = false;             // the published set includes Escape
+    bool _claimsCanvas = false;                // ... Shift+arrows, for a canvas
+    bool _claimsPositional = false;            // ... the read-coordinates keys
+    std::vector<bindings::Key> _positionKeys;  // those keys, as claimed
+
+    /// The mod's custom input that reads the cursor's coordinates.
+    static constexpr std::string_view kReadCoordinatesInput = "fa-k";
     graph::ControlId _adjusting;               // the grid slider in adjust mode, if any
     bool _hasLiveRender = false;
 

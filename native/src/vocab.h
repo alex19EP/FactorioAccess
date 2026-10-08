@@ -148,6 +148,29 @@ inline constexpr std::string_view kTiles = "tiles";
 inline constexpr std::string_view kDirections[8] = {"North", "NorthEast", "East", "SouthEast",
                                                     "South", "SouthWest", "West", "NorthWest"};
 
+// A blueprint's picture, tile by tile: what the game draws on an entity. Items to be delivered to
+// it ("with 2 speed module"), its filters, which way an underground belt or loader faces, a
+// splitter's priorities, a combinator's operation and output.
+inline constexpr std::string_view kWith = "with";
+inline constexpr std::string_view kFilter = "filter";
+inline constexpr std::string_view kBlacklist = "blacklist";
+inline constexpr std::string_view kInput = "input";
+inline constexpr std::string_view kOutput = "output";
+inline constexpr std::string_view kLeftLane = "left lane";
+inline constexpr std::string_view kRightLane = "right lane";
+inline constexpr std::string_view kInputPriority = "input priority";
+inline constexpr std::string_view kOutputPriority = "output priority";
+// ArithmeticCombinatorParameters::Operation, Comparison and SelectorCombinatorParameters::Operation
+// in the game's order. A selector's Select is said with its maximum or minimum.
+inline constexpr std::string_view kArithmetic[11] = {"multiply", "divide",      "plus", "minus", "modulo", "power",
+                                                     "left shift", "right shift", "and",  "or",    "xor"};
+inline constexpr std::string_view kComparisons[6] = {"greater than", "less than",     "equals",
+                                                     "greater or equal", "less or equal", "not equal"};
+inline constexpr std::string_view kSelector[9] = {"select", "count", "random", "quality transfer", "stack size",
+                                                  "rocket capacity", "quality filter", "time", "quality select"};
+inline constexpr std::string_view kMaximum = "maximum";
+inline constexpr std::string_view kMinimum = "minimum";
+
 // The Y key in the world when the cursor points at no entity and no tile.
 inline constexpr std::string_view kNothingHere = "nothing here";
 

@@ -1314,7 +1314,14 @@ void* underMouseDetour() { return reinterpret_cast<void*>(&detourUnderMouse); }
 
 void** underMouseOriginal() { return reinterpret_cast<void**>(&g_underMouseOriginal); }
 
-void pressOver(const Widget* widget, const Widget* over, MouseButton button, bool shift, bool control) {
+namespace {
+
+struct Pair {
+   int32_t x, y;
+};
+
+// The press at `point`, in `widget`'s coordinates, the mouse over `over` (the widget or one inside).
+void pressInside(const Widget* widget, const Widget* over, Pair point, MouseButton button, bool shift, bool control) {
    using Dispatch = void (*)(const Widget* widget, const void* event);
    // agui::MouseButton and agui::MouseEvent::Type
    constexpr uint16_t kLeft = 2, kRight = 4, kMiddle = 8;
@@ -1322,17 +1329,6 @@ void pressOver(const Widget* widget, const Widget* over, MouseButton button, boo
    alignas(16) std::byte event[128] = {};
    if (layout.mouseEventSize > sizeof(event)) return;
    auto put = [&event](uint32_t offset, auto value) { std::memcpy(event + offset, &value, sizeof(value)); };
-   struct Pair {
-      int32_t x, y;
-   };
-   // The centre of `over`, in `widget`'s coordinates: locations are relative to the parent.
-   Pair size = at<Pair>(over, layout.widgetSize);
-   Pair point = {size.x / 2, size.y / 2};
-   for (const Widget* step = over; step && step != widget; step = parent(step)) {
-      Pair location = at<Pair>(step, layout.widgetLocation);
-      point.x += location.x;
-      point.y += location.y;
-   }
    put(layout.mouseEventPosition, point.x);
    put(layout.mouseEventPosition + 4, point.y);
    put(layout.mouseEventButton, button == MouseButton::Left ? kLeft : button == MouseButton::Right ? kRight : kMiddle);
@@ -1403,6 +1399,28 @@ void pressOver(const Widget* widget, const Widget* over, MouseButton button, boo
    held.release();
    if (!send(layout.dispatchMouseUp, kUp)) return;
    if (hover) send(layout.dispatchMouseLeave, kLeave);
+}
+
+} // namespace
+
+void pressOver(const Widget* widget, const Widget* over, MouseButton button, bool shift, bool control) {
+   // The centre of `over`, in `widget`'s coordinates: locations are relative to the parent.
+   Pair size = at<Pair>(over, layout.widgetSize);
+   Pair point = {size.x / 2, size.y / 2};
+   for (const Widget* step = over; step && step != widget; step = parent(step)) {
+      Pair location = at<Pair>(step, layout.widgetLocation);
+      point.x += location.x;
+      point.y += location.y;
+   }
+   pressInside(widget, over, point, button, shift, control);
+}
+
+void pressAt(const Widget* widget, int x, int y, MouseButton button, bool shift, bool control) {
+   pressInside(widget, widget, {x, y}, button, shift, control);
+}
+
+const std::byte* objectAsBase(const void* object, std::string_view decoratedBase) {
+   return asBase(static_cast<const Widget*>(object), decoratedBase);
 }
 
 const Widget* openDropDown(const Gui* gui) {

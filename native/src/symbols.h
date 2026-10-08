@@ -60,6 +60,9 @@ public:
    // sizeof a class.
    std::optional<uint32_t> size(std::string_view type);
 
+   // Value of an enumerator, by the enum's qualified name, e.g. ("Loader::FilterMode", "Blacklist").
+   std::optional<int64_t> enumValue(std::string_view type, std::string_view enumerator);
+
    // Index of a virtual method in the class's primary vtable, by its undecorated name, e.g.
    // ("agui::Widget", "keyDown"). Fails when the name is overloaded among the introduced virtuals.
    std::optional<uint32_t> virtualSlot(std::string_view type, std::string_view method);

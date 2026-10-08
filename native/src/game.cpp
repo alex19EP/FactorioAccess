@@ -38,6 +38,12 @@ bool resolve(pdb::SymbolTable& symbols) {
          ok = false;
    };
    auto slot = [&](uint32_t& out, const char* method) { classSlot(out, "agui::Widget", method); };
+   auto enumerator = [&](uint32_t& out, const char* type, const char* name) {
+      if (auto value = symbols.enumValue(type, name))
+         out = static_cast<uint32_t>(*value);
+      else
+         ok = false;
+   };
 
    address(layout.guiLogic, "?logic@Gui@agui@@UEAAX_N@Z");
    address(layout.guiInstance, "?instance@Gui@agui@@2PEAV12@EA");
@@ -511,6 +517,125 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.editableLabelText, "EditableLabel", "label");
    offset(layout.editableLabelField, "EditableLabel", "labelEdit");
    offset(layout.editableLabelButton, "EditableLabel", "switchEditLabelMode");
+
+   offset(layout.pictureBlueprint, "BlueprintWidget", "blueprint");
+   offset(layout.pictureParameters, "BlueprintWidget", "blueprintParameters");
+   offset(layout.pictureSelection, "BlueprintWidget", "blueprintSelection");
+   offset(layout.pictureEditEnabled, "BlueprintWidget", "editEnabled");
+   offset(layout.pictureScale, "BlueprintWidget", "renderParameters.scale");
+   offset(layout.pictureViewLeftTop, "BlueprintWidget", "renderParameters.boundingBox.leftTop");
+   offset(layout.picturePlayer, "BlueprintWidget", "context.player");
+   classSlot(layout.adapterShowEntityInfo, "GameAdapter", "getShowEntityInfo");
+   address(layout.blueprintSelectionAt,
+           "?selectionFromPosition@Blueprint@@QEBA?AVBlueprintSelectionResult@@AEBVMapPosition@@AEBVSetupBlueprintParameters@@@Z");
+   address(layout.picturePixelShift, "?getPixelShift@BlueprintWidget@@AEBA?AVPixelPosition@@AEBVPoint@agui@@@Z");
+   size(layout.selectionResultSize, "BlueprintSelectionResult");
+   offset(layout.selectionEntity, "BlueprintSelectionResult", "entity");
+   offset(layout.selectionTile, "BlueprintSelectionResult", "tileID");
+   offset(layout.selectionIndex, "BlueprintSelectionResult", "index");
+   offset(layout.parametersEntities, "SetupBlueprintParameters", "entitiesData");
+   offset(layout.parametersTiles, "SetupBlueprintParameters", "tilesData");
+   offset(layout.blueprintEntityList, "Blueprint", "entities.data");
+   size(layout.entityDataSize, "BlueprintEntities::EntityData");
+   offset(layout.entityDataInsertPlan, "BlueprintEntities::EntityData", "insertPlan.data.data");
+   size(layout.insertPairSize, "Pair<IDWithQuality<ID<ItemPrototype,unsigned short> >,ItemInventoryPositions>");
+   offset(layout.insertPairPositions, "Pair<IDWithQuality<ID<ItemPrototype,unsigned short> >,ItemInventoryPositions>",
+          "second");
+   offset(layout.positionsGridCount, "ItemInventoryPositions", "gridCount");
+   offset(layout.positionsStacks, "ItemInventoryPositions", "inventoryPositions");
+   size(layout.stackLocationSize, "ItemStackLocationWithCount");
+   offset(layout.stackLocationCount, "ItemStackLocationWithCount", "count");
+   classSlot(layout.entityGetDirection, "Entity", "getDirection");
+   classSlot(layout.entityHasDirection, "Entity", "hasDirection");
+   offset(layout.entityQuality, "EntityWithOwner", "qualityID");
+   offset(layout.craftingRecipe, "CraftingMachine", "recipeID");
+   size(layout.itemFilterSize, "IDWithQualityFilter<ID<ItemPrototype,unsigned short> >");
+   offset(layout.itemFilterId, "IDWithQualityFilter<ID<ItemPrototype,unsigned short> >", "baseID");
+   offset(layout.itemFilterQuality, "IDWithQualityFilter<ID<ItemPrototype,unsigned short> >",
+          "qualityCondition.qualityID");
+   offset(layout.inserterFilters, "Inserter", "filter");
+   offset(layout.inserterFlags, "Inserter", "flags");
+   offset(layout.splitterLogic, "Splitter", "leftLogic");
+   offset(layout.laneSplitterLogic, "LaneSplitter", "logic");
+   offset(layout.splitterInputLocked, "SplitterLogic", "inputLocked");
+   offset(layout.splitterOutputLocked, "SplitterLogic", "outputLocked");
+   offset(layout.splitterTakeFrom, "SplitterLogic", "takeNextItemFrom");
+   offset(layout.splitterGoesTo, "SplitterLogic", "nextItemGoesTo");
+   offset(layout.splitterFilter, "SplitterLogic", "filter");
+   enumerator(layout.splitterRight, "SplitterDirection", "Right");
+   offset(layout.loaderFilters, "Loader", "filter");
+   offset(layout.loaderFilterMode, "Loader", "filterMode");
+   offset(layout.loaderType, "Loader", "type");
+   offset(layout.loaderPerLane, "LoaderPrototype", "perLaneFilters");
+   enumerator(layout.loaderWhitelist, "Loader::FilterMode", "Whitelist");
+   enumerator(layout.loaderBlacklist, "Loader::FilterMode", "Blacklist");
+   enumerator(layout.loaderOutput, "LoaderType", "Output");
+   offset(layout.undergroundType, "UndergroundBelt", "type");
+   enumerator(layout.undergroundOutput, "UndergroundBeltType", "Output");
+   offset(layout.showCombinatorSettings, "InterfaceSettings", "showCombinatorSettingsWhenDetailedInfoIsOn.value");
+   offset(layout.arithmeticParameters, "ArithmeticCombinator", "controlBehavior.parameters");
+   offset(layout.arithmeticFirst, "ArithmeticCombinatorParameters", "first");
+   offset(layout.arithmeticSecond, "ArithmeticCombinatorParameters", "second");
+   offset(layout.arithmeticOperation, "ArithmeticCombinatorParameters", "operation");
+   offset(layout.arithmeticOutput, "ArithmeticCombinatorParameters", "output");
+   offset(layout.signalOrConstantType, "SignalOrConstant", "type");
+   offset(layout.signalOrConstantSignal, "SignalOrConstant", "signal");
+   enumerator(layout.signalOrConstantIsSignal, "SignalOrConstant::Type", "Signal");
+   offset(layout.deciderConditions, "DeciderCombinator", "controlBehavior.parameters.conditions");
+   offset(layout.deciderOutputs, "DeciderCombinator", "controlBehavior.parameters.outputs");
+   offset(layout.conditionFirst, "DeciderCombinatorParameters::Condition", "first");
+   offset(layout.conditionComparator, "DeciderCombinatorParameters::Condition", "comparator");
+   offset(layout.conditionSecond, "DeciderCombinatorParameters::Condition", "second");
+   offset(layout.deciderOutputSignal, "DeciderCombinatorParameters::Output", "signalId");
+   offset(layout.selectorParameters, "SelectorCombinator", "controlBehavior.parameters");
+   offset(layout.selectorOperation, "SelectorCombinatorParameters", "operation");
+   offset(layout.selectorMax, "SelectorCombinatorParameters", "selectMax");
+   offset(layout.selectorIndexSignal, "SelectorCombinatorParameters", "index.signal");
+   offset(layout.selectorCountSignal, "SelectorCombinatorParameters", "countSignalID");
+   offset(layout.constantSignals, "ConstantCombinator", "controlBehavior.sections.compiled");
+   size(layout.compiledFilterSize, "CompiledLogisticFilter");
+   {
+      const char* arithmetic[] = {"Multiply", "Divide",     "Add", "Subtract", "Modulo", "Power",
+                                  "LeftShift", "RightShift", "AND", "OR",       "XOR"};
+      for (size_t i = 0; i < std::size(arithmetic); ++i)
+         enumerator(layout.arithmeticOperations[i], "ArithmeticCombinatorParameters::Operation", arithmetic[i]);
+      const char* comparisons[] = {"GreaterThan", "LessThan", "Equals", "GreaterOrEqual", "LessOrEqual", "NotEqual"};
+      for (size_t i = 0; i < std::size(comparisons); ++i)
+         enumerator(layout.comparisons[i], "Comparison::Enum", comparisons[i]);
+      const char* selector[] = {"Select",        "Count",    "Random", "QualityTransfer", "StackSize",
+                                "RocketCapacity", "QualityFilter", "Time", "QualitySelect"};
+      for (size_t i = 0; i < std::size(selector); ++i)
+         enumerator(layout.selectorOperations[i], "SelectorCombinatorParameters::Operation", selector[i]);
+   }
+   enumerator(layout.selectorSelect, "SelectorCombinatorParameters::Operation", "Select");
+   enumerator(layout.selectorCount, "SelectorCombinatorParameters::Operation", "Count");
+   offset(layout.signalQuality, "IDWithQuality<SignalIDBase>", "qualityID");
+   address(layout.signalPrototype, "?getPrototypeSafe@SignalIDBase@@QEBAPEBVPrototypeBase@@XZ");
+   offset(layout.pumpFilter, "Pump", "fluidBox.buffer.filter.fluidID");
+   offset(layout.collectorFilters, "AsteroidCollector", "chunkFilters");
+   offset(layout.panelIcon, "DisplayPanel", "icon");
+   offset(layout.panelText, "DisplayPanel", "text");
+   offset(layout.panelAlwaysShow, "DisplayPanel", "alwaysShow");
+   address(layout.tilePrototypes,
+           "?indexToPrototype@?$PrototypeList@VTilePrototype@@@@2V?$vector@PEAVTilePrototype@@V?$allocator@"
+           "PEAVTilePrototype@@@std@@@std@@A");
+   address(layout.fluidPrototypes,
+           "?indexToPrototype@?$PrototypeList@VFluidPrototype@@@@2V?$vector@PEAVFluidPrototype@@V?$allocator@"
+           "PEAVFluidPrototype@@@std@@@std@@A");
+   address(layout.asteroidChunkPrototypes,
+           "?indexToPrototype@?$PrototypeList@VAsteroidChunkPrototype@@@@2V?$vector@PEAVAsteroidChunkPrototype@@V?$"
+           "allocator@PEAVAsteroidChunkPrototype@@@std@@@std@@A");
+
+   offset(layout.customInputs, "ControlSettings", "customInputs");
+   size(layout.controlInputSize, "ControlInput");
+   offset(layout.controlInputPrototype, "ControlInput", "customInputPrototype");
+   offset(layout.controlInputKey1, "ControlInput", "keyboardAndMouseInput1.value");
+   offset(layout.controlInputKey2, "ControlInput", "keyboardAndMouseInput2.value");
+   offset(layout.inputValueType, "ControlInputValue", "type");
+   offset(layout.inputValueScancode, "ControlInputValue", "scancode");
+   offset(layout.inputValueModifiers, "ControlInputValue", "modifiers");
+   enumerator(layout.inputValueKeyboard, "ControlInputValue::Type", "Keyboard");
+   address(layout.keyFromScancode, "SDL_GetKeyFromScancode_REAL");
    offset(layout.sidePanelContainer, "GuiWithSideButtons", "sidePanelContainer");
    offset(layout.onOffEntityWindow, "GenericOnOffEntityGui", "entityWindow");
    offset(layout.singleFluidBoxGui, "SingleFluidBoxEntityGui", "fluidBoxGui");

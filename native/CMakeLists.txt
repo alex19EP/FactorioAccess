@@ -107,6 +107,7 @@ add_library(fa_native SHARED
   src/screens/DeconstructionPlannerScreen.cpp
   src/screens/UpgradePlannerScreen.cpp
   src/screens/BlueprintSetupScreen.cpp
+  src/screens/PreviewCanvas.cpp
   src/screens/GameDialogScreen.cpp
   src/screens/MachineScreen.cpp
   src/screens/BeltScreen.cpp
@@ -138,6 +139,8 @@ add_library(fa_native SHARED
   src/movement.cpp
   src/zoom.cpp
   src/selection.cpp
+  src/preview.cpp
+  src/bindings.cpp
   src/chart.cpp
   "${CMAKE_CURRENT_BINARY_DIR}/winmm_forwarders.cpp"
 )

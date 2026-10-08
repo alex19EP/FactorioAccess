@@ -16,12 +16,14 @@
 //     of the blueprint, Enter puts them back, as the right and left mouse buttons do. One taken out
 //     reads "inserter 0, removed", where the game shows the slot red;
 //   - what to include (modules, tiles, trains, fuel, ...), only while the game shows it;
-//   - the preview, its header and the game's hint;
+//   - the preview, its header and the game's hint, then the picture as a canvas: a cursor over the
+//     blueprint's tiles (see PreviewCanvas.hpp);
 //   - the footer's save or create button.
 //
 // Every control is the game's own, pressed as the Gui presses it, so what it does is vanilla.
 
 #include "EntityWindowScreen.hpp"
+#include "PreviewCanvas.hpp"
 
 namespace fa::screens
 {
@@ -31,6 +33,9 @@ class BlueprintSetupScreen final : public EntityWindowScreen
 protected:
     bool Handles(const agui::Widget* window) const override;
     void BuildWindow(graph::GraphBuilder& builder, const agui::Widget* window) override;
+
+private:
+    PreviewCanvas _canvas;
 };
 
 } // namespace fa::screens
