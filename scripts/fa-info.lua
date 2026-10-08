@@ -1456,8 +1456,9 @@ function mod.ent_info(pindex, ent, is_scanner)
          end
       end)
    end, true)
-   --For furnaces (which produce only 1 output item type at a time) state how many output units are ready
-   if ent.type == "furnace" then
+   --For furnaces (which produce only 1 output item type at a time) state how many output units are ready. The game
+   --draws nothing of it, so the tile reader leaves it to the scanner.
+   if is_scanner and ent.type == "furnace" then
       local output_stack = ent.get_output_inventory()[1]
       if output_stack and output_stack.valid_for_read then
          local item_str = ItemInfo.item_info(output_stack)
@@ -1561,9 +1562,6 @@ function mod.ent_info(pindex, ent, is_scanner)
    end
 
    if ent.type == "mining-drill" then
-      local pos = ent.position
-      local dict = ResourceMining.compute_resources_under_drill(ent)
-
       --Compute drop position
       local drop = ent.drop_target
       local drop_name = nil
@@ -1577,6 +1575,9 @@ function mod.ent_info(pindex, ent, is_scanner)
       if ent.status == defines.entity_status.waiting_for_space_in_destination then
          ctx.message:fragment(", output full ")
       end
+      --The ore left under the drill. The game draws no amounts, and alt mode shows what is mined as an icon, so the
+      --tile reader leaves it to the scanner.
+      local dict = is_scanner and ResourceMining.compute_resources_under_drill(ent) or {}
       if table_size(dict) > 0 then
          ctx.message:fragment({ "fa.ent-info-mining-drill-mining-from" })
          for i, amount in pairs(dict) do
