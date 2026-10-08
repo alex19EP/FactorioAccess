@@ -97,20 +97,4 @@ function mod.describe_planner(mb, planner, max_rules)
    if not has_rules then mb:list_item({ "fa.upgrade-no-rules" }) end
 end
 
----Get the fast_replaceable_group for an entity prototype
----@param entity_name string
----@return string|nil
-function mod.get_fast_replaceable_group(entity_name)
-   local proto = prototypes.entity[entity_name]
-   if proto then return proto.fast_replaceable_group end
-   return nil
-end
-
----Check if an entity can be upgraded (has a fast_replaceable_group)
----@param entity_name string
----@return boolean
-function mod.is_entity_upgradeable(entity_name)
-   return mod.get_fast_replaceable_group(entity_name) ~= nil
-end
-
 return mod

@@ -152,7 +152,6 @@ mod.UI_NAMES = {
    PROGRAMMABLE_SPEAKER = "programmable_speaker",
    BOX_SELECTOR = "box_selector",
    BLUEPRINT_AREA_SELECTOR = "blueprint_area_selector",
-   UPGRADE_AREA_SELECTOR = "upgrade_area_selector",
    SIMPLE_TEXTBOX = "simple_textbox",
    SEARCH_SETTER = "search_setter",
    CURSOR_COORDINATE_INPUT = "cursor_coordinate_input",
@@ -171,7 +170,6 @@ mod.UI_NAMES = {
    SETTINGS = "settings",
    BLUEPRINT_SETUP = "blueprint_setup",
    BLUEPRINT_SETUP_CONFIG = "blueprint_setup_config",
-   UPGRADE_PLANNER = "upgrade_planner",
    PROTOTYPE_LISTER = "prototype_lister",
    -- Test UI names (used in automated tests)
    TEST_ASSEMBLING_MACHINE = "test-assembling-machine",
