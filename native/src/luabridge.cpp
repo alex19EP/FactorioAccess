@@ -194,6 +194,20 @@ int heldBuild(lua_State* L) {
    return 1;
 }
 
+// The game's drag building while the build control is held (see world::DragBuild), as a table
+// {turn_pending, turns}, or nil. Only this client knows it, so the mod may speak it but must not
+// change the game by it.
+int dragBuild(lua_State* L) {
+   const auto drag = world::dragBuild(static_cast<int>(checkInteger(L, 1)));
+   if (!drag) return 0;
+   createTable(L, 0, 2);
+   pushBoolean(L, drag->turnPending);
+   setField(L, -2, "turn_pending");
+   pushInt(L, drag->turns);
+   setField(L, -2, "turns");
+   return 1;
+}
+
 // How this client's character's walking went this tick or the last: "full", "partial" (slid along
 // something) or "none" (blocked), then a step count that wraps at 256; nothing for another
 // client's player or when it did not walk. The mod may play sounds by it but must not change the
@@ -233,6 +247,7 @@ constexpr Function kFunctions[] = {
    {"next_part", &nextPart},
    {"build_direction", &buildDirection},
    {"held_build", &heldBuild},
+   {"drag_build", &dragBuild},
    {"walking_step", &walkingStep},
    {"open_selected_info", &openSelectedInfo},
 };

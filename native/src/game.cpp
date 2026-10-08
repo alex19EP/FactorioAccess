@@ -53,8 +53,11 @@ bool resolve(pdb::SymbolTable& symbols) {
    address(layout.playerCursorPosition,
            "?getCursorMapPosition@Player@@QEBA?AV?$Optional@VMapPosition@@U?$OptionalEmptyValue@VMapPosition@@@@@@XZ");
    address(layout.sourceCursorPosition, "?getCursorMapPosition@PlayerInputSource@@QEBA?AVMapPosition@@XZ");
+   address(layout.dragBuildingUpdate, "?update@ClientDragBuildingContext@@QEAAXAEAVPlayerInputSource@@@Z");
+   offset(layout.inputSourcePlayer, "PlayerInputSource", "player");
    offset(layout.inputSourceDragContext, "PlayerInputSource", "manualBuilder.dragBuildingContext");
    offset(layout.dragStartPosition, "ClientDragBuildingContext", "startPosition");
+   offset(layout.dragTurnPending, "ClientDragBuildingContext", "belt.applySmartDirectionChangeWhenPossible");
    address(layout.simpleBuildInput,
            "?getSimpleBuildInput@Player@@QEBA?AVSimpleBuildInput@@PEBVClientDragBuildingContext@@@Z");
    address(layout.prepareBuildingInGame,

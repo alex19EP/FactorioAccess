@@ -183,7 +183,7 @@ Only the blind player runs the DLL. The server and the other players run the sam
 
 - Lua never changes the game (writes `storage`, a player, an entity or a setting, opens or closes a Lua UI) based on whether `fa_native` exists or on anything it returns (`build_direction`, `walking_step`, `held_build`, ...). Those values feed speech and sounds only.
 - Guard each `fa_native` call with `if native then`, and let the guard skip only that call.
-- The DLL changes the game only through the game's own input (cursor, replayed clicks and keys, build lock), which the game sends to the server itself.
+- The DLL changes the game only through the game's own input (cursor, replayed clicks and keys), which the game sends to the server itself.
 - A key that both a Lua UI and a native screen answer is the classic desync: the peers without the DLL open the Lua UI. When a native screen covers a game window, remove the Lua UI for it.
 
 ## Testing

@@ -763,18 +763,6 @@ function mod.find_underground_entrance(surface, prototype, position, direction)
    return nil, nil
 end
 
----Check if placing an underground belt at the given position would form an exit.
----This happens when there's a matching entrance nearby that the belt would connect to.
----@param surface LuaSurface
----@param prototype LuaEntityPrototype
----@param position MapPosition
----@param direction defines.direction
----@return boolean
-function mod.would_form_underground_exit(surface, prototype, position, direction)
-   local entrance = mod.find_underground_entrance(surface, prototype, position, direction)
-   return entrance ~= nil
-end
-
 --Set the input priority or the output priority or filter for a splitter
 function mod.set_splitter_priority(splitter, is_input, is_left, filter_item_stack, clear)
    clear = clear or false

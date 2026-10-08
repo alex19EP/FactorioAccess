@@ -78,17 +78,15 @@ Once set, walk around and move your cursor to get a feel for how it works.
 
 To clear the ruler, use control shift b.
 
-Build lock is a feature which will place items behind you as your character runs.
+To build a line, hold left bracket and move the cursor.  The game builds along the line as it does when the mouse button is held and dragged, and poles go as far apart as their wires reach.
 
-This is very useful to place things such as long lines of belts.
+The line stays straight.  To turn a belt line, press r while still holding left bracket, then step the cursor to the side.  r says turn at next step, and the step says the corner and its new direction.
 
-Some entities have special build lock behavior.  The most important of these is belts, which will automatically face the way you are running.
+While left bracket is held, cursor steps are silent unless something blocks the build.
 
-To enable build lock, press control b.
+With the cursor ahead of you, toggled by i, hold left bracket and walk to build a line as you go.
 
-Build lock disables if you bump into something, as the engine will move you off the line you intended to be on.
-
-Using build lock and rulers together is a fun way to quickly place long lines of belts and pipes.
+Holding left bracket along a ruler is a fun way to quickly place long lines of belts and pipes.
 
 There are some important keys to get tools into your hand.  They are as follows.
 

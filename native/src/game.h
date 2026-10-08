@@ -59,11 +59,18 @@ struct Layout {
    // the mouse.
    uintptr_t playerCursorPosition = 0; // Optional<MapPosition> Player::getCursorMapPosition() const
    uintptr_t sourceCursorPosition = 0; // MapPosition PlayerInputSource::getCursorMapPosition() const
-   // Drag building: while a build control is held, the game builds at the cursor and along the
-   // cursor's path, in a straight line. Releasing the control runs
+   // Drag building. void ClientDragBuildingContext::update(PlayerInputSource&) runs once a frame from
+   // PlayerInputSource::sendStateChanges: while a build control is held it builds at the cursor and
+   // along the cursor's path, in a straight line. Rotate during a belt drag
+   // (ClientDragBuildingContext::smartDirectionChange from PlayerInputSource::processRotate) sets
+   // belt.applySmartDirectionChangeWhenPossible instead of turning the belt in hand; the update
+   // turns the line once the cursor is off it and clears the flag. Releasing the control runs
    // ClientDragBuildingContext::stopped, which empties startPosition.
+   uintptr_t dragBuildingUpdate = 0;
+   uint32_t inputSourcePlayer = 0;      // PlayerInputSource::player, Player*
    uint32_t inputSourceDragContext = 0; // PlayerInputSource::manualBuilder.dragBuildingContext
    uint32_t dragStartPosition = 0;      // ClientDragBuildingContext::startPosition, Optional<MapPosition>
+   uint32_t dragTurnPending = 0;        // ClientDragBuildingContext::belt.applySmartDirectionChangeWhenPossible
    // Where this client builds. SimpleBuildInput Player::getSimpleBuildInput(ClientDragBuildingContext
    // const*) const reads the cursor, takes the build direction and snaps the position to the grid,
    // for the build control, drag building and Player::buildFromCursor. ItemToBuildDrawnType

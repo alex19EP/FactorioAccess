@@ -90,7 +90,9 @@ Cycle through all entities on a tile, announcing them: `shift + f`
 
 Do the appropriate action for the item in hand, for example equipping equipment: `ctrl + shift + left bracket`
 
-Enable/disable build lock: `ctrl + b`
+Build a line: hold `left bracket` and move the cursor
+
+Turn a belt line while holding `left bracket`: `r`, then step to the side
 
 Cycle your cursor through vehicles near your cursor: `shift + v`
 
@@ -150,24 +152,22 @@ For a few items, the mod adds special behavior:
 - For underground belts, the underground belt will become an exit if it was going to match an entrance.
 - For the offshore pump, which has weird placement rules, you can get a menu of proposed locations with `alt + left bracket`.
 
-### Build Lock
+### Drag Building
 
-Build lock is a system which lets you quickly place lines of stuff.  For example, you can run around and belts will put themselves down behind your character.  To trigger it, press `ctrl + b` with something buildable in hand.
+Hold `left bracket` and move the cursor to place a line of stuff.  This is the game's own drag building, the same as a sighted player holding the mouse button and dragging, so it follows vanilla's rules:
 
-For most buildings build lock places them as close together as possible, facing north.  But we offer a few special cases:
+- The line stays straight, along the way you first moved.  Steps to the side build nothing.
+- To turn a belt line, press `r` while still holding `left bracket`, then step the cursor the way the belt should go.  `r` says "turn at next step", and the step says the corner and its new direction.
+- Electric poles are placed the maximum distance from the last pole.
 
-- For transport belts, the belts are set up to face the way you are moving, and will properly form corners
-- For electric poles, each pole is placed the maximum distance from the last pole.
+While `left bracket` is held, cursor steps are silent unless something blocks the build; the game's build sound marks each placed entity.
 
-It is important to note that you are effectively running two build locks at the same time.  One is on the cursor, and one is on the character.  So for example if you move the cursor east while running west, you'll get a line of belts going east from where the cursor started and a second line going west from where the character started.  These are entirely independent.  best practice is to use only one or the other.
-
-The cursor build lock is used by some players to place small numbers of entities close together.  By far the most useful is the version while walking.  You can place a long line of belts like this:
+To build a line while walking, press `i` so the cursor stays one tile in front of your character, then hold `left bracket` and run:
 
 - Move the cursor to where you want it to start
 - Press `shift + t` to teleport
-- Put a belt in hand and turn build lock on
-- Run your character in a straight line to where you want the belts to stop
-- Empty the hand or turn build lock off with `ctrl + b`
+- Put a belt in hand, press `i`, and hold `left bracket`
+- Run your character in a straight line to where you want the belts to stop, then let go
 
 ### Bookmarks, the Ruler, and fast travel
 
@@ -177,7 +177,7 @@ The bookmark is a fast way to rememver one position on the map. You set it with 
 
 The ruler is like the bookmark but for alignment.  You place it with `ctrl + alt + b` and it forms an audio cross.  When your cursor or character crosses it, it plays a tone.  Clear it with `alt + shift + b`.
 
-You can use rulers to quickly place large numbers of items.  For example, to place a belt going east, find where you want it to end, arrow a few tiles north, and place your ruler.  Then, you can turn build lock on and run in a straight line until your character hits the ruler, like hitting a wall.  IMPORTANT: build lock does not disable itself at the ruler, these are still separate features.
+You can use rulers to quickly place large numbers of items.  For example, to place a belt going east, find where you want it to end, arrow a few tiles north, and place your ruler.  Then, you can hold `left bracket` and run in a straight line until your character hits the ruler, like hitting a wall.  IMPORTANT: the line does not stop itself at the ruler, these are still separate features.
 
 "multiple bookmarks" is fast travel, accessible with `alt + v`.  Fast travel is like your browser's bookmarks menu, but for map locations.
 

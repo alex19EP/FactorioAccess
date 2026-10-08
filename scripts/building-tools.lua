@@ -1,18 +1,14 @@
 --Here: Functions for building with the mod, both basics and advanced tools.
 local BotLogistics = require("scripts.worker-robots")
 local BuildDimensions = require("scripts.build-dimensions")
-local Consts = require("scripts.consts")
 local Electrical = require("scripts.electrical")
 local FaUtils = require("scripts.fa-utils")
 local Fluids = require("scripts.fluids")
 local Localising = require("scripts.localising")
 local NativeCursor = require("scripts.native-cursor")
 local dirs = defines.direction
-local Graphics = require("scripts.graphics")
 local Speech = require("scripts.speech")
 local MessageBuilder = Speech.MessageBuilder
-local PlayerMiningTools = require("scripts.player-mining-tools")
-local Teleport = require("scripts.teleport")
 local TransportBelts = require("scripts.transport-belts")
 local Viewpoint = require("scripts.viewpoint")
 
@@ -30,201 +26,6 @@ do
    end
    -- Fallback to vanilla value if no roboports found (shouldn't happen)
    if max_roboport_connection_radius == 0 then max_roboport_connection_radius = 25 end
-end
-
----@class fa.BuildingTools.BuildDecision
----@field entity_name? string Name of entity to build (nil for tiles)
----@field tile_name? string Name of tile to build (nil for entities)
----@field position MapPosition Final build position
----@field direction defines.direction Final build direction
----@field flip_horizontal boolean
----@field flip_vertical boolean
----@field footprint_left_top MapPosition
----@field footprint_right_bottom MapPosition
----@field is_tile boolean
----@field terrain_building_size? integer For tiles only
----@field skip_reason? LocalisedString If build should be skipped
-
----Calculate what to build and where, without actually building it.
----This is the "decider" function that determines all build parameters.
----Includes some side effects: graphics sync, storage updates, turn_to_cursor_direction_cardinal.
----@param params fa.BuildingTools.BuildItemParams
----@return fa.BuildingTools.BuildDecision? decision nil if should skip
-function mod.calculate_build_params(params)
-   local pindex = params.pindex
-   local building_direction = params.building_direction
-   local flip_horizontal = params.flip_horizontal or false
-   local flip_vertical = params.flip_vertical or false
-
-   local p = game.get_player(pindex)
-   local stack = p.cursor_stack
-   local vp = Viewpoint.get_viewpoint(pindex)
-   local pos = vp:get_cursor_pos()
-
-   -- Ensure building footprint is up to date
-   Graphics.sync_build_cursor_graphics(pindex)
-
-   -- Handle entities
-   if stack.prototype.place_result ~= nil then
-      local ent = stack.prototype.place_result
-      local placing_underground_belt = stack.prototype.place_result.type == "underground-belt"
-
-      -- Calculate footprint using centralized function
-      local footprint = FaUtils.calculate_building_footprint({
-         entity_prototype = stack.prototype.place_result,
-         position = pos,
-         building_direction = building_direction,
-      })
-
-      turn_to_cursor_direction_cardinal(pindex)
-
-      local position = footprint.center
-
-      -- Store the calculated footprint for later use
-      storage.players[pindex].building_footprint_left_top = footprint.left_top
-      storage.players[pindex].building_footprint_right_bottom = footprint.right_bottom
-
-      local actual_build_direction = building_direction
-      if placing_underground_belt then
-         -- Auto-detect if placing would form an exit
-         local would_auto_exit =
-            TransportBelts.would_form_underground_exit(p.surface, ent, position, building_direction)
-         if would_auto_exit then
-            --Flip the chute by 180 degrees
-            actual_build_direction = (building_direction + dirs.south) % (2 * dirs.south)
-         end
-      end
-
-      return {
-         entity_name = stack.prototype.place_result.name,
-         tile_name = nil,
-         position = position,
-         direction = actual_build_direction,
-         flip_horizontal = flip_horizontal,
-         flip_vertical = flip_vertical,
-         footprint_left_top = footprint.left_top,
-         footprint_right_bottom = footprint.right_bottom,
-         is_tile = false,
-      }
-   elseif stack and stack.valid_for_read and stack.valid and stack.prototype.place_as_tile_result ~= nil then
-      -- Tile placement
-      local cursor_size = vp:get_cursor_size()
-      local t_size = cursor_size * 2 + 1
-
-      pos.x = pos.x - cursor_size
-      pos.y = pos.y - cursor_size
-      vp:set_cursor_pos(pos)
-
-      return {
-         entity_name = nil,
-         tile_name = stack.prototype.place_as_tile_result.result.name,
-         position = pos,
-         direction = building_direction,
-         flip_horizontal = false,
-         flip_vertical = false,
-         footprint_left_top = pos,
-         footprint_right_bottom = { x = pos.x + t_size, y = pos.y + t_size },
-         is_tile = true,
-         terrain_building_size = t_size,
-      }
-   else
-      -- Empty hand or invalid item
-      return nil
-   end
-end
-
----Prepare the build area by clearing obstacles and teleporting player.
----This is shared between cursor building and ghost placement.
----@param pindex integer
----@param decision fa.BuildingTools.BuildDecision
----@param teleport_player boolean
-function mod.prepare_build_area(pindex, decision, teleport_player)
-   -- Clear build area obstacles
-   PlayerMiningTools.clear_obstacles_in_rectangle(decision.footprint_left_top, decision.footprint_right_bottom, pindex)
-
-   -- Teleport player out of build area (if enabled)
-   if teleport_player then
-      mod.teleport_player_out_of_build_area(decision.footprint_left_top, decision.footprint_right_bottom, pindex)
-   end
-end
-
----@class fa.BuildingTools.BuildItemParams
----@field pindex integer Player index
----@field building_direction defines.direction Direction to build in
----@field flip_horizontal? boolean Whether to flip the blueprint horizontally (default false)
----@field flip_vertical? boolean Whether to flip the blueprint vertically (default false)
----@field teleport_player? boolean Whether to teleport player out of build area (default true)
----@field play_error_sound? boolean Whether to play error sounds (default true)
----@field speak_errors? boolean Whether to speak error messages (default true)
----@field build_mode? defines.build_mode Build mode (normal, forced, superforced). Default: normal
-
---[[Attempts to build the item in hand with explicit parameters.
-* Does nothing if the hand is empty or the item is not a place-able entity.
-* @param params fa.BuildingTools.BuildItemParams Build parameters
-* @return boolean True if build was successful
-]]
--- Precondition: Caller must ensure cursor_stack is valid_for_read
-function mod.build_item_in_hand_with_params(params)
-   local pindex = params.pindex
-   local teleport_player = params.teleport_player ~= false -- default true
-   local play_error_sound = params.play_error_sound ~= false -- default true
-   local speak_errors = params.speak_errors ~= false -- default true
-
-   local p = game.get_player(pindex)
-   local stack = p.cursor_stack
-
-   -- Calculate what to build (includes graphics sync, storage updates, underground belt logic, etc)
-   local decision = mod.calculate_build_params(params)
-   if not decision then
-      -- Empty hand or invalid item
-      p.play_sound({ path = "utility/cannot_build" })
-      return false
-   end
-
-   -- Prepare build area (clear obstacles, teleport player)
-   mod.prepare_build_area(pindex, decision, teleport_player)
-
-   -- Execute the build
-   if decision.is_tile then
-      -- Tile placement
-      if
-         p.can_build_from_cursor({
-            position = decision.position,
-            terrain_building_size = decision.terrain_building_size,
-         })
-      then
-         p.build_from_cursor({ position = decision.position, terrain_building_size = decision.terrain_building_size })
-         return true
-      else
-         if play_error_sound then p.play_sound({ path = "utility/cannot_build" }) end
-         return false
-      end
-   else
-      -- Entity placement
-      local building = {
-         position = decision.position,
-         direction = decision.direction,
-         build_mode = params.build_mode or defines.build_mode.normal,
-         flip_horizontal = decision.flip_horizontal,
-         flip_vertical = decision.flip_vertical,
-      }
-
-      if p.can_build_from_cursor(building) then
-         p.build_from_cursor(building)
-         return true
-      else
-         -- Report errors (if enabled)
-         if play_error_sound then p.play_sound({ path = "utility/cannot_build" }) end
-
-         -- Explain build error (if enabled)
-         if speak_errors then
-            local build_area = { decision.footprint_left_top, decision.footprint_right_bottom }
-            local result = mod.identify_building_obstacle(pindex, build_area, nil)
-            Speech.speak(pindex, result)
-         end
-         return false
-      end
-   end
 end
 
 ---Check if the item in cursor can be rotated (has rotation support)
@@ -362,7 +163,12 @@ function mod.rotate_item_in_hand(event)
 
    -- Check if item in hand can rotate
    if mod.can_rotate_item(stack) then
-      mod.read_held_build(pindex, stack)
+      local drag = NativeCursor.drag_build(pindex)
+      if drag and drag.turn_pending then
+         Speech.speak(pindex, { "fa.drag-turn-pending" })
+      else
+         mod.read_held_build(pindex, stack)
+      end
       return
    elseif stack and stack.valid_for_read and stack.valid and stack.prototype.place_result then
       Speech.speak(
@@ -373,6 +179,27 @@ function mod.rotate_item_in_hand(event)
    end
 
    -- Nothing in hand - entity rotation will be handled by on_player_rotated_entity event
+end
+
+-- The drag turn count each player last heard, while dragging. Outside storage: only this client
+-- knows its drag building.
+---@type table<integer, integer>
+local heard_drag_turns = {}
+
+---Called every tick: says the direction a belt drag turns to when the game makes the turn, at the
+---step after rotate.
+---@param pindex integer
+function mod.speak_drag_turn(pindex)
+   local drag = NativeCursor.drag_build(pindex)
+   if not drag then
+      heard_drag_turns[pindex] = nil
+      return
+   end
+   local heard = heard_drag_turns[pindex]
+   heard_drag_turns[pindex] = drag.turns
+   if not heard or heard == drag.turns then return end
+   local direction = NativeCursor.build_direction(pindex)
+   if direction then Speech.speak(pindex, { "fa.drag-turned", { "fa.direction", direction } }) end
 end
 
 --Reads the result of rotating an entity on the map (called from on_player_rotated_entity event)
@@ -420,80 +247,6 @@ function mod.on_entity_flipped(event)
       Speech.speak(pindex, { "fa.flipped-horizontal" })
    else
       Speech.speak(pindex, { "fa.flipped-vertical" })
-   end
-end
-
---Does everything to handle the nudging feature, taking the keypress event and the nudge direction as the input. Nothing happens if an entity cannot be selected.
-function mod.nudge_key(direction, event)
-   local pindex = event.player_index
-   local p = game.get_player(pindex)
-   local ent = p.selected
-   local vp = Viewpoint.get_viewpoint(pindex)
-   if ent and ent.valid then
-      if ent.force == game.get_player(pindex).force then
-         local old_pos = ent.position
-         local new_pos = FaUtils.offset_position_legacy(ent.position, direction, 1)
-         local temporary_teleported = false
-         local actually_teleported = false
-
-         --Clear the new build location using centralized footprint calculation
-         local footprint = FaUtils.calculate_building_footprint({
-            width = ent.tile_width,
-            height = ent.tile_height,
-            position = FaUtils.offset_position_legacy(ent.position, direction, 1),
-            building_direction = ent.direction,
-         })
-         local left_top = footprint.left_top
-         local right_bottom = footprint.right_bottom
-         PlayerMiningTools.clear_obstacles_in_rectangle(left_top, right_bottom, pindex)
-
-         --First teleport the ent to 0,0 temporarily
-         temporary_teleported = ent.teleport({ 0, 0 })
-         if not temporary_teleported then
-            game.get_player(pindex).play_sound({ path = "utility/cannot_build" })
-            Speech.speak(pindex, { "fa.failed-to-nudge" })
-            return
-         end
-
-         --Now check if the ent can be placed at its new location, and proceed or revert accordingly
-         local check_name = ent.name
-         if check_name == "entity-ghost" then check_name = ent.ghost_name end
-         if ent.surface.can_place_entity({ name = check_name, position = new_pos, direction = ent.direction }) then
-            actually_teleported = ent.teleport(new_pos)
-         else
-            --Cannot build in new location, so send it back
-            actually_teleported = ent.teleport(old_pos)
-            game.get_player(pindex).play_sound({ path = "utility/cannot_build" })
-
-            --Explain build error
-            local build_area = { left_top, right_bottom }
-            local obstacle_message = mod.identify_building_obstacle(pindex, build_area, ent)
-            Speech.speak(pindex, obstacle_message)
-            return
-         end
-         if not actually_teleported then
-            --Failed to teleport
-            Speech.speak(pindex, { "fa.failed-to-nudge" })
-            return
-         else
-            --Successfully teleported and so nudged
-            Speech.speak(pindex, { "fa.nudged-one-direction", { "fa.direction", direction } })
-
-            vp:set_cursor_pos(FaUtils.offset_position_legacy(vp:get_cursor_pos(), direction, 1))
-
-            if ent.type == "electric-pole" then
-               -- laterdo **bugfix when nudged electric poles have extra wire reach, cut wires
-               -- if ent.clone{position = new_pos, surface = ent.surface, force = ent.force, create_build_effect_smoke = false} == true then
-               -- ent.destroy{}
-               -- end
-            end
-         end
-      end
-
-      --Update ent connections after teleporting it
-      ent.update_connections()
-   else
-      Speech.speak(pindex, { "fa.building-nudged-nothing" })
    end
 end
 
@@ -872,179 +625,6 @@ function mod.build_preview_checks_info(stack, pindex)
    return result
 end
 
---For a building with fluidboxes, returns the external fluidbox and fluid name that would connect to one of the building's own fluidboxes at a particular position, from a particular direction. Importantly, ignores fluidboxes that are positioned correctly but would not connect, such as a pipe to ground facing a perpebdicular direction.
-function mod.get_relevant_fluidbox_and_fluid_name(building, pos, dir_from_pos)
-   local relevant_box = nil
-   local relevant_fluid_name = nil
-   if building ~= nil and building.valid and building.fluids_count > 0 then
-      rendering.draw_circle({
-         color = { 1, 1, 0 },
-         radius = 0.2,
-         width = 2,
-         target = building.position,
-         surface = building.surface,
-         time_to_live = 30,
-      })
-      --Run checks to see if we have any fluidboxes that are relevant
-      for i = 1, building.fluids_count, 1 do
-         for j, con in ipairs(building.get_fluid_box_pipe_connections(i)) do
-            local target_pos = con.target_position
-            local con_pos = con.position
-            rendering.draw_circle({
-               color = { 1, 0, 0 },
-               radius = 0.2,
-               width = 2,
-               target = target_pos,
-               surface = building.surface,
-               time_to_live = 30,
-            })
-            if
-               util.distance(target_pos, pos) < 0.3
-               and FaUtils.get_direction_biased(con_pos, pos) == dir_from_pos
-               and not (building.name == "pipe-to-ground" and building.direction == dir_from_pos)
-            then --Note: We correctly ignore the backside of a pipe to ground.
-               rendering.draw_circle({
-                  color = { 0, 1, 0 },
-                  radius = 0.3,
-                  width = 2,
-                  target = target_pos,
-                  surface = building.surface,
-                  time_to_live = 30,
-               })
-               local fluid = building.get_fluid(i)
-               relevant_box = fluid
-               if fluid ~= nil then
-                  relevant_fluid_name = fluid.name
-               else
-                  local filt = building.get_fluid_filter(i)
-                  if filt and filt.fluid then
-                     relevant_fluid_name = type(filt.fluid) == "string" and filt.fluid or filt.fluid.name
-                  else
-                     relevant_fluid_name = nil -- Empty pipe, no fluid
-                  end
-               end
-            end
-         end
-      end
-   end
-   return relevant_box, relevant_fluid_name, dir_from_pos
-end
-
---If the player is standing within the build area, they are teleported out.
-function mod.teleport_player_out_of_build_area(left_top, right_bottom, pindex)
-   local p = game.get_player(pindex)
-   if not p.character then return end
-   if not left_top or not right_bottom then return end
-   local pos = p.character.position
-   if pos.x < left_top.x or pos.x > right_bottom.x or pos.y < left_top.y or pos.y > right_bottom.y then return end
-   if p.walking_state.walking == true then return end
-
-   local exits = {}
-   exits[1] = { x = left_top.x - 1, y = left_top.y - 0 }
-   exits[2] = { x = left_top.x - 0, y = left_top.y - 1 }
-   exits[3] = { x = left_top.x - 1, y = left_top.y - 1 }
-   exits[4] = { x = left_top.x - 2, y = left_top.y - 0 }
-   exits[5] = { x = left_top.x - 0, y = left_top.y - 2 }
-   exits[6] = { x = left_top.x - 2, y = left_top.y - 2 }
-
-   --Teleport to exit spots if possible
-   for i, pos in ipairs(exits) do
-      if p.surface.can_place_entity({ name = "character", position = pos }) then
-         Teleport.teleport_to_closest(pindex, pos, false, true)
-         return
-      end
-   end
-
-   --Teleport best effort to -2, -2
-   Teleport.teleport_to_closest(pindex, exits[6], false, true)
-end
-
---Assuming there is a steam engine in hand, this function will automatically build it next to a suitable boiler.
-function mod.snap_place_steam_engine_to_a_boiler(pindex)
-   local p = game.get_player(pindex)
-   local found_empty_spot = false
-   local found_valid_spot = false
-   --Locate all boilers within 10m
-   local boilers = p.surface.find_entities_filtered({ name = "boiler", position = p.position, radius = 10 })
-
-   --If none then locate all boilers within 25m
-   if boilers == nil or #boilers == 0 then
-      boilers = p.surface.find_entities_filtered({ name = "boiler", position = p.position, radius = 25 })
-   end
-
-   if boilers == nil or #boilers == 0 then
-      p.play_sound({ path = "utility/cannot_build" })
-      Speech.speak(pindex, { "fa.building-error-no-boilers" })
-      return
-   end
-
-   --For each boiler found:
-   for i, boiler in ipairs(boilers) do
-      --Check if there is any entity in front of it
-      local output_location = FaUtils.offset_position_legacy(boiler.position, boiler.direction, 1.5)
-      rendering.draw_circle({
-         color = { 1, 1, 0.25 },
-         radius = 0.25,
-         width = 2,
-         target = output_location,
-         surface = p.surface,
-         time_to_live = 60,
-         draw_on_ground = false,
-      })
-      local output_ents = p.surface.find_entities_filtered({
-         position = output_location,
-         radius = 0.25,
-         type = { "resource", "generator" },
-         invert = true,
-      })
-      if output_ents == nil or #output_ents == 0 then
-         --Determine engine position based on boiler direction
-         found_empty_spot = true
-         local engine_position = output_location
-         local dir = boiler.direction
-         if dir == dirs.east then
-            engine_position = FaUtils.offset_position_legacy(engine_position, dirs.east, 2)
-         elseif dir == dirs.south then
-            engine_position = FaUtils.offset_position_legacy(engine_position, dirs.south, 2)
-         elseif dir == dirs.west then
-            engine_position = FaUtils.offset_position_legacy(engine_position, dirs.west, 2)
-         elseif dir == dirs.north then
-            engine_position = FaUtils.offset_position_legacy(engine_position, dirs.north, 2)
-         end
-         rendering.draw_circle({
-            color = { 0.25, 1, 0.25 },
-            radius = 0.5,
-            width = 2,
-            target = engine_position,
-            surface = p.surface,
-            time_to_live = 60,
-            draw_on_ground = false,
-         })
-         PlayerMiningTools.clear_obstacles_in_circle(engine_position, 4, pindex)
-         --Check if can build from cursor to the relative position
-         if p.can_build_from_cursor({ position = engine_position, direction = dir }) then
-            p.build_from_cursor({ position = engine_position, direction = dir })
-            found_valid_spot = true
-            Speech.speak(
-               pindex,
-               { "fa.building-placed-steam-engine", math.floor(boiler.position.x), math.floor(boiler.position.y) }
-            )
-            return
-         end
-      end
-   end
-   --If all have been skipped and none were found then play error
-   if found_empty_spot == false then
-      p.play_sound({ path = "utility/cannot_build" })
-      Speech.speak(pindex, { "fa.building-error-boilers-blocked" })
-      return
-   elseif found_valid_spot == false then
-      p.play_sound({ path = "utility/cannot_build" })
-      Speech.speak(pindex, { "fa.building-error-boilers-obstacles" })
-      return
-   end
-end
-
 --Identifies if a pipe is a pipe end, so that it can be singled out. The motivation is that pipe ends generally should not exist because the pipes should connect to something.
 ---@param ent LuaEntity
 function mod.is_a_pipe_end(ent)
@@ -1058,61 +638,6 @@ function mod.is_a_pipe_end(ent)
    end
 
    return connections == 1
-end
-
---Scans an area to identify obstacles for building there
-function mod.identify_building_obstacle(pindex, area, ent_to_ignore)
-   local p = game.get_player(pindex)
-   local ent_ignored = ent_to_ignore or nil
-   local message = MessageBuilder.new()
-   message:fragment({ "fa.cannot-build" })
-
-   --Check for an entity in the way
-   local ents_in_area = p.surface.find_entities_filtered({
-      area = area,
-      invert = true,
-      type = Consts.ENT_TYPES_YOU_CAN_BUILD_OVER,
-   })
-   local obstacle_ent = nil
-   for i, area_ent in ipairs(ents_in_area) do
-      if
-         area_ent.valid
-         and area_ent.prototype.tile_width
-         and area_ent.prototype.tile_width > 0
-         and area_ent.prototype.tile_height
-         and area_ent.prototype.tile_height > 0
-         and (ent_ignored == nil or ent_ignored.unit_number ~= area_ent.unit_number)
-      then
-         obstacle_ent = area_ent
-      end
-   end
-   --Check for water in the area
-   local water_tiles_in_area = p.surface.find_tiles_filtered({
-      area = area,
-      invert = false,
-      name = {
-         "water",
-         "deepwater",
-         "water-green",
-         "deepwater-green",
-         "water-shallow",
-         "water-mud",
-         "water-wube",
-      },
-   })
-   --Report obstacles
-   if obstacle_ent ~= nil then
-      message:fragment({
-         "fa.building-obstacle-in-way",
-         Localising.get_localised_name_with_fallback(obstacle_ent),
-         math.floor(obstacle_ent.position.x),
-         math.floor(obstacle_ent.position.y),
-      })
-   elseif #water_tiles_in_area > 0 then
-      local water = water_tiles_in_area[1]
-      message:fragment({ "fa.building-water-in-way", math.floor(water.position.x), math.floor(water.position.y) })
-   end
-   return message:build()
 end
 
 return mod

@@ -38,6 +38,17 @@ struct HeldBuild {
 // or blueprint: tiles, the rail planner and anything else.
 std::optional<HeldBuild> heldBuild(int playerIndex);
 
+// The game's drag building while the build control is held, from its first build to the release.
+// A drag builds in a straight line. Rotate during a belt drag does not turn the belt in hand: the
+// game turns the line at the cursor's next step off it (`turnPending` until then), and `turns`
+// counts every such turn, on across drags, so the mod can say each new one.
+struct DragBuild {
+   bool turnPending = false;
+   int turns = 0;
+};
+// Nothing when `playerIndex` is not this client's player or the build control holds no drag.
+std::optional<DragBuild> dragBuild(int playerIndex);
+
 // Buildings are held by their north-west corner: while the mod drives the cursor, this client
 // builds and draws an entity or blueprint in hand so that the north-west corner of its footprint,
 // rotated and flipped as it is built, is the cursor tile. Hover, mining and opening stay at the
@@ -53,12 +64,15 @@ std::optional<HeldBuild> heldBuild(int playerIndex);
 // and this only what blocks the build.
 
 // MinHook detours for Player::getCursorMapPosition, PlayerInputSource::getCursorMapPosition,
-// Player::getSimpleBuildInput, BuildingRenderer::prepareBuildingInGame, Player::buildFromCursor
-// and EntityToBeBuiltSettings::draw, and where MinHook keeps the originals.
+// ClientDragBuildingContext::update, Player::getSimpleBuildInput,
+// BuildingRenderer::prepareBuildingInGame, Player::buildFromCursor and
+// EntityToBeBuiltSettings::draw, and where MinHook keeps the originals.
 void* playerCursorDetour();
 void** playerCursorOriginal();
 void* sourceCursorDetour();
 void** sourceCursorOriginal();
+void* dragUpdateDetour();
+void** dragUpdateOriginal();
 void* simpleBuildInputDetour();
 void** simpleBuildInputOriginal();
 void* prepareBuildingDetour();

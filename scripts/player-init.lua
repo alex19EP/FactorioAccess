@@ -46,6 +46,11 @@ function mod.initialize(player)
    end
    faplayer.building_dir_arrow = nil
 
+   -- State older saves kept for build lock and bump detection
+   faplayer.build_lock = nil
+   faplayer.build_drag = nil
+   faplayer.bump_detection = nil
+
    faplayer.overhead_sprite = nil
    faplayer.overhead_circle = nil
    faplayer.custom_GUI_frame = nil

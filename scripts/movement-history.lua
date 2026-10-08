@@ -1,9 +1,8 @@
 --[[
 Movement history tracking.
 
-We have a number of modules which wish to do things based off whether or not a character moves: build lock (build behind
-a running char) and bump detection (detect collisions, even though the game doesn't give us that infrastructure) among
-them.
+We have a number of modules which wish to do things based off whether or not a character moves: rulers (tones as the
+character crosses one) and walking announcements among them.
 
 We used to do this by carefully hooking the event system, but that is fragile for a variety of reasons, the biggest
 among them being that if you do so too slowly, the char can move more than one tile.  So for example, with enough armor

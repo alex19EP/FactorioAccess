@@ -24,7 +24,7 @@ Slightly later on, you will unlock recipes which cannot be crafted by hand, and 
 
 The other difference between machines is how fast they craft.  An assembling machine 1 crafts half as fast as you.  You can see this after placement by right clicking the machine on the map.
 
-You now need to get power poles to the empty area you chose.  Since you are now working with more than one, it's worth knowing that pressing n tells you which other poles are connected to it.  As a reminder, build lock places poles at the maximum distance, and they automatically connect to all other poles in range when placed.
+You now need to get power poles to the empty area you chose.  Since you are now working with more than one, it's worth knowing that pressing n tells you which other poles are connected to it.  As a reminder, drag building with left bracket held places poles at the maximum distance, and they automatically connect to all other poles in range when placed.
 
 Just like inserters can move things to and from belts, they can move things between machines.  Players call this kind of design direct insertion.  We will work west to east.
 

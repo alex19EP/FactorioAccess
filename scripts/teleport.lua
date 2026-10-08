@@ -5,7 +5,6 @@ local Mouse = require("scripts.mouse")
 local Viewpoint = require("scripts.viewpoint")
 local Speech = require("scripts.speech")
 local MessageBuilder = Speech.MessageBuilder
-local BumpDetection = require("scripts.bump-detection")
 local MovementHistory = require("scripts.movement-history")
 
 local mod = {}
@@ -105,7 +104,6 @@ function mod.teleport_to_closest(pindex, pos, muted, ignore_enemies)
       end
       if teleported then
          char.force.chart(char.surface, { { new_pos.x - 15, new_pos.y - 15 }, { new_pos.x + 15, new_pos.y + 15 } })
-         BumpDetection.reset_bump_stats(pindex)
          if not muted then
             --Draw teleporting visuals at target
             rendering.draw_circle({

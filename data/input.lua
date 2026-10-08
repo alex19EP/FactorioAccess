@@ -98,56 +98,6 @@ data:extend({
 
    {
       type = "custom-input",
-      name = "fa-s-up",
-      key_sequence = "SHIFT + UP",
-      consuming = "none",
-   },
-   {
-      type = "custom-input",
-      name = "fa-s-left",
-      key_sequence = "SHIFT + LEFT",
-      consuming = "none",
-   },
-   {
-      type = "custom-input",
-      name = "fa-s-down",
-      key_sequence = "SHIFT + DOWN",
-      consuming = "none",
-   },
-   {
-      type = "custom-input",
-      name = "fa-s-right",
-      key_sequence = "SHIFT + RIGHT",
-      consuming = "none",
-   },
-
-   {
-      type = "custom-input",
-      name = "fa-c-up",
-      key_sequence = "CONTROL + UP",
-      consuming = "none",
-   },
-   {
-      type = "custom-input",
-      name = "fa-c-down",
-      key_sequence = "CONTROL + DOWN",
-      consuming = "none",
-   },
-   {
-      type = "custom-input",
-      name = "fa-c-left",
-      key_sequence = "CONTROL + LEFT",
-      consuming = "none",
-   },
-   {
-      type = "custom-input",
-      name = "fa-c-right",
-      key_sequence = "CONTROL + RIGHT",
-      consuming = "none",
-   },
-
-   {
-      type = "custom-input",
       name = "fa-k",
       key_sequence = "K",
       consuming = "none",
@@ -588,22 +538,8 @@ data:extend({
 
    {
       type = "custom-input",
-      name = "toggle-build-lock",
-      key_sequence = "CONTROL + B",
-      consuming = "none",
-   },
-
-   {
-      type = "custom-input",
       name = "fa-a-w",
       key_sequence = "ALT + W",
-      consuming = "none",
-   },
-
-   {
-      type = "custom-input",
-      name = "fa-c-b",
-      key_sequence = "CONTROL + B",
       consuming = "none",
    },
 

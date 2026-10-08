@@ -135,6 +135,20 @@ bool localDragging() {
    return source && dragging(source + layout.inputSourceDragContext);
 }
 
+// Turns the game has made in belt drags, at the cursor's step after rotate: the mod says each new
+// one. Written by the drag update on the main thread, read from Lua.
+std::atomic<int> g_dragTurns{0};
+
+using DragUpdateFunction = void (*)(void* context, void* source);
+DragUpdateFunction g_dragUpdateOriginal = nullptr;
+
+void detourDragUpdate(void* context, void* source) {
+   const bool turnPending = at<bool>(context, layout.dragTurnPending);
+   g_dragUpdateOriginal(context, source);
+   // Released, the drag clears the flag too.
+   if (turnPending && !at<bool>(context, layout.dragTurnPending) && dragging(context)) ++g_dragTurns;
+}
+
 // The tiles an entity covers: TilePosition, returned through a hidden pointer.
 struct TileSize {
    int32_t width;
@@ -533,10 +547,21 @@ std::optional<HeldBuild> heldBuild(int playerIndex) {
    });
 }
 
+std::optional<DragBuild> dragBuild(int playerIndex) {
+   const std::byte* game = gameOfLocalPlayer(playerIndex);
+   const std::byte* source = game ? inputSource() : nullptr;
+   if (!source || at<const std::byte*>(source, layout.inputSourcePlayer) != localPlayer(game)) return std::nullopt;
+   const std::byte* drag = source + layout.inputSourceDragContext;
+   if (!dragging(drag)) return std::nullopt;
+   return DragBuild{at<bool>(drag, layout.dragTurnPending), g_dragTurns.load()};
+}
+
 void* playerCursorDetour() { return reinterpret_cast<void*>(&playerDetour); }
 void** playerCursorOriginal() { return reinterpret_cast<void**>(&g_playerOriginal); }
 void* sourceCursorDetour() { return reinterpret_cast<void*>(&sourceDetour); }
 void** sourceCursorOriginal() { return reinterpret_cast<void**>(&g_sourceOriginal); }
+void* dragUpdateDetour() { return reinterpret_cast<void*>(&detourDragUpdate); }
+void** dragUpdateOriginal() { return reinterpret_cast<void**>(&g_dragUpdateOriginal); }
 void* simpleBuildInputDetour() { return reinterpret_cast<void*>(&detourSimpleBuildInput); }
 void** simpleBuildInputOriginal() { return reinterpret_cast<void**>(&g_simpleBuildInputOriginal); }
 void* prepareBuildingDetour() { return reinterpret_cast<void*>(&detourPrepareBuilding); }

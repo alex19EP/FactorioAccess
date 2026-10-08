@@ -1,24 +1,22 @@
-Having covered the basics of belts and inserters, we will now cover ways to build long lines of them. This chapter teaches you three tools: build lock for building behind you as you walk, audio rulers for precise alignment and measurement, and clipboard blueprints for quickly copying and pasting structures.
+Having covered the basics of belts and inserters, we will now cover ways to build long lines of them. This chapter teaches you three tools: drag building for building a line as you move, audio rulers for precise alignment and measurement, and clipboard blueprints for quickly copying and pasting structures.
 
-Build lock is the most important.  When build lock is enabled, every movement of your character builds behind your character.
+Drag building is the most important.  Hold left bracket and move your cursor, and the game builds on every tile along the way, just as it does for a sighted player who holds the mouse button and drags.
 
-Movements of your cursor also try to build one tile behind your cursor (for example pressing once builds on the current tile then moves), but game API limitations prevent this from working nicely, and it is best avoided.
+While you hold left bracket, cursor steps say nothing unless something is in the way of the build.  Listen for the build sound on each step.
+
+The line stays straight, along whichever way you first moved.  Stepping to the side does not build there.
+
+Transport belts can turn.  While still holding left bracket, press r.  You hear turn at next step.  Now step the cursor the way you want the belt to go, and the game turns the last belt into a corner.  You hear the corner and its new direction, and the line carries on that way.
+
+Electric poles are placed at the maximum reach to connect to the last one in the line.  So for small electric poles the first one is placed where you start, then one every 7 tiles.
 
 Walking in general is not advantageous, but there is one exception: walking a line you have already cleared of obstacles.
 
-If you know you want to build 200 transport belts in a line, you can turn build lock on, use the arrow keys to run the line, then fix the ends.  The ends will usually be a few tiles longer than you wanted.
-
-To use build lock, toggle it with control b.  It turns itself off if your hand is emptied, if you hit control b again, or if you run into an obstacle that pushes you in an unexpected direction.
-
-Most of the time build lock is equivalent to just building by hand, as if you had moved the cursor along the line and clicked all the buttons.  But there are two important cases where this is not true because we offer more convenient behaviors instead.
-
-The first one is transport belts.  For transport belts, the belts follow your character and turn as your character does. You run in the direction you want the belt to go, and the belts follow you around.  Generally you don't want to use this to make corners, but you can if precision isn't something you care much about this time.
-
-The other case is electric poles.  For electric poles, we place them at the maximum reach to connect to the last one in the chain.  So for small electric poles the first one is always placed as soon as possible, then every 7 tiles thereafter.
+Press i to keep your cursor one tile in front of you while you walk.  If you know you want to build 200 transport belts in a line, put the belt in hand, hold left bracket, use the arrow keys to run the line, then fix the ends.  The ends will usually be a few tiles longer than you wanted.
 
 We closed the last chapter by setting up your self-maintaining coal mine, but your steam engine and boiler is probably very far away because it needs to be near water.  Now you have a tool to make the line conveniently.
 
-Work out where the long line needs to be, turn build lock on, and run it. Then change the ends to where they need to be.  If you used the transport belt version of the sustaining coal mine, the input end needs to be at that belt, and then the output end goes within one tile of the boiler so an inserter can reach it.
+Work out where the long line needs to be, and drag it. Then change the ends to where they need to be.  If you used the transport belt version of the sustaining coal mine, the input end needs to be at that belt, and then the output end goes within one tile of the boiler so an inserter can reach it.
 
 If you do this right, then you now have a power setup that will run until the drill runs out of coal. That enables you to use inserters and electric mining drills.  We will talk more about electric mining drills in a little bit.
 
@@ -34,7 +32,7 @@ The audio ruler works with cursor skipping. When cursor skipping, your cursor wi
 
 It also works with your character.  Your character walking through a ruler also plays the tones.
 
-What it does not do is turn build lock off.  We cannot know if that's why you wanted the ruler, so it is your responsibility not to keep running once you hit it.
+What it does not do is stop your line.  We cannot know if that's why you wanted the ruler, so it is your responsibility to let go of left bracket once you hit it.
 
 As a concrete example, you can place an audio ruler at your boiler, use cursor skipping to see how far it is, then run a belt until it hits the ruler before turning toward the boiler.
 

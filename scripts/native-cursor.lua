@@ -14,6 +14,7 @@ local mod = {}
 ---@field next_part fun(player_index: integer, direction: integer)
 ---@field build_direction fun(player_index: integer): defines.direction?
 ---@field held_build fun(player_index: integer): fa.NativeHeldBuild?
+---@field drag_build fun(player_index: integer): fa.NativeDragBuild?
 ---@field walking_step fun(player_index: integer): ("full"|"partial"|"none")?, integer?
 ---@field open_selected_info fun(player_index: integer)
 
@@ -26,6 +27,10 @@ local mod = {}
 ---@field mirrored boolean An entity that flips by mirroring: whether it is mirrored
 ---@field flip_horizontal boolean A blueprint: flipped east to west on the map
 ---@field flip_vertical boolean A blueprint: flipped north to south on the map
+
+---@class fa.NativeDragBuild
+---@field turn_pending boolean A belt drag turns at the cursor's next step off its line
+---@field turns integer Turns the game has made in belt drags, counting on across drags
 
 ---@type fa.Native?
 local native = rawget(_G, "fa_native")
@@ -62,6 +67,15 @@ end
 ---@return fa.NativeHeldBuild?
 function mod.held_build(pindex)
    return native and native.held_build(pindex)
+end
+
+---The game's drag building while the build key is held, from the first build to the release; nil
+---otherwise. Rotate during a belt drag does not turn the belt in hand: the game turns the line at
+---the cursor's next step off it. Only this client knows it: speak it, never change the game by it.
+---@param pindex integer
+---@return fa.NativeDragBuild?
+function mod.drag_build(pindex)
+   return native and native.drag_build(pindex)
 end
 
 ---@param pindex integer

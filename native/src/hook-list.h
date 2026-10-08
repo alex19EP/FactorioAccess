@@ -13,6 +13,7 @@
      "Player::getCursorMapPosition")                                                                                   \
    X(sourceCursorPosition, world::sourceCursorDetour(), world::sourceCursorOriginal(),                                 \
      "PlayerInputSource::getCursorMapPosition")                                                                        \
+   X(dragBuildingUpdate, world::dragUpdateDetour(), world::dragUpdateOriginal(), "ClientDragBuildingContext::update")  \
    X(simpleBuildInput, world::simpleBuildInputDetour(), world::simpleBuildInputOriginal(),                             \
      "Player::getSimpleBuildInput")                                                                                    \
    X(prepareBuildingInGame, world::prepareBuildingDetour(), world::prepareBuildingOriginal(),                          \

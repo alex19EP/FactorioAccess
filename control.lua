@@ -16,12 +16,6 @@ local AudioCues = require("scripts.audio-cues")
 local Blueprints = require("scripts.blueprints")
 local BuildingTools = require("scripts.building-tools")
 local BuildDimensions = require("scripts.build-dimensions")
-local BuildLock = require("scripts.build-lock")
--- Register build lock backends (tiles must be first to catch tile items before simple backend)
-BuildLock.register_backend(require("scripts.build-lock-backends.tiles"))
-BuildLock.register_backend(require("scripts.build-lock-backends.transport-belts"))
-BuildLock.register_backend(require("scripts.build-lock-backends.electric-poles"))
-BuildLock.register_backend(require("scripts.build-lock-backends.simple"))
 local BumpDetection = require("scripts.bump-detection")
 local CircuitNetworks = require("scripts.circuit-network")
 local Combat = require("scripts.combat")
@@ -355,11 +349,8 @@ function on_tick(event)
       if not player.connected then goto continue end
       if VanillaMode.is_enabled(player.index) then goto continue end
 
-      BumpDetection.check_bump(player.index, event.tick)
-      BumpDetection.check_stuck(player.index, event.tick)
       BumpDetection.play_step_sounds(player.index, event.tick)
-      -- Process build lock for walking movement
-      BuildLock.process_walking_movement(player.index)
+      BuildingTools.speak_drag_turn(player.index)
       -- Process walking announcements (anchored cursor or entity detection)
       Walking.process_walking_announcements(player.index)
       -- Check for pending logistics announcements
@@ -431,7 +422,6 @@ EventManager.on_event(
    function(event, pindex)
       local router = UiRouter.get_router(pindex)
 
-      BumpDetection.reset_bump_stats(pindex)
       MovementHistory.reset_and_increment_generation(pindex)
       game.get_player(pindex).clear_cursor()
       if game.get_player(pindex).driving then
@@ -959,7 +949,9 @@ local function cursor_mode_move(direction, pindex, single_only)
       vp:set_cursor_pos_continuous(cursor_pos, direction)
 
       EntitySelection.reset_entity_index(pindex)
-      read_tile_with_preview_info(pindex)
+      -- While the build key drags, the game builds here after this reading, so it would name the
+      -- ground; the game's own preview says what blocks the build instead
+      if not NativeCursor.drag_build(pindex) then read_tile_with_preview_info(pindex) end
 
       --Update drawn cursor
       local stack = p.cursor_stack
@@ -1465,118 +1457,6 @@ EventManager.on_event(
       if Combat.is_combat_mode(pindex) and Capsules.get_held_capsule_data(pindex) then
          Capsules.use_capsule_in_direction(pindex, defines.direction.east, true)
       end
-   end
-)
-
-EventManager.on_event(
-   "fa-s-up",
-   ---@param event EventData.CustomInputEvent
-   function(event, pindex)
-      BuildingTools.nudge_key(defines.direction.north, event)
-   end
-)
-
-EventManager.on_event(
-   "fa-s-left",
-   ---@param event EventData.CustomInputEvent
-   function(event, pindex)
-      BuildingTools.nudge_key(defines.direction.west, event)
-   end
-)
-
-EventManager.on_event(
-   "fa-s-down",
-   ---@param event EventData.CustomInputEvent
-   function(event, pindex)
-      BuildingTools.nudge_key(defines.direction.south, event)
-   end
-)
-
-EventManager.on_event(
-   "fa-s-right",
-   ---@param event EventData.CustomInputEvent
-   function(event, pindex)
-      BuildingTools.nudge_key(defines.direction.east, event)
-   end
-)
-
----@param event EventData.CustomInputEvent
----@param direction defines.direction
----@param name string
-local function nudge_self(event, direction, name)
-   local pindex = event.player_index
-   local p = game.get_player(pindex)
-
-   if not p.character then
-      Speech.speak(pindex, { "fa.nudge-failed" })
-      return
-   end
-
-   if p.vehicle then
-      Speech.speak(pindex, { "fa.nudged-self", name })
-      return
-   end
-
-   local new_pos = FaUtils.center_of_tile(FaUtils.offset_position_legacy(p.position, direction, 1))
-
-   if not p.surface.can_place_entity({ name = "character", position = new_pos }) then
-      Speech.speak(pindex, { "fa.tile-occupied" })
-      return
-   end
-
-   if not p.teleport(new_pos) then
-      Speech.speak(pindex, { "fa.teleport-failed" })
-      return
-   end
-
-   local stack = p.cursor_stack
-   if stack and stack.valid_for_read and stack.valid and stack.prototype.place_result then
-      Graphics.sync_build_cursor_graphics(pindex)
-   end
-
-   local ent = EntitySelection.get_first_ent_at_tile(pindex)
-   if ent and ent.valid then
-      Graphics.draw_cursor_highlight(pindex, ent, nil)
-   else
-      Graphics.draw_cursor_highlight(pindex, nil, nil)
-   end
-
-   Speech.speak(pindex, { "fa.nudged-self", name })
-end
-
-EventManager.on_event(
-   "fa-c-up",
-   ---@param event EventData.CustomInputEvent
-   function(event, pindex)
-      local router = UiRouter.get_router(pindex)
-      nudge_self(event, defines.direction.north, "north")
-   end
-)
-
-EventManager.on_event(
-   "fa-c-left",
-   ---@param event EventData.CustomInputEvent
-   function(event, pindex)
-      local router = UiRouter.get_router(pindex)
-      nudge_self(event, defines.direction.west, "west")
-   end
-)
-
-EventManager.on_event(
-   "fa-c-down",
-   ---@param event EventData.CustomInputEvent
-   function(event, pindex)
-      local router = UiRouter.get_router(pindex)
-      nudge_self(event, defines.direction.south, "south")
-   end
-)
-
-EventManager.on_event(
-   "fa-c-right",
-   ---@param event EventData.CustomInputEvent
-   function(event, pindex)
-      local router = UiRouter.get_router(pindex)
-      nudge_self(event, defines.direction.east, "east")
    end
 )
 
@@ -2832,21 +2712,6 @@ EventManager.on_event(
    ---@param event EventData.CustomInputEvent
    function(event, pindex)
       FaInfo.read_pollution_level_at_position(Viewpoint.get_viewpoint(pindex):get_cursor_pos(), pindex)
-   end
-)
-
----@param event EventData.CustomInputEvent
-local function kb_toggle_build_lock(event)
-   local pindex = event.player_index
-   BuildLock.toggle(pindex)
-end
-
---Toggle building while walking
-EventManager.on_event(
-   "fa-c-b",
-   ---@param event EventData.CustomInputEvent
-   function(event, pindex)
-      kb_toggle_build_lock(event)
    end
 )
 
