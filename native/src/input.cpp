@@ -17,6 +17,7 @@ namespace {
 // SDL 3.2 event layout (SDL_Event is a 128-byte union; SDL_KeyboardEvent for key events).
 constexpr uint32_t kEventKeyDown = 0x300;
 constexpr uint32_t kEventKeyUp = 0x301;
+constexpr uint32_t kEventTextInput = 0x303;
 constexpr uint32_t kEventWindowFirst = 0x202;
 constexpr uint32_t kEventWindowLast = 0x21f;
 constexpr uint32_t kEventMouseFirst = 0x400;
@@ -29,6 +30,7 @@ constexpr size_t kKeyOffset = 0x1c;    // SDL_Keycode key
 constexpr size_t kModOffset = 0x20;    // SDL_Keymod mod (16 bits)
 constexpr size_t kDownOffset = 0x24;   // bool down
 constexpr size_t kRepeatOffset = 0x25; // bool repeat
+constexpr size_t kTextOffset = 0x18;   // SDL_TextInputEvent const char* text
 constexpr uint16_t kModShift = 0x0003;
 constexpr uint16_t kModCtrl = 0x00c0;
 constexpr uint16_t kModAlt = 0x0300;
@@ -164,18 +166,32 @@ struct Injected {
    uint32_t key;
    uint16_t mod;
    bool down;
+   std::string text; // a text input event instead of a key, when not empty
 };
 
 std::deque<Injected> g_injected; // under g_mutex
+// The text of the latest injected text events. The event points at its text, which must outlive
+// the game's handling of it; a deque keeps the strings in place while new ones are added.
+std::deque<std::string> g_texts; // under g_mutex
+constexpr size_t kTextsKept = 16;
 
 // Fills `event` with the next injected key, if any; a null event only asks whether one is waiting.
 bool nextInjected(void* event) {
    std::scoped_lock lock(g_mutex);
    if (g_injected.empty()) return false;
    if (!event) return true;
-   Injected next = g_injected.front();
+   Injected next = std::move(g_injected.front());
    g_injected.pop_front();
    std::memset(event, 0, kEventSize);
+   if (!next.text.empty()) {
+      if (g_texts.size() >= kTextsKept) g_texts.pop_front();
+      const char* text = g_texts.emplace_back(std::move(next.text)).c_str();
+      put(event, 0, kEventTextInput);
+      put(event, kTimestampOffset, g_timestamp);
+      put(event, kWindowOffset, g_windowId);
+      put(event, kTextOffset, text);
+      return true;
+   }
    put(event, 0, next.down ? kEventKeyDown : kEventKeyUp);
    put(event, kTimestampOffset, g_timestamp);
    put(event, kWindowOffset, g_windowId);
@@ -228,14 +244,20 @@ std::vector<KeyEvent> drain() {
 void injectKey(uint32_t key, bool shift, bool ctrl, bool alt, bool down) {
    uint16_t mod = (shift ? kModLeftShift : 0) | (ctrl ? kModLeftCtrl : 0) | (alt ? kModLeftAlt : 0);
    std::scoped_lock lock(g_mutex);
-   g_injected.push_back({key, mod, down});
+   g_injected.push_back({key, mod, down, {}});
+}
+
+void injectText(std::string text) {
+   if (text.empty()) return;
+   std::scoped_lock lock(g_mutex);
+   g_injected.push_back({0, 0, false, std::move(text)});
 }
 
 void injectModifiers(bool shift, bool ctrl, bool alt, bool down) {
    std::scoped_lock lock(g_mutex);
    for (auto [held, key, mod] : {std::tuple{shift, keys::LeftShift, kModLeftShift},
                                  std::tuple{ctrl, keys::LeftCtrl, kModLeftCtrl}, std::tuple{alt, keys::LeftAlt, kModLeftAlt}})
-      if (held) g_injected.push_back({key, down ? mod : uint16_t{0}, down});
+      if (held) g_injected.push_back({key, down ? mod : uint16_t{0}, down, {}});
 }
 
 void setWorldClaims(std::vector<Claim> claims) {

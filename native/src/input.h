@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <string>
 #include <vector>
 
 // Keyboard input taken from the game before it sees it (graph-a11y-spec P4). The game polls SDL
@@ -85,6 +86,10 @@ std::vector<KeyEvent> drain();
 // their key is held (`ControlInput::isActive`) read that mark frames later, so the up goes in
 // frames after the down, as a person's does.
 void injectKey(uint32_t key, bool shift, bool ctrl, bool alt, bool down);
+
+// Queues typed text (UTF-8) into the game's event stream, as the text a key press makes: what a
+// focused text field takes, where key events alone type nothing. For the dev server.
+void injectText(std::string text);
 
 // Queues the left modifier keys going down or up, as separate key events: the game reads a held
 // modifier from its own key state, not from the flags on the key it modifies.

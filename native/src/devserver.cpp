@@ -172,12 +172,21 @@ std::string runKeys(std::string_view spec) {
    struct Step {
       std::optional<Chord> chord;
       uint64_t wait = 0;
+      std::string text;
    };
    std::vector<Step> steps;
    for (std::string_view word : words(spec)) {
+      // "text=iron" types "iron" into the focused field, case kept; "_" stands for a space.
+      if (word.starts_with("text=")) {
+         std::string text(word.substr(5));
+         std::ranges::replace(text, '_', ' ');
+         if (text.empty()) return "[error] no text\n";
+         steps.push_back({std::nullopt, 0, std::move(text)});
+         continue;
+      }
       std::string token = lowered(word);
       if (token == "wait") {
-         steps.push_back({std::nullopt, 60});
+         steps.push_back({std::nullopt, 60, {}});
          continue;
       }
       if (token.starts_with("wait=")) {
@@ -185,18 +194,24 @@ std::string runKeys(std::string_view spec) {
          auto [end, error] = std::from_chars(token.data() + 5, token.data() + token.size(), frames);
          if (error != std::errc() || end != token.data() + token.size())
             return std::format("[error] bad wait: {}\n", word);
-         steps.push_back({std::nullopt, frames});
+         steps.push_back({std::nullopt, frames, {}});
          continue;
       }
       auto chord = parseChord(token);
       if (!chord) return std::format("[error] unknown key: {}\n", word);
-      steps.push_back({chord, 0});
+      steps.push_back({chord, 0, {}});
    }
    if (steps.empty()) return "[error] no keys\n";
 
    uint64_t from = speechCursor();
    bool first = true;
    for (const Step& step : steps) {
+      if (!step.text.empty()) {
+         if (!first) waitFrames(kFramesBetweenKeys);
+         first = false;
+         input::injectText(step.text);
+         continue;
+      }
       if (!step.chord) {
          waitFrames(step.wait);
          continue;
