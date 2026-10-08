@@ -8,8 +8,8 @@ endif()
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Static CRT: the game directory gets one self-contained DLL and nothing to install beside it.
-# Prism sets this itself from CMAKE_BUILD_TYPE, which is empty under the multi-config Visual
-# Studio generator, so it is pinned in the cache before Prism is configured.
+# Prism sets this itself from CMAKE_BUILD_TYPE, which is empty under a multi-config generator
+# (Ninja Multi-Config), so it is pinned in the cache before Prism is configured.
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" CACHE STRING "" FORCE)
 # RelWithDebInfo is what ships, with its PDB. CMake links it with /INCREMENTAL, which pads every
 # function and turns off /OPT:REF and /OPT:ICF: the DLL came out 5.9 MB instead of 2.3 MB.

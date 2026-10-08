@@ -78,10 +78,14 @@ symbol check needs a `factorio.exe` and does not run there: run it locally befor
 
 ## Building
 
-You need Visual Studio 2026 (or its Build Tools) with the C++ workload, and CMake 3.28 or newer.
+You need Visual Studio 2026 (or its Build Tools) with the C++ workload, CMake 3.28 or newer, and
+Ninja. The build uses the Ninja Multi-Config generator, which calls the compiler directly, so run
+configure and every build from an x64 developer environment: the "x64 Native Tools Command Prompt
+for VS", or a shell after `vcvars64.bat`. The output goes to `build/RelWithDebInfo`.
 
 ```
 git submodule update --init native/vendor
+"C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
 cd native
 cmake --preset default -DFA_FACTORIO_BIN="C:/path/to/Factorio/bin/x64"
 cmake --build --preset default

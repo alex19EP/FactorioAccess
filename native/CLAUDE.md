@@ -28,6 +28,10 @@ Before committing native work:
 
 A plain cmake build does NOT deploy unless `FA_FACTORIO_BIN` was set at configure time.
 
+The generator is Ninja Multi-Config, so raw `cmake` configure and build commands must run inside
+`vcvars64.bat` (`cmd /c "<vcvars64.bat> >nul && cmake ..."`); `just configure` and `just build`
+already do. Switching generators needs a fresh tree: `just clean` first.
+
 ## Rules
 
 ### Symbols and reverse engineering

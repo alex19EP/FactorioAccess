@@ -3,10 +3,12 @@
   "configurePresets": [
     {
       "name": "default",
-      "displayName": "Visual Studio 2026, x64",
-      "generator": "Visual Studio 18 2026",
-      "architecture": "x64",
-      "binaryDir": "${sourceDir}/build"
+      "displayName": "Ninja Multi-Config, x64 (run from a VS x64 developer environment)",
+      "generator": "Ninja Multi-Config",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_CONFIGURATION_TYPES": "RelWithDebInfo;Debug"
+      }
     },
     {
       "name": "clangd",

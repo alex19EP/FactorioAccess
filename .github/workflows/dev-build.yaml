@@ -13,7 +13,8 @@ concurrency:
 
 jobs:
   native:
-    # The native build uses the Visual Studio 2026 generator (native/CMakePresets.json).
+    # The native build uses Ninja Multi-Config with the Visual Studio 2026 compiler
+    # (native/CMakePresets.json).
     runs-on: windows-2025-vs2026
     steps:
       - name: Checkout
@@ -21,9 +22,18 @@ jobs:
         with:
           submodules: true
 
+      # Ninja calls cl directly, so every later step needs the VS x64 developer environment.
+      - name: MSVC environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      # pwsh rather than bash: Git Bash's /usr/bin/link would shadow MSVC's link.exe.
       - name: Configure
-        shell: bash
-        run: cmake -S native --preset default -DFA_BUILD_ID="dev.${GITHUB_SHA::7}"
+        shell: pwsh
+        run: |
+          ninja --version
+          cmake -S native --preset default "-DFA_BUILD_ID=dev.$($env:GITHUB_SHA.Substring(0, 7))"
 
       - name: Build
         run: cmake --build native/build --config RelWithDebInfo
