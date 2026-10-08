@@ -1731,54 +1731,21 @@ EventManager.on_event(
    end
 )
 
----@param event EventData.CustomInputEvent
-local function kb_s_b(event)
-   local pindex = event.player_index
-   local vp = Viewpoint.get_viewpoint(pindex)
-   local pos = vp:get_cursor_pos()
-   vp:set_cursor_bookmark(table.deepcopy(pos))
-   Speech.speak(pindex, { "fa.cursor-bookmark-saved", tostring(math.floor(pos.x)), tostring(math.floor(pos.y)) })
-   sounds.play_close_inventory(pindex)
-end
-
+-- The virtual train's bookmark stack: Shift+B pushes, Alt+B pops. B is the game's blueprint library.
 EventManager.on_event(
    "fa-s-b",
    ---@param event EventData.CustomInputEvent
    function(event, pindex)
-      -- Check for virtual train driving (create bookmark)
-      if VirtualTrainDriving.on_kb_descriptive_action_name(event) then return end
-
-      if skip_in_combat_mode(pindex) then return end
-      kb_s_b(event)
+      VirtualTrainDriving.on_kb_descriptive_action_name(event)
    end
 )
 
----@param event EventData.CustomInputEvent
-local function kb_b(event)
-   local pindex = event.player_index
-   local vp = Viewpoint.get_viewpoint(pindex)
-   local pos = vp:get_cursor_bookmark()
-   if pos == nil or pos.x == nil or pos.y == nil then return end
-   vp:set_cursor_pos(pos)
-   Graphics.draw_cursor_highlight(pindex, nil, nil)
-   Graphics.sync_build_cursor_graphics(pindex)
-   Speech.speak(pindex, { "fa.cursor-bookmark-loaded", tostring(math.floor(pos.x)), tostring(math.floor(pos.y)) })
-   sounds.play_close_inventory(pindex)
-end
-
 EventManager.on_event(
-   "fa-b",
+   "fa-a-b",
    ---@param event EventData.CustomInputEvent
    function(event, pindex)
-      -- Check for virtual train driving
-      if VirtualTrainDriving.is_locked(pindex) then
-         local success = VirtualTrainDriving.return_to_bookmark(pindex)
-         if success then TileReader.read_tile(pindex) end
-         return
-      end
-
-      if skip_in_combat_mode(pindex) then return end
-      kb_b(event)
+      if not VirtualTrainDriving.is_locked(pindex) then return end
+      if VirtualTrainDriving.return_to_bookmark(pindex) then TileReader.read_tile(pindex) end
    end
 )
 

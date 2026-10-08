@@ -479,6 +479,8 @@ private:
       return info ? info->name : std::string_view{};
    }
 
+   // As C++ looks a name up: the class's own members hide its bases' (BlueprintRecordSlotButton's
+   // `location` hides agui::Widget's), and the bases follow in declaration order.
    std::optional<Member> findMember(uint32_t classIndex, std::string_view name) const {
       auto info = classInfo(type(classIndex));
       if (!info) return std::nullopt;
@@ -488,6 +490,10 @@ private:
             found = Member{static_cast<uint32_t>(offset), field.data.LF_MEMBER.index};
             return false;
          }
+         return true;
+      });
+      if (found) return found;
+      forEachField(info->fieldList, [&](const TPI::FieldList& field, const char*, uint64_t offset) {
          if (field.kind == TypeRecordKind::LF_BCLASS) {
             auto base = classOf(field.data.LF_BCLASS.index);
             if (!base) return true;

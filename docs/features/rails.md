@@ -24,7 +24,7 @@ Toggle speculation: slash
 
 Push a bookmark to the bookmark stack: shift + b
 
-Pop a bookmark from the bookmark stack: b
+Pop a bookmark from the bookmark stack: alt + b
 
 Undo the most recent move, deleting a rail if you placed one: backspace
 
@@ -185,10 +185,10 @@ check whether or not an s-bend would merge tracks properly.
 If you make a mistake, you can press backspace.  This undoes one move, and removes anything that move built including
 signals.  It leaves other rails on the same tile alone.
 
-Finally, the virtual train changes the meaning of bookmarks and uses the bookmark keys.  It maintains a historical list
+Finally, the virtual train has bookmarks.  It maintains a historical list
 of states.  When you set a bookmark, you are pushing a bookmark to the list of bookmarks for this speculation, which
-saves the history, direction, and position of the virtual train.  When you then press b, you move to and clear the last
-bookmark.  Programmers know this as a stack; shift+b pushes, b pops.
+saves the history, direction, and position of the virtual train.  When you then press alt+b, you move to and clear the last
+bookmark.  Programmers know this as a stack; shift+b pushes, alt+b pops.
 
 A concrete example may help. Here is how you build a 3-way fork:
 
@@ -196,13 +196,13 @@ A concrete example may help. Here is how you build a 3-way fork:
 - Lock onto the rail
 - Press shift + b
 - Press m 4 times
-- Press b, which returns and clears the bookmark
+- Press alt+b, which returns and clears the bookmark
 - Press shift + b again
 - Press dot 4 times
-- Press b, to return and clear the bookmark
+- Press alt+b, to return and clear the bookmark
 - Press shift + b again
 - Press comma 4 times to build the straight section
-- Press b, to get back and clear the bookmark
+- Press alt+b, to get back and clear the bookmark
 - Add some signals: press shift dot (chain in) and control m (regular out)
 
 Bookmarks may seem awkward, but the use is for more complex layouts.  For example, this representation lets you build

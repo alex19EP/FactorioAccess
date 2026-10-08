@@ -830,19 +830,23 @@ struct Layout {
    uint32_t inventoryHand = 0;         // Inventory::handPosition: the slot whose item is in the hand
    uint32_t itemLabel = 0;             // ItemWithLabel::labelData.label.value, std::string
    uint32_t signalSize = 0;            // sizeof(SignalID)
-   uint32_t blueprintItemIcons = 0;    // BlueprintItem::blueprint.previewIcons.data
-   uint32_t blueprintItemDescription = 0; // BlueprintItem::blueprint.description.value
+   // A blueprint item and a library record hold the same Blueprint, DeconstructionData and
+   // UpgradeData, so those are read from wherever they sit.
+   uint32_t blueprintDataIcons = 0;    // Blueprint::previewIcons.data
+   uint32_t blueprintDataDescription = 0; // Blueprint::description.value
+   uint32_t blueprintItemBlueprint = 0; // BlueprintItem::blueprint
    uint32_t bookIcons = 0;             // BlueprintBook::previewIcons.data
    uint32_t bookDescription = 0;       // BlueprintBook::description.value
    uint32_t bookActiveIndex = 0;       // BlueprintBook::activeIndex, the slot built from
    uint32_t bookInventory = 0;         // BlueprintBook::inventory, an Inventory
-   uint32_t deconItemIcons = 0;        // DeconstructionItem::deconstructionData.previewIcons.data
-   uint32_t deconItemDescription = 0;  // ::deconstructionData.description.value
-   uint32_t deconItemTreesAndRocks = 0; // ::deconstructionData.treesAndRocksOnly, bool
-   uint32_t deconItemEntityMode = 0;   // ::deconstructionData.entityFilterMode
-   uint32_t deconItemEntities = 0;     // ::deconstructionData.entityFilters, std::vector<IDWithQualityFilter<EntityID>>
-   uint32_t deconItemTileMode = 0;     // ::deconstructionData.tileSelectionMode
-   uint32_t deconItemTiles = 0;        // ::deconstructionData.tileFilters, std::vector<ID<TilePrototype>>
+   uint32_t deconItemData = 0;         // DeconstructionItem::deconstructionData
+   uint32_t deconDataIcons = 0;        // DeconstructionData::previewIcons.data
+   uint32_t deconDataDescription = 0;  // ::description.value
+   uint32_t deconDataTreesAndRocks = 0; // ::treesAndRocksOnly, bool
+   uint32_t deconDataEntityMode = 0;   // ::entityFilterMode
+   uint32_t deconDataEntities = 0;     // ::entityFilters, std::vector<IDWithQualityFilter<EntityID>>
+   uint32_t deconDataTileMode = 0;     // ::tileSelectionMode
+   uint32_t deconDataTiles = 0;        // ::tileFilters, std::vector<ID<TilePrototype>>
    uint32_t entityFilterWhitelist = 0; // DeconstructionData::EntityFilterMode Whitelist
    uint32_t entityFilterBlacklist = 0; // DeconstructionData::EntityFilterMode Blacklist
    uint32_t tileSelectionOnly = 0;     // DeconstructionData::TileSelectionMode Only
@@ -852,9 +856,10 @@ struct Layout {
    uint32_t entityFilterQuality = 0;   // ::qualityCondition.qualityID
    uint32_t entityFilterComparison = 0; // ::qualityCondition.comparison, Comparison::Enum
    uint32_t comparisonEquals = 0;      // Comparison::Enum Equals: only then is the quality drawn
-   uint32_t upgradeItemIcons = 0;      // UpgradeItem::upgradeData.previewIcons.data
-   uint32_t upgradeItemDescription = 0; // ::upgradeData.description.value
-   uint32_t upgradeItemMappings = 0;   // ::upgradeData.mappings, std::vector<UpgradeMapping>
+   uint32_t upgradeItemData = 0;       // UpgradeItem::upgradeData
+   uint32_t upgradeDataIcons = 0;      // UpgradeData::previewIcons.data
+   uint32_t upgradeDataDescription = 0; // ::description.value
+   uint32_t upgradeDataMappings = 0;   // ::mappings, std::vector<UpgradeMapping>
    uint32_t mappingSize = 0;           // sizeof(UpgradeMapping)
    // A rule counts when its source is set; its destination, an UpgradeID (UpgradeIDBase {type,
    // an item or entity ID}, quality), is the icon.
@@ -888,6 +893,64 @@ struct Layout {
    // slot in a row with its name and description, Grid its name under it, Slots the slot alone.
    uint32_t listViewMode = 0;          // BlueprintsList::viewMode, BlueprintsListViewMode
    uint32_t listViewList = 0;          // BlueprintsListViewMode List
+
+   // A blueprint library record (BlueprintRecord: a SingleBlueprintRecord, a BlueprintBookRecord,
+   // a DeconstructionRecord or an UpgradeRecord), shown by a BlueprintRecordSlotButton as its item
+   // would be: the item's icon under the owner's icons, grey while only its preview has arrived.
+   // The slot shows a hand while the player holds the record, the transfer's progress under it,
+   // and highlights the active one of a book.
+   uint32_t recordId = 0;              // BlueprintRecord::id, BlueprintRecordID
+   uint32_t recordItem = 0;            // ::itemID, ID<ItemPrototype>
+   uint32_t recordLabel = 0;           // ::label.value, std::string
+   uint32_t recordIdSize = 0;          // sizeof(BlueprintRecordID)
+   uint32_t recordIdPlayer = 0;        // BlueprintRecordID::playerIndex
+   uint32_t recordIdIndex = 0;         // BlueprintRecordID::id
+   uint32_t recordIsPreview = 0;       // virtual bool BlueprintRecord::isPreview() const
+   uint32_t singleRecordBlueprint = 0; // SingleBlueprintRecord::blueprint
+   uint32_t bookRecordRecords = 0;     // BlueprintBookRecord::records, std::vector<std::unique_ptr<BlueprintRecord>>
+   // uint16_t BlueprintBookRecord::getActiveIndex(Player const*, LatencyState*) const: the record a
+   // player builds from. A book on the game's shelf or another player's keeps one per player.
+   uintptr_t bookRecordActiveIndex = 0;
+   uint32_t playerLatencyState = 0;    // Player::latencyState, LatencyState* (null without latency hiding)
+   uint32_t bookRecordIcons = 0;       // ::previewIcons.data
+   uint32_t bookRecordDescription = 0; // ::description.value
+   uint32_t deconRecordData = 0;       // DeconstructionRecord::deconstructionData
+   uint32_t upgradeRecordData = 0;     // UpgradeRecord::upgradeData
+   // BlueprintRecord const* BlueprintRecordSlotButton::getRecord() const: by its id, or by its place
+   // in a book for a book in the player's hand.
+   uintptr_t recordSlotRecord = 0;
+   uint32_t recordSlotPlayer = 0;      // BlueprintRecordSlotButton::context.player, Player*
+   uint32_t recordSlotBook = 0;        // ::parentBook, BlueprintBookRecord*, null on a shelf
+   uint32_t recordSlotIndex = 0;       // ::location.slotIndex
+   uint32_t recordSlotGrabbed = 0;     // ::showGrabbed, ShowGrabbed
+   uint32_t recordSlotShowsGrabbed = 0; // BlueprintRecordSlotButton::ShowGrabbed True
+   uint32_t recordSlotProgress = 0;    // ::progress, float: the transfer's, drawn while in (0, 1)
+   // virtual BlueprintRecordID GameAdapter::getCursorRecordID() const: the record in the hand.
+   uint32_t adapterCursorRecord = 0;
+
+   // The blueprint library's window (BlueprintLibraryGui), beside the player's inventory, with the
+   // history arrows in its title bar. Its inside frame (a FrameWithSubheader) holds the "not
+   // synchronised" warning and the view buttons in its subheader, and the tabs (My blueprints, Game
+   // blueprints) in its body, each a BlueprintShelfWidget per shelf: the "synchronising" label or
+   // its BlueprintsList of BlueprintRecordSlotButtons, padded with empty slots to drop into. A book
+   // record opened swaps the inside frame for a BlueprintBookRecordWidget in the book holder, laid
+   // out as a book's window: the header frame's subheader has the copy, upgrade, export and delete
+   // buttons, its body the BlueprintBookHeader (a VerticalFlow of rows: the go-to-root arrow and the
+   // shelf's name, an arrow and name per book it is inside, the book's arrow, name and rename
+   // button), then the description; the inside frame has the hint and view buttons over the list.
+   uint32_t libraryInside = 0;         // BlueprintLibraryGui::insideFrame, FrameWithSubheader
+   uint32_t libraryTabs = 0;           // ::libraryTabs, agui::TabbedPane
+   uint32_t libraryBookHolder = 0;     // ::bookWidgetHolder, agui::VerticalFlow
+   uint32_t libraryMemory = 0;         // ::memoryUsageLabel, agui::Label
+   uint32_t shelfList = 0;             // BlueprintShelfWidget::blueprintsList, BlueprintsList
+   uint32_t shelfSynchronising = 0;    // ::synchronisingLabel, agui::Label
+   uint32_t bookRecordGuiHeader = 0;   // BlueprintBookRecordWidget::headerFrame, FrameWithSubheader
+   uint32_t bookRecordGuiInside = 0;   // ::insideFrame, FrameWithSubheader
+   uint32_t bookRecordGuiNavigation = 0; // ::windowHeader, BlueprintBookHeader
+   uint32_t bookRecordGuiDescription = 0; // ::descriptionLabel, agui::Label
+   uint32_t bookRecordGuiList = 0;     // ::blueprintsList, BlueprintsList
+   uint32_t bookHeaderName = 0;        // BlueprintBookHeader::nameLabel, agui::Label
+   uint32_t bookHeaderRename = 0;      // ::editButton, IconButton
 
    // The keys of a mod's custom input: ControlSettings::customInputs, std::vector<ControlInput>,
    // each naming its CustomInputPrototype and holding the player's two keyboard bindings

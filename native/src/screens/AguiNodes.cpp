@@ -752,8 +752,61 @@ bool Shows(const Widget* widget) { return agui::visible(widget) && agui::kind(wi
 
 bool HasContent(const Widget* widget) { return Navigable(widget, 1) > 0; }
 
+namespace
+{
+
+// A blueprint, a book or a planner is told apart by its name and the icons over it, then what the
+// slot shows of its state.
+struct ShownParts
+{
+    std::vector<std::string> parts;
+
+    ShownParts(blueprints::Shown shown, std::string item)
+    {
+        if (!shown.label.empty())
+            parts.push_back(std::move(shown.label));
+        parts.push_back(std::move(item));
+        std::ranges::move(shown.icons, std::back_inserter(parts));
+    }
+
+    void AddIf(bool shows, vocab::Word word)
+    {
+        if (shows)
+            parts.emplace_back(word);
+    }
+
+    std::string Text() const
+    {
+        std::string text;
+        for (const std::string& part : parts)
+            text += (text.empty() ? "" : ", ") + part;
+        return text;
+    }
+};
+
+// A blueprint library slot: its record as its item would read, grey while only its preview has
+// arrived, with its transfer's progress, the book's active one marked, a hand over the one held.
+std::string RecordSlotText(const Widget* slot)
+{
+    agui::RecordSlot record = agui::recordSlot(slot);
+    if (!record.record)
+        return std::string(vocab::kEmpty);
+    std::optional<blueprints::Shown> shown = blueprints::shownRecord(record.record, record.player);
+    ShownParts text(shown ? std::move(*shown) : blueprints::Shown{}, blueprints::recordItem(record.record));
+    text.AddIf(record.preview, vocab::kNotAvailable);
+    if (record.progress > 0 && record.progress < 1)
+        text.parts.push_back(vocab::kTransferring(static_cast<int>(record.progress * 100)));
+    text.AddIf(record.active, vocab::kActive);
+    text.AddIf(record.inHand, vocab::kInHand);
+    return text.Text();
+}
+
+} // namespace
+
 std::string SlotText(const Widget* slot)
 {
+    if (agui::isRecordSlot(slot))
+        return RecordSlotText(slot);
     std::string_view name;
     std::string_view quality;
     double count = 0;
@@ -765,23 +818,13 @@ std::string SlotText(const Widget* slot)
         quality = item.quality;
         count = item.count;
     }
-    // A blueprint, a book or a planner is told apart by its name and the icons over it; one to a
-    // slot, it shows no count.
+    // One to a slot, a blueprint, a book or a planner shows no count.
     if (std::optional<blueprints::Shown> shown = item.data ? blueprints::shown(item.data) : std::nullopt)
     {
-        std::vector<std::string> parts;
-        if (!shown->label.empty())
-            parts.push_back(shown->label);
-        parts.emplace_back(name);
-        std::ranges::move(shown->icons, std::back_inserter(parts));
-        if (item.active)
-            parts.emplace_back(vocab::kActive);
-        if (item.inHand)
-            parts.emplace_back(vocab::kInHand);
-        std::string text;
-        for (const std::string& part : parts)
-            text += (text.empty() ? "" : ", ") + part;
-        return text;
+        ShownParts text(std::move(*shown), std::string(name));
+        text.AddIf(item.active, vocab::kActive);
+        text.AddIf(item.inHand, vocab::kInHand);
+        return text.Text();
     }
     // The slot keeps its place while its item is held, and shows a hand there.
     if (item.inHand && count == 0)
@@ -935,7 +978,7 @@ graph::NodeVtable SlotNode(const Widget* slot, std::function<std::string()> name
 
 graph::NodeVtable ControlNode(const Widget* widget, std::function<std::string()> name)
 {
-    if (agui::isSlotButton(widget))
+    if (agui::isSlotButton(widget) || agui::isRecordSlot(widget))
         return SlotNode(widget, std::move(name));
     Kind kind = agui::kind(widget);
     if (!name)

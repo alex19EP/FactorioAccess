@@ -382,15 +382,13 @@ In the next chapter, we will talk about faster ways of moving around, then we wi
 
 No blueprints
 
-## Chapter 5 of 15: Fast Travel, Bookmarks, and Cursor Skipping
+## Chapter 5 of 15: Fast Travel and Cursor Skipping
 
 ### Chapter Text
 
-Now that you have buildings to manage, you need efficient ways to navigate between them. This chapter teaches you three ways to navigate the cursor: The bookmark for one quick reference point, fast travel points for multiple named locations, and cursor skipping to explore large areas quickly.
+Now that you have buildings to manage, you need efficient ways to navigate between them. This chapter teaches you two ways to navigate the cursor: fast travel points for named locations, and cursor skipping to explore large areas quickly.
 
-The first and simplest way is with bookmarks.  Pressing shift b sets a bookmark, and b returns the cursor to it.  You can put your cursor on the chest and hit shift b, for example.
-
-You only get one bookmark, so the second option is the fast travel menu. Opened with alt v, the fast travel menu lets you create named fast travel points.
+The first is the fast travel menu. Opened with alt v, the fast travel menu lets you create named fast travel points.
 
 It consists of one row per point.  Each row has a number of commands.  Start by making a named travel point at your coal setup by putting your cursor where you want it and hitting create new, Typing a name, and hitting enter.
 
@@ -1312,25 +1310,19 @@ In addition to tiles, this supports other things such as fuel in vehicles which 
 
 Unlike upgrade and deconstruction planners, this config screen is complete and stable.
 
-A problem we have is that blueprints are not organized.  In particular, we cannot access the blueprint library, so they always take up an inventory slot.
+A problem we have is that blueprints are not organized, and each one takes up an inventory slot.
 
-Sighted people organize their blueprints by putting them into blueprint books, and the mod supports this as well.  The book still has to take up a slot because of our lack of access to the blueprint library, but it only ever takes one and may hold as many blueprints as you want.
-
-The difference is that for the sighted a blueprint book takes no slots at all most of the time.
+Sighted people organize their blueprints by putting them into blueprint books, and the mod supports this as well.  A book only ever takes one slot and may hold as many blueprints as you want.
 
 To get a book, press control alt shift b.
 
-The interface for a book has two subtabs under the first tab, one for the blueprints in the book and one to manipulate the book itself.
+To open a book, press right bracket on it in an inventory slot.  Its window has the book's name and buttons, its contents, and your inventory.  Just like with blueprints, the book can be named and exported.
 
-Just like with blueprints, the book can be named and exported.
+To get more blueprints into the book, take one from your inventory with enter and put it into an empty slot of the book's contents with enter.
 
-To get more blueprints into the book, you can use the "move right and click to add blueprints from your inventory" row in the blueprint book settings.  This will move the blueprint from your inventory into the book.
+Building with the book is a bit different.  The book has a concept of the active blueprint, which the contents mark as active.
 
-Like with fast travel, blueprints in the book have commands to manipulate them to the right of each blueprint.
-
-In addition, you may hold shift and use w and s to drag blueprints up and down.
-
-Building with the book is a bit different.  The book has a concept of the active blueprint, which you set by clicking in the menu.
+The blueprint library holds blueprints and books without taking any slots, and keeps them for your other games.  Open it with b.  Take a blueprint from your inventory with enter and put it into an empty slot of My blueprints to keep it there, and press enter on a record to take it into your hand.
 
 To find out what is active on the map, press comma.
 

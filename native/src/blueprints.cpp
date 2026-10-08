@@ -100,6 +100,7 @@ std::string stringAt(const std::byte* object, uint32_t offset) {
 }
 
 std::optional<Shown> shownAt(const void* item, int depth);
+std::optional<Shown> shownRecordAt(const void* record, const void* player, int depth);
 
 // As BlueprintBook::draw: the book's own icons, else what its active item shows inside it.
 std::vector<std::string> bookIcons(const std::byte* book, int depth) {
@@ -115,19 +116,31 @@ std::vector<std::string> bookIcons(const std::byte* book, int depth) {
    return drawn ? std::move(drawn->icons) : std::vector<std::string>();
 }
 
+// As BlueprintBookRecord::draw: the book's own icons, else what the record the player builds from
+// shows.
+std::vector<std::string> bookRecordIcons(const std::byte* book, const void* player, int depth) {
+   const auto& own = at<MsvcVector<const std::byte>>(book, layout.bookRecordIcons);
+   if (own.first != own.last || depth >= kNestedBooks) return chosenIcons(book + layout.bookRecordIcons);
+   const auto& records = at<MsvcVector<const void* const>>(book, layout.bookRecordRecords);
+   uint16_t active = agui::bookRecordActiveIndex(book, player);
+   if (active >= static_cast<size_t>(records.last - records.first) || !records.first[active]) return {};
+   std::optional<Shown> drawn = shownRecordAt(records.first[active], player, depth + 1);
+   return drawn ? std::move(drawn->icons) : std::vector<std::string>();
+}
+
 // As DeconstructionData::getIcons: a tree for trees and rocks only (crossed out as a blacklist),
 // else the first entity filters, then tile filters, as far as the tile mode lets each in.
 std::vector<std::string> deconIcons(const std::byte* planner) {
-   if (at<bool>(planner, layout.deconItemTreesAndRocks)) {
-      uint8_t mode = at<uint8_t>(planner, layout.deconItemEntityMode);
+   if (at<bool>(planner, layout.deconDataTreesAndRocks)) {
+      uint8_t mode = at<uint8_t>(planner, layout.deconDataEntityMode);
       if (mode == layout.entityFilterWhitelist) return {std::string(vocab::kTreesAndRocks)};
       if (mode == layout.entityFilterBlacklist) return {std::string(vocab::kNotTreesAndRocks)};
       return {};
    }
    std::vector<std::string> names;
-   uint8_t tileMode = at<uint8_t>(planner, layout.deconItemTileMode);
+   uint8_t tileMode = at<uint8_t>(planner, layout.deconDataTileMode);
    if (tileMode != layout.tileSelectionOnly) {
-      const auto& filters = at<MsvcVector<const std::byte>>(planner, layout.deconItemEntities);
+      const auto& filters = at<MsvcVector<const std::byte>>(planner, layout.deconDataEntities);
       for (const std::byte* filter = filters.first; filter < filters.last && names.size() < kIconsShown;
            filter += layout.entityFilterSize) {
          // The quality is drawn only when the filter asks for exactly one.
@@ -138,7 +151,7 @@ std::vector<std::string> deconIcons(const std::byte* planner) {
       }
    }
    if (tileMode != layout.tileSelectionNever) {
-      const auto& tiles = at<MsvcVector<const uint16_t>>(planner, layout.deconItemTiles);
+      const auto& tiles = at<MsvcVector<const uint16_t>>(planner, layout.deconDataTiles);
       for (const uint16_t* tile = tiles.first; tile < tiles.last && names.size() < kIconsShown; ++tile)
          if (std::string name = named(layout.tilePrototypes, *tile, 0); !name.empty()) names.push_back(std::move(name));
    }
@@ -149,7 +162,7 @@ std::vector<std::string> deconIcons(const std::byte* planner) {
 std::vector<std::string> upgradeIcons(const std::byte* planner) {
    std::vector<std::string> names;
    std::vector<std::tuple<uint8_t, uint16_t, uint8_t>> seen;
-   const auto& mappings = at<MsvcVector<const std::byte>>(planner, layout.upgradeItemMappings);
+   const auto& mappings = at<MsvcVector<const std::byte>>(planner, layout.upgradeDataMappings);
    for (const std::byte* mapping = mappings.first; mapping < mappings.last && names.size() < kIconsShown;
         mapping += layout.mappingSize) {
       if (at<uint16_t>(mapping, layout.mappingSourceId) == 0 && at<uint8_t>(mapping, layout.mappingSourceQuality) == 0 &&
@@ -168,23 +181,35 @@ std::vector<std::string> upgradeIcons(const std::byte* planner) {
    return names;
 }
 
+// A Blueprint, a DeconstructionData or an UpgradeData, held by an item or a library record.
+Shown blueprintShown(const std::byte* blueprint) {
+   return {{}, chosenIcons(blueprint + layout.blueprintDataIcons), stringAt(blueprint, layout.blueprintDataDescription)};
+}
+
+Shown deconShown(const std::byte* planner) {
+   Shown result{{}, chosenIcons(planner + layout.deconDataIcons), stringAt(planner, layout.deconDataDescription)};
+   if (result.icons.empty()) result.icons = deconIcons(planner);
+   return result;
+}
+
+Shown upgradeShown(const std::byte* planner) {
+   Shown result{{}, chosenIcons(planner + layout.upgradeDataIcons), stringAt(planner, layout.upgradeDataDescription)};
+   if (result.icons.empty()) result.icons = upgradeIcons(planner);
+   return result;
+}
+
 std::optional<Shown> shownAt(const void* item, int depth) {
    Shown result;
    const std::byte* object = nullptr;
    if ((object = agui::objectAsBase(item, ".?AVBlueprintItem@@"))) {
-      result.icons = chosenIcons(object + layout.blueprintItemIcons);
-      result.description = stringAt(object, layout.blueprintItemDescription);
+      result = blueprintShown(object + layout.blueprintItemBlueprint);
    } else if ((object = agui::objectAsBase(item, ".?AVBlueprintBook@@"))) {
       result.icons = bookIcons(object, depth);
       result.description = stringAt(object, layout.bookDescription);
    } else if ((object = agui::objectAsBase(item, ".?AVDeconstructionItem@@"))) {
-      result.icons = chosenIcons(object + layout.deconItemIcons);
-      if (result.icons.empty()) result.icons = deconIcons(object);
-      result.description = stringAt(object, layout.deconItemDescription);
+      result = deconShown(object + layout.deconItemData);
    } else if ((object = agui::objectAsBase(item, ".?AVUpgradeItem@@"))) {
-      result.icons = chosenIcons(object + layout.upgradeItemIcons);
-      if (result.icons.empty()) result.icons = upgradeIcons(object);
-      result.description = stringAt(object, layout.upgradeItemDescription);
+      result = upgradeShown(object + layout.upgradeItemData);
    } else {
       return std::nullopt;
    }
@@ -192,8 +217,34 @@ std::optional<Shown> shownAt(const void* item, int depth) {
    return result;
 }
 
+std::optional<Shown> shownRecordAt(const void* record, const void* player, int depth) {
+   Shown result;
+   const std::byte* object = nullptr;
+   if ((object = agui::objectAsBase(record, ".?AVSingleBlueprintRecord@@"))) {
+      result = blueprintShown(object + layout.singleRecordBlueprint);
+   } else if ((object = agui::objectAsBase(record, ".?AVBlueprintBookRecord@@"))) {
+      result.icons = bookRecordIcons(object, player, depth);
+      result.description = stringAt(object, layout.bookRecordDescription);
+   } else if ((object = agui::objectAsBase(record, ".?AVDeconstructionRecord@@"))) {
+      result = deconShown(object + layout.deconRecordData);
+   } else if ((object = agui::objectAsBase(record, ".?AVUpgradeRecord@@"))) {
+      result = upgradeShown(object + layout.upgradeRecordData);
+   } else {
+      return std::nullopt;
+   }
+   result.label = stringAt(agui::objectAsBase(record, ".?AVBlueprintRecord@@"), layout.recordLabel);
+   return result;
+}
+
 } // namespace
 
 std::optional<Shown> shown(const void* item) { return shownAt(item, 0); }
+
+std::optional<Shown> shownRecord(const void* record, const void* player) { return shownRecordAt(record, player, 0); }
+
+std::string recordItem(const void* record) {
+   return named(layout.itemPrototypes, at<uint16_t>(agui::objectAsBase(record, ".?AVBlueprintRecord@@"), layout.recordItem),
+                0);
+}
 
 } // namespace fa::blueprints

@@ -60,9 +60,9 @@ Attachments MachineAttachments(const agui::EntityWindowParts& parts)
 
 bool MachineScreen::Handles(const Widget* window) const
 {
-    // The planners' and the blueprint book's windows have recipes of their own.
+    // The planners', the blueprint book's and the library's windows have recipes of their own.
     if (agui::derivesFrom(window, "DeconstructionItemGui") || agui::derivesFrom(window, "UpgradeItemGui")
-        || agui::derivesFrom(window, "BlueprintBookGui"))
+        || agui::derivesFrom(window, "BlueprintBookGui") || agui::derivesFrom(window, "BlueprintLibraryGui"))
         return false;
     return agui::derivesFrom(window, "GameGuiWithControllerInventory")
         || agui::derivesFrom(window, "AssemblingMachineSelectRecipeGui");

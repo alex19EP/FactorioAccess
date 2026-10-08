@@ -40,7 +40,7 @@ Destroy a planner item with the GUI closed (important! With the gui closed): `ct
 
 ## Description
 
-WARNING WARNING WARNING: blueprints and blueprint books are per save. We have no ability to access the blueprint library, which is the sighted version that is not per save.  To keep your blueprints, you need to export them and reimport them into future saves!  If you delete your save or otherwise lose it, they are gone forever.
+Blueprints and blueprint books in your inventory belong to the save. To keep one for your other games, put it in the blueprint library, opened with `b`; see the Blueprint Library section below.
 
 ### Blueprints and Copy/Paste
 
@@ -71,7 +71,7 @@ Each tile reads what the game draws there: the entity, its direction, which way 
 
 To build a blueprint, click with `left bracket`.  Rotation, flipping, etc. all work the same as buildings, and you are building from the top left, same as buildings.
 
-Due to API limitations, blueprints always take an inventory slot.  We cannot get access to the blueprint library, which is how sighted players work around this.  See the next section.
+A blueprint in your inventory takes a slot. Books group blueprints into one slot, and the blueprint library holds them without taking any; see the next sections.
 
 ### Blueprint Books
 
@@ -88,6 +88,22 @@ To open a book, press `right bracket` on it in an inventory slot. Its window has
 - the contents, laid out as the game lays them out in the view you chose. Each slot reads like an inventory slot, and the active one says active. `enter` takes or puts a slot's item, as a click does, and `right bracket` opens it: a blueprint's setup window, or a book inside the book;
 - the view: the game's hint on cycling, and the List, Grid and Slots buttons. In List view each item is a row and reads its description too;
 - your inventory. Take a blueprint here with `enter` and put it into an empty slot of the contents to add it to the book.
+
+### Blueprint Library
+
+The blueprint library keeps blueprints, books and planners outside your inventory. Open it with `b`, or with its button on the shortcut bar. It has two tabs: My blueprints, which you keep in every game, and the blueprints of this game, shared by everyone playing it. Its window has these stops, moved between with `tab`:
+
+- the tabs, My blueprints and the game's blueprints. `enter` switches;
+- the records of the chosen tab, laid out as the game lays them out in the view you chose. Each reads like an inventory slot: its name, what it is and its icons, then not available yet while it is still arriving, how far it has arrived, and in hand on the one you hold. The empty slots after them take whatever you drop there;
+- the view: the game's warning when the library is not synchronised, and the List, Grid and Slots buttons;
+- the window's history: the back and forward buttons, and the game's warning when the library takes a lot of memory;
+- your inventory.
+
+On a record, `enter` takes it into your hand, and while you hold a blueprint, `enter` on a slot puts it there. `right bracket` opens it: a blueprint's setup window, a planner's window, or a book inside the library. `shift + enter` moves it into your inventory.
+
+To keep a blueprint for other games, take it from your inventory with `enter` and put it into an empty slot of My blueprints.
+
+A book opened in the library replaces the tabs and has the stops of a book's window: the book (its name, the button to edit it, its description, then the way back up to the shelf and to each book it is inside), its buttons (copy, upgrade, export, delete), its contents with the active one marked, and the view.
 
 ### Planners
 

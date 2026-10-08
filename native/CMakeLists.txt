@@ -108,6 +108,8 @@ add_library(fa_native SHARED
   src/screens/UpgradePlannerScreen.cpp
   src/screens/BlueprintSetupScreen.cpp
   src/screens/BlueprintBookScreen.cpp
+  src/screens/BlueprintLibraryScreen.cpp
+  src/screens/BlueprintLists.cpp
   src/screens/PreviewCanvas.cpp
   src/screens/GameDialogScreen.cpp
   src/screens/MachineScreen.cpp

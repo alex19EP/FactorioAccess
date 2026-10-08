@@ -258,7 +258,6 @@ function mod.initialize(player)
    faplayer.time_of_tree_20 = faplayer.time_of_tree_20 or 0
    faplayer.last_obstacle_tick = faplayer.last_obstacle_tick or 0
    faplayer.last_warned_pos = faplayer.last_warned_pos or { x = 0, y = 0 }
-   faplayer.cursor_bookmark_direction = faplayer.cursor_bookmark_direction or dirs.north
    faplayer.entities_scanned = faplayer.entities_scanned or {}
    faplayer.players_distance_described = faplayer.players_distance_described or false
    faplayer.said_owner = faplayer.said_owner or {}

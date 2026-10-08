@@ -16,10 +16,6 @@ Enter cursor coordinates and jump to them: `shift + c`
 
 Open fast travel: `alt + v`
 
-Place the cursor bookmark: `shift + b`
-
-Move the cursor to the bookmark: `b`
-
 Place the audio ruler: `ctrl + alt + b`
 
 Clear the audio ruler: `alt + shift + b`
@@ -187,17 +183,13 @@ To build a line while walking, press `i` so the cursor stays one tile in front o
 - Put a belt in hand, press `i`, and hold `left bracket`
 - Run your character in a straight line to where you want the belts to stop, then let go
 
-### Bookmarks, the Ruler, and fast travel
+### The Ruler and fast travel
 
-The mod provides two closely related features: a cursor bookmark and a ruler.
-
-The bookmark is a fast way to rememver one position on the map. You set it with `b` and move it with `shift + b`.
-
-The ruler is like the bookmark but for alignment.  You place it with `ctrl + alt + b` and it forms an audio cross.  When your cursor or character crosses it, it plays a tone.  Clear it with `alt + shift + b`.
+The ruler is for alignment.  You place it with `ctrl + alt + b` and it forms an audio cross.  When your cursor or character crosses it, it plays a tone.  Clear it with `alt + shift + b`.
 
 You can use rulers to quickly place large numbers of items.  For example, to place a belt going east, find where you want it to end, arrow a few tiles north, and place your ruler.  Then, you can hold `left bracket` and run in a straight line until your character hits the ruler, like hitting a wall.  IMPORTANT: the line does not stop itself at the ruler, these are still separate features.
 
-"multiple bookmarks" is fast travel, accessible with `alt + v`.  Fast travel is like your browser's bookmarks menu, but for map locations.
+To remember map locations, use fast travel, accessible with `alt + v`.  Fast travel is like your browser's bookmarks menu, but for map locations.
 
 
 ### Cursor Skipping

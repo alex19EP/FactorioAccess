@@ -68,8 +68,6 @@ To open the UI for an entity, click it with left bracket.  Note that your hand s
 
 The mod supports a couple of lightweight features for orienting yourself.
 
-Use shift b to place a bookmark at the cursor and b to jump the cursor back to it.
-
 Rulers are a cross shape which play audio notifications whenever you cross one of the arms of the cross.
 
 To set a ruler, press control alt b.

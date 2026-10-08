@@ -8,6 +8,7 @@
 #include <dbghelp.h>
 
 #include <algorithm>
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -628,6 +629,44 @@ SlotButton slotButton(const Widget* slot) {
 }
 
 double progress(const Widget* bar) { return at<double>(asBaseChecked(bar, ".?AVProgressBar@agui@@"), layout.progressBarValue); }
+
+bool isRecordSlot(const Widget* widget) { return asBase(widget, ".?AVBlueprintRecordSlotButton@@"); }
+
+uint16_t bookRecordActiveIndex(const void* book, const void* player) {
+   using ActiveIndexFunction = uint16_t (*)(const void* book, const void* player, const void* latencyState);
+   const void* latency = player ? at<const void*>(player, layout.playerLatencyState) : nullptr;
+   return reinterpret_cast<ActiveIndexFunction>(layout.bookRecordActiveIndex)(book, player, latency);
+}
+
+RecordSlot recordSlot(const Widget* slot) {
+   using GetRecordFunction = const void* (*)(const void* button);
+   using CursorRecordFunction = void* (*)(const void* adapter, std::byte* out);
+   const std::byte* button = asBaseChecked(slot, ".?AVBlueprintRecordSlotButton@@");
+   RecordSlot result;
+   result.record = reinterpret_cast<GetRecordFunction>(layout.recordSlotRecord)(button);
+   if (!result.record) return result;
+   const std::byte* record = asBase(static_cast<const Widget*>(result.record), ".?AVBlueprintRecord@@");
+   result.preview = callVirtualAt<bool>(record, layout.recordIsPreview);
+   result.progress = at<float>(button, layout.recordSlotProgress);
+   // As BlueprintRecordSlotButton::paintComponent highlights the book's active slot.
+   const std::byte* player = at<const std::byte*>(button, layout.recordSlotPlayer);
+   result.player = player;
+   if (const std::byte* book = at<const std::byte*>(button, layout.recordSlotBook))
+      result.active = bookRecordActiveIndex(book, player) == at<uint16_t>(button, layout.recordSlotIndex);
+   // And draws the hand over the record in the player's hand, as the state the GUI shows has it.
+   std::array<std::byte, 64> held{};
+   if (player && at<uint32_t>(button, layout.recordSlotGrabbed) == layout.recordSlotShowsGrabbed &&
+       layout.recordIdSize <= held.size()) {
+      const std::byte* adapter = at<const std::byte*>(player, layout.playerLatencyAdapter);
+      if (!adapter) adapter = player + layout.playerGameStateAdapter;
+      auto vtable = *reinterpret_cast<VirtualTable const*>(adapter);
+      reinterpret_cast<CursorRecordFunction>(vtable[layout.adapterCursorRecord])(adapter, held.data());
+      const std::byte* id = record + layout.recordId;
+      result.inHand = at<uint16_t>(held.data(), layout.recordIdPlayer) == at<uint16_t>(id, layout.recordIdPlayer) &&
+                      at<uint32_t>(held.data(), layout.recordIdIndex) == at<uint32_t>(id, layout.recordIdIndex);
+   }
+   return result;
+}
 
 EntityWindowParts entityWindowParts(const Widget* window) {
    const std::byte* gui = asBase(window, ".?AVGameGuiWithControllerInventory@@");

@@ -147,8 +147,8 @@ data:extend({
 
    {
       type = "custom-input",
-      name = "fa-b",
-      key_sequence = "B",
+      name = "fa-a-b",
+      key_sequence = "ALT + B",
       consuming = "none",
    },
 

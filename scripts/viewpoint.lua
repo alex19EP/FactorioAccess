@@ -31,7 +31,6 @@ local mod = {}
 ---@field cursor_size number
 ---@field cursor_anchored boolean
 ---@field cursor_hidden boolean
----@field cursor_bookmark fa.Point
 ---@field cursor_ent_highlight_box  LuaEntity?
 ---@field cursor_tile_highlight_box LuaRenderObject?
 ---@field cursor_rotation_offset  number
@@ -43,7 +42,6 @@ local viewpoint_storage = StorageManager.declare_storage_module("viewpoint", {
    cursor_size = 0,
    cursor_anchored = false,
    cursor_hidden = false,
-   cursor_bookmark = { x = 0, y = 0 },
    cursor_ent_highlight_box = nil,
    cursor_tile_highlight_box = nil,
 })
@@ -122,18 +120,6 @@ end
 function Viewpoint:set_cursor_hidden(hidden)
    assert(hidden ~= nil)
    viewpoint_storage[self.pindex].cursor_hidden = hidden
-end
-
----@return fa.Point
-function Viewpoint:get_cursor_bookmark()
-   local point = viewpoint_storage[self.pindex].cursor_bookmark
-   return { x = point.x, y = point.y }
-end
-
----@param point fa.Point
-function Viewpoint:set_cursor_bookmark(point)
-   assert(point and point.x and point.y)
-   viewpoint_storage[self.pindex].cursor_bookmark = { x = point.x, y = point.y }
 end
 
 ---@return LuaEntity?

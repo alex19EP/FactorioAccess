@@ -1,8 +1,6 @@
-Now that you have buildings to manage, you need efficient ways to navigate between them. This chapter teaches you three ways to navigate the cursor: The bookmark for one quick reference point, fast travel points for multiple named locations, and cursor skipping to explore large areas quickly.
+Now that you have buildings to manage, you need efficient ways to navigate between them. This chapter teaches you two ways to navigate the cursor: fast travel points for named locations, and cursor skipping to explore large areas quickly.
 
-The first and simplest way is with bookmarks.  Pressing shift b sets a bookmark, and b returns the cursor to it.  You can put your cursor on the chest and hit shift b, for example.
-
-You only get one bookmark, so the second option is the fast travel menu. Opened with alt v, the fast travel menu lets you create named fast travel points.
+The first is the fast travel menu. Opened with alt v, the fast travel menu lets you create named fast travel points.
 
 It consists of one row per point.  Each row has a number of commands.  Start by making a named travel point at your coal setup by putting your cursor where you want it and hitting create new, Typing a name, and hitting enter.
 

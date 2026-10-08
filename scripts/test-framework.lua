@@ -32,7 +32,6 @@ local test_files = {
    "cursor-movement-test", -- Test mod's cursor system (not vanilla)
    "wasd-event-test", -- Test cursor movement via WASD simulation
    -- Selected tests from feedback
-   "cursor-bookmark-test", -- Test cursor bookmark system (test #1)
    "crafting-menu-test", -- Test crafting menu navigation (test #10)
    "inventory-coordinates-test", -- Test inventory coordinate announcements (test #12)
    -- Additional tests

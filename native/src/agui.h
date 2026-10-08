@@ -182,6 +182,24 @@ struct SlotItem {
 };
 SlotItem slotItem(const Widget* slot);
 
+// A blueprint library slot (BlueprintRecordSlotButton), as it draws itself: its `record` (a
+// BlueprintRecord, null for an empty slot), whether only the record's `preview` has arrived (drawn
+// grey), the player holds it (a hand over it), it is the `active` one of its book, and how far its
+// transfer is (`progress`, drawn while in (0, 1)).
+struct RecordSlot {
+   const void* record = nullptr;
+   const void* player = nullptr; // the Player the slot shows the library to
+   bool preview = false;
+   bool inHand = false;
+   bool active = false;
+   float progress = 0;
+};
+bool isRecordSlot(const Widget* widget);
+RecordSlot recordSlot(const Widget* slot);
+// The record of a BlueprintBookRecord that `player` builds from: the book's own for the owner, the
+// player's choice for a book on the game's shelf or another player's.
+uint16_t bookRecordActiveIndex(const void* book, const void* player);
+
 // Whether a list of blueprints (BlueprintsList, in a book's window or the library) is in List
 // view, a row per item with its name and description beside the slot, rather than Grid or Slots.
 bool blueprintsListView(const Widget* list);

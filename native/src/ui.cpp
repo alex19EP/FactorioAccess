@@ -20,6 +20,7 @@
 #include "screens/DeconstructionPlannerScreen.hpp"
 #include "screens/UpgradePlannerScreen.hpp"
 #include "screens/BlueprintBookScreen.hpp"
+#include "screens/BlueprintLibraryScreen.hpp"
 #include "screens/BlueprintSetupScreen.hpp"
 #include "screens/GameDialogScreen.hpp"
 #include "screens/MachineScreen.hpp"
@@ -112,6 +113,8 @@ void start() {
    manager.Register(std::make_unique<screens::BlueprintSetupScreen>());
    // A blueprint book's window, opened from its slot.
    manager.Register(std::make_unique<screens::BlueprintBookScreen>());
+   // The blueprint library's window, from its key or the shortcut bar.
+   manager.Register(std::make_unique<screens::BlueprintLibraryScreen>());
    // Any other dialog over a game: a planner's name, description and icons.
    manager.Register(std::make_unique<screens::GameDialogScreen>());
    // A transport belt's window, with the mod's views of what the belt carries.

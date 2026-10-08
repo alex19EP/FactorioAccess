@@ -101,6 +101,10 @@ inline constexpr Word kRemoved{"fa.native-removed"};
 inline constexpr Word kInHand{"fa.native-in-hand"};
 // A book's slot it builds from while held, highlighted in the book's window.
 inline constexpr Word kActive{"fa.native-active"};
+// A library record whose content has not arrived yet (drawn grey), or is arriving ("transferring 40
+// percent").
+inline constexpr Word kNotAvailable{"fa.native-not-available"};
+inline constexpr Word kTransferring{"fa.native-transferring"};
 // A deconstruction planner for trees and rocks only, which shows a tree, crossed out when it
 // removes everything else.
 inline constexpr Word kTreesAndRocks{"fa.native-trees-and-rocks"};
