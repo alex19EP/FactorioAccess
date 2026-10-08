@@ -15,7 +15,7 @@ namespace fa::screens
 class DropDownScreen final : public nav::Screen
 {
 public:
-    const char* Name() const override { return ""; }
+    std::string Name() const override { return {}; }
     const char* DiagName() const override { return "dropdown list"; }
     int Layer() const override { return 1; }
     bool IsActive() override;

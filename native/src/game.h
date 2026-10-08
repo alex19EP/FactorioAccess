@@ -1017,6 +1017,12 @@ struct Layout {
    uintptr_t technologyNameWithLevel = 0;
    uintptr_t researchProgress = 0;       // double ResearchManager::getProgress(Technology const&) const
    uintptr_t localisedStringFromKey = 0; // LocalisedString::LocalisedString(char const* key)
+   // LocalisedString::LocalisedString(Mode, char const*): with Mode::Literal, a parameter the game
+   // says as it is.
+   uintptr_t localisedStringLiteral = 0;
+   // LocalisedString::LocalisedString(std::string const& key, LocalisedString const&...): a key
+   // with one, two and three parameters, which it copies.
+   uintptr_t localisedStringWithParameters[3] = {};
    // The graph, laid out in layers top to bottom, prerequisites above what they unlock. An edge that
    // spans layers runs through dummy vertices, one per layer it crosses.
    uint32_t graphVertices = 0;           // TechnologyGraphGui::graph, std::vector<std::unique_ptr<Vertex>>

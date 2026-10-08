@@ -35,7 +35,7 @@ namespace fa::screens
 class TechnologyScreen final : public nav::Screen
 {
 public:
-    const char* Name() const override { return ""; }
+    std::string Name() const override { return {}; }
     const char* DiagName() const override { return "technology"; }
     // Over the inventory or entity window it stacks on, as the game draws it.
     int Layer() const override { return 1; }

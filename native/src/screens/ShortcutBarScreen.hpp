@@ -25,7 +25,7 @@ namespace fa::screens
 class ShortcutBarScreen final : public nav::Screen
 {
 public:
-    const char* Name() const override;
+    std::string Name() const override;
     const char* DiagName() const override { return "shortcut bar"; }
     // Back on the shortcut it was left on, after Ctrl+Tab went to the window and came back.
     bool RemembersCursor() const override { return true; }

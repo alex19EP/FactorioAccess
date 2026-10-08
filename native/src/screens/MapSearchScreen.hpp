@@ -21,7 +21,7 @@ namespace fa::screens
 class MapSearchScreen final : public nav::Screen
 {
 public:
-    const char* Name() const override { return ""; }
+    std::string Name() const override { return {}; }
     const char* DiagName() const override { return "map search"; }
     // Over the map, as the parts of the HUD are.
     int Layer() const override { return 1; }

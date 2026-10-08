@@ -18,7 +18,7 @@ class SelectedInfoScreen final : public nav::Screen
 {
 public:
     // The landing on its first line, the name, introduces it.
-    const char* Name() const override { return ""; }
+    std::string Name() const override { return {}; }
     const char* DiagName() const override { return "selected info"; }
     // Over the map, as the parts of the HUD are.
     int Layer() const override { return 1; }

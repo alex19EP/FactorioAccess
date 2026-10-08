@@ -168,15 +168,14 @@ std::vector<std::string> filterNames(const std::byte* filters, size_t count) {
 // "filter A, B" or "blacklist A, B"; a blacklist of nothing is drawn as such, an empty whitelist
 // not at all.
 void addFilters(std::vector<std::string>& parts, const std::vector<std::string>& names, bool blacklist) {
-   std::string_view word = blacklist ? vocab::kBlacklist : vocab::kFilter;
    if (!names.empty())
-      parts.push_back(std::format("{} {}", word, join(names)));
+      parts.push_back((blacklist ? vocab::kBlacklistOf : vocab::kFilter)(join(names)));
    else if (blacklist)
-      parts.emplace_back(word);
+      parts.emplace_back(vocab::kBlacklist);
 }
 
 template <size_t N>
-std::string_view wordFor(const uint32_t (&values)[N], const std::string_view (&words)[N], uint32_t value) {
+std::string wordFor(const uint32_t (&values)[N], const vocab::Word (&words)[N], uint32_t value) {
    for (size_t i = 0; i < N; ++i)
       if (values[i] == value) return words[i];
    return {};
@@ -205,7 +204,7 @@ void addOperation(std::vector<std::string>& parts, std::string_view operation, c
       parts.push_back(join({first, std::string(operation), second}, " "));
    else if (!operation.empty())
       parts.emplace_back(operation);
-   if (signals && !output.empty()) parts.push_back(std::format("{} {}", vocab::kOutput, output));
+   if (signals && !output.empty()) parts.push_back(vocab::kOutputSignal(output));
 }
 
 // What the game draws on an entity at all times besides its picture: which way an underground
@@ -237,14 +236,16 @@ void addAlwaysShown(std::vector<std::string>& parts, const std::byte* entity, bo
                       signalName(condition + layout.conditionFirst), operandName(condition + layout.conditionSecond),
                       output, signals);
       } else if (signals && !output.empty()) {
-         parts.push_back(std::format("{} {}", vocab::kOutput, output));
+         parts.push_back(vocab::kOutputSignal(output));
       }
    } else if (const std::byte* selector = agui::objectAsBase(entity, ".?AVSelectorCombinator@@")) {
       const std::byte* parameters = selector + layout.selectorParameters;
       uint8_t operation = at<uint8_t>(parameters, layout.selectorOperation);
-      std::string word(wordFor(layout.selectorOperations, vocab::kSelector, operation));
-      if (operation == layout.selectorSelect)
-         word = std::format("{} {}", word, at<bool>(parameters, layout.selectorMax) ? vocab::kMaximum : vocab::kMinimum);
+      std::string word;
+      if (operation != layout.selectorSelect)
+         word = wordFor(layout.selectorOperations, vocab::kSelector, operation);
+      else
+         word = at<bool>(parameters, layout.selectorMax) ? vocab::kSelectMaximum : vocab::kSelectMinimum;
       if (!word.empty()) parts.push_back(std::move(word));
       // As SelectorCombinator::draw: only with an index signal set, which Count shows its count
       // signal in place of.
@@ -285,7 +286,7 @@ void addAltDetails(std::vector<std::string>& parts, const std::byte* widget, con
       const std::byte* recipe = machine + layout.craftingRecipe;
       std::string name = idName(layout.recipePrototypes, recipe);
       if (!name.empty() && recipeLocked(widget, at<uint16_t>(recipe, layout.idWithQualityBase)))
-         name = std::format("{} {}", name, vocab::kLocked);
+         name = vocab::kLockedRecipe(name);
       parts.push_back(std::move(name));
    } else if (const std::byte* inserter = agui::objectAsBase(entity, ".?AVInserter@@")) {
       uint16_t flags = at<uint16_t>(inserter, layout.inserterFlags);
@@ -304,12 +305,12 @@ void addAltDetails(std::vector<std::string>& parts, const std::byte* widget, con
       if (at<bool>(logic, layout.splitterOutputLocked)) {
          std::string filter = filterName(logic + layout.splitterFilter);
          if (filter.empty())
-            parts.push_back(std::format("{} {}", vocab::kOutputPriority, side(layout.splitterGoesTo)));
+            parts.push_back(vocab::kOutputPriority(side(layout.splitterGoesTo)));
          else
-            parts.push_back(std::format("{} {} {}", vocab::kFilter, filter, side(layout.splitterGoesTo)));
+            parts.push_back(vocab::kFilterToward(filter, side(layout.splitterGoesTo)));
       }
       if (at<bool>(logic, layout.splitterInputLocked))
-         parts.push_back(std::format("{} {}", vocab::kInputPriority, side(layout.splitterTakeFrom)));
+         parts.push_back(vocab::kInputPriority(side(layout.splitterTakeFrom)));
    } else if (const std::byte* loader = agui::objectAsBase(entity, ".?AVLoader@@")) {
       uint8_t mode = at<uint8_t>(loader, layout.loaderFilterMode);
       if (mode == layout.loaderWhitelist || mode == layout.loaderBlacklist) {
@@ -319,8 +320,8 @@ void addAltDetails(std::vector<std::string>& parts, const std::byte* widget, con
          if (prototype && at<bool>(prototype, layout.loaderPerLane)) {
             std::string left = filterName(filters);
             std::string right = filterName(filters + layout.itemFilterSize);
-            if (!left.empty()) parts.push_back(std::format("{} {}", vocab::kLeftLane, left));
-            if (!right.empty()) parts.push_back(std::format("{} {}", vocab::kRightLane, right));
+            if (!left.empty()) parts.push_back(vocab::kLeftLane(left));
+            if (!right.empty()) parts.push_back(vocab::kRightLane(right));
          } else {
             addFilters(parts, filterNames(filters, kFilterSlots), mode == layout.loaderBlacklist);
          }
@@ -337,7 +338,7 @@ void addAltDetails(std::vector<std::string>& parts, const std::byte* widget, con
       parts.push_back(join(names));
    } else if (const std::byte* pump = agui::objectAsBase(entity, ".?AVPump@@")) {
       std::string fluid = named(layout.fluidPrototypes, at<uint16_t>(pump, layout.pumpFilter), 0);
-      if (!fluid.empty()) parts.push_back(std::format("{} {}", vocab::kFilter, fluid));
+      if (!fluid.empty()) parts.push_back(vocab::kFilter(fluid));
    } else if (const std::byte* collector = agui::objectAsBase(entity, ".?AVAsteroidCollector@@")) {
       const auto& chunks = at<MsvcVector<const uint16_t>>(collector, layout.collectorFilters);
       std::vector<std::string> names;
@@ -363,7 +364,7 @@ void addDeliveries(std::vector<std::string>& parts, const std::byte* blueprint, 
          count += at<uint32_t>(stack, layout.stackLocationCount);
       items.push_back(std::format("{} {}", count, idName(layout.itemPrototypes, pair)));
    }
-   if (!items.empty()) parts.push_back(std::format("{} {}", vocab::kWith, join(items)));
+   if (!items.empty()) parts.push_back(vocab::kWith(join(items)));
 }
 
 // Whether the entity or tile at `index` of the picture's removal list is removed.
@@ -384,7 +385,7 @@ std::string describeEntity(const std::byte* widget, const std::byte* entity, uin
       uint8_t direction = 0;
       virtualAt<DirectionFunction>(entity, layout.entityGetDirection)(entity, &direction);
       // 16 directions, north 0 clockwise; the mod names eight.
-      parts.emplace_back(vocab::kDirections[(direction / 2) % 8]);
+      parts.push_back(vocab::direction((direction / 2) % 8));
    }
    if (removed(widget, layout.parametersEntities, index)) parts.emplace_back(vocab::kRemoved);
    addAlwaysShown(parts, entity, alt);

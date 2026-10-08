@@ -29,7 +29,7 @@ std::string Context(const agui::AlertsWindow& alerts)
 {
     const Widget* title = agui::frameTitle(alerts.window);
     std::string context = title ? text::speakable(agui::text(title)) : std::string(vocab::kAlerts);
-    std::string_view category = vocab::alertCategory(static_cast<uint8_t>(alerts.category));
+    std::string category = vocab::alertCategory(static_cast<uint8_t>(alerts.category));
     return category.empty() ? context : std::format("{}, {}", context, category);
 }
 

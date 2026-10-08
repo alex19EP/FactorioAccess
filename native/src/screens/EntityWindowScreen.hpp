@@ -22,7 +22,7 @@ namespace fa::screens
 class EntityWindowScreen : public nav::Screen
 {
 public:
-    const char* Name() const override { return ""; }
+    std::string Name() const override { return {}; }
     const char* DiagName() const override { return _class.c_str(); }
     bool RemembersCursor() const override { return true; }
     bool IsActive() override;

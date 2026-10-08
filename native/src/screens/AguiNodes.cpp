@@ -32,7 +32,7 @@ using graph::AnnouncementKinds::Value;
 
 constexpr int kMaxDepth = 40;
 
-graph::ControlType MakeType(std::string key, std::string_view role)
+graph::ControlType MakeType(std::string key, vocab::Word role)
 {
     graph::ControlType type;
     type.Key = std::move(key);
@@ -795,7 +795,7 @@ bool InRecipeToolTip(const Widget* label, const Widget* tooltip)
 }
 
 // A recipe tooltip's short ingredient counts say so only by their colour.
-std::string_view ToneWord(const Widget* label, const Widget* tooltip)
+std::string ToneWord(const Widget* label, const Widget* tooltip)
 {
     agui::LabelTone tone = agui::labelTone(label);
     if (tone == agui::LabelTone::Plain || !InRecipeToolTip(label, tooltip))
@@ -813,7 +813,7 @@ std::string TooltipText(const Widget* tooltip)
         for (const Widget* label : FindAll(child, "agui::Label"))
             if (std::string line = LabelText(label); !line.empty())
             {
-                if (std::string_view word = ToneWord(label, tooltip); !word.empty())
+                if (std::string word = ToneWord(label, tooltip); !word.empty())
                     line = std::format("{}, {}", word, line);
                 text += (text.empty() ? "" : "\n") + line;
             }
@@ -861,7 +861,7 @@ void DescribeLimitButton(graph::NodeVtable& vtable, const Widget* button)
             return std::string(vocab::kChooseFirstLocked);
         if (bar.unlocked >= bar.size)
             return std::string(vocab::kAllUnlocked);
-        return bar.unlocked == 0 ? std::string(vocab::kAllLocked) : vocab::unlocked(bar.unlocked);
+        return bar.unlocked == 0 ? std::string(vocab::kAllLocked) : vocab::kUnlocked(bar.unlocked);
     };
     for (graph::NodeAnnouncement& part : vtable.Announcements)
     {

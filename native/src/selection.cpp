@@ -201,8 +201,8 @@ void addUpgrades(std::vector<Line>& lines, const std::byte* map, uintptr_t proto
    forEachNode(map, [&](const std::byte* node) {
       const auto count = at<uint32_t>(node, layout.upgradeNodeCount);
       if (count == 0) return;
-      lines.push_back({count, std::format("{} {} {} {}", count, name(prototypes, node + layout.upgradeNodeFrom),
-                                          vocab::kUpgradeTo, name(prototypes, node + layout.upgradeNodeTo))});
+      lines.push_back({count, vocab::kUpgrade(count, name(prototypes, node + layout.upgradeNodeFrom),
+                                              name(prototypes, node + layout.upgradeNodeTo))});
    });
 }
 
@@ -262,7 +262,7 @@ void detourDrawCounts(void* renderer, void* queue, const void* color) {
    }
    const int32_t width = std::abs(cursorX - (at<int32_t>(self, layout.selectionRendererStart) >> 8)) + 1;
    const int32_t height = std::abs(cursorY - (at<int32_t>(self, layout.selectionRendererStart + 4) >> 8)) + 1;
-   std::string said = std::format("{} {} {}", width, vocab::kBy, height);
+   std::string said = vocab::kBoxSize(width, height);
    for (const Line& line : counts(self)) said += ", " + line.text;
    speech::say(std::move(said), false);
 }

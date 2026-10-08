@@ -24,7 +24,7 @@ namespace fa::screens
 class CharacterScreen final : public nav::Screen
 {
 public:
-    const char* Name() const override { return ""; }
+    std::string Name() const override { return {}; }
     const char* DiagName() const override { return "character screen"; }
     bool RemembersCursor() const override { return true; }
     bool IsActive() override;

@@ -83,7 +83,7 @@ void AddList(graph::GraphBuilder& builder, const std::vector<const Widget*>& box
 
 } // namespace
 
-const char* ShortcutBarScreen::Name() const { return vocab::kShortcutBar.data(); }
+std::string ShortcutBarScreen::Name() const { return vocab::kShortcutBar; }
 
 bool ShortcutBarScreen::IsActive()
 {

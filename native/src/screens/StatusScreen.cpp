@@ -2,7 +2,6 @@
 
 #include <format>
 #include <string>
-#include <string_view>
 #include <vector>
 
 #include "AguiNodes.hpp"
@@ -34,7 +33,7 @@ bool Shown() { return agui::inGame() && !agui::menuStateWindow(); }
 
 } // namespace
 
-const char* StatusScreen::Name() const { return vocab::kStatus.data(); }
+std::string StatusScreen::Name() const { return vocab::kStatus; }
 
 bool StatusScreen::IsActive()
 {
@@ -85,8 +84,8 @@ void StatusScreen::Build(graph::GraphBuilder& builder)
         for (const agui::AlertButton& alert : alerts)
         {
             graph::NodeVtable vtable =
-                ControlNode(alert.button, [name = vocab::alertCategory(static_cast<uint8_t>(alert.category))]()
-                    { return std::string(name); });
+                ControlNode(alert.button, [category = static_cast<uint8_t>(alert.category)]()
+                    { return vocab::alertCategory(category); });
             SetValue(vtable, [this, button = alert.button]() { return std::format("{:.0f}", AlertCount(button)); });
             vtable.OnActivate = [this, button = alert.button]() { Open(button); };
             builder.AddItem(graph::ControlId::Referenced(
@@ -105,7 +104,7 @@ void StatusScreen::Build(graph::GraphBuilder& builder)
     }
 
     agui::HudBars bars = agui::hudBars();
-    std::pair<const Widget*, std::string_view> named[] = {
+    std::pair<const Widget*, vocab::Word> named[] = {
         {bars.health, vocab::kHealth},
         {bars.shield, vocab::kShield},
         {bars.vehicleHealth, vocab::kVehicleHealth},
@@ -115,7 +114,7 @@ void StatusScreen::Build(graph::GraphBuilder& builder)
     builder.BeginStop("bars");
     for (const auto& [bar, name] : named)
         if (bar)
-            builder.AddItem(graph::ControlId::Referenced(bar, std::format("bars/{}", name)),
+            builder.AddItem(graph::ControlId::Referenced(bar, std::format("bars/{}", name.key)),
                 ControlNode(bar, [name]() { return std::string(name); }));
 }
 

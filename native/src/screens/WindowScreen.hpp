@@ -32,7 +32,7 @@ public:
     /// The window that would be navigable now, or null.
     static const agui::Widget* TopWindow();
 
-    const char* Name() const override { return ""; }
+    std::string Name() const override { return {}; }
     const char* DiagName() const override { return _class.c_str(); }
     bool RemembersCursor() const override { return true; }
     bool IsActive() override;

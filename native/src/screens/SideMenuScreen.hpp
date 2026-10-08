@@ -22,7 +22,7 @@ namespace fa::screens
 class SideMenuScreen final : public nav::Screen
 {
 public:
-    const char* Name() const override;
+    std::string Name() const override;
     const char* DiagName() const override { return "side menu"; }
     // Back on the button it was left on, after Ctrl+Tab went to the window and came back.
     bool RemembersCursor() const override { return true; }

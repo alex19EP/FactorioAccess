@@ -27,7 +27,7 @@ const Widget* FindQueue()
 
 } // namespace
 
-const char* CraftingQueueScreen::Name() const { return vocab::kCraftingQueue.data(); }
+std::string CraftingQueueScreen::Name() const { return vocab::kCraftingQueue; }
 
 bool CraftingQueueScreen::IsActive()
 {

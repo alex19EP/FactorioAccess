@@ -19,13 +19,13 @@ namespace
 
 using agui::Widget;
 
-std::string PageName(uint8_t page) { return std::format("{} {}", vocab::kPage, page + 1); }
+std::string PageName(uint8_t page) { return vocab::kPage(page + 1); }
 
 // "bar 2, page 4": which bar, the first the number keys use, then the page it shows. Bars may show
 // the same page, so the bar comes first and tells them apart.
 std::string BarName(std::size_t bar, uint8_t page)
 {
-    return std::format("{} {}, {}", vocab::kBar, bar + 1, PageName(page));
+    return std::format("{}, {}", vocab::kBar(bar + 1), PageName(page));
 }
 
 // "transport belt 50", or "transport belt 0" for an item the player carries none of; "empty" with
@@ -97,7 +97,7 @@ void AddPicker(graph::GraphBuilder& builder, std::vector<agui::QuickBarRow> page
 {
     // The game stacks page 10 on top; page 1 comes first here, as the keys count them.
     std::ranges::sort(pages, {}, &agui::QuickBarRow::page);
-    std::string show = std::format("{} {}", vocab::kShowOnBar, bar + 1);
+    std::string show = vocab::kShowOnBar(bar + 1);
     builder.BeginStop("picker");
     for (const agui::QuickBarRow& row : pages)
     {
@@ -117,7 +117,7 @@ void AddPicker(graph::GraphBuilder& builder, std::vector<agui::QuickBarRow> page
 
 } // namespace
 
-const char* QuickBarScreen::Name() const { return vocab::kQuickBar.data(); }
+std::string QuickBarScreen::Name() const { return vocab::kQuickBar; }
 
 bool QuickBarScreen::IsActive()
 {

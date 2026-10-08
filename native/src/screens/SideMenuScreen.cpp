@@ -26,7 +26,7 @@ const Widget* FindMenu()
 
 } // namespace
 
-const char* SideMenuScreen::Name() const { return vocab::kSideMenu.data(); }
+std::string SideMenuScreen::Name() const { return vocab::kSideMenu; }
 
 bool SideMenuScreen::IsActive()
 {

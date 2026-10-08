@@ -27,7 +27,7 @@ namespace fa::screens
 class QuickBarScreen final : public nav::Screen
 {
 public:
-    const char* Name() const override;
+    std::string Name() const override;
     const char* DiagName() const override { return "quickbar"; }
     // Back on the slot it was left on, after Ctrl+Tab went to the window and came back.
     bool RemembersCursor() const override { return true; }

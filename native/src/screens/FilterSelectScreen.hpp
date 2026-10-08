@@ -21,7 +21,7 @@ namespace fa::screens
 class FilterSelectScreen final : public nav::Screen
 {
 public:
-    const char* Name() const override { return ""; }
+    std::string Name() const override { return {}; }
     const char* DiagName() const override { return "filter chooser"; }
     // Over the window or quickbar it was opened from.
     int Layer() const override { return 1; }

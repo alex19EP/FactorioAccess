@@ -22,11 +22,10 @@ public:
 
     /// Spoken (queued) when the screen gains the navigator's focus. Empty = nothing is said, and
     /// the landing announcement (its context path) introduces the screen instead.
-    virtual const char* Name() const = 0;
+    virtual std::string Name() const = 0;
 
-    /// Identity for LOGS, never spoken. Defaults to Name(); override where Name() is empty, so an
-    /// attached screen never reads as "no screen" in the log.
-    virtual const char* DiagName() const { return Name(); }
+    /// Identity for LOGS, never spoken, and the same in every language.
+    virtual const char* DiagName() const = 0;
 
     /// Whether the cursor survives the screen going away, to be back where it was when the same
     /// thing (its DiagName) shows again. For windows the game destroys and rebuilds around a

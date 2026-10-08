@@ -228,7 +228,7 @@ graph::NodeVtable VertexNode(const agui::TechnologyVertex& vertex, bool central,
             [button = vertex.button, omitted = vertex.omitted]()
             {
                 std::string name = NameOf(button);
-                return name.empty() ? std::format("{} {}", omitted, vocab::kOmitted) : name;
+                return name.empty() ? vocab::kOmitted(omitted) : name;
             },
             false, Kinds::Label);
     }

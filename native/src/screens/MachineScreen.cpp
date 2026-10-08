@@ -23,7 +23,7 @@ using agui::Widget;
 Attachments MachineAttachments(const agui::EntityWindowParts& parts)
 {
     Attachments attachments;
-    auto label = [&attachments](const Widget* container, std::string_view name)
+    auto label = [&attachments](const Widget* container, std::string name)
     {
         if (container)
             attachments[container].label = name;

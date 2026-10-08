@@ -116,13 +116,18 @@ def find_lua_files():
     return [f for f in all_files if 'tests' not in f.parts and '.claude' not in f.parts]
 
 
-def strip_lua_comments(line):
-    """Remove Lua comments from a line.
+def find_native_files():
+    """Find the native DLL's C++ sources. Its own words are keys of the mod's locale
+    (native/src/vocab.h)."""
+    return [f for f in Path("native/src").rglob("*") if f.suffix in (".cpp", ".h", ".hpp")]
 
-    Handles both single-line comments (--) and doesn't process multi-line comments
-    since we process line by line.
+
+def strip_comments(line, marker):
+    """Remove a single-line comment (marker: -- in Lua, // in C++) from a line.
+
+    Doesn't process multi-line comments since we process line by line.
     """
-    # Find -- that's not inside a string
+    # Find the marker where it's not inside a string
     in_string = False
     string_char = None
     i = 0
@@ -139,7 +144,7 @@ def strip_lua_comments(line):
                 string_char = None
 
         # Check for comment start
-        if not in_string and i < len(line) - 1 and line[i:i+2] == '--':
+        if not in_string and line.startswith(marker, i):
             return line[:i]
 
         i += 1
@@ -148,7 +153,7 @@ def strip_lua_comments(line):
 
 
 def extract_locale_references(lua_files):
-    """Extract all fa.* locale key references from Lua code.
+    """Extract all fa.* locale key references from Lua and C++ code.
 
     Returns:
         tuple: (exact_keys, prefix_patterns)
@@ -170,7 +175,7 @@ def extract_locale_references(lua_files):
             with open(lua_file, 'r', encoding='utf-8') as f:
                 for line_num, line in enumerate(f, 1):
                     # Strip comments before processing
-                    line = strip_lua_comments(line)
+                    line = strip_comments(line, '--' if lua_file.suffix == '.lua' else '//')
 
                     # Skip lines with register_metatable (not locale keys)
                     if 'register_metatable' in line:
@@ -211,11 +216,13 @@ def cmd_lint(args):
     print("Finding .lua files recursively...")
     lua_files = find_lua_files()
     print(f"Found {len(lua_files)} Lua files")
+    native_files = find_native_files()
+    print(f"Found {len(native_files)} native C++ files")
     print()
 
     # Extract references
-    print("Extracting locale key references from Lua code...")
-    exact_keys, prefix_patterns = extract_locale_references(lua_files)
+    print("Extracting locale key references from Lua and C++ code...")
+    exact_keys, prefix_patterns = extract_locale_references(lua_files + native_files)
     print(f"Found {len(exact_keys)} exact key references")
     print(f"Found {len(prefix_patterns)} prefix patterns")
     print()

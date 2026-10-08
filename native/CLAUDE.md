@@ -69,9 +69,32 @@ already do. Switching generators needs a fresh tree: `just clean` first.
 
 - Read what is shown: speak game text as the game displays it, through `text::speakable`. Keep
   bullets, colons and dashes. The root CLAUDE.md style rules (no colons, and so on) apply to the
-  mod's and the DLL's OWN words, which live in `vocab`.
+  mod's and the DLL's OWN words, which live in `vocab` (see below).
 - Rich-text icons are spoken as their names (`text::speakable`).
 - Every keypress the navigator handles interrupts speech.
+
+### Localisation of the DLL's own words
+
+Never put an English word or phrase the player hears in C++. The DLL's own words are keys of the
+mod's locale, which the game translates into the player's language:
+
+- Add a `vocab::Word` to `src/vocab.h` with an `fa.native-...` key, and its English text to
+  `locale/en/native.cfg`. Say it as `std::string(vocab::kWord)`, or pass it where a `std::string`
+  is taken.
+- A phrase with values ("3 of 10", "bar 2", "filter iron plate") is ONE key with parameters
+  (`native-position=__1__ of __2__`), said as `vocab::kPosition(index, count)`, so a translation
+  can change the word order. Never glue words and values together with `std::format`. Counts take
+  `__plural_for_parameter__`. A `Word` takes up to three parameters, as many as the game's
+  `LocalisedString` constructors do.
+- Where the mod's Lua already says the same thing, use its key (`fa.direction`).
+- Keep a `Word`, not its text, in anything that outlives one announcement (static tables, captured
+  lambdas), so the text follows the game's language.
+- Translation runs where the game translates (GUI logic and game hooks), never on a thread of our
+  own.
+- `python lint_localisation.py lint` checks the keys `native/src` uses against the locale files.
+- The one exception is a failure message said when the game's locale may be out of reach (the
+  version and hook failures in `dllmain.cpp`, the navigator's crash in `ui.cpp`); these stay
+  English.
 
 ### Input and GUI interaction
 

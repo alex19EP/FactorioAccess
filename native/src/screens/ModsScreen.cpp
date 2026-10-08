@@ -134,7 +134,7 @@ void ModsScreen::BuildManage(graph::GraphBuilder& builder, const Widget* window)
         if (!sort || !caption)
             continue;
         AddControl(builder, "search/sort" + std::to_string(column), sort,
-            [caption]() { return std::string(vocab::kSortBy) + " " + LabelText(caption); });
+            [caption]() { return vocab::kSortBy(LabelText(caption)); });
     }
 }
 

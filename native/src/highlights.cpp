@@ -69,7 +69,7 @@ struct MsvcVector {
 // What a highlight says about its entity, in the order they are said.
 enum class Kind { Replaces, Turns, Changes, Keeps, Pair, Power, Wire, Covers, WorksWith, Link, Other };
 
-std::string_view verb(Kind kind) {
+vocab::Word verb(Kind kind) {
    switch (kind) {
    case Kind::Replaces: return vocab::kReplaces;
    case Kind::Turns: return vocab::kTurns;
@@ -236,7 +236,7 @@ std::string whereFrom(Position from, Position to) {
       direction = tileY > 0 ? 3 : 1;
    else if (tileX < 0)
       direction = tileY > 0 ? 5 : 7;
-   return std::format("{} {} {}", tiles, vocab::kTiles, vocab::kDirections[direction]);
+   return vocab::kTilesToward(tiles, vocab::direction(direction));
 }
 
 // At most this many of a kind are named; the rest are counted.
@@ -244,15 +244,14 @@ constexpr size_t kNamedPerKind = 5;
 
 std::string text(Report& report) {
    std::string out = std::move(report.meaning);
-   auto append = [&](std::string_view part) {
+   auto append = [&](const std::string& part) {
       if (part.empty()) return;
       if (!out.empty()) out += ", ";
       out += part;
    };
    if (report.drag) return out;
    if (report.network)
-      append(report.network->empty() ? std::string(vocab::kNoNetwork)
-                                     : std::format("{} {}", vocab::kInNetwork, *report.network));
+      append(report.network->empty() ? std::string(vocab::kNoNetwork) : vocab::kInNetwork(*report.network));
 
    std::stable_sort(report.items.begin(), report.items.end(), [&](const Item& a, const Item& b) {
       if (a.kind != b.kind) return a.kind < b.kind;
@@ -276,8 +275,7 @@ std::string text(Report& report) {
          part += item.name;
          if (std::string where = whereFrom(report.position, item.position); !where.empty()) part += " " + where;
       }
-      if (count > kNamedPerKind)
-         part += std::format(", {} {} {}", vocab::kAnd, count - kNamedPerKind, vocab::kMore);
+      if (count > kNamedPerKind) part += ", " + vocab::kAndMore(count - kNamedPerKind);
       append(part);
    }
    if (report.electric && !power) append(vocab::kNoPower);

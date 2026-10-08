@@ -54,7 +54,7 @@ void Navigator::Attach(Screen* screen, graph::GraphState* state)
 
     log::info("Navigator attached to {}", _screen->DiagName());
     // §9: the screen name speaks first (queued); the frame differ then announces the landing.
-    Speak(std::string(_screen->Name()));
+    Speak(_screen->Name());
 }
 
 void Navigator::Detach()

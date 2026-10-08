@@ -774,6 +774,13 @@ bool resolve(pdb::SymbolTable& symbols) {
    address(layout.technologyNameWithLevel, "?getLocalisedNameWithLevel@TechnologyPrototype@@QEBA?AVLocalisedString@@I@Z");
    address(layout.researchProgress, "?getProgress@ResearchManager@@QEBANAEBVTechnology@@@Z");
    address(layout.localisedStringFromKey, "??0LocalisedString@@QEAA@PEBD@Z");
+   address(layout.localisedStringLiteral, "??0LocalisedString@@QEAA@W4Mode@0@PEBD@Z");
+   address(layout.localisedStringWithParameters[0],
+           "??0LocalisedString@@QEAA@AEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEBV0@@Z");
+   address(layout.localisedStringWithParameters[1],
+           "??0LocalisedString@@QEAA@AEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEBV0@1@Z");
+   address(layout.localisedStringWithParameters[2],
+           "??0LocalisedString@@QEAA@AEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEBV0@11@Z");
    offset(layout.graphVertices, "TechnologyGraphGui", "graph");
    offset(layout.graphCentral, "TechnologyGraphGui", "central");
    offset(layout.vertexTechnology, "TechnologyGraphGui::Vertex", "technology");
