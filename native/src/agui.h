@@ -267,6 +267,22 @@ struct FluidBoxParts {
 };
 FluidBoxParts fluidBoxParts(const Widget* window);
 
+// The parts of an electric network's window (ElectricNetworkGuiWindow): a pole's network, or every
+// network of the surface. `bars` is the row of bars of how well the network is supplied, `flows`
+// the columns below them: `consumption`, `production` and `storage` (accumulators), each with its
+// graph. `unitNumber` is the pole's (LuaEntity::unit_number), 0 for the surface's window. All null
+// for any other window.
+struct ElectricNetworkParts {
+   const Widget* bars = nullptr;
+   const Widget* flows = nullptr;
+   const Widget* consumption = nullptr;
+   const Widget* production = nullptr;
+   const Widget* storage = nullptr;
+   std::vector<const Widget*> graphs;
+   uint64_t unitNumber = 0;
+};
+ElectricNetworkParts electricNetworkParts(const Widget* window);
+
 // The quickbar along the bottom of the screen (QuickBarGui), or null outside a game or while the
 // view has none.
 const Widget* quickBar();

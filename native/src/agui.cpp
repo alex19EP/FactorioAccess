@@ -696,6 +696,27 @@ FluidBoxParts fluidBoxParts(const Widget* window) {
            reinterpret_cast<const Widget*>(box + layout.fluidBoxBar)};
 }
 
+ElectricNetworkParts electricNetworkParts(const Widget* window) {
+   // Both are the same template over a pointer, so their members lie at the same offsets.
+   const std::byte* pole = asBase(window, ".?AV?$ElectricNetworkGuiWindow@VElectricPole@@@@");
+   const std::byte* gui = pole ? pole : asBase(window, ".?AV?$ElectricNetworkGuiWindow@VSurface@@@@");
+   if (!gui) return {};
+   ElectricNetworkParts parts;
+   parts.bars = reinterpret_cast<const Widget*>(gui + layout.electricNetworkBars);
+   parts.flows = reinterpret_cast<const Widget*>(gui + layout.electricNetworkFlows);
+   parts.consumption = reinterpret_cast<const Widget*>(gui + layout.electricNetworkConsumption);
+   parts.production = reinterpret_cast<const Widget*>(gui + layout.electricNetworkProduction);
+   parts.storage = reinterpret_cast<const Widget*>(gui + layout.electricNetworkStorage);
+   for (const Widget* frame : {parts.consumption, parts.production, parts.storage})
+      parts.graphs.push_back(member(frame, layout.flowFrameGraph));
+   // A pole derives from EntityWithOwner first, as entityPanelParts' entities do.
+   if (pole) {
+      const std::byte* entity = at<const std::byte*>(pole, layout.electricNetworkObject);
+      parts.unitNumber = at<uint64_t>(entity, layout.entityUnitNumber);
+   }
+   return parts;
+}
+
 unsigned selectedRow(const Widget* table) {
    return at<uint32_t>(asBaseChecked(table, ".?AVTableWithSelection@agui@@"), layout.tableSelectedIndex);
 }

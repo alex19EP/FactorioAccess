@@ -103,6 +103,7 @@ add_library(fa_native SHARED
   src/screens/BeltScreen.cpp
   src/screens/SplitterScreen.cpp
   src/screens/PipeScreen.cpp
+  src/screens/ElectricNetworkScreen.cpp
   src/screens/QuickBarScreen.cpp
   src/screens/ShortcutBarScreen.cpp
   src/screens/SideMenuScreen.cpp

@@ -17,6 +17,7 @@
 #include "screens/LoadGameScreen.hpp"
 #include "screens/MachineScreen.hpp"
 #include "screens/MapGeneratorScreen.hpp"
+#include "screens/ElectricNetworkScreen.hpp"
 #include "screens/MenuScreen.hpp"
 #include "screens/ModSettingsScreen.hpp"
 #include "screens/ModsScreen.hpp"
@@ -99,6 +100,9 @@ void start() {
    manager.Register(std::make_unique<screens::SplitterScreen>());
    // A pipe's or a storage tank's window, with the mod's views of where its pipeline goes.
    manager.Register(std::make_unique<screens::PipeScreen>());
+   // An electric pole's network window, with the mod's views of its wires and supply area, and the
+   // surface's like it.
+   manager.Register(std::make_unique<screens::ElectricNetworkScreen>());
    // The quickbar, while Ctrl+Tab has moved to it.
    manager.Register(std::make_unique<screens::QuickBarScreen>());
    // The shortcut bar, the part after it.

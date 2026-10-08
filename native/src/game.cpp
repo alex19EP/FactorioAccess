@@ -313,6 +313,16 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.fluidBoxIcon, "FluidBoxGui", "fluidIcon");
    offset(layout.fluidBoxBar, "FluidBoxGui", "fluidPercentageBar");
    offset(layout.entityUnitNumber, "EntityWithOwner", "unitNumber");
+   offset(layout.electricNetworkObject, "ElectricNetworkGuiWindow<ElectricPole>", "object");
+   offset(layout.electricNetworkBars, "ElectricNetworkGuiWindow<ElectricPole>", "satisfactionFlow");
+   offset(layout.electricNetworkFlows, "ElectricNetworkGuiWindow<ElectricPole>", "gui");
+   offset(layout.electricNetworkConsumption, "ElectricNetworkGuiWindow<ElectricPole>", "gui.inputFrame");
+   offset(layout.electricNetworkProduction, "ElectricNetworkGuiWindow<ElectricPole>", "gui.outputFrame");
+   offset(layout.electricNetworkStorage, "ElectricNetworkGuiWindow<ElectricPole>", "gui.storageFrame");
+   offset(layout.flowFrameGraph,
+          "FlowDataFrame<FlowStatistics<IDWithQuality<ID<EntityPrototype,unsigned short> >,double,ElectricityTag>,"
+          "ElectricPole,FlowGuiEnabler<0> >",
+          "graph");
 
    offset(layout.gameViewControllerView, "GameView", "controllerView");
    classSlot(layout.controllerViewQuickBar, "ControllerView", "getQuickBar");

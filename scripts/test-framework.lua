@@ -58,6 +58,7 @@ local test_files = {
    "game-notices-test", -- Test the goal window reader
    "pump-spots-test", -- Test the scanner's offshore pump build spots
    "fluid-views-test", -- Test the views read with a pipe's window
+   "pole-views-test", -- Test the views read with an electric pole's window
 }
 
 -- Test execution state

@@ -377,6 +377,17 @@ struct Layout {
    uint32_t fluidBoxIcon = 0;         // FluidBoxGui::fluidIcon, SimpleSlot
    uint32_t fluidBoxBar = 0;          // FluidBoxGui::fluidPercentageBar, agui::ProgressBar
    uint32_t entityUnitNumber = 0;     // EntityWithOwner::unitNumber, LuaEntity::unit_number
+   // The electric network window a pole opens (ElectricNetworkGuiWindow<ElectricPole>), and the
+   // surface's like it (<Surface>), the same template over another object: the bars of how well the
+   // network is supplied, and the columns of what consumes, produces and stores its energy, each a
+   // FlowDataFrame with a graph above its table.
+   uint32_t electricNetworkObject = 0;       // ::object, ElectricPole* (Surface* in the surface's)
+   uint32_t electricNetworkBars = 0;         // ::satisfactionFlow, agui::HorizontalFlow
+   uint32_t electricNetworkFlows = 0;        // ::gui, FlowGui, agui::HorizontalFlow
+   uint32_t electricNetworkConsumption = 0;  // ::gui.inputFrame, FlowDataFrame
+   uint32_t electricNetworkProduction = 0;   // ::gui.outputFrame, FlowDataFrame
+   uint32_t electricNetworkStorage = 0;      // ::gui.storageFrame, FlowDataFrame
+   uint32_t flowFrameGraph = 0;              // FlowDataFrame::graph, Graph
 
    // The quickbar along the bottom of the screen (QuickBarGui), reached the way the game's own
    // quickbar keys reach it: GameView::controllerView->getQuickBar().
