@@ -7,7 +7,7 @@ We have had players successfully build post-endgame bases with it in a reasonabl
 
 The mod tries to support multiplayer but game limitations mean that your experience will be laggy and kind of terrible. We cannot do anything about this.  We also have limited ability to do anything about bugs, because that would require two mod developers playing at the same time.
 
-The mod needs Factorio 2.1 on Windows. It comes with a DLL, `winmm.dll`, that the game loads from its own folder. The DLL reads the game's screens and speaks through your screen reader. An antivirus may flag it, because it hooks into the game. We build it from source in a GitHub Actions runner, so we are confident that our build is clean. If you need to, add your Factorio folder as an exception in Windows Defender.
+The mod needs Factorio 2.1 on Windows. It comes with a DLL, `winmm.dll`, that the game loads from its own folder. The DLL reads the game's screens and speaks through your screen reader. [The DLL's README](native/README.md) says what it does, how it loads, and how to build it. An antivirus may flag it, because it hooks into the game. We build it from source in a GitHub Actions runner, so we are confident that our build is clean. If you need to, add your Factorio folder as an exception in Windows Defender.
 
 The DLL turns off the game's automatic crash log upload. Please report crashes to us, not to Wube, because a game with the DLL loaded is not vanilla.
 

@@ -20,7 +20,8 @@ Windows only.
   Activating a control replays the same mouse events vanilla gets, so using a window through FA
   never differs from clicking it. The OS mouse is never moved.
 - **The world cursor.** The game's cursor position follows the FA cursor, so vanilla controls
-  (building, mining, opening, selection tools) act where the FA cursor is.
+  (building, mining, opening, selection tools) act where the FA cursor is. Their mouse buttons
+  need keys, which `helper-scripts/factorio-access-keys.ps1` gives them (see "Installing").
 - **Flying text.** Every flying text the game shows is spoken: "Cannot reach", "Cannot build
   here", "Not enough ingredients", item counts after mining or picking up, and other mods' local
   flying text.
@@ -30,7 +31,7 @@ Windows only.
   autosaving and multiplayer (waiting for a player, reconnecting, desynced) are spoken as they
   appear.
 - **Disclosure.** Automatic crash log upload is kept off, since crashes with a modified executable
-  shouldn't reach Wube. The game's version text names the DLL.
+  shouldn't reach Wube. The game's version text and the log name the DLL and its build.
 
 ## How it loads
 
@@ -46,6 +47,35 @@ come from `factorio.pdb`, which ships next to the executable, read with
 for example after a Factorio update renamed something, the DLL says so in its log and touches
 nothing.
 
+## Installing
+
+Players install the DLL from a release, as the root README's
+[install steps](../README.md#installing-factorio-access) describe. Each release carries
+`FactorioAccess-native.zip`, laid out as the game folder so it is extracted straight into it:
+
+```
+bin/x64/winmm.dll
+bin/x64/winmm.pdb
+factorio-access-keys.cmd
+factorio-access-keys.ps1
+```
+
+`factorio-access-keys.cmd` runs `factorio-access-keys.ps1` through Windows PowerShell. It edits the
+`[controls]` section of the game's `config.ini`: walking moves to the arrow keys, connect and
+disconnect train to CONTROL + J and CONTROL + K, zoom gets EQUALS and MINUS, and every control on a
+mouse button gets the same binding on LEFTBRACKET, RIGHTBRACKET or BACKSLASH. It finds the
+`config.ini` through the game folder's `config-path.cfg`, as the game does, so it serves the zip
+and the Steam versions. `-GameDir` names the game folder when the script runs from elsewhere, and
+`-Revert` undoes the changes. The source is in `helper-scripts/`.
+
+## Dev builds
+
+`.github/workflows/dev-build.yaml` runs on every push to `native`. It builds the DLL and runs the
+graph tests on a Visual Studio 2026 runner, packs `FactorioAccess-native.zip`, builds the mod zip
+with fmtk, and moves the `dev` tag and its pre-release to the pushed commit. The DLL is stamped
+with `FA_BUILD_ID=dev.<commit>`, so its version reads, for example, `0.1.0+dev.fc39a54`. The
+symbol check needs a `factorio.exe` and does not run there: run it locally before pushing.
+
 ## Building
 
 You need Visual Studio 2026 (or its Build Tools) with the C++ workload, and CMake 3.28 or newer.
@@ -60,6 +90,9 @@ ctest --test-dir build -C RelWithDebInfo --output-on-failure
 
 With `FA_FACTORIO_BIN` set, each build copies `winmm.dll` and its PDB there. Without it, copy
 them by hand. To uninstall, delete `winmm.dll` and `winmm.pdb` from `bin/x64`.
+
+`-DFA_BUILD_ID=<id>` appends `+<id>` to the version the game shows and the log writes, so a build
+can be told apart. Local builds leave it empty.
 
 `fa_symbols_check <path to factorio.exe>` resolves everything the DLL needs against a Factorio
 build without running the game. Run it after every Factorio update.
