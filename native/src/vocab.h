@@ -60,6 +60,12 @@ inline constexpr std::string_view kAllLocked = "all locked";
 inline constexpr std::string_view kLocked = "locked";
 inline constexpr std::string_view kLockFromHere = "lock from here";
 
+// A blueprint's component the player took out of it: the game shows it red with a count of 0.
+inline constexpr std::string_view kRemoved = "removed";
+// The button inside a text box that opens the chooser of an icon to put in its text; the game
+// shows only an icon on it.
+inline constexpr std::string_view kInsertIcon = "insert icon";
+
 // The quickbar, its bars and the page each shows ("bar 2, page 3"), and the page picker's button
 // that shows a page on a bar ("show on bar 2").
 inline constexpr std::string_view kQuickBar = "quickbar";

@@ -19,6 +19,7 @@
 #include "screens/LoadGameScreen.hpp"
 #include "screens/DeconstructionPlannerScreen.hpp"
 #include "screens/UpgradePlannerScreen.hpp"
+#include "screens/BlueprintSetupScreen.hpp"
 #include "screens/GameDialogScreen.hpp"
 #include "screens/MachineScreen.hpp"
 #include "screens/MapGeneratorScreen.hpp"
@@ -104,7 +105,9 @@ void start() {
    // The planners' windows, opened from the planner's slot.
    manager.Register(std::make_unique<screens::DeconstructionPlannerScreen>());
    manager.Register(std::make_unique<screens::UpgradePlannerScreen>());
-   // Any other dialog over a game: a planner's or blueprint's name, description and icons.
+   // A blueprint's setup, opened from its slot or by selecting an area with a blank one.
+   manager.Register(std::make_unique<screens::BlueprintSetupScreen>());
+   // Any other dialog over a game: a planner's name, description and icons.
    manager.Register(std::make_unique<screens::GameDialogScreen>());
    // A transport belt's window, with the mod's views of what the belt carries.
    manager.Register(std::make_unique<screens::BeltScreen>());

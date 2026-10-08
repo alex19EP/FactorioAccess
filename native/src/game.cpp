@@ -493,6 +493,23 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.upgradeItemName, "UpgradeItemGui::UpgradeItemFrame", "nameLabel");
    offset(layout.upgradeDescription, "UpgradeItemGui", "descriptionLabel");
    offset(layout.upgradeRules, "UpgradeItemGui", "mappersWidgets.table");
+   offset(layout.blueprintSettings, "BlueprintSetupGui", "blueprintSettingsGui");
+   offset(layout.blueprintPreview, "BlueprintSetupGui", "blueprintPreview");
+   offset(layout.blueprintName, "BlueprintSettingsGui", "labelEdit");
+   offset(layout.blueprintScroll, "BlueprintSettingsGui", "verticalScroll");
+   offset(layout.blueprintDescription, "BlueprintSettingsGui", "descriptionEdit");
+   offset(layout.blueprintSnapCheckbox, "BlueprintSettingsGui", "snapToGridCheckbox");
+   offset(layout.blueprintGridWidth, "BlueprintSettingsGui", "snapToGridX");
+   offset(layout.blueprintComponents, "BlueprintSettingsGui", "componentsTable");
+   {
+      const char* include[] = {"includeEntitiesCheckbox", "includeModulesCheckbox", "includeTilesCheckbox",
+         "includeStationNamesCheckbox", "includeTrainsCheckbox", "includeFuelCheckbox", "includeVehiclesCheckbox"};
+      for (int i = 0; i < 7; ++i)
+         offset(layout.blueprintInclude[i], "BlueprintSettingsGui", include[i]);
+   }
+   offset(layout.editableLabelText, "EditableLabel", "label");
+   offset(layout.editableLabelField, "EditableLabel", "labelEdit");
+   offset(layout.editableLabelButton, "EditableLabel", "switchEditLabelMode");
    offset(layout.sidePanelContainer, "GuiWithSideButtons", "sidePanelContainer");
    offset(layout.onOffEntityWindow, "GenericOnOffEntityGui", "entityWindow");
    offset(layout.singleFluidBoxGui, "SingleFluidBoxEntityGui", "fluidBoxGui");

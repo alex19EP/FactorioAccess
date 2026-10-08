@@ -15,7 +15,8 @@ using agui::Widget;
 bool GameDialogScreen::Handles(const Widget* window) const
 {
     // Windows that float too, with recipes of their own.
-    if (agui::derivesFromTemplate(window, "SelectListGui") || window == agui::factoriopedia().window
+    if (agui::derivesFromTemplate(window, "SelectListGui") || agui::derivesFrom(window, "BlueprintSetupGui")
+        || window == agui::factoriopedia().window
         || window == agui::technologyWindow().window || window == agui::alertsWindow().window)
         return false;
     return agui::dialogButtons(window) || agui::derivesFrom(window, "FloatingGuiWindow");

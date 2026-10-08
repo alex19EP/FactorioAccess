@@ -630,6 +630,28 @@ struct Layout {
    // The rules, a DragPaneWidget<agui::Table> four to a row: first a "From To" pair of header
    // labels per column, then a HorizontalFlow per rule holding its From and To ChooseButtons.
    uint32_t upgradeRules = 0;         // mappersWidgets.table
+   // A blueprint's setup window (BlueprintSetupGui, a Dialog): its settings (BlueprintSettingsGui,
+   // a FrameWithSubheader) beside the preview picture (BlueprintWidget) in a frame of its own.
+   uint32_t blueprintSettings = 0;    // BlueprintSetupGui::blueprintSettingsGui
+   uint32_t blueprintPreview = 0;     // BlueprintSetupGui::blueprintPreview
+   // The settings' subheader holds the name (BlueprintLabelEdit, an EditableLabel) and the
+   // buttons for the blueprint; the rest are frames in a scroll pane.
+   uint32_t blueprintName = 0;        // BlueprintSettingsGui::labelEdit
+   uint32_t blueprintScroll = 0;      // verticalScroll, agui::VerticalScrollPane
+   uint32_t blueprintDescription = 0; // descriptionEdit, TextBoxWithChatIconSelector
+   uint32_t blueprintSnapCheckbox = 0; // snapToGridCheckbox, agui::CheckBox
+   // The first field of the snapping table, a Table six to a row: grid size, grid position, then
+   // the absolute and relative snapping radio buttons.
+   uint32_t blueprintGridWidth = 0;   // snapToGridX, agui::TextField
+   uint32_t blueprintComponents = 0;  // componentsTable, agui::Table of SimpleSlots
+   // The include checkboxes (entities, modules, tiles, station names, trains, fuel, vehicles); the
+   // game adds only those that apply to the blueprint to its filters frame.
+   uint32_t blueprintInclude[7] = {};
+   // An EditableLabel shows its text in a label beside a pencil button; while editing, a text field
+   // it creates takes the label's place.
+   uint32_t editableLabelText = 0;    // EditableLabel::label, agui::Label
+   uint32_t editableLabelField = 0;   // EditableLabel::labelEdit, unique_ptr<TextFieldWithChatIconSelector>
+   uint32_t editableLabelButton = 0;  // EditableLabel::switchEditLabelMode, IconButton
    // The windows with circuit and logistic network buttons in the title bar (GuiWithSideButtons):
    // a button opens its panel beside the window, inside the side panel container.
    uint32_t sidePanelContainer = 0;   // GuiWithSideButtons::sidePanelContainer, agui::VerticalFlow
