@@ -11,6 +11,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Prism sets this itself from CMAKE_BUILD_TYPE, which is empty under the multi-config Visual
 # Studio generator, so it is pinned in the cache before Prism is configured.
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" CACHE STRING "" FORCE)
+# RelWithDebInfo is what ships, with its PDB. CMake links it with /INCREMENTAL, which pads every
+# function and turns off /OPT:REF and /OPT:ICF: the DLL came out 5.9 MB instead of 2.3 MB.
+set(CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO "/debug /INCREMENTAL:NO /OPT:REF /OPT:ICF")
 
 set(FA_FACTORIO_BIN "" CACHE PATH
     "Factorio bin/x64 directory; when set, every build copies winmm.dll there")
