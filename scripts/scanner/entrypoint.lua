@@ -5,11 +5,12 @@ The list lives in the native DLL (native/src/scanner.h), on the client of the pl
 nothing of it is in storage, and other clients have none. The DLL keeps it up to date by itself,
 asking each tick for a refresh when one is due; the refresh key lists the surface again at once.
 
-Moving through the list must still change the game alike on every client, since it moves the cursor
-and the selection. The DLL does the move when the scanner key reaches the game, and the game's
-cursor reads as the entry's position while the game turns the key into its custom input event, so
-every client gets that position as event.cursor_position. The handlers here land on it, the same
-everywhere, and only then ask the DLL what to say, which is speech alone.
+Moving through the list only speaks; the cursor stays put. The repeat key (Home) moves the cursor
+and the selection onto the current entry, which must change the game alike on every client. The DLL
+does the move when the scanner key reaches the game, and the game's cursor reads as the entry's
+position while the game turns the key into its custom input event, so every client gets that
+position as event.cursor_position. The Home handler lands on it, the same everywhere, and only then
+asks the DLL what to say, which is speech alone.
 ]]
 local EntitySelection = require("scripts.entity-selection")
 local Extras = require("scripts.scanner.extras")
@@ -44,27 +45,35 @@ local function speak_nothing(pindex, category)
    Speech.speak(pindex, { "fa.scanner-nothing-in-category", { "fa.scanner-category-" .. category } })
 end
 
--- Moves the cursor to where a scanner key took it and selects what is there. This changes the game,
--- so it reads only the event and the game, never the DLL: every client does the same.
+-- The tile a scanner key at `position` points the cursor at: the northwest corner of the entity
+-- standing there, or the position itself.
 ---@param pindex integer
 ---@param position MapPosition
----@return LuaEntity? landed the entity the cursor landed on
-local function land(pindex, position)
-   local player = game.get_player(pindex)
-   ---@cast player LuaPlayer
-   local vp = Viewpoint.get_viewpoint(pindex)
-   local landed = entities_at(player.surface, position)[1]
-   EntitySelection.reset_entity_index(pindex)
-   vp:set_cursor_pos(landed and FaUtils.get_ent_northwest_corner_position(landed) or position)
-   local selected = EntitySelection.get_first_ent_at_tile(pindex)
-   if selected then player.selected = selected end
-   return landed
+---@return fa.Point
+local function target_of(pindex, position)
+   local landed = entities_at(game.get_player(pindex).surface, position)[1]
+   local target = landed and FaUtils.get_ent_northwest_corner_position(landed) or position
+   return { x = math.floor(target.x), y = math.floor(target.y) }
 end
 
--- Says what a scanner key landed on. Speech only: this client's DLL knows the list.
+-- Moves the cursor to the target and selects what is there. This changes the game, so it reads
+-- only the event and the game, never the DLL: every client does the same.
+---@param pindex integer
+---@param target fa.Point
+local function land(pindex, target)
+   local player = game.get_player(pindex)
+   ---@cast player LuaPlayer
+   EntitySelection.reset_entity_index(pindex)
+   Viewpoint.get_viewpoint(pindex):set_cursor_pos(target)
+   local selected = EntitySelection.get_first_ent_at_tile(pindex)
+   if selected then player.selected = selected end
+end
+
+-- Says what a scanner key reached. Speech only: this client's DLL knows the list.
 ---@param pindex integer
 ---@param event EventData.CustomInputEvent
-local function announce(pindex, event)
+---@param target fa.Point where the entry's distance is measured to
+local function announce(pindex, event, target)
    if not native then return end
    local position = event.cursor_position
    -- Nothing when the DLL left the key alone, as it does while a game window is open.
@@ -103,15 +112,14 @@ local function announce(pindex, event)
          or Localising.get_localised_name_with_fallback(prototypes.entity[entry.prototype])
    end
 
-   -- In remote view the camera follows the cursor onto each entry, so distances are from where
-   -- the scan was sorted, such as the place a map search jumped to
+   -- In remote view distances are from where the scan was sorted, such as the place a map search
+   -- jumped to
    local from = player.position
    if player.controller_type == defines.controllers.remote then from = { x = entry.origin_x, y = entry.origin_y } end
-   local cursor = Viewpoint.get_viewpoint(pindex):get_cursor_pos()
    Speech.speak(pindex, {
       "fa.scanner-full-presentation",
       readout,
-      FaUtils.dir_dist_locale(from, cursor),
+      FaUtils.dir_dist_locale(from, target),
       tostring(entry.index),
       tostring(entry.count),
    })
@@ -162,17 +170,26 @@ function mod.move_category(pindex)
    Speech.speak(pindex, { "fa.scanner-category-" .. category.category })
 end
 
--- A subcategory, entry or repeat key: lands where the key took the cursor, then says what is there.
+-- A subcategory or entry key: says what the entry is and leaves the cursor where it is.
 ---@param pindex integer
 ---@param event EventData.CustomInputEvent
 function mod.move(pindex, event)
-   land(pindex, event.cursor_position)
-   announce(pindex, event)
+   announce(pindex, event, target_of(pindex, event.cursor_position))
+end
+
+-- The repeat key: lands on the entry wherever it is, opening remote view when it is off the screen,
+-- then says what is there.
+---@param pindex integer
+---@param event EventData.CustomInputEvent
+function mod.jump(pindex, event)
+   local target = target_of(pindex, event.cursor_position)
+   land(pindex, target)
+   announce(pindex, event, target)
 end
 
 -- The mod's own UIs take the scanner keys while open; the DLL must leave those keys alone then.
 -- The DLL also keeps its list up to date on its own, starting a refresh when it asks for one; in
--- remote view that keeps the list's origin, which the camera leaves as it follows the scanner.
+-- remote view that keeps the list's origin, which the camera leaves as Home jumps to entries.
 function mod.on_tick()
    if not native then return end
    for _, player in pairs(game.connected_players) do

@@ -1887,7 +1887,7 @@ EventManager.on_event(
    "fa-home",
    ---@param event EventData.CustomInputEvent
    function(event, pindex)
-      ScannerEntrypoint.move(pindex, event)
+      ScannerEntrypoint.jump(pindex, event)
    end
 )
 
