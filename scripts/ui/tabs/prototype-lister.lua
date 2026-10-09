@@ -2,8 +2,6 @@
 -- Lists all prototypes (items, fluids, virtual signals, entities, recipes, etc.)
 -- Left click: Speak prototype name without modification
 -- Right click: Spell out name with spaces between characters
--- Shift+left click: Copy prototype name to clipboard
--- Shift+right click: Copy rich text shorthand to clipboard (items, fluids, virtual signals only)
 
 local TreeChooser = require("scripts.ui.tree-chooser")
 local KeyGraph = require("scripts.ui.key-graph")
@@ -11,26 +9,9 @@ local TabList = require("scripts.ui.tab-list")
 local UiRouter = require("scripts.ui.router")
 local SignalHelpers = require("scripts.ui.signal-helpers")
 local Localising = require("scripts.localising")
-local LauncherCommands = require("scripts.launcher-commands")
 local Speech = require("scripts.speech")
-local UiSounds = require("scripts.ui.sounds")
 
 local mod = {}
-
--- Wildcard signal names that have shorthands
-local WILDCARD_SHORTHANDS = {
-   ["signal-item-parameter"] = ":*i",
-   ["signal-fluid-parameter"] = ":*f",
-   ["signal-fuel-parameter"] = ":*fu",
-   ["signal-signal-parameter"] = ":*s",
-}
-
--- Signal types that support rich text shorthands
-local SHORTHAND_TYPES = {
-   item = true,
-   fluid = true,
-   virtual = true,
-}
 
 ---Convert a prototype name to spaced-out format for speaking
 ---@param name string
@@ -43,62 +24,20 @@ local function name_to_spaced(name)
    return table.concat(chars, " ")
 end
 
----Get rich text shorthand for a prototype, or nil if not supported
----@param signal_type string
----@param name string
----@return string? shorthand
-local function get_rich_text_shorthand(signal_type, name)
-   if signal_type == "item" then
-      return ":i." .. name
-   elseif signal_type == "fluid" then
-      return ":f." .. name
-   elseif signal_type == "virtual" then
-      if WILDCARD_SHORTHANDS[name] then return WILDCARD_SHORTHANDS[name] end
-      return ":s." .. name
-   end
-   return nil
-end
-
 ---Build vtable for prototype lister nodes
 ---@param name string Prototype name
 ---@param proto any Prototype object
----@param signal_type string Signal type
 ---@return fa.ui.graph.NodeVtable
-local function prototype_lister_vtable_builder(name, proto, signal_type)
-   local has_shorthand = SHORTHAND_TYPES[signal_type]
-
+local function prototype_lister_vtable_builder(name, proto)
    return {
       label = function(ctx)
          ctx.message:fragment(Localising.get_localised_name_with_fallback(proto))
       end,
       on_click = function(click_ctx)
-         local pindex = click_ctx.pindex
-         local modifiers = click_ctx.modifiers
-
-         if modifiers.shift then
-            LauncherCommands.copy_to_clipboard(pindex, name)
-            Speech.speak(pindex, { "fa.prototype-lister-copied", name })
-         else
-            Speech.speak(pindex, name)
-         end
+         Speech.speak(click_ctx.pindex, name)
       end,
       on_right_click = function(click_ctx)
-         local pindex = click_ctx.pindex
-         local modifiers = click_ctx.modifiers
-
-         if modifiers.shift then
-            if has_shorthand then
-               local shorthand = get_rich_text_shorthand(signal_type, name)
-               LauncherCommands.copy_to_clipboard(pindex, shorthand)
-               Speech.speak(pindex, { "fa.prototype-lister-copied-shorthand", shorthand })
-            else
-               UiSounds.play_ui_error(pindex)
-               Speech.speak(pindex, { "fa.prototype-lister-no-shorthand" })
-            end
-         else
-            local spaced = name_to_spaced(name)
-            Speech.speak(pindex, spaced)
-         end
+         Speech.speak(click_ctx.pindex, name_to_spaced(name))
       end,
    }
 end

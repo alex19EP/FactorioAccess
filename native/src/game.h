@@ -381,6 +381,14 @@ struct Layout {
    uintptr_t luaPushByte = 0;
    uintptr_t luaPushInt = 0;     // void lua_pushnumber<int>(lua_State*, int)
    uintptr_t luaPushBoolean = 0; // void lua_pushboolean(lua_State*, int)
+   // Reading a table argument (fa_native.audio).
+   uintptr_t luaGetField = 0;   // void lua_getfield(lua_State*, int index, char const*)
+   uintptr_t luaRawGetI = 0;    // void lua_rawgeti(lua_State*, int index, int n)
+   uintptr_t luaType = 0;       // int lua_type(lua_State*, int index)
+   uintptr_t luaToNumberX = 0;  // double lua_tonumberx(lua_State*, int index, int* isnum)
+   uintptr_t luaToBoolean = 0;  // int lua_toboolean(lua_State*, int index)
+   uintptr_t luaToLString = 0;  // char const* lua_tolstring(lua_State*, int index, size_t*)
+   uintptr_t luaRawLen = 0;     // size_t lua_rawlen(lua_State*, int index)
    // LocalisedString LuaHelper::parseLocalisedString(lua_State*, int index, bool strict): what
    // localised_print reads its argument with. It throws ScriptException, a Lua error to the caller,
    // on a malformed string.
@@ -1167,6 +1175,21 @@ struct Layout {
    // SimpleConfigItem<bool>; every overlay but station names, player names and tags shows only while
    // showNonstandardMapInfo is also on, as MapViewOptionsGui::updateToggleState shows them.
    uint32_t globalMapViewSettings = 0;   // GlobalContext::mapViewSettings.value, MapViewSettings*
+
+   // Files inside a mod, read as the game reads them whether the mod is a folder or a zip: the
+   // ModManager turns "__mod__/path" into a PackagePath, which opens a ReadStream.
+   uint32_t globalModManager = 0; // GlobalContext::modManager.value, ModManager*
+   // PackagePath ModManager::resolveResourcePath(std::string_view) const; throws
+   // ResolveResourcePathError for a path of no enabled mod.
+   uintptr_t resolveResourcePath = 0;
+   // UniquePointer<ReadStream> PackagePath::open() const; throws when the file is missing.
+   uintptr_t packagePathOpen = 0;
+   uint32_t packagePathSize = 0;     // sizeof(PackagePath): Package*, then Filesystem::Path
+   uint32_t packagePathPath = 0;     // PackagePath::path, Filesystem::Path, a std::wstring
+   uint32_t readStreamRead = 0;       // vtable slot of uint64 ReadStream::read(char*, uint64)
+   uint32_t readStreamRemaining = 0;  // vtable slot of uint64 ReadStream::remaining() const
+   uint32_t readStreamDestructor = 0; // vtable slot of ReadStream::~ReadStream (scalar deleting)
+   uintptr_t operatorDelete = 0;      // the game's void operator delete(void*, size_t)
    uint32_t mapViewLogisticNetwork = 0;
    uint32_t mapViewElectricNetwork = 0;
    uint32_t mapViewTurretRange = 0;

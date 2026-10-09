@@ -1,7 +1,6 @@
 --Here: teleporting
 local FaUtils = require("scripts.fa-utils")
 local Graphics = require("scripts.graphics")
-local Mouse = require("scripts.mouse")
 local Viewpoint = require("scripts.viewpoint")
 local Speech = require("scripts.speech")
 local MessageBuilder = Speech.MessageBuilder
@@ -159,7 +158,6 @@ function mod.teleport_to_closest(pindex, pos, muted, ignore_enemies)
          end
          --Update cursor after teleport
          vp:set_cursor_pos({ x = new_pos.x, y = new_pos.y })
-         Mouse.move_mouse_pointer(FaUtils.center_of_tile(vp:get_cursor_pos()), pindex)
          Graphics.draw_cursor_highlight(pindex, nil, nil)
       else
          Speech.speak(pindex, { "fa.teleport-failed" })

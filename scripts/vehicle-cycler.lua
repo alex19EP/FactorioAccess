@@ -2,7 +2,6 @@
 local FaUtils = require("scripts.fa-utils")
 local Graphics = require("scripts.graphics")
 local Localising = require("scripts.localising")
-local Mouse = require("scripts.mouse")
 local Speech = require("scripts.speech")
 local Viewpoint = require("scripts.viewpoint")
 
@@ -100,7 +99,6 @@ function mod.cycle_to_next_vehicle(pindex)
    -- Move cursor to the vehicle
    vp:set_cursor_pos(target_pos)
    Graphics.sync_build_cursor_graphics(pindex)
-   Mouse.move_mouse_pointer(target_pos, pindex)
 
    -- Update selection
    player.selected = target

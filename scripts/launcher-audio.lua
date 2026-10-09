@@ -1,10 +1,12 @@
 --[[
-Launcher Audio - Builder for audio commands sent to fa_launcher_audio.
+Launcher Audio - Builder for the mod's own sounds, which the native DLL plays.
 
-The launcher understands the command format: acmd pindex <json>
+The game's sound API cannot pan, filter, loop, retune or stop a sound, nor play
+a tone, so the DLL plays them (native/src/audio.h). They are heard on the
+player's client only and change nothing in the game.
 
 This module provides a fluent builder API for constructing audio commands
-and sending them to the launcher.
+and sending them to the DLL.
 
 Usage:
 ```lua
@@ -46,12 +48,15 @@ LauncherAudio.compound()
    :send(pindex)
 ```
 
-For full command documentation, see https://github.com/factorio-access/launcher-audio
-This module builds those, and it is ultimately handled by that package.
+The commands are those of https://github.com/factorio-access/launcher-audio,
+which the launcher used to play.
 ]]
 
 local Uid = require("scripts.uid")
 local VanillaMode = require("scripts.vanilla-mode")
+
+---@type fa.Native?
+local native = rawget(_G, "fa_native")
 
 local mod = {}
 
@@ -365,7 +370,7 @@ function PatchBuilder:build()
    return cmd
 end
 
----Build and send the command to the launcher
+---Build and send the command to the DLL
 ---@param pindex integer
 ---@return string id The sound ID for later reference
 function PatchBuilder:send(pindex)
@@ -400,7 +405,7 @@ function StopBuilder:build()
    }
 end
 
----Build and send the command to the launcher
+---Build and send the command to the DLL
 ---@param pindex integer
 function StopBuilder:send(pindex)
    mod.send(pindex, self:build())
@@ -440,7 +445,7 @@ function CompoundBuilder:build()
    }
 end
 
----Build and send the command to the launcher
+---Build and send the command to the DLL
 ---@param pindex integer
 function CompoundBuilder:send(pindex)
    mod.send(pindex, self:build())
@@ -450,13 +455,12 @@ end
 -- Send Function
 --------------------------------------------------------------------------------
 
----Send a command to the launcher
+---Send a command to the DLL
 ---@param pindex integer
 ---@param command fa.LauncherAudio.Command
 function mod.send(pindex, command)
    if VanillaMode.is_enabled(pindex) then return end
-   local json = helpers.table_to_json(command)
-   print("acmd " .. pindex .. " " .. json)
+   if native then native.audio(pindex, command) end
 end
 
 return mod

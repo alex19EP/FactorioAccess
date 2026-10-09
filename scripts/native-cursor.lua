@@ -17,6 +17,7 @@ local mod = {}
 ---@field drag_build fun(player_index: integer): fa.NativeDragBuild?
 ---@field walking_step fun(player_index: integer): ("full"|"partial"|"none")?, integer?
 ---@field open_selected_info fun(player_index: integer)
+---@field audio fun(player_index: integer, command: fa.LauncherAudio.Command)
 
 ---@class fa.NativeHeldBuild
 ---@field blueprint boolean

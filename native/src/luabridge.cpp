@@ -1,8 +1,10 @@
 #include "luabridge.h"
 
+#include "audio.h"
 #include "entityicons.h"
 #include "game.h"
 #include "log.h"
+#include "modfiles.h"
 #include "movement.h"
 #include "parts.h"
 #include "selectedinfo.h"
@@ -12,10 +14,13 @@
 #include <algorithm>
 #include <cstddef>
 #include <iterator>
+#include <memory>
+#include <optional>
 #include <regex>
 #include <string>
 #include <string_view>
 #include <type_traits>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -67,6 +72,32 @@ void pushInt(lua_State* L, int value) { reinterpret_cast<void (*)(lua_State*, in
 void pushBoolean(lua_State* L, bool value) {
    reinterpret_cast<void (*)(lua_State*, int)>(layout.luaPushBoolean)(L, value ? 1 : 0);
 }
+void getField(lua_State* L, int index, const char* name) {
+   reinterpret_cast<void (*)(lua_State*, int, const char*)>(layout.luaGetField)(L, index, name);
+}
+void rawGetI(lua_State* L, int index, int n) {
+   reinterpret_cast<void (*)(lua_State*, int, int)>(layout.luaRawGetI)(L, index, n);
+}
+int type(lua_State* L, int index) { return reinterpret_cast<int (*)(lua_State*, int)>(layout.luaType)(L, index); }
+lua_Number toNumber(lua_State* L, int index) {
+   return reinterpret_cast<lua_Number (*)(lua_State*, int, int*)>(layout.luaToNumberX)(L, index, nullptr);
+}
+bool toBoolean(lua_State* L, int index) {
+   return reinterpret_cast<int (*)(lua_State*, int)>(layout.luaToBoolean)(L, index) != 0;
+}
+std::string toString(lua_State* L, int index) {
+   size_t size = 0;
+   const char* text = reinterpret_cast<const char* (*)(lua_State*, int, size_t*)>(layout.luaToLString)(L, index, &size);
+   return text ? std::string(text, size) : std::string();
+}
+size_t rawLen(lua_State* L, int index) {
+   return reinterpret_cast<size_t (*)(lua_State*, int)>(layout.luaRawLen)(L, index);
+}
+constexpr int kNil = 0;
+constexpr int kBoolean = 1;
+constexpr int kNumber = 3;
+constexpr int kString = 4;
+constexpr int kTable = 5;
 
 struct MsvcString {
    union {
@@ -323,6 +354,175 @@ int mapOverlays(lua_State* L) {
    return 1;
 }
 
+// The mod's sound files, read once each from its audio folder; a file that would not read stays
+// null so it is not tried again.
+std::shared_ptr<const std::string> soundFile(const std::string& name) {
+   static std::unordered_map<std::string, std::shared_ptr<const std::string>> files;
+   if (auto it = files.find(name); it != files.end()) return it->second;
+   std::shared_ptr<const std::string> bytes;
+   if (auto read = modfiles::read("__FactorioAccess__/audio/" + name)) {
+      log::info("Audio: read audio/{}, {} bytes", name, read->size());
+      bytes = std::make_shared<const std::string>(std::move(*read));
+   } else
+      log::error("Audio: cannot read the mod's audio/{}", name);
+   files.emplace(name, bytes);
+   return bytes;
+}
+
+// Reads the commands scripts/launcher-audio.lua builds. A malformed one is logged and skipped,
+// never raised: only this client runs it, and a Lua error here would desync it.
+class AudioReader {
+public:
+   explicit AudioReader(lua_State* L) : L(L) {}
+
+   // The command table at `index`, flattened into `out`; false when it is malformed.
+   bool command(int index, std::vector<audio::Command>& out) {
+      if (type(L, index) != kTable) return fail("a command is not a table");
+      const std::string kind = string(index, "command");
+      if (kind == "stop") {
+         out.push_back(audio::Stop{string(index, "id")});
+         return true;
+      }
+      if (kind == "compound") {
+         Field commands(L, index, "commands");
+         if (type(L, commands.index) != kTable) return fail("a compound has no commands");
+         const int count = static_cast<int>(rawLen(L, commands.index));
+         for (int i = 1; i <= count; ++i) {
+            Field element(L, commands.index, i);
+            if (!command(element.index, out)) return false;
+         }
+         return true;
+      }
+      if (kind != "patch") return fail("unknown command " + kind);
+      audio::Patch patch;
+      patch.id = string(index, "id");
+      if (patch.id.empty()) return fail("a patch has no id");
+      if (!source(index, patch.source)) return false;
+      if (!parameter(index, "volume", patch.volume) || !parameter(index, "pan", patch.pan) ||
+          !parameter(index, "playback_rate", patch.playbackRate))
+         return false;
+      patch.looping = boolean(index, "looping");
+      patch.startTime = number(index, "start_time").value_or(0.0);
+      {
+         Field lpf(L, index, "lpf");
+         if (type(L, lpf.index) == kTable && (!present(lpf.index, "enabled") || boolean(lpf.index, "enabled"))) {
+            patch.lpfCutoff = number(lpf.index, "cutoff").value_or(1000.0);
+            patch.filterGain = audio::Parameter{1.0};
+            if (!parameter(index, "filter_gain", *patch.filterGain)) return false;
+         }
+      }
+      out.push_back(std::move(patch));
+      return true;
+   }
+
+private:
+   // Pushes t[name] (or t[n]) for the life of the object.
+   struct Field {
+      lua_State* L;
+      int index;
+      Field(lua_State* L, int table, const char* name) : L(L) {
+         getField(L, table, name);
+         index = getTop(L);
+      }
+      Field(lua_State* L, int table, int n) : L(L) {
+         rawGetI(L, table, n);
+         index = getTop(L);
+      }
+      ~Field() { setTop(L, index - 1); }
+   };
+
+   bool fail(const std::string& why) {
+      log::error("fa_native.audio: {}", why);
+      return false;
+   }
+
+   bool present(int table, const char* name) {
+      Field field(L, table, name);
+      return type(L, field.index) != kNil;
+   }
+   std::string string(int table, const char* name) {
+      Field field(L, table, name);
+      return type(L, field.index) == kString ? toString(L, field.index) : std::string();
+   }
+   std::optional<double> number(int table, const char* name) {
+      Field field(L, table, name);
+      if (type(L, field.index) != kNumber) return std::nullopt;
+      return toNumber(L, field.index);
+   }
+   bool boolean(int table, const char* name) {
+      Field field(L, table, name);
+      return type(L, field.index) == kBoolean && toBoolean(L, field.index);
+   }
+
+   // A number, or a list of {time, value, interpolation_from_prev = "linear" | "jump"}; absent
+   // leaves the default.
+   bool parameter(int table, const char* name, audio::Parameter& out) {
+      Field field(L, table, name);
+      const int kind = type(L, field.index);
+      if (kind == kNil) return true;
+      if (kind == kNumber) {
+         out = audio::Parameter{toNumber(L, field.index)};
+         return true;
+      }
+      if (kind != kTable) return fail(std::string(name) + " is neither a number nor points");
+      out = {};
+      const int count = static_cast<int>(rawLen(L, field.index));
+      for (int i = 1; i <= count; ++i) {
+         Field point(L, field.index, i);
+         if (type(L, point.index) != kTable) return fail(std::string(name) + " has a point that is not a table");
+         const auto time = number(point.index, "time");
+         const auto value = number(point.index, "value");
+         if (!time || !value) return fail(std::string(name) + " has a point without time or value");
+         out.points.push_back({*time, *value, string(point.index, "interpolation_from_prev") == "jump"});
+      }
+      if (out.points.empty()) return fail(std::string(name) + " has no points");
+      std::ranges::stable_sort(out.points, {}, &audio::Parameter::Point::time);
+      return true;
+   }
+
+   bool source(int table, audio::Source& out) {
+      Field field(L, table, "source");
+      if (type(L, field.index) != kTable) return fail("a patch has no source");
+      const std::string kind = string(field.index, "kind");
+      if (kind == "encoded_bytes") {
+         out.name = string(field.index, "name");
+         if (out.name.empty()) return fail("a sound file has no name");
+         out.bytes = soundFile(out.name);
+         return out.bytes != nullptr;
+      }
+      if (kind != "waveform") return fail("unknown source " + kind);
+      const std::string wave = string(field.index, "waveform");
+      if (wave == "sine")
+         out.wave = audio::Wave::Sine;
+      else if (wave == "square")
+         out.wave = audio::Wave::Square;
+      else if (wave == "triangle")
+         out.wave = audio::Wave::Triangle;
+      else if (wave == "saw" || wave == "sawtooth")
+         out.wave = audio::Wave::Saw;
+      else
+         return fail("unknown waveform " + wave);
+      const auto frequency = number(field.index, "frequency");
+      if (!frequency) return fail("a tone has no frequency");
+      out.name = wave;
+      out.frequency = *frequency;
+      out.duration = number(field.index, "non_looping_duration");
+      out.fadeOut = number(field.index, "fade_out");
+      return true;
+   }
+
+   lua_State* L;
+};
+
+// fa_native.audio(pindex, command): plays, retunes or stops the mod's sounds for this client's
+// player (see audio.h). It changes nothing in the game.
+int playAudio(lua_State* L) {
+   if (!world::mayBeLocalPlayer(static_cast<int>(checkInteger(L, 1)))) return 0;
+   std::vector<audio::Command> commands;
+   if (AudioReader(L).command(2, commands)) audio::submit(std::move(commands));
+   return 0;
+}
+
 struct Function {
    const char* name;
    lua_CFunction function;
@@ -340,6 +540,7 @@ constexpr Function kFunctions[] = {
    {"open_selected_info", &openSelectedInfo},
    {"entity_icons", &entityIcons},
    {"map_overlays", &mapOverlays},
+   {"audio", &playAudio},
 };
 
 using InitLuaState = void (*)(lua_State*);
@@ -354,6 +555,8 @@ void detour(lua_State* L) {
    }
    setGlobal(L, "fa_native");
    log::info("fa_native added to a Lua state");
+   // A game loading: the sounds of the one before have no script left to stop them.
+   audio::submit({audio::StopAll{}});
 }
 
 } // namespace

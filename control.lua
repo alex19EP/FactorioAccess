@@ -48,7 +48,6 @@ local NativeCursor = require("scripts.native-cursor")
 local NoHover = require("scripts.no-hover")
 local Speech = require("scripts.speech")
 local MessageBuilder = Speech.MessageBuilder
-local Mouse = require("scripts.mouse")
 local MovementHistory = require("scripts.movement-history")
 local PlayerInit = require("scripts.player-init")
 local PlayerMiningTools = require("scripts.player-mining-tools")
@@ -211,8 +210,7 @@ EventManager.on_event(
    end
 )
 
---Called for every player on every tick, to manage automatic walking and enforcing mouse pointer position syncs.
---Todo: create a new function for all mouse pointer related updates within this function
+--Called for every player on every tick, to keep the build preview at the cursor.
 local function move_characters(event)
    for pindex, player in pairs(storage.players) do
       local router = UiRouter.get_router(pindex)
@@ -222,11 +220,11 @@ local function move_characters(event)
       if VanillaMode.is_enabled(pindex) then
          player.player.game_view_settings.update_entity_selection = true
       elseif player.player.game_view_settings.update_entity_selection == false then
-         --Force the mouse pointer to the mod cursor if there is an item in hand
-         --(so that the game does not make a mess when you left click while the cursor is actually locked)
          local stack = game.get_player(pindex).cursor_stack
-         if stack and stack.valid_for_read then
-            if
+         if
+            stack
+            and stack.valid_for_read
+            and (
                stack.prototype.place_result ~= nil
                or stack.prototype.place_as_tile_result ~= nil
                or stack.is_blueprint
@@ -234,13 +232,10 @@ local function move_characters(event)
                or stack.is_upgrade_item
                or stack.prototype.type == "selection-tool"
                or stack.prototype.type == "copy-paste-tool"
-            then
-               --Force the pointer to the build preview location (and draw selection tool boxes)
-               Graphics.sync_build_cursor_graphics(pindex)
-            else
-               --Force the pointer to the cursor location (if on screen)
-               Mouse.move_mouse_pointer(vp:get_cursor_pos(), pindex)
-            end
+            )
+         then
+            --Draw the build preview and selection tool boxes at the cursor
+            Graphics.sync_build_cursor_graphics(pindex)
          end
       end
    end

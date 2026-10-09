@@ -82,8 +82,15 @@ target_compile_definitions(fa_core PUBLIC WIN32_LEAN_AND_MEAN NOMINMAX UNICODE _
 target_compile_options(fa_core PUBLIC /W4 /permissive- /utf-8 /EHsc)
 target_link_libraries(fa_core PRIVATE raw_pdb)
 
+# miniaudio and stb_vorbis as they come, built apart so our /W4 never reaches them.
+add_library(fa_miniaudio STATIC src/miniaudio.c)
+target_include_directories(fa_miniaudio PUBLIC vendor/miniaudio)
+target_compile_options(fa_miniaudio PRIVATE /W0)
+
 add_library(fa_native SHARED
   src/dllmain.cpp
+  src/audio.cpp
+  src/modfiles.cpp
   src/agui.cpp
   src/text.cpp
   src/prototypes.cpp
@@ -168,7 +175,7 @@ if(FA_BUILD_ID)
 endif()
 target_compile_definitions(fa_native PRIVATE FA_NATIVE_VERSION="${FA_NATIVE_VERSION}")
 # dbghelp only for UnDecorateSymbolName on RTTI names; symbol lookup goes through raw_pdb.
-target_link_libraries(fa_native PRIVATE fa_core minhook prism dbghelp ws2_32)
+target_link_libraries(fa_native PRIVATE fa_core minhook prism fa_miniaudio dbghelp ws2_32)
 
 add_executable(fa_symbols_check tools/check_symbols.cpp)
 target_link_libraries(fa_symbols_check PRIVATE fa_core)

@@ -1,7 +1,6 @@
 --Here: Fast travel, structure travel, etc.
 local FaUtils = require("scripts.fa-utils")
 local Graphics = require("scripts.graphics")
-local Mouse = require("scripts.mouse")
 local Teleport = require("scripts.teleport")
 local UiRouter = require("scripts.ui.router")
 local Viewpoint = require("scripts.viewpoint")

@@ -1706,7 +1706,7 @@ function mod.read_nearest_damaged_ent_info(pos, pindex)
    else
       --Move cursor to closest
       vp:set_cursor_pos(closest.position)
-      Graphics.draw_cursor_highlight(pindex, closest, nil, nil)
+      Graphics.draw_cursor_highlight(pindex, closest, nil)
 
       --Report the result
       min_dist = math.floor(min_dist)

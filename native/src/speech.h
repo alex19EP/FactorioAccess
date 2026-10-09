@@ -5,6 +5,10 @@
 
 namespace fa::speech {
 
+// False for a game nobody plays at the keyboard: a benchmark (the mod's test runs), a dedicated
+// server, save creation. Such a game is left silent.
+bool hasPlayer();
+
 // Starts the speech thread, which owns Prism: a Prism backend instance is not thread-safe, so
 // every backend call happens there and other threads only queue text. A game started without a
 // player (a benchmark, a dedicated server, save creation) gets no thread and no Prism.

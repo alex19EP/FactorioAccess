@@ -29,15 +29,6 @@ std::condition_variable g_wake;
 std::deque<Utterance> g_queue;
 std::atomic<bool> g_enabled = false;
 
-// Benchmarks (the mod's test runs), dedicated servers and save creation have no player at the
-// keyboard, so they leave the screen reader alone.
-bool hasPlayer() {
-   const wchar_t* commandLine = GetCommandLineW();
-   for (const wchar_t* flag : {L"--benchmark", L"--start-server", L"--create"})
-      if (std::wcsstr(commandLine, flag)) return false;
-   return true;
-}
-
 void PRISM_CALL onPrismLog(void*, PrismLogLevel level, const char* source, const char* message) {
    // Prism's own logging thread; fa::log is thread-safe.
    const char* tag = level == PRISM_LOG_LEVEL_ERROR ? "prism error" : level == PRISM_LOG_LEVEL_WARN ? "prism warn" : "prism";
@@ -95,6 +86,13 @@ void run() {
 }
 
 } // namespace
+
+bool hasPlayer() {
+   const wchar_t* commandLine = GetCommandLineW();
+   for (const wchar_t* flag : {L"--benchmark", L"--start-server", L"--create"})
+      if (std::wcsstr(commandLine, flag)) return false;
+   return true;
+}
 
 void start() {
    if (!hasPlayer()) {

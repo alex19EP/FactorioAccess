@@ -1,5 +1,5 @@
 --[[
-Vehicle Sounds - Audio feedback for vehicle movement using the launcher audio system.
+Vehicle Sounds - Audio feedback for vehicle movement, played by the native DLL.
 
 Plays a tone when the vehicle has moved a certain distance (capacitor model) or
 turned significantly. The tone's pan and pitch are derived from the vehicle's

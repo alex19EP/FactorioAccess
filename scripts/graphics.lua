@@ -2,9 +2,7 @@
 --Note: Does not include every single rendering call made by the mod, such as circles being drawn by obstacle clearing.
 
 local FaUtils = require("scripts.fa-utils")
-local Mouse = require("scripts.mouse")
 local UiRouter = require("scripts.ui.router")
-local VanillaMode = require("scripts.vanilla-mode")
 local Viewpoint = require("scripts.viewpoint")
 
 local mod = {}
@@ -67,8 +65,8 @@ function mod.sync_build_cursor_graphics(pindex)
    if game.is_multiplayer() then mod.set_cursor_colors_to_player_colors(pindex) end
 end
 
---Draws the mod cursor box and highlights an entity selected by the cursor. Also moves the mouse pointer to the mod cursor position.
-function mod.draw_cursor_highlight(pindex, ent, box_type, skip_mouse_movement)
+--Draws the mod cursor box and highlights an entity selected by the cursor.
+function mod.draw_cursor_highlight(pindex, ent, box_type)
    local p = game.get_player(pindex)
    local vp = Viewpoint.get_viewpoint(pindex)
    local c_pos = vp:get_cursor_pos()
@@ -121,21 +119,6 @@ function mod.draw_cursor_highlight(pindex, ent, box_type, skip_mouse_movement)
 
    --Recolor cursor boxes if multiplayer
    if game.is_multiplayer() then mod.set_cursor_colors_to_player_colors(pindex) end
-
-   --Highlight nearby entities by default means (reposition the cursor)
-   if VanillaMode.is_enabled(pindex) or skip_mouse_movement == true then return end
-   local stack = game.get_player(pindex).cursor_stack
-   if
-      stack ~= nil
-      and stack.valid_for_read
-      and stack.valid
-      and (stack.prototype.place_result ~= nil or stack.is_blueprint)
-   then
-      return
-   end
-
-   --Move the mouse cursor to the object on screen or to the player position for objects off screen
-   Mouse.move_mouse_pointer(FaUtils.center_of_tile(c_pos), pindex)
 end
 
 --Redraws the player's cursor highlight box as a rectangle around the defined area.

@@ -1,11 +1,10 @@
---Here: Movement of the mouse pointer on screen. This is needed for graphics sync and gun aiming support.
+--Here: Where map positions fall on the player's screen.
 --Note: Does not include the mod cursor functions!
 
 -- The final pixel position depends on player screen resolution, player zoom level, this multiplier.
 local base_pixels_per_tile = 32
 
 local FaUtils = require("scripts.fa-utils")
-local VanillaMode = require("scripts.vanilla-mode")
 local Viewpoint = require("scripts.viewpoint")
 local mod = {}
 
@@ -28,31 +27,6 @@ local function get_pixel_pos_onscreen_center(position, pindex)
       and pixel_pos.x < screen_size.width
       and pixel_pos.y < screen_size.height
    return pixel_pos, on_screen, screen_center
-end
-
----Moves the mouse pointer to specified pixels on the screen of player
----@param pos {x:float,y:float} bounds must be prechecked
----@param pindex int
-local function move_pointer_to_pixels(pos, pindex)
-   local x = math.ceil(pos.x)
-   local y = math.ceil(pos.y)
-   local text_pos = " " .. x .. "," .. y
-   print("setCursor " .. pindex .. text_pos)
-   --game.get_player(pindex).print("moved to" .. text_pos, { volume_modifier = 0 })
-end
-
----Moves the mouse pointer to the correct pixel on the screen for an input map position.
----If the position is off screen, then the pointer is centered instead.
----Does not run in vanilla mode or if the mouse is released from synchronizing.
----@param position MapPosition
----@param pindex int
-function mod.move_mouse_pointer(position, pindex)
-   if VanillaMode.is_enabled(pindex) or game.get_player(pindex).game_view_settings.update_entity_selection == true then
-      return
-   end
-   local pixel_pos, on_screen, screen_center = get_pixel_pos_onscreen_center(position, pindex)
-   if not on_screen then pixel_pos = screen_center end
-   move_pointer_to_pixels(pixel_pos, pindex)
 end
 
 ---Checks if the position is on the screen

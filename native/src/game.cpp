@@ -288,6 +288,13 @@ bool resolve(pdb::SymbolTable& symbols) {
    address(layout.luaPushByte, "??$lua_pushnumber@E@@YAXPEAUlua_State@@E@Z");
    address(layout.luaPushInt, "??$lua_pushnumber@H@@YAXPEAUlua_State@@H@Z");
    address(layout.luaPushBoolean, "lua_pushboolean");
+   address(layout.luaGetField, "lua_getfield");
+   address(layout.luaRawGetI, "lua_rawgeti");
+   address(layout.luaType, "lua_type");
+   address(layout.luaToNumberX, "lua_tonumberx");
+   address(layout.luaToBoolean, "lua_toboolean");
+   address(layout.luaToLString, "lua_tolstring");
+   address(layout.luaRawLen, "lua_rawlen");
    address(layout.parseLocalisedString, "?parseLocalisedString@LuaHelper@@YA?AVLocalisedString@@PEAUlua_State@@H_N@Z");
    address(layout.localisedStringDestroy, "??1LocalisedString@@QEAA@XZ");
    size(layout.localisedStringSize, "LocalisedString");
@@ -864,6 +871,17 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.chartSearchPins, "ChartSearchResultGui", "pinButtonFlow");
    offset(layout.gameViewMapViewOptions, "GameView", "mapViewOptionsGui");
    offset(layout.globalMapViewSettings, "GlobalContext", "mapViewSettings.value");
+   offset(layout.globalModManager, "GlobalContext", "modManager.value");
+   address(layout.resolveResourcePath,
+           "?resolveResourcePath@ModManager@@QEBA?AVPackagePath@@V?$basic_string_view@DU?$char_traits@D@std@@@std@@@Z");
+   address(layout.packagePathOpen,
+           "?open@PackagePath@@QEBA?AV?$UniquePointer@VReadStream@@U?$SimpleDeleter@VReadStream@@@@$0A@@@XZ");
+   size(layout.packagePathSize, "PackagePath");
+   offset(layout.packagePathPath, "PackagePath", "path");
+   classSlot(layout.readStreamRead, "ReadStream", "read");
+   classSlot(layout.readStreamRemaining, "ReadStream", "remaining");
+   classSlot(layout.readStreamDestructor, "ReadStream", "~ReadStream");
+   address(layout.operatorDelete, "??3@YAXPEAX_K@Z");
    offset(layout.mapViewLogisticNetwork, "MapViewSettings", "showLogisticNetwork");
    offset(layout.mapViewElectricNetwork, "MapViewSettings", "showElectricNetwork");
    offset(layout.mapViewTurretRange, "MapViewSettings", "showTurretRange");
