@@ -88,8 +88,7 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.gameViewSelectionSurface, "GameView", "startSelectionSurface");
    offset(layout.gameViewSelectionPosition, "GameView", "selectionPosition");
    offset(layout.gameViewSelectionStartTime, "GameView", "selectionStartTime");
-   address(layout.drawSelectionCounts,
-           "?drawSelectionCounts@SelectionToolRenderer@@QEAAXAEAVDrawQueue@@AEBVColor@@@Z");
+   address(layout.drawSelectionCounts, "?drawSelectionCounts@SelectionToolRenderer@@QEAAXAEAVDrawQueue@@AEBVColor@@@Z");
    offset(layout.selectionRendererCursor, "SelectionToolRenderer", "cursorPosition");
    offset(layout.selectionRendererStart, "SelectionToolRenderer", "selectionStart");
    offset(layout.selectionRendererDeconstruction, "SelectionToolRenderer", "isDeconstructionPlanner");
@@ -186,11 +185,13 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.settingsTooFar, "EntityToBeBuiltSettings", "tooFar");
    offset(layout.settingsBlueprint, "EntityToBeBuiltSettings", "blueprint");
    offset(layout.settingsPlayer, "EntityToBeBuiltSettings", "player");
-   address(layout.renderCursorBox,
-           "?renderCursorBox@RenderUtil@@YAXW4CursorBoxType@1@VBoundingBox@@AEAVDrawQueue@@W4Enum@RenderLayer@@CNVColor@@"
-           "@Z");
-   address(layout.renderDoubleCursorBox, "?renderDoubleCursorBox@RenderUtil@@YAXW4CursorBoxType@1@AEBVBoundingBox@@1AEAV"
-                                         "DrawQueue@@W4Enum@RenderLayer@@VColor@@@Z");
+   address(
+      layout.renderCursorBox,
+      "?renderCursorBox@RenderUtil@@YAXW4CursorBoxType@1@VBoundingBox@@AEAVDrawQueue@@W4Enum@RenderLayer@@CNVColor@@"
+      "@Z");
+   address(layout.renderDoubleCursorBox,
+           "?renderDoubleCursorBox@RenderUtil@@YAXW4CursorBoxType@1@AEBVBoundingBox@@1AEAV"
+           "DrawQueue@@W4Enum@RenderLayer@@VColor@@@Z");
    address(layout.adapterRenderCursorBox, "?renderCursorBox@DrawAdapter@@AEBAXAEBVEntity@@V?$NamedBool@"
                                           "VSkipSurfaceCheckTag@@@@W4CursorBoxType@RenderUtil@@@Z");
    address(layout.adapterDestroy, "?destroy@DrawAdapter@@UEBAXPEAVEntity@@@Z");
@@ -231,8 +232,9 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.globalUtilitySprites, "GlobalContext", "utilitySprites.value");
    size(layout.utilitySpritesSize, "UtilitySprites");
    offset(layout.utilitySpritesMapping, "UtilitySprites", "spritesMapping");
-   address(layout.drawInfoIcon, "?drawInfoIcon@DrawQueue@@QEAAXPEBVSprite@@VQualityCondition@@AEBVMapPosition@@NVDrawingFlags@@"
-                                "W4Enum@RenderLayer@@AEBVVector@@CVColor@@@Z");
+   address(layout.drawInfoIcon,
+           "?drawInfoIcon@DrawQueue@@QEAAXPEBVSprite@@VQualityCondition@@AEBVMapPosition@@NVDrawingFlags@@"
+           "W4Enum@RenderLayer@@AEBVVector@@CVColor@@@Z");
    offset(layout.qualityDrawByDefault, "QualityPrototype", "drawSpriteByDefault");
    address(layout.comparisonStr, "?str@Comparison@@QEBAPEBDXZ");
    address(layout.luaParamEntity,
@@ -439,8 +441,8 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.iconButtonSprite, "IconButton", "icon.sprite");
    offset(layout.spriteOwner, "Sprite", "owner");
    offset(layout.prototypeLocalisedName, "PrototypeBase", "localisedName");
-   address(layout.localisedStringStr,
-           "?str@LocalisedString@@QEBAAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@PEBVLocaleProvider@@@Z");
+   address(layout.localisedStringStr, "?str@LocalisedString@@QEBAAEBV?$basic_string@DU?$char_traits@D@std@@V?$"
+                                      "allocator@D@2@@std@@PEBVLocaleProvider@@@Z");
    offset(layout.prototypeName, "PrototypeBase", "name");
 
    offset(layout.slotInventory, "InventoryGuiSlot", "inventory");
@@ -475,8 +477,7 @@ bool resolve(pdb::SymbolTable& symbols) {
            "?indexToPrototype@?$PrototypeList@VRecipePrototype@@@@2V?$vector@PEAVRecipePrototype@@V?$allocator@"
            "PEAVRecipePrototype@@@std@@@std@@A");
    for (size_t i = 0; i < kNamedPrototypeCount; ++i) {
-      constexpr std::string_view kString =
-          "V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@";
+      constexpr std::string_view kString = "V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@";
       std::string type = kNamedPrototypes[i].type;
       std::string name = std::format("?nameToPrototype@?$PrototypeList@V{0}@@@@0V?$map@{1}PEAV{0}@@U?$less@X@2@V?$"
                                      "allocator@U?$pair@$$CB{1}PEAV{0}@@@std@@@2@@std@@A",
@@ -540,10 +541,10 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.blueprintGridWidth, "BlueprintSettingsGui", "snapToGridX");
    offset(layout.blueprintComponents, "BlueprintSettingsGui", "componentsTable");
    {
-      const char* include[] = {"includeEntitiesCheckbox", "includeModulesCheckbox", "includeTilesCheckbox",
-         "includeStationNamesCheckbox", "includeTrainsCheckbox", "includeFuelCheckbox", "includeVehiclesCheckbox"};
-      for (int i = 0; i < 7; ++i)
-         offset(layout.blueprintInclude[i], "BlueprintSettingsGui", include[i]);
+      const char* include[] = {"includeEntitiesCheckbox",     "includeModulesCheckbox", "includeTilesCheckbox",
+                               "includeStationNamesCheckbox", "includeTrainsCheckbox",  "includeFuelCheckbox",
+                               "includeVehiclesCheckbox"};
+      for (int i = 0; i < 7; ++i) offset(layout.blueprintInclude[i], "BlueprintSettingsGui", include[i]);
    }
    offset(layout.editableLabelText, "EditableLabel", "label");
    offset(layout.editableLabelField, "EditableLabel", "labelEdit");
@@ -557,8 +558,8 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.pictureViewLeftTop, "BlueprintWidget", "renderParameters.boundingBox.leftTop");
    offset(layout.picturePlayer, "BlueprintWidget", "context.player");
    classSlot(layout.adapterShowEntityInfo, "GameAdapter", "getShowEntityInfo");
-   address(layout.blueprintSelectionAt,
-           "?selectionFromPosition@Blueprint@@QEBA?AVBlueprintSelectionResult@@AEBVMapPosition@@AEBVSetupBlueprintParameters@@@Z");
+   address(layout.blueprintSelectionAt, "?selectionFromPosition@Blueprint@@QEBA?AVBlueprintSelectionResult@@"
+                                        "AEBVMapPosition@@AEBVSetupBlueprintParameters@@@Z");
    address(layout.picturePixelShift, "?getPixelShift@BlueprintWidget@@AEBA?AVPixelPosition@@AEBVPoint@agui@@@Z");
    size(layout.selectionResultSize, "BlueprintSelectionResult");
    offset(layout.selectionEntity, "BlueprintSelectionResult", "entity");
@@ -632,15 +633,15 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.constantSignals, "ConstantCombinator", "controlBehavior.sections.compiled");
    size(layout.compiledFilterSize, "CompiledLogisticFilter");
    {
-      const char* arithmetic[] = {"Multiply", "Divide",     "Add", "Subtract", "Modulo", "Power",
+      const char* arithmetic[] = {"Multiply",  "Divide",     "Add", "Subtract", "Modulo", "Power",
                                   "LeftShift", "RightShift", "AND", "OR",       "XOR"};
       for (size_t i = 0; i < std::size(arithmetic); ++i)
          enumerator(layout.arithmeticOperations[i], "ArithmeticCombinatorParameters::Operation", arithmetic[i]);
       const char* comparisons[] = {"GreaterThan", "LessThan", "Equals", "GreaterOrEqual", "LessOrEqual", "NotEqual"};
       for (size_t i = 0; i < std::size(comparisons); ++i)
          enumerator(layout.comparisons[i], "Comparison::Enum", comparisons[i]);
-      const char* selector[] = {"Select",        "Count",    "Random", "QualityTransfer", "StackSize",
-                                "RocketCapacity", "QualityFilter", "Time", "QualitySelect"};
+      const char* selector[] = {"Select",         "Count",         "Random", "QualityTransfer", "StackSize",
+                                "RocketCapacity", "QualityFilter", "Time",   "QualitySelect"};
       for (size_t i = 0; i < std::size(selector); ++i)
          enumerator(layout.selectorOperations[i], "SelectorCombinatorParameters::Operation", selector[i]);
    }
@@ -726,8 +727,7 @@ bool resolve(pdb::SymbolTable& symbols) {
    classSlot(layout.recordIsPreview, "BlueprintRecord", "isPreview");
    offset(layout.singleRecordBlueprint, "SingleBlueprintRecord", "blueprint");
    offset(layout.bookRecordRecords, "BlueprintBookRecord", "records");
-   address(layout.bookRecordActiveIndex,
-           "?getActiveIndex@BlueprintBookRecord@@QEBAGPEBVPlayer@@PEAVLatencyState@@@Z");
+   address(layout.bookRecordActiveIndex, "?getActiveIndex@BlueprintBookRecord@@QEBAGPEBVPlayer@@PEAVLatencyState@@@Z");
    offset(layout.playerLatencyState, "Player", "latencyState");
    offset(layout.bookRecordIcons, "BlueprintBookRecord", "previewIcons.data");
    offset(layout.bookRecordDescription, "BlueprintBookRecord", "description.value");
@@ -974,7 +974,8 @@ bool resolve(pdb::SymbolTable& symbols) {
    address(layout.getTechnology, "?getTechnology@TechnologyReference@@QEBAAEBVTechnology@@XZ");
    address(layout.technologyState, "?getState@Technology@@QEBA?AW4ResearchState@1@PEBVResearchQueue@@@Z");
    address(layout.techSlotLevel, "?getLevel@TechnologySlot@@QEBAIXZ");
-   address(layout.technologyNameWithLevel, "?getLocalisedNameWithLevel@TechnologyPrototype@@QEBA?AVLocalisedString@@I@Z");
+   address(layout.technologyNameWithLevel,
+           "?getLocalisedNameWithLevel@TechnologyPrototype@@QEBA?AVLocalisedString@@I@Z");
    address(layout.researchProgress, "?getProgress@ResearchManager@@QEBANAEBVTechnology@@@Z");
    address(layout.localisedStringFromKey, "??0LocalisedString@@QEAA@PEBD@Z");
    address(layout.localisedStringLiteral, "??0LocalisedString@@QEAA@W4Mode@0@PEBD@Z");
@@ -1003,7 +1004,8 @@ bool resolve(pdb::SymbolTable& symbols) {
                                      "optional@VGuiContext@@@std@@AEBVTile@@_N@Z");
    address(layout.tileInfoChange,
            "?change@?$SelectedInfo@VTile@@V?$ObjectButton@VTile@@VEmptyWidget@agui@@@@@@QEAAXAEBVTile@@_N@Z");
-   address(layout.tileInfoDestroy, "??_G?$SelectedInfo@VTile@@V?$ObjectButton@VTile@@VEmptyWidget@agui@@@@@@UEAAPEAXI@Z");
+   address(layout.tileInfoDestroy,
+           "??_G?$SelectedInfo@VTile@@V?$ObjectButton@VTile@@VEmptyWidget@agui@@@@@@UEAAPEAXI@Z");
    size(layout.tileInfoSize, "SelectedInfo<Tile,ObjectButton<Tile,agui::EmptyWidget> >");
    offset(layout.globalInterfaceSettings, "GlobalContext", "interfaceSettings.value");
    offset(layout.tooltipOnTheSide, "InterfaceSettings", "entityToolTipOnTheSide.value");
@@ -1016,7 +1018,8 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.gameViewActiveWindow, "GameView", "activeWindow");
 
    address(layout.loggingLog, "?log@Logging@@SAXPEBDIW4LogLevel@@0ZZ");
-   address(layout.stringAppend, "?append@?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@QEAAAEAV12@QEBD_K@Z");
+   address(layout.stringAppend,
+           "?append@?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@QEAAAEAV12@QEBD_K@Z");
    address(layout.versionForDisplay,
            "?strDetailedNoBuildMode@ApplicationVersion@@QEBA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@"
            "2@@std@@XZ");
@@ -1058,11 +1061,11 @@ bool resolve(pdb::SymbolTable& symbols) {
                  layout.chartSelectionSize, layout.patchInfoSize);
       ok = false;
    }
-   if (ok && (layout.simpleBuildInputSize > kSimpleBuildInputCapacity ||
-              layout.buildingModifierSize > kBuildingModifierCapacity || layout.buildIdSize > kBuildIdCapacity ||
-              layout.buildCheckDataSize > kBuildCheckDataCapacity ||
-              layout.buildCheckResultSize > kBuildCheckResultCapacity ||
-              layout.iteratorSize > kEntityIteratorCapacity)) {
+   if (ok &&
+       (layout.simpleBuildInputSize > kSimpleBuildInputCapacity ||
+        layout.buildingModifierSize > kBuildingModifierCapacity || layout.buildIdSize > kBuildIdCapacity ||
+        layout.buildCheckDataSize > kBuildCheckDataCapacity ||
+        layout.buildCheckResultSize > kBuildCheckResultCapacity || layout.iteratorSize > kEntityIteratorCapacity)) {
       log::error("A building structure outgrew its stack buffer: SimpleBuildInput {} bytes, BuildingModifier {}, "
                  "BuildID {}, BuildCheckData {}, BuildCheckResult {}, HeuristicEntityIterator {}",
                  layout.simpleBuildInputSize, layout.buildingModifierSize, layout.buildIdSize,
@@ -1086,8 +1089,8 @@ bool resolve(pdb::SymbolTable& symbols) {
                 layout.entityTileGridSize, layout.adapterCursorAdapter, layout.readAdapterDestructor,
                 layout.buildingModifierSize, layout.buildingModifierCentre, layout.blueprintRotation,
                 layout.blueprintFlip, layout.blueprintSnapToGrid, layout.adapterBuildabilityCheck);
-      log::info("Entity icons: Entity::draw slot {}, DrawQueue {} bytes, renderParameters {:#x}",
-                layout.entityDraw, layout.drawQueueSize, layout.drawQueueRenderParameters);
+      log::info("Entity icons: Entity::draw slot {}, DrawQueue {} bytes, renderParameters {:#x}", layout.entityDraw,
+                layout.drawQueueSize, layout.drawQueueRenderParameters);
    }
    return ok;
 }

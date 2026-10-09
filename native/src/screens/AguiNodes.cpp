@@ -154,7 +154,8 @@ int Navigable(const Widget* widget, int limit, std::span<const Widget* const> sk
         return 0;
     Kind kind = KindOf(widget);
     if (kind == Kind::Label)
-        return Phrase(widget).empty() ? 0 : static_cast<int>(std::min<std::size_t>(Lines(TextOf(widget)).size(), limit));
+        return Phrase(widget).empty() ? 0
+                                      : static_cast<int>(std::min<std::size_t>(Lines(TextOf(widget)).size(), limit));
     if (IsControl(kind))
         return 1;
     int count = 0;
@@ -397,10 +398,7 @@ class Walker
 {
 public:
     Walker(graph::GraphBuilder& builder, std::string prefix, std::vector<const Widget*> skip, Attachments attachments)
-        : _builder(builder)
-        , _prefix(std::move(prefix))
-        , _skip(std::move(skip))
-        , _attachments(std::move(attachments))
+        : _builder(builder), _prefix(std::move(prefix)), _skip(std::move(skip)), _attachments(std::move(attachments))
     {
         for (const auto& [host, attachment] : _attachments)
         {
@@ -455,8 +453,7 @@ public:
             for (std::size_t row = 0; row * columns < cells.size(); ++row)
             {
                 std::size_t end = std::min(cells.size(), (row + 1) * columns);
-                Row({cells.begin() + row * columns, cells.begin() + end}, path + "." + std::to_string(row),
-                    Key(path));
+                Row({cells.begin() + row * columns, cells.begin() + end}, path + "." + std::to_string(row), Key(path));
             }
             return;
         }
@@ -683,7 +680,7 @@ private:
     std::string ContainerLabel(const Widget* widget) const
     {
         for (const Widget* ancestor = widget ? agui::parent(widget) : nullptr; ancestor;
-             ancestor = agui::parent(ancestor))
+            ancestor = agui::parent(ancestor))
             if (auto it = _attachments.find(ancestor); it != _attachments.end() && !it->second.label.empty())
                 return it->second.label;
         return {};
@@ -865,8 +862,8 @@ std::string SlotText(const Widget* slot)
     agui::SlotRequest request = agui::slotRequest(slot);
     if (!request.name.empty())
     {
-        std::string item = request.quality.empty() ? std::string(request.name)
-                                                    : std::format("{} {}", request.quality, request.name);
+        std::string item =
+            request.quality.empty() ? std::string(request.name) : std::format("{} {}", request.quality, request.name);
         std::string requested = vocab::kSlotRequested(item, request.count);
         // An empty slot shows the request alone, the ghost of its item in place of a stack.
         text = agui::slotItem(slot).count == 0 ? requested : std::format("{}, {}", text, requested);
@@ -902,15 +899,17 @@ std::string TooltipText(const Widget* tooltip)
 {
     std::string text;
     // The tooltip itself stays hidden until the Gui places it; its content shows already.
-    ForEachChild(tooltip, [&](const Widget* child, const std::string&) {
-        for (const Widget* label : FindAll(child, "agui::Label"))
-            if (std::string line = LabelText(label); !line.empty())
-            {
-                if (std::string word = ToneWord(label, tooltip); !word.empty())
-                    line = std::format("{}, {}", word, line);
-                text += (text.empty() ? "" : "\n") + line;
-            }
-    });
+    ForEachChild(tooltip,
+        [&](const Widget* child, const std::string&)
+        {
+            for (const Widget* label : FindAll(child, "agui::Label"))
+                if (std::string line = LabelText(label); !line.empty())
+                {
+                    if (std::string word = ToneWord(label, tooltip); !word.empty())
+                        line = std::format("{}, {}", word, line);
+                    text += (text.empty() ? "" : "\n") + line;
+                }
+        });
     return text;
 }
 
@@ -1117,8 +1116,8 @@ void AddSubtree(graph::GraphBuilder& builder, const std::string& prefix, const W
     Walker(builder, prefix, std::move(skip), std::move(attachments)).Visit(widget, "", 0);
 }
 
-bool AddControl(graph::GraphBuilder& builder, const std::string& key, const Widget* widget,
-    std::function<std::string()> name)
+bool AddControl(
+    graph::GraphBuilder& builder, const std::string& key, const Widget* widget, std::function<std::string()> name)
 {
     if (!widget || !Shows(widget) || !IsControl(agui::kind(widget)))
         return false;
@@ -1182,7 +1181,8 @@ void AddChoices(graph::GraphBuilder& builder, const std::string& prefix, const W
             builder.AddItem(graph::ControlId::Referenced(groups[i], prefix + "groups/" + std::to_string(i)),
                 ControlNode(groups[i]));
         if (searchButton)
-            builder.AddItem(graph::ControlId::Referenced(searchButton, prefix + "groups/search"), ControlNode(searchButton));
+            builder.AddItem(
+                graph::ControlId::Referenced(searchButton, prefix + "groups/search"), ControlNode(searchButton));
         builder.EndRow();
     }
     // The selected group's choices: the table of slot buttons, with fillers ending each subgroup.
@@ -1203,16 +1203,14 @@ namespace
 {
 
 // "Rare Iron plate" for the tag "item=iron-plate,quality=rare": what the icon reads as in the line.
-std::string LinkName(std::string_view tag)
-{
-    return text::speakable(std::format("[{}]", tag));
-}
+std::string LinkName(std::string_view tag) { return text::speakable(std::format("[{}]", tag)); }
 
 graph::NodeVtable LinkNode(const Widget* label, std::size_t section, std::string name)
 {
     graph::NodeVtable vtable;
     vtable.HostTag = label;
-    vtable.Announcements.emplace_back([name = std::move(name)]() { return name; }, false, graph::AnnouncementKinds::Label);
+    vtable.Announcements.emplace_back(
+        [name = std::move(name)]() { return name; }, false, graph::AnnouncementKinds::Label);
     vtable.Announcements.emplace_back(
         []() { return std::string(vocab::kLink); }, false, graph::AnnouncementKinds::Role);
     vtable.OnActivate = [label, section]() { agui::clickRichTextLink(label, section); };
@@ -1263,7 +1261,8 @@ void AddLinkLines(graph::GraphBuilder& builder, const std::string& prefix, const
             continue;
         std::string key = std::format("{}/{}", prefix, index);
         builder.StartLine(key);
-        builder.AddItem(graph::ControlId::Referenced(label, key), TextNode(label, [line, index]() { return line(index); }));
+        builder.AddItem(
+            graph::ControlId::Referenced(label, key), TextNode(label, [line, index]() { return line(index); }));
         for (std::size_t i = 0; i < links.size(); ++i)
             if (links[i].line == index)
                 builder.AddItem(graph::ControlId::Referenced(label, std::format("{}/link{}", key, i)),

@@ -329,7 +329,7 @@ void detourAdapterRenderCursorBox(const void* adapter, const std::byte* entity, 
    Collector& collector = t_collector;
    if (!collector.active) return g_adapterRenderCursorBoxOriginal(adapter, entity, skipSurfaceCheck, type);
    const auto boxType = static_cast<uint8_t>(type);
-   const Kind kind = collector.adapterAction           ? *collector.adapterAction
+   const Kind kind = collector.adapterAction             ? *collector.adapterAction
                      : boxType == game::kCursorBoxEntity ? Kind::Keeps
                                                          : boxKind(boxType);
    add(collector.report, kind, entity);
@@ -446,8 +446,7 @@ Collecting::~Collecting() {
                       drawn.box.leftTop.y);
             continue;
          }
-         if (drawn.kind == Kind::Other)
-            log::info("Highlight box type {} on {}", drawn.type, entityName(entity));
+         if (drawn.kind == Kind::Other) log::info("Highlight box type {} on {}", drawn.type, entityName(entity));
          add(report, drawn.kind, entity);
       }
    }

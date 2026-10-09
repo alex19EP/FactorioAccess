@@ -61,7 +61,8 @@ struct ReadStream {
 
 std::optional<std::string> read(std::string_view resourcePath) {
    const auto* context = *reinterpret_cast<const std::byte* const*>(layout.globalContext);
-   const void* modManager = context ? *reinterpret_cast<const void* const*>(context + layout.globalModManager) : nullptr;
+   const void* modManager =
+      context ? *reinterpret_cast<const void* const*>(context + layout.globalModManager) : nullptr;
    if (!modManager) return std::nullopt;
    if (layout.packagePathSize > sizeof(PackagePath::storage)) {
       log::error("PackagePath is {} bytes, more than the {} we hold", layout.packagePathSize,

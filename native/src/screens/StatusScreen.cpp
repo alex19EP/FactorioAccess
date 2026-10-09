@@ -69,7 +69,8 @@ void StatusScreen::Build(graph::GraphBuilder& builder)
     if (research.button)
     {
         builder.BeginStop("research");
-        graph::NodeVtable vtable = ControlNode(research.button, [title = research.title]() { return LabelText(title); });
+        graph::NodeVtable vtable =
+            ControlNode(research.button, [title = research.title]() { return LabelText(title); });
         if (const Widget* progress = research.progress)
             SetValue(vtable, [progress]() { return LabelText(progress); });
         vtable.OnActivate = [this, button = research.button]() { Open(button); };
@@ -83,13 +84,12 @@ void StatusScreen::Build(graph::GraphBuilder& builder)
         builder.PushContext(std::string(vocab::kAlerts));
         for (const agui::AlertButton& alert : alerts)
         {
-            graph::NodeVtable vtable =
-                ControlNode(alert.button, [category = static_cast<uint8_t>(alert.category)]()
-                    { return vocab::alertCategory(category); });
+            graph::NodeVtable vtable = ControlNode(alert.button,
+                [category = static_cast<uint8_t>(alert.category)]() { return vocab::alertCategory(category); });
             SetValue(vtable, [this, button = alert.button]() { return std::format("{:.0f}", AlertCount(button)); });
             vtable.OnActivate = [this, button = alert.button]() { Open(button); };
-            builder.AddItem(graph::ControlId::Referenced(
-                                alert.button, std::format("alerts/{}", static_cast<int>(alert.category))),
+            builder.AddItem(
+                graph::ControlId::Referenced(alert.button, std::format("alerts/{}", static_cast<int>(alert.category))),
                 std::move(vtable));
         }
         builder.PopContext();

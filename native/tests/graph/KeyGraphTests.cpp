@@ -1,6 +1,8 @@
 // Conformance tests: engine operations (moves, reconciliation tiers, stop/region cycling, tree
 // semantics, behavior invokers). Ported from RTAccess tests/KeyGraphTests.cs via CyberAccess.
 
+// clang-format off: the builder chains are laid out like the graphs they build, a row per line.
+
 #include <memory>
 #include <string>
 #include <utility>

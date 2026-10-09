@@ -103,8 +103,7 @@ size_t readNumeric(const char* data, uint64_t& value) {
    case TypeRecordKind::LF_UQUADWORD:
       value = *reinterpret_cast<const uint64_t*>(payload);
       return sizeof(TypeRecordKind) + 8;
-   default:
-      return 0;
+   default: return 0;
    }
 }
 
@@ -275,16 +274,16 @@ public:
       for (int depth = 0; index && depth < 32; ++depth) {
          std::vector<uint32_t> slots;
          std::optional<uint32_t> primaryBase;
-         forEachField(classInfo(this->type(*index))->fieldList,
-                      [&](const TPI::FieldList& field, const char* name, uint64_t value) {
-                         if (field.kind == TypeRecordKind::LF_BCLASS && value == 0 && !primaryBase)
-                            primaryBase = classOf(field.data.LF_BCLASS.index);
-                         if (!name || name != method) return true;
-                         if (field.kind == TypeRecordKind::LF_ONEMETHOD && introducesVirtual(field.data.LF_ONEMETHOD.attributes))
-                            slots.push_back(static_cast<uint32_t>(value));
-                         if (field.kind == TypeRecordKind::LF_METHOD) collectIntroSlots(field.data.LF_METHOD.mList, slots);
-                         return true;
-                      });
+         forEachField(classInfo(this->type(*index))->fieldList, [&](const TPI::FieldList& field, const char* name,
+                                                                    uint64_t value) {
+            if (field.kind == TypeRecordKind::LF_BCLASS && value == 0 && !primaryBase)
+               primaryBase = classOf(field.data.LF_BCLASS.index);
+            if (!name || name != method) return true;
+            if (field.kind == TypeRecordKind::LF_ONEMETHOD && introducesVirtual(field.data.LF_ONEMETHOD.attributes))
+               slots.push_back(static_cast<uint32_t>(value));
+            if (field.kind == TypeRecordKind::LF_METHOD) collectIntroSlots(field.data.LF_METHOD.mList, slots);
+            return true;
+         });
          if (slots.size() == 1) return slots[0] / static_cast<uint32_t>(sizeof(void*));
          if (slots.size() > 1) {
             log::error("Virtual method {}::{} is overloaded; cannot pick a slot", type, method);
@@ -368,9 +367,10 @@ public:
                scope = isInlineSite(scope->header.kind) ? stream.GetParentRecord(scope->data.S_INLINESITE)
                                                         : stream.GetParentRecord(scope->data.S_BLOCK32);
             }
-            into[it->second].insert(isProcedure(scope->header.kind)
-                                       ? std::string(scope->data.S_GPROC32.name)
-                                       : std::format("<scope record {:#x}>", static_cast<uint16_t>(scope->header.kind)));
+            into[it->second].insert(
+               isProcedure(scope->header.kind)
+                  ? std::string(scope->data.S_GPROC32.name)
+                  : std::format("<scope record {:#x}>", static_cast<uint16_t>(scope->header.kind)));
          });
       }
       for (size_t i = 0; i < results.size(); ++i) results[i].into.assign(into[i].begin(), into[i].end());
@@ -425,8 +425,7 @@ private:
    }
 
    static long long elapsedMs(std::chrono::steady_clock::time_point started) {
-      return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - started)
-         .count();
+      return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - started).count();
    }
 
    const TPI::Record* type(uint32_t index) const {
@@ -561,9 +560,7 @@ private:
             if (!forEachField(field->data.LF_INDEX.type, visit)) return false;
             next = reinterpret_cast<const char*>(&field->data.LF_INDEX + 1);
             break;
-         case TypeRecordKind::LF_VFUNCTAB:
-            next = reinterpret_cast<const char*>(&field->data.LF_VFUNCTAB + 1);
-            break;
+         case TypeRecordKind::LF_VFUNCTAB: next = reinterpret_cast<const char*>(&field->data.LF_VFUNCTAB + 1); break;
          case TypeRecordKind::LF_NESTTYPE:
             next = field->data.LF_NESTTYPE.name + std::strlen(field->data.LF_NESTTYPE.name) + 1;
             break;
@@ -578,8 +575,8 @@ private:
             // Introducing virtual methods carry their vtable offset before the name; it is passed
             // to visit as the offset.
             bool intro = introducesVirtual(field->data.LF_ONEMETHOD.attributes);
-            const char* name = reinterpret_cast<const char*>(field->data.LF_ONEMETHOD.vbaseoff) +
-                               (intro ? sizeof(uint32_t) : 0);
+            const char* name =
+               reinterpret_cast<const char*>(field->data.LF_ONEMETHOD.vbaseoff) + (intro ? sizeof(uint32_t) : 0);
             if (!visit(*field, name, intro ? field->data.LF_ONEMETHOD.vbaseoff[0] : 0)) return false;
             next = name + std::strlen(name) + 1;
             break;
@@ -620,9 +617,9 @@ private:
 };
 
 std::string Identity::key() const {
-   return std::format("{:08X}{:04X}{:04X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}-{}", guid.Data1,
-                      guid.Data2, guid.Data3, guid.Data4[0], guid.Data4[1], guid.Data4[2], guid.Data4[3],
-                      guid.Data4[4], guid.Data4[5], guid.Data4[6], guid.Data4[7], age);
+   return std::format("{:08X}{:04X}{:04X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}-{}", guid.Data1, guid.Data2,
+                      guid.Data3, guid.Data4[0], guid.Data4[1], guid.Data4[2], guid.Data4[3], guid.Data4[4],
+                      guid.Data4[5], guid.Data4[6], guid.Data4[7], age);
 }
 
 std::optional<Identity> identityOf(HMODULE image) {
@@ -677,9 +674,9 @@ PdbFile* SymbolTable::pdb() {
    auto started = std::chrono::steady_clock::now();
    pdb_ = PdbFile::open(path, *identity_);
    if (pdb_) {
-      log::info("Opened {} in {} ms", path.string(),
-                std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - started)
-                   .count());
+      log::info(
+         "Opened {} in {} ms", path.string(),
+         std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - started).count());
    }
    return pdb_.get();
 }

@@ -109,13 +109,34 @@ std::optional<uint32_t> keyNamed(std::string_view name) {
    if (name.size() == 1 && ((name[0] >= 'a' && name[0] <= 'z') || (name[0] >= '0' && name[0] <= '9')))
       return static_cast<uint32_t>(name[0]);
    static const std::pair<std::string_view, uint32_t> named[] = {
-      {"tab", Tab},         {"enter", Return},  {"return", Return},     {"escape", Escape}, {"esc", Escape},
-      {"space", Space},     {"backspace", Backspace}, {"delete", Delete}, {"home", Home}, {"end", End},
-      {"pageup", PageUp},   {"pagedown", PageDown}, {"up", Up},          {"down", Down},     {"left", Left},
-      {"right", Right},     {"f1", F1},         {"[", LeftBracket},     {"]", RightBracket},
-      {"\\", Backslash},    {"backslash", Backslash}, {"=", Equals}, {"-", Minus},
+      {"tab", Tab},
+      {"enter", Return},
+      {"return", Return},
+      {"escape", Escape},
+      {"esc", Escape},
+      {"space", Space},
+      {"backspace", Backspace},
+      {"delete", Delete},
+      {"home", Home},
+      {"end", End},
+      {"pageup", PageUp},
+      {"pagedown", PageDown},
+      {"up", Up},
+      {"down", Down},
+      {"left", Left},
+      {"right", Right},
+      {"f1", F1},
+      {"[", LeftBracket},
+      {"]", RightBracket},
+      {"\\", Backslash},
+      {"backslash", Backslash},
+      {"=", Equals},
+      {"-", Minus},
       // The game's console keys.
-      {"/", Slash},         {"slash", Slash},   {"`", Grave},           {"grave", Grave},
+      {"/", Slash},
+      {"slash", Slash},
+      {"`", Grave},
+      {"grave", Grave},
       {"lalt", LeftAlt}, // alone, as the game's alt mode key
    };
    for (const auto& [n, key] : named)
@@ -130,10 +151,14 @@ std::optional<Chord> parseChord(std::string_view token) {
       // A lone "+" or a trailing one is the key itself, not a separator.
       if (plus == std::string_view::npos || plus + 1 == token.size()) break;
       std::string_view mod = token.substr(0, plus);
-      if (mod == "shift") chord.shift = true;
-      else if (mod == "ctrl") chord.ctrl = true;
-      else if (mod == "alt") chord.alt = true;
-      else return std::nullopt;
+      if (mod == "shift")
+         chord.shift = true;
+      else if (mod == "ctrl")
+         chord.ctrl = true;
+      else if (mod == "alt")
+         chord.alt = true;
+      else
+         return std::nullopt;
       token.remove_prefix(plus + 1);
    }
    auto key = keyNamed(token);
@@ -252,7 +277,8 @@ std::string dumpWindows() {
    if (!root) return "(no gui)\n";
    std::string out;
    for (const agui::Widget* child : agui::children(root))
-      if (agui::visible(child)) out += std::format("==== {} ====\n{}\n", agui::className(child), screens::DescribeTree(child));
+      if (agui::visible(child))
+         out += std::format("==== {} ====\n{}\n", agui::className(child), screens::DescribeTree(child));
    return out.empty() ? "(no visible window)\n" : out;
 }
 
@@ -307,8 +333,7 @@ std::pair<int, std::string> route(const Request& request) {
       return {200, out};
    }
 
-   if (request.path == "/screen")
-      return {200, onGameThread([] { return nav::ScreenManager::Get().Describe(); })};
+   if (request.path == "/screen") return {200, onGameThread([] { return nav::ScreenManager::Get().Describe(); })};
 
    if (request.path == "/key") {
       std::string spec = request.method == "POST" ? request.body : queryParam(request.query, "keys");
@@ -383,7 +408,8 @@ void handle(SOCKET client) {
    timeout = 1000;
    setsockopt(client, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<const char*>(&timeout), sizeof(timeout));
    char sink[512];
-   while (recv(client, sink, sizeof(sink), 0) > 0) {}
+   while (recv(client, sink, sizeof(sink), 0) > 0) {
+   }
    closesocket(client);
 }
 
@@ -446,7 +472,8 @@ bool enabled(const std::filesystem::path& directory) {
 void start(const std::filesystem::path& directory) {
    if (!enabled(directory)) return;
    uint16_t port = kDefaultPort;
-   if (std::string env = environment("FA_DEV_PORT"); !env.empty()) std::from_chars(env.data(), env.data() + env.size(), port);
+   if (std::string env = environment("FA_DEV_PORT"); !env.empty())
+      std::from_chars(env.data(), env.data() + env.size(), port);
 
    WSADATA wsa;
    if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) {

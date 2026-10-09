@@ -22,8 +22,8 @@ void AddPlanner(graph::GraphBuilder& builder, const Widget* window)
     builder.BeginStop("planner");
     builder.StartRow();
     if (Shows(name))
-        builder.AddItem(graph::ControlId::Referenced(name, "planner/name"),
-            TextNode(name, [name]() { return LabelText(name); }));
+        builder.AddItem(
+            graph::ControlId::Referenced(name, "planner/name"), TextNode(name, [name]() { return LabelText(name); }));
     int index = 0;
     for (const Widget* button : FindAll(agui::member(part, layout.frameSubheader), "agui::Button"))
         AddControl(builder, "planner/" + std::to_string(index++), button);
@@ -74,7 +74,8 @@ void DeconstructionPlannerScreen::BuildWindow(graph::GraphBuilder& builder, cons
     builder.BeginStop(filters);
     if (!titleText.empty())
         builder.PushContext(titleText);
-    AddGrid(builder, filters, agui::member(window, tiles ? layout.deconTileFilters : layout.deconEntityFilters),
+    AddGrid(
+        builder, filters, agui::member(window, tiles ? layout.deconTileFilters : layout.deconEntityFilters),
         [](const Widget* cell) { return agui::derivesFrom(cell, "ChooseButtonBase"); },
         [](const Widget* cell) { return ControlNode(cell); });
     if (!titleText.empty())

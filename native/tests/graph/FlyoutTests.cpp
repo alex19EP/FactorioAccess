@@ -5,6 +5,8 @@
 // The invariant under test throughout: a flyout is NOT a tree. It has no persistent state, its
 // owner stays an ordinary activatable strip item, and none of the tree code paths may fire.
 
+// clang-format off: the builder chains are laid out like the graphs they build, a row per line.
+
 #include <stdexcept>
 #include <string>
 #include <vector>

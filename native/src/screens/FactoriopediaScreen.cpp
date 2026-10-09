@@ -44,8 +44,8 @@ std::string EntryText(const Widget* slot)
     if (!agui::isSlotButton(slot))
         return NameOf(slot);
     agui::SlotButton button = agui::slotButton(slot);
-    std::string text = button.quality.empty() ? std::string(button.name)
-                                              : std::format("{} {}", button.quality, button.name);
+    std::string text =
+        button.quality.empty() ? std::string(button.name) : std::format("{} {}", button.quality, button.name);
     if (button.count <= 0)
         return text;
     if (button.count >= 100 || button.count == std::floor(button.count))
@@ -62,17 +62,13 @@ graph::NodeVtable EntryNode(const Widget* slot, std::function<std::string()> tex
         text = [slot]() { return EntryText(slot); };
     vtable.Announcements.clear();
     vtable.Announcements.emplace_back(std::move(text), false, Kinds::Label);
-    vtable.Announcements.emplace_back(
-        [slot]() { return agui::buttonToggled(slot) ? std::string(vocab::kSelected) : std::string(); }, true,
-        Kinds::Selected);
+    vtable.Announcements.emplace_back([slot]()
+        { return agui::buttonToggled(slot) ? std::string(vocab::kSelected) : std::string(); }, true, Kinds::Selected);
     return vtable;
 }
 
 // The page's title, "Wooden chest (Recipe/Item/Entity)": the entry's icon before its name reads once.
-std::string TitleText(const Widget* title)
-{
-    return text::speakable(agui::text(title));
-}
+std::string TitleText(const Widget* title) { return text::speakable(agui::text(title)); }
 
 bool HasSlot(const Widget* table)
 {
@@ -166,7 +162,8 @@ void AddHeader(graph::GraphBuilder& builder, const Widget* header)
             std::string key = "header/" + std::to_string(index++);
             // The search button is a toggle too, but it opens the field rather than switching
             // anything on.
-            if (agui::kind(child) == Kind::Button && agui::buttonIsToggle(child) && !agui::derivesFrom(child, "SearchBar"))
+            if (agui::kind(child) == Kind::Button && agui::buttonIsToggle(child)
+                && !agui::derivesFrom(child, "SearchBar"))
             {
                 auto checked = [child]()
                 { return std::string(agui::buttonToggled(child) ? vocab::kChecked : vocab::kUnchecked); };
@@ -193,7 +190,8 @@ void AddList(graph::GraphBuilder& builder, const Widget* list)
     {
         builder.StartRow("groups");
         for (std::size_t i = 0; i < groups.size(); ++i)
-            builder.AddItem(graph::ControlId::Referenced(groups[i], "groups/" + std::to_string(i)), ControlNode(groups[i]));
+            builder.AddItem(
+                graph::ControlId::Referenced(groups[i], "groups/" + std::to_string(i)), ControlNode(groups[i]));
         builder.EndRow();
     }
     // The chosen group's entries, a table with fillers ending each subgroup's line.
@@ -201,9 +199,8 @@ void AddList(graph::GraphBuilder& builder, const Widget* list)
     for (const Widget* table : FindAll(list, "agui::Table"))
         if (HasSlot(table))
             AddGrid(
-                builder, "entries" + std::to_string(index++), table,
-                [](const Widget* cell) { return agui::isSlotButton(cell); },
-                [](const Widget* cell) { return EntryNode(cell); });
+                builder, "entries" + std::to_string(index++), table, [](const Widget* cell)
+                { return agui::isSlotButton(cell); }, [](const Widget* cell) { return EntryNode(cell); });
 }
 
 } // namespace
@@ -254,7 +251,8 @@ void FactoriopediaScreen::Build(graph::GraphBuilder& builder)
 
     builder.BeginStop("page");
     if (title)
-        builder.AddItem(graph::ControlId::Referenced(title, kTitleKey), TextNode(title, [title]() { return TitleText(title); }));
+        builder.AddItem(
+            graph::ControlId::Referenced(title, kTitleKey), TextNode(title, [title]() { return TitleText(title); }));
     PageWalker(builder).Visit(pedia.page, "page");
 
     if (!caption.empty())

@@ -7,9 +7,9 @@
 //
 // Only the topmost window is navigable, or the one holding an open modal, as for a sighted
 // player. Over a loaded game that is the window of the menu state on top of the app's state stack,
-// and nothing at all during plain play, so the game's own windows stay with the mod. A screen stays one window: when its window is replaced (the main menu opening Single
-// player), it goes inactive for a frame, so the manager pops it and attaches afresh, landing on
-// the new window's start.
+// and nothing at all during plain play, so the game's own windows stay with the mod. A screen stays one window: when
+// its window is replaced (the main menu opening Single player), it goes inactive for a frame, so the manager pops it
+// and attaches afresh, landing on the new window's start.
 //
 // Cursor write-back (P11) gives the game's keyboard focus to the widget under our cursor and
 // scrolls it into view. The mouse is never touched.

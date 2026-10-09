@@ -56,7 +56,7 @@ std::optional<std::string> localisedName(std::string_view kind, std::string_view
       if (!prototype) return std::nullopt;
       using Str = const MsvcString* (*)(const void* localisedString, const void* localeProvider);
       return std::string(
-          view(*reinterpret_cast<Str>(layout.localisedStringStr)(prototype + layout.prototypeLocalisedName, nullptr)));
+         view(*reinterpret_cast<Str>(layout.localisedStringStr)(prototype + layout.prototypeLocalisedName, nullptr)));
    }
    return std::nullopt;
 }

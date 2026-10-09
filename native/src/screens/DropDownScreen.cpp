@@ -30,11 +30,8 @@ void DropDownScreen::Build(graph::GraphBuilder& builder)
             continue;
         graph::NodeVtable vtable = TextNode(option, [option]() { return OwnText(option); });
         int index = static_cast<int>(i);
-        vtable.Announcements.emplace_back(
-            [dropDown, index]()
-            {
-                return agui::dropDownSelected(dropDown) == index ? std::string(vocab::kSelected) : std::string();
-            },
+        vtable.Announcements.emplace_back([dropDown, index]()
+            { return agui::dropDownSelected(dropDown) == index ? std::string(vocab::kSelected) : std::string(); },
             false, graph::AnnouncementKinds::Selected);
         vtable.OnActivate = [option]() { agui::press(option, agui::MouseButton::Left, false, false); };
         std::string key = "option/" + std::to_string(i);

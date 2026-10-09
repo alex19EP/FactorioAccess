@@ -24,8 +24,7 @@ public:
     /// The line for landing on `to` having come from `from` (null = from nothing: the full path
     /// reads). `transitionLabel` is the crossed edge's spoken line, when it had one. Empty when
     /// there is nothing to say.
-    static std::string Compose(const GraphNode* from, const GraphNode* to,
-        const std::string& transitionLabel = "");
+    static std::string Compose(const GraphNode* from, const GraphNode* to, const std::string& transitionLabel = "");
 
     /// The full readout for a landing with no prior focus (screen entry, focus restore).
     static std::string ComposeFull(const GraphNode* to) { return Compose(nullptr, to); }

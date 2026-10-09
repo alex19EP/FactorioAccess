@@ -165,7 +165,8 @@ std::vector<std::string> upgradeIcons(const std::byte* planner) {
    const auto& mappings = at<MsvcVector<const std::byte>>(planner, layout.upgradeDataMappings);
    for (const std::byte* mapping = mappings.first; mapping < mappings.last && names.size() < kIconsShown;
         mapping += layout.mappingSize) {
-      if (at<uint16_t>(mapping, layout.mappingSourceId) == 0 && at<uint8_t>(mapping, layout.mappingSourceQuality) == 0 &&
+      if (at<uint16_t>(mapping, layout.mappingSourceId) == 0 &&
+          at<uint8_t>(mapping, layout.mappingSourceQuality) == 0 &&
           at<uint16_t>(mapping, layout.mappingSourceEntity) == 0 &&
           at<uint8_t>(mapping, layout.mappingSourceEntityQuality) == 0)
          continue;
@@ -183,7 +184,8 @@ std::vector<std::string> upgradeIcons(const std::byte* planner) {
 
 // A Blueprint, a DeconstructionData or an UpgradeData, held by an item or a library record.
 Shown blueprintShown(const std::byte* blueprint) {
-   return {{}, chosenIcons(blueprint + layout.blueprintDataIcons), stringAt(blueprint, layout.blueprintDataDescription)};
+   return {
+      {}, chosenIcons(blueprint + layout.blueprintDataIcons), stringAt(blueprint, layout.blueprintDataDescription)};
 }
 
 Shown deconShown(const std::byte* planner) {
@@ -243,8 +245,8 @@ std::optional<Shown> shown(const void* item) { return shownAt(item, 0); }
 std::optional<Shown> shownRecord(const void* record, const void* player) { return shownRecordAt(record, player, 0); }
 
 std::string recordItem(const void* record) {
-   return named(layout.itemPrototypes, at<uint16_t>(agui::objectAsBase(record, ".?AVBlueprintRecord@@"), layout.recordItem),
-                0);
+   return named(layout.itemPrototypes,
+                at<uint16_t>(agui::objectAsBase(record, ".?AVBlueprintRecord@@"), layout.recordItem), 0);
 }
 
 } // namespace fa::blueprints

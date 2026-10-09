@@ -8,9 +8,9 @@ namespace fa::parts {
 namespace {
 
 // In the order Ctrl+Tab visits them, None first.
-constexpr Part kOrder[] = {
-   Part::None,           Part::ModWindows, Part::QuickBar,      Part::ShortcutBar,        Part::SideMenu,
-   Part::MapViewOptions, Part::Status,     Part::CraftingQueue, Part::TrackedAchievements};
+constexpr Part kOrder[] = {Part::None,        Part::ModWindows,    Part::QuickBar,
+                           Part::ShortcutBar, Part::SideMenu,      Part::MapViewOptions,
+                           Part::Status,      Part::CraftingQueue, Part::TrackedAchievements};
 constexpr int kCount = static_cast<int>(std::size(kOrder));
 
 // Set from Lua on the game's update and from the navigator on the Gui's logic.
@@ -31,8 +31,7 @@ int indexOf(Part part) {
 // is, so the search ends.
 Part next(Part from, int step) {
    int index = indexOf(from);
-   do
-      index = (index + step) % kCount;
+   do index = (index + step) % kCount;
    while (!available(kOrder[index]));
    return kOrder[index];
 }

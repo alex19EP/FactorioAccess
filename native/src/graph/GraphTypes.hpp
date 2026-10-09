@@ -74,9 +74,7 @@ struct NodeAnnouncement
     NodeAnnouncement() = default;
 
     NodeAnnouncement(std::function<std::string()> text, bool live = false, std::string kind = "")
-        : Text(std::move(text))
-        , Live(live)
-        , Kind(std::move(kind))
+        : Text(std::move(text)), Live(live), Kind(std::move(kind))
     {
     }
 
@@ -305,10 +303,7 @@ struct GraphNode
         return t ? &*t : nullptr;
     }
 
-    void SetTransition(GraphDir dir, Transition t)
-    {
-        Transitions[static_cast<std::size_t>(dir)] = std::move(t);
-    }
+    void SetTransition(GraphDir dir, Transition t) { Transitions[static_cast<std::size_t>(dir)] = std::move(t); }
 };
 
 /// One built snapshot of a graph: the nodes (keyed by structural identity), their order of
