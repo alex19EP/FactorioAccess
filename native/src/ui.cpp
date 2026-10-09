@@ -10,6 +10,7 @@
 #include "screens/BeltScreen.hpp"
 #include "screens/AlertsScreen.hpp"
 #include "screens/CharacterScreen.hpp"
+#include "screens/ConsoleScreen.hpp"
 #include "screens/ControlSettingsScreen.hpp"
 #include "screens/CraftingQueueScreen.hpp"
 #include "screens/TrackedAchievementsScreen.hpp"
@@ -160,6 +161,8 @@ void start() {
    manager.Register(std::make_unique<screens::AlertsScreen>());
    // Factoriopedia, over the window it stacks on, the technology window's too.
    manager.Register(std::make_unique<screens::FactoriopediaScreen>());
+   // The console, over the map, the HUD or the window it was opened over.
+   manager.Register(std::make_unique<screens::ConsoleScreen>());
    // Over it or a window, the chooser of a filter one of their slots opened.
    manager.Register(std::make_unique<screens::FilterSelectScreen>());
    // Over any of them, an open dropdown's list.

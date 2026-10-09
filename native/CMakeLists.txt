@@ -145,6 +145,7 @@ add_library(fa_native SHARED
   src/screens/FactoriopediaScreen.cpp
   src/screens/TechnologyScreen.cpp
   src/screens/AlertsScreen.cpp
+  src/screens/ConsoleScreen.cpp
   src/screens/FilterSelectScreen.cpp
   src/parts.cpp
   src/ui.cpp

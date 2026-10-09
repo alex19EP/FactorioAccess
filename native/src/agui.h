@@ -505,8 +505,10 @@ ChartSearchResults chartSearchResults();
 // tag and add ping buttons, and on the map the overlay toggles. Null in the character view.
 const Widget* mapViewOptions();
 
-// The scenario's goal at the top left (GoalDescription's label), while it shows one.
-const Widget* goalLabel();
+// The scenario's goal window at the top left while it shows (GoalDescription): its frame, which
+// holds the goal text, hidden while empty, and under it what the scenario adds to player.gui.goal.
+// The window shows while either has something.
+const Widget* goalFrame();
 
 // The bars over the quickbar (ControllerProgressBar), those the game shows.
 struct HudBars {
@@ -550,6 +552,27 @@ void clickRichTextLink(const Widget* label, size_t section);
 // The tooltip hovering the icon shows, or null. It stays up until clearRichTextHover.
 const Widget* hoverRichTextLink(const Widget* label, size_t section);
 void clearRichTextHover(const Widget* label);
+
+// The console's input field (ConsoleInput, a child of the root widget) while the console is open,
+// else null. Main thread only.
+const Widget* consoleInput();
+// The lines of the console's log that the open console draws, from the top of the screen to the
+// newest at the bottom: the line as drawn (the speaker's name, then the message, in rich text) and
+// its icons, with gps tags among them. `item` (an OutputConsole::Item) keys the line and is what its
+// links act on; empty before the game has drawn the log once. Main thread only.
+struct ConsoleLine {
+   const void* item = nullptr;
+   std::string text;
+   std::vector<RichTextLink> links;
+};
+std::vector<ConsoleLine> consoleLines();
+// Mutating, so main thread inside logic() only. A click on a line's icon, as the mouse does: a gps
+// tag closes the console and opens the map there, a blueprint closes it and takes the blueprint.
+// Nothing when the line has left the log.
+void clickConsoleLink(const void* item, size_t section);
+// The tooltip hovering the icon shows, or null. It stays up until clearConsoleHover.
+const Widget* hoverConsoleLink(const void* item, size_t section);
+void clearConsoleHover();
 
 // The technology window (GameView::technologyGui, opened by T or the research box) while it shows,
 // else a null window. Main thread only.

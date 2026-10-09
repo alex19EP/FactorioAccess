@@ -24,6 +24,12 @@ GraphBuilder& GraphBuilder::BeginStop(std::string key)
     return *this;
 }
 
+GraphBuilder& GraphBuilder::LandOnLast()
+{
+    _landLast.insert(_stopKey);
+    return *this;
+}
+
 GraphBuilder& GraphBuilder::SetRegion(std::string key)
 {
     _regionKey = std::move(key);
@@ -316,6 +322,7 @@ std::unique_ptr<GraphRender> GraphBuilder::Build()
         : render->Order[0]->Id;
     StampPositions();
 
+    render->LandLastStops = std::move(_landLast);
     render->Pool = std::move(_pool);
     return render;
 }

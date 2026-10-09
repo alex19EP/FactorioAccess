@@ -2,7 +2,9 @@
 
 #include "prototypes.h"
 
+#include <algorithm>
 #include <array>
+#include <string>
 
 namespace fa::text {
 
@@ -117,6 +119,17 @@ size_t appendTag(std::string_view text, std::string& out) {
 
    // The info icon only marks a text with a tooltip, which the tooltip key reads.
    if (tag == "img" && value == "info") return close + 1;
+
+   // [gps=-44.5,12.5,nauvis] is a map position: its coordinates are numbers, signs included.
+   if (tag == "gps") {
+      std::string_view x = value.substr(0, value.find(','));
+      std::string_view rest = value.substr(std::min(value.size(), x.size() + 1));
+      std::string_view y = rest.substr(0, rest.find(','));
+      std::string position = std::string(x) + ", " + std::string(y);
+      if (y.size() < rest.size()) position += " " + readable(rest.substr(y.size() + 1));
+      appendWords(out, position);
+      return close + 1;
+   }
 
    Icon icon = tag == "img" ? spriteIcon(value) : prototypeIcon(tag, value);
    std::string_view after = text.substr(close + 1);

@@ -95,11 +95,13 @@ void StatusScreen::Build(graph::GraphBuilder& builder)
         builder.PopContext();
     }
 
-    if (const Widget* goal = agui::goalLabel())
+    // The goal, then what the scenario adds under it: the tutorial's hints, its drive progress bar,
+    // its table of items still to pack.
+    if (const Widget* goal = agui::goalFrame(); goal && HasContent(goal))
     {
         builder.BeginStop("goal");
         builder.PushContext(std::string(vocab::kGoal));
-        builder.AddItem(graph::ControlId::Referenced(goal, "goal"), TextNode(goal, [goal]() { return LabelText(goal); }));
+        AddSubtree(builder, "goal", goal);
         builder.PopContext();
     }
 

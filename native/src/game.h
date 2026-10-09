@@ -1246,7 +1246,9 @@ struct Layout {
    // IconButtonWithNumber::count. The alert button blinks by setting it to 0 every other half second.
    uint32_t iconButtonCount = 0;
    uint32_t gameViewGoal = 0;            // GameView::goalDescription, std::unique_ptr<GoalDescription>
-   uint32_t goalLabel = 0;               // GoalDescription::label, agui::Label
+   // The goal window's frame: the goal text (GoalDescription::label), then the root of the
+   // scenario's player.gui.goal, where story.lua's set_info puts hints, progress bars and tables.
+   uint32_t goalInnerFrame = 0;          // GoalDescription::innerFrame, agui::Frame
    uint32_t gameViewBottom = 0;          // GameView::bottomContainer, std::unique_ptr<BottomContainer>
    // BottomContainer's bars, each a GenericTargeter<ControllerProgressBar>.
    uint32_t bottomHealthBar = 0;
@@ -1280,6 +1282,29 @@ struct Layout {
    // clicked): what the label runs for the section under the mouse, on a move and on a click.
    uintptr_t richTextHandleHover = 0;
    uintptr_t richTextClearTooltip = 0;   // void RichTextHoverManager::clearTooltip()
+
+   // The console's log, as the open console draws it: OutputConsoleRenderer::getRenderItems merges
+   // the two lists of the player's OutputConsole newest first, until the top of the screen. Each
+   // line keeps its text wrapped at the width it was last drawn at, with the line's rich text laid
+   // out in sections as a label's are; its icons hover and click through the player's own hover
+   // manager, which needs the line (a gps tag pings and opens the map).
+   uint32_t playerOutputConsole = 0;      // Player::outputConsole, OutputConsole*
+   uint32_t playerConsoleHoverManager = 0; // Player::outputConsoleRichTextHoverManager, std::unique_ptr
+   // Each list (outputConsoleItems, outputConsoleItemsNotSaved) starts with its head node pointer.
+   uint32_t consoleNodeNext = 0;          // std::_List_node<OutputConsole::Item>::_Next
+   uint32_t consoleNodeValue = 0;         // std::_List_node<OutputConsole::Item>::_Myval, the Item
+   uint32_t consoleItemUpdateTick = 0;    // OutputConsole::Item::updateTick, MapTick (u64)
+   uint32_t consoleItemWrappedText = 0;   // OutputConsole::Item::wrappedText, std::unique_ptr<agui::ResizableText>
+   uint32_t resizableTextData = 0;        // agui::ResizableText::data, std::string: "[color=#..]Name[/color]: text"
+   uint32_t resizableTextRichText = 0;    // agui::ResizableText::richTextData, std::unique_ptr to TextDrawSections
+   uint32_t resizableTextMaxWidth = 0;    // agui::ResizableText::lastMaxWidth, int
+   uint32_t consoleRenderItemSize = 0;    // sizeof(OutputConsoleRenderer::RenderItem)
+   uint32_t consoleRenderItemItem = 0;    // OutputConsoleRenderer::RenderItem::item, OutputConsole::Item const*
+   // std::vector<RenderItem> OutputConsoleRenderer::getRenderItems(OutputConsole const&, bool consoleOpen,
+   // MapTick, DrawQueue*, int maxWidth): reads no member, so any `this` will do.
+   uintptr_t consoleGetRenderItems = 0;
+   uintptr_t consoleRenderItemsFree = 0;  // std::vector<OutputConsoleRenderer::RenderItem>::~vector
+   uintptr_t resizableTextLines = 0;      // agui::ResizableText::lines() const: wraps and lays out, if stale
 
    // The technology window (T), which also stacks over whatever window is open: the research queue,
    // the selected technology and the list of every technology on the left, the selected

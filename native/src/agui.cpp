@@ -1089,9 +1089,9 @@ ChartSearchResults chartSearchResults() {
 
 const Widget* mapViewOptions() { return shownMember(gameView(), layout.gameViewMapViewOptions); }
 
-const Widget* goalLabel() {
+const Widget* goalFrame() {
    const Widget* goal = shownMember(gameView(), layout.gameViewGoal);
-   return goal ? member(goal, layout.goalLabel) : nullptr;
+   return goal ? member(goal, layout.goalInnerFrame) : nullptr;
 }
 
 HudBars hudBars() {
@@ -1137,34 +1137,34 @@ std::byte* hoverManager(const Widget* label) {
    return hoverable ? const_cast<std::byte*>(hoverable + layout.hoverableLabelManager) : nullptr;
 }
 
-// The label's text sections, laid out as it draws them; empty without rich text.
-std::span<const std::byte> richTextSections(const Widget* label) {
-   const auto* text = at<const std::byte*>(asBaseChecked(label, ".?AVLabel@agui@@"), layout.labelRichText);
-   if (!text) return {};
-   const auto* begin = at<const std::byte*>(text, layout.richTextSectionsBegin);
-   const auto* end = at<const std::byte*>(text, layout.richTextSectionsEnd);
+// A text's sections (TextDrawSections), laid out as it draws them; empty without rich text.
+std::span<const std::byte> sectionsOf(const std::byte* richText) {
+   if (!richText) return {};
+   const auto* begin = at<const std::byte*>(richText, layout.richTextSectionsBegin);
+   const auto* end = at<const std::byte*>(richText, layout.richTextSectionsEnd);
    return {begin, end};
 }
 
-const std::byte* richTextSection(const Widget* label, size_t section) {
-   std::span<const std::byte> sections = richTextSections(label);
+std::span<const std::byte> richTextSections(const Widget* label) {
+   return sectionsOf(at<const std::byte*>(asBaseChecked(label, ".?AVLabel@agui@@"), layout.labelRichText));
+}
+
+const std::byte* sectionAt(std::span<const std::byte> sections, size_t section) {
    size_t offset = section * layout.richTextSectionSize;
    return offset + layout.richTextSectionSize <= sections.size() ? sections.data() + offset : nullptr;
 }
 
-void handleHover(std::byte* manager, const std::byte* section, bool clicked) {
+void handleHover(std::byte* manager, const std::byte* section, const void* consoleItem, bool clicked) {
    using ClearTooltip = void (*)(std::byte*);
    using HandleHover = void (*)(std::byte*, const std::byte*, const void* consoleItem, bool);
    reinterpret_cast<ClearTooltip>(layout.richTextClearTooltip)(manager);
-   reinterpret_cast<HandleHover>(layout.richTextHandleHover)(manager, section, nullptr, clicked);
+   reinterpret_cast<HandleHover>(layout.richTextHandleHover)(manager, section, consoleItem, clicked);
 }
 
-} // namespace
-
-std::vector<RichTextLink> richTextLinks(const Widget* label) {
+// The icons among the sections that the hover manager hovers and clicks. A gps tag only acts in the
+// console, which hands the manager the line it was posted in.
+std::vector<RichTextLink> linksIn(std::span<const std::byte> sections, bool gps) {
    std::vector<RichTextLink> links;
-   if (!hoverManager(label)) return links;
-   std::span<const std::byte> sections = richTextSections(label);
    size_t line = 0;
    for (size_t offset = 0, index = 0; offset + layout.richTextSectionSize <= sections.size();
         offset += layout.richTextSectionSize, ++index) {
@@ -1173,30 +1173,189 @@ std::vector<RichTextLink> richTextLinks(const Widget* label) {
       // Line breaks are kept in the words of the Text sections between the tags.
       if (type == kTagText) line += std::ranges::count(at<std::string_view>(section, layout.richTextSectionText), '\n');
       std::string_view tag = at<std::string_view>(section, layout.richTextSectionTag);
-      if (type >= kTagSpecialItem && type <= kTagSpacePlatform && type != kTagGps && !tag.empty())
+      if (type >= kTagSpecialItem && type <= kTagSpacePlatform && (gps || type != kTagGps) && !tag.empty())
          links.push_back({index, tag, line});
    }
    return links;
 }
 
-void clickRichTextLink(const Widget* label, size_t section) {
-   std::byte* manager = hoverManager(label);
-   const std::byte* drawn = manager ? richTextSection(label, section) : nullptr;
-   if (drawn) handleHover(manager, drawn, true);
-}
-
-const Widget* hoverRichTextLink(const Widget* label, size_t section) {
-   std::byte* manager = hoverManager(label);
-   const std::byte* drawn = manager ? richTextSection(label, section) : nullptr;
-   if (!drawn) return nullptr;
-   handleHover(manager, drawn, false);
+const Widget* shownTooltip(std::byte* manager) {
    const Widget* tooltip = fromTargeter(manager, layout.hoverManagerTooltip);
    if (tooltip) callVirtual<void>(tooltip, layout.slotToolTipUpdateContent);
    return tooltip;
 }
 
+} // namespace
+
+std::vector<RichTextLink> richTextLinks(const Widget* label) {
+   if (!hoverManager(label)) return {};
+   return linksIn(richTextSections(label), false);
+}
+
+void clickRichTextLink(const Widget* label, size_t section) {
+   std::byte* manager = hoverManager(label);
+   const std::byte* drawn = manager ? sectionAt(richTextSections(label), section) : nullptr;
+   if (drawn) handleHover(manager, drawn, nullptr, true);
+}
+
+const Widget* hoverRichTextLink(const Widget* label, size_t section) {
+   std::byte* manager = hoverManager(label);
+   const std::byte* drawn = manager ? sectionAt(richTextSections(label), section) : nullptr;
+   if (!drawn) return nullptr;
+   handleHover(manager, drawn, nullptr, false);
+   return shownTooltip(manager);
+}
+
 void clearRichTextHover(const Widget* label) {
    if (std::byte* manager = hoverManager(label))
+      reinterpret_cast<void (*)(std::byte*)>(layout.richTextClearTooltip)(manager);
+}
+
+const Widget* consoleInput() {
+   if (!inGame()) return nullptr;
+   const Gui* gui = applicationGui();
+   const Widget* root = gui ? baseWidget(gui) : nullptr;
+   if (!root) return nullptr;
+   for (const Widget* child : children(root))
+      if (derivesFrom(child, "ConsoleInput")) return child;
+   return nullptr;
+}
+
+namespace {
+
+const std::byte* localPlayer() {
+   auto* context = *reinterpret_cast<const std::byte* const*>(layout.globalContext);
+   auto* game = context ? at<const std::byte*>(context, layout.globalGame) : nullptr;
+   return game ? at<const std::byte*>(game, layout.gameLocalPlayer) : nullptr;
+}
+
+const std::byte* localConsole() {
+   const std::byte* player = localPlayer();
+   return player ? at<const std::byte*>(player, layout.playerOutputConsole) : nullptr;
+}
+
+std::byte* consoleHoverManager() {
+   const std::byte* player = localPlayer();
+   return player ? at<std::byte*>(player, layout.playerConsoleHoverManager) : nullptr;
+}
+
+// Calls `visit` with each line of one of the console's two lists, newest first; it returns false to
+// stop.
+template <class Visit>
+void forEachItem(const std::byte* console, uint32_t list, Visit visit) {
+   const std::byte* head = at<const std::byte*>(console, list);
+   for (const std::byte* node = at<const std::byte*>(head, layout.consoleNodeNext); node != head;
+        node = at<const std::byte*>(node, layout.consoleNodeNext))
+      if (!visit(node + layout.consoleNodeValue)) return;
+}
+
+const std::byte* newestItem(const std::byte* console, uint32_t list) {
+   const std::byte* newest = nullptr;
+   forEachItem(console, list, [&](const std::byte* item) {
+      newest = item;
+      return false;
+   });
+   return newest;
+}
+
+// Whether the line is still in the log; lines past the cap of each list are freed.
+bool inLog(const std::byte* console, const void* item) {
+   bool found = false;
+   for (uint32_t list : {layout.outputConsoleItems, layout.outputConsoleItemsNotSaved})
+      forEachItem(console, list, [&](const std::byte* each) {
+         found |= each == item;
+         return !found;
+      });
+   return found;
+}
+
+// The line's text as last wrapped for drawing, or null while it was never drawn.
+const std::byte* wrappedText(const void* item) { return at<const std::byte*>(item, layout.consoleItemWrappedText); }
+
+// The line's rich text, laid out up to date.
+std::span<const std::byte> itemSections(const void* item) {
+   const std::byte* text = wrappedText(item);
+   if (!text) return {};
+   reinterpret_cast<const void* (*)(const std::byte*)>(layout.resizableTextLines)(text);
+   return sectionsOf(at<const std::byte*>(text, layout.resizableTextRichText));
+}
+
+// The width the log was last wrapped at: the newest line's, which the open console draws every
+// frame. Zero before the game has drawn it.
+int drawnWidth(const std::byte* console) {
+   const std::byte* saved = newestItem(console, layout.outputConsoleItems);
+   const std::byte* unsaved = newestItem(console, layout.outputConsoleItemsNotSaved);
+   const std::byte* newest = !saved                                     ? unsaved
+                             : !unsaved                                 ? saved
+                             : at<uint64_t>(saved, layout.consoleItemUpdateTick) >=
+                                     at<uint64_t>(unsaved, layout.consoleItemUpdateTick)
+                                 ? saved
+                                 : unsaved;
+   const std::byte* text = newest ? wrappedText(newest) : nullptr;
+   return text ? at<int>(text, layout.resizableTextMaxWidth) : 0;
+}
+
+// std::vector<OutputConsoleRenderer::RenderItem>
+struct RenderItems {
+   const std::byte* first = nullptr;
+   const std::byte* last = nullptr;
+   const std::byte* end = nullptr;
+};
+
+// The lines the open console draws, newest first, as the game picks them.
+std::vector<const std::byte*> drawnItems(const std::byte* console) {
+   std::vector<const std::byte*> items;
+   int width = drawnWidth(console);
+   if (width <= 0) return items;
+   using GetRenderItems = RenderItems* (*)(const void* renderer, RenderItems* out, const std::byte* console,
+                                           bool consoleOpen, uint64_t tick, void* drawQueue, int maxWidth);
+   RenderItems drawn;
+   // The tick only fades lines while the console is closed.
+   reinterpret_cast<GetRenderItems>(layout.consoleGetRenderItems)(nullptr, &drawn, console, true, 0, nullptr, width);
+   for (const std::byte* each = drawn.first; each < drawn.last; each += layout.consoleRenderItemSize)
+      items.push_back(at<const std::byte*>(each, layout.consoleRenderItemItem));
+   reinterpret_cast<void (*)(RenderItems*)>(layout.consoleRenderItemsFree)(&drawn);
+   return items;
+}
+
+// The section of a line still in the log, or null.
+const std::byte* consoleSection(const void* item, size_t section) {
+   const std::byte* console = localConsole();
+   return console && inLog(console, item) ? sectionAt(itemSections(item), section) : nullptr;
+}
+
+} // namespace
+
+std::vector<ConsoleLine> consoleLines() {
+   std::vector<ConsoleLine> lines;
+   const std::byte* console = localConsole();
+   if (!console) return lines;
+   std::vector<const std::byte*> items = drawnItems(console);
+   for (auto it = items.rbegin(); it != items.rend(); ++it) {
+      const std::byte* text = wrappedText(*it);
+      if (!text) continue;
+      std::vector<RichTextLink> links = linksIn(itemSections(*it), true);
+      lines.push_back({*it, std::string(readString(text, layout.resizableTextData)), std::move(links)});
+   }
+   return lines;
+}
+
+void clickConsoleLink(const void* item, size_t section) {
+   std::byte* manager = consoleHoverManager();
+   const std::byte* drawn = manager ? consoleSection(item, section) : nullptr;
+   if (drawn) handleHover(manager, drawn, item, true);
+}
+
+const Widget* hoverConsoleLink(const void* item, size_t section) {
+   std::byte* manager = consoleHoverManager();
+   const std::byte* drawn = manager ? consoleSection(item, section) : nullptr;
+   if (!drawn) return nullptr;
+   handleHover(manager, drawn, item, false);
+   return shownTooltip(manager);
+}
+
+void clearConsoleHover() {
+   if (std::byte* manager = consoleHoverManager())
       reinterpret_cast<void (*)(std::byte*)>(layout.richTextClearTooltip)(manager);
 }
 

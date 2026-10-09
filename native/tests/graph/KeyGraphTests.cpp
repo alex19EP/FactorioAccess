@@ -523,6 +523,58 @@ TEST(TabIntoStopLandsOnSelectedMemberWhenNoMemory)
     CHECK_EQ(Id("b1"), r.To->Id); // memory beats selection
 }
 
+TEST(TabIntoLandOnLastStopLandsOnItsLastNodeWhenNoMemory)
+{
+    GraphState state;
+    KeyGraph g(
+        []()
+        {
+            return GraphBuilder()
+                .AddItem(Id("a1"), Vt("A1"))
+                .BeginStop()
+                .LandOnLast()
+                .AddItem(Id("b1"), Vt("B1"))
+                .AddItem(Id("b2"), Vt("B2"))
+                .AddItem(Id("b3"), Vt("B3"))
+                .Build();
+        },
+        &state);
+
+    MoveResult r = g.MoveStop(+1, /*wrap*/ false);
+    CHECK(r.Moved);
+    CHECK_EQ(Id("b3"), r.To->Id); // the last, not b1
+
+    // Memory still wins on return.
+    g.Move(GraphDir::Up);          // b2
+    g.MoveStop(-1, /*wrap*/ false); // to stop 1
+    r = g.MoveStop(+1, /*wrap*/ false);
+    CHECK_EQ(Id("b2"), r.To->Id);
+}
+
+TEST(TabIntoLandOnLastStopLandsOnTheStartOfItsLastRow)
+{
+    GraphState state;
+    KeyGraph g(
+        []()
+        {
+            return GraphBuilder()
+                .AddItem(Id("a1"), Vt("A1"))
+                .BeginStop()
+                .LandOnLast()
+                .AddItem(Id("b1"), Vt("B1"))
+                .StartLine("b2")
+                .AddItem(Id("b2"), Vt("B2"))
+                .AddItem(Id("b2/link"), Vt("B2 link"))
+                .EndRow()
+                .Build();
+        },
+        &state);
+
+    MoveResult r = g.MoveStop(+1, /*wrap*/ false);
+    CHECK(r.Moved);
+    CHECK_EQ(Id("b2"), r.To->Id); // the line, not its link
+}
+
 TEST(RawBlockBetweenMenuRowsStaysReachable)
 {
     // Menu row, raw block (its own internal wiring), menu row — all one stop. Menu wiring must
