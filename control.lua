@@ -1896,7 +1896,7 @@ EventManager.on_event(
          local result = ent.inserter_stack_size_override .. " set for hand stack size"
          Speech.speak(pindex, result)
       else
-         ScannerEntrypoint.move_subcategory(pindex, -1)
+         ScannerEntrypoint.move(pindex, event)
       end
    end
 )
@@ -1905,7 +1905,7 @@ EventManager.on_event(
    "fa-s-pageup",
    ---@param event EventData.CustomInputEvent
    function(event, pindex)
-      ScannerEntrypoint.move_within_subcategory(pindex, -1)
+      ScannerEntrypoint.move(pindex, event)
    end
 )
 
@@ -1913,7 +1913,7 @@ EventManager.on_event(
    "fa-c-pageup",
    ---@param event EventData.CustomInputEvent
    function(event, pindex)
-      ScannerEntrypoint.move_category(pindex, -1)
+      ScannerEntrypoint.move_category(pindex)
    end
 )
 
@@ -1942,7 +1942,7 @@ EventManager.on_event(
          end
          Speech.speak(pindex, result)
       else
-         ScannerEntrypoint.move_subcategory(pindex, 1)
+         ScannerEntrypoint.move(pindex, event)
       end
    end
 )
@@ -1951,7 +1951,7 @@ EventManager.on_event(
    "fa-s-pagedown",
    ---@param event EventData.CustomInputEvent
    function(event, pindex)
-      ScannerEntrypoint.move_within_subcategory(pindex, 1)
+      ScannerEntrypoint.move(pindex, event)
    end
 )
 
@@ -1959,7 +1959,7 @@ EventManager.on_event(
    "fa-c-pagedown",
    ---@param event EventData.CustomInputEvent
    function(event, pindex)
-      ScannerEntrypoint.move_category(pindex, 1)
+      ScannerEntrypoint.move_category(pindex)
    end
 )
 
@@ -1967,7 +1967,7 @@ EventManager.on_event(
    "fa-home",
    ---@param event EventData.CustomInputEvent
    function(event, pindex)
-      ScannerEntrypoint.announce_current_item(pindex)
+      ScannerEntrypoint.move(pindex, event)
    end
 )
 

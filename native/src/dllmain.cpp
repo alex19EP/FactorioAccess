@@ -5,7 +5,9 @@
 #include "disclosure.h"
 #include "game.h"
 #include "hooks.h"
+#include "input.h"
 #include "log.h"
+#include "scanner.h"
 #include "speech.h"
 #include "symbols.h"
 #include "ui.h"
@@ -57,6 +59,7 @@ DWORD WINAPI initialize(void*) {
       return 0;
    }
    ui::start();
+   input::setKeyObserver(&scanner::observeKey);
    if (!hooks::install()) {
       speech::say("FactorioAccess native could not hook the game", false);
       return 0;

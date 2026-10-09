@@ -216,6 +216,14 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.iteratorCurrentTile, "HeuristicEntityIterator<Surface const >", "currentAdvancedTilePosition");
    offset(layout.iteratorCurrentEntity, "HeuristicEntityIterator<Surface const >", "currentEntity");
    offset(layout.entitySurface, "Entity", "surface");
+   offset(layout.mapSurfaces, "Map", "surfaces");
+   offset(layout.surfaceIndex, "Surface", "index");
+   offset(layout.surfaceChunks, "Surface", "chunks");
+   offset(layout.chunkPosition, "Chunk", "position");
+   offset(layout.mapUnitNumbers, "Map", "unitNumberToEntity");
+   classSlot(layout.prototypeGetType, "PrototypeBase", "getType");
+   address(layout.entityUnitNumber, "?getEntityUnitNumber@EntityWithOwner@@SA_KPEBVEntity@@@Z");
+   address(layout.forceIsChunkCharted, "?isChunkCharted@ForceData@@QEBA_NVSurfaceIndex@@AEBVMapPosition@@@Z");
    classSlot(layout.entityPrototypeAsPole, "EntityPrototype", "asElectricPole");
    address(layout.findMatchingNetwork,
            "?findMatchingNetworkByPosition@LogisticManager@@QEAAPEAVLogisticNetwork@@AEBVMapPosition@@@Z");
@@ -287,6 +295,7 @@ bool resolve(pdb::SymbolTable& symbols) {
    address(layout.luaRawSetI, "lua_rawseti");
    address(layout.luaPushByte, "??$lua_pushnumber@E@@YAXPEAUlua_State@@E@Z");
    address(layout.luaPushInt, "??$lua_pushnumber@H@@YAXPEAUlua_State@@H@Z");
+   address(layout.luaPushNumber, "lua_pushnumber");
    address(layout.luaPushBoolean, "lua_pushboolean");
    address(layout.luaGetField, "lua_getfield");
    address(layout.luaRawGetI, "lua_rawgeti");

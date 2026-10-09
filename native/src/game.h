@@ -277,6 +277,17 @@ struct Layout {
    uint32_t iteratorCurrentTile = 0;
    uint32_t iteratorCurrentEntity = 0;     // Entity*
    uint32_t entitySurface = 0;             // Entity::surface, Surface*
+   // The scanner lists a surface's entities chunk by chunk, with the iterator above over each
+   // chunk's 16 by 16 advanced tiles, where the player's force has charted it. Entities with a unit
+   // number are found again through the map's index of them; others where they stood.
+   uint32_t mapSurfaces = 0;               // Map::surfaces, std::vector<Surface*>
+   uint32_t surfaceIndex = 0;              // Surface::index, SurfaceIndex (uint32), LuaSurface::index
+   uint32_t surfaceChunks = 0;             // Surface::chunks, std::vector<Chunk*>
+   uint32_t chunkPosition = 0;             // Chunk::position, ChunkPosition (two ints)
+   uint32_t mapUnitNumbers = 0;            // Map::unitNumberToEntity, std::map<uint64, Entity*>
+   uint32_t prototypeGetType = 0;          // virtual slot of char const* PrototypeBase::getType() const
+   uintptr_t entityUnitNumber = 0;         // static uint64 EntityWithOwner::getEntityUnitNumber(Entity const*), 0 for none
+   uintptr_t forceIsChunkCharted = 0;      // bool ForceData::isChunkCharted(SurfaceIndex, MapPosition const&) const
    // ElectricPolePrototype const* EntityPrototype::asElectricPole() const, a virtual slot: null but
    // for poles.
    uint32_t entityPrototypeAsPole = 0;
@@ -380,6 +391,7 @@ struct Layout {
    // templates like this one; there is no plain lua_pushnumber to call.
    uintptr_t luaPushByte = 0;
    uintptr_t luaPushInt = 0;     // void lua_pushnumber<int>(lua_State*, int)
+   uintptr_t luaPushNumber = 0;  // void lua_pushnumber(lua_State*, lua_Number)
    uintptr_t luaPushBoolean = 0; // void lua_pushboolean(lua_State*, int)
    // Reading a table argument (fa_native.audio).
    uintptr_t luaGetField = 0;   // void lua_getfield(lua_State*, int index, char const*)

@@ -204,19 +204,45 @@ bool nextInjected(void* event) {
    return true;
 }
 
+void (*g_observer)(const KeyEvent* key) = nullptr;
+
+// Tells the observer what the game is about to handle.
+void observe(const void* event) {
+   if (!g_observer) return;
+   auto type = field<uint32_t>(event, 0);
+   if (type != kEventKeyDown && type != kEventKeyUp) {
+      g_observer(nullptr);
+      return;
+   }
+   auto mod = field<uint16_t>(event, kModOffset);
+   const KeyEvent key{field<uint32_t>(event, kKeyOffset), field<bool>(event, kDownOffset),
+                      field<bool>(event, kRepeatOffset), (mod & kModShift) != 0,
+                      (mod & kModCtrl) != 0,           (mod & kModAlt) != 0};
+   g_observer(&key);
+}
+
 bool detour(void* event) {
    for (;;) {
       if (!nextInjected(event)) {
-         if (!g_original(event)) return false;
+         if (!g_original(event)) {
+            if (event && g_observer) g_observer(nullptr);
+            return false;
+         }
          if (event) remember(event);
       }
       // A null event only asks whether one is pending; it cannot be filtered without consuming
       // it, so it is answered truthfully and the next real poll filters.
-      if (!event || !take(event)) return true;
+      if (!event) return true;
+      if (!take(event)) {
+         observe(event);
+         return true;
+      }
    }
 }
 
 } // namespace
+
+void setKeyObserver(void (*observer)(const KeyEvent* key)) { g_observer = observer; }
 
 void* pollEventDetour() { return reinterpret_cast<void*>(&detour); }
 
