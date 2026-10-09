@@ -1133,6 +1133,41 @@ bool resolve(pdb::SymbolTable& symbols) {
            "?openRemoteView@PlayerInputSource@@QEAAXAEBVSurface@@AEBVMapPosition@@V?$optional@V?$StrongTypedef@"
            "NVZoomTag@@UPositiveDoubleValidator@@@@@std@@@Z");
 
+   address(layout.deduceSelectedEntity,
+           "?deduceSelectedEntity@EntitySelector@@QEAAPEAVEntity@@AEAVSurface@@AEBVMapPosition@@V?$NamedBool@"
+           "VAllowToSelectMyCharacterTag@@@@PEAVLatencyState@@PEAV2@W4EntitySelectionMode@@@Z");
+   enumerator(layout.selectionModeNormal, "EntitySelectionMode", "Normal");
+   address(layout.respectsFogOfWar, "?shouldRespectFogOfWar@Player@@QEBA_N_N@Z");
+   address(layout.descriptionConstruct, "??0Description@@QEAA@V?$optional@VGuiContext@@@std@@@Z");
+   address(layout.descriptionDestroy, "??1Description@@QEAA@XZ");
+   address(layout.descriptionFill, "?fill@Description@@QEBAXAEAVWidget@agui@@V?$NamedBool@VPlainTag@@@@@Z");
+   size(layout.descriptionSize, "Description");
+   offset(layout.descriptionName, "Description", "name");
+   offset(layout.descriptionText, "Description", "description");
+   offset(layout.descriptionModLists, "Description", "modLists");
+   offset(layout.descriptionCategories, "Description", "categories");
+   offset(layout.descriptionSourceEntity, "Description", "sourceEntity");
+   offset(layout.descriptionQuality, "Description", "qualityID");
+   offset(layout.categoryKind, "PropertyCategory", "category");
+   offset(layout.categoryProperties, "PropertyCategory", "properties");
+   enumerator(layout.categoryNone, "PropertyCategory::Category", "None");
+   enumerator(layout.categoryDebug, "PropertyCategory::Category", "Debug");
+   enumerator(layout.categoryCraftingConditions, "PropertyCategory::Category", "CraftingSurfaceConditions");
+   enumerator(layout.categoryConstructionConditions, "PropertyCategory::Category", "ConstructionSurfaceConditions");
+   offset(layout.propertyLabel, "PropertyItem", "type");
+   offset(layout.propertyOrder, "PropertyItem", "order");
+   classSlot(layout.propertyDestroy, "PropertyItem", "~PropertyItem");
+   address(layout.recipeItemVtable, "??_7RecipeDescriptionItem@@6B@");
+   address(layout.progressBarItemVtable, "??_7ProgressBarPropertyItem@@6B@");
+   address(layout.fluidBoxItemVtable, "??_7FluidBoxPropertyItem@@6B@");
+   classSlot(layout.entityAddToDescription, "Entity", "addToDescription");
+   classSlot(layout.entityGetQuality, "Entity", "getQuality");
+   classSlot(layout.entityGetStatus, "Entity", "getStatus");
+   size(layout.entityStatusSize, "EntityStatus");
+   offset(layout.entityHealth, "EntityWithHealth", "health");
+   for (size_t i = 0; i < kProblemStatusCount; ++i)
+      enumerator(layout.problemStatuses[i], "EntityStatus::Enum", kProblemStatuses[i]);
+
    if (ok && (layout.chartSelectionSize > kChartSelectionCapacity || layout.patchInfoSize > kPatchInfoCapacity)) {
       log::error("A chart structure outgrew its buffer: ChartSelection {} bytes, ResourcePatchInfo {}",
                  layout.chartSelectionSize, layout.patchInfoSize);

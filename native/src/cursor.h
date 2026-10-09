@@ -25,9 +25,10 @@ void setMode(int playerIndex, bool vanilla, bool keys, bool anchored);
 // scanner entry. A tile off the screen in the character or god view opens remote view there.
 void jump(int playerIndex, double x, double y);
 
-// What a movement key did, for the key's event that carries (x, y): moved there, or stayed at the
-// edge of the screen. Nothing when the cursor did not take the key. Each result is given once.
-enum class Step { Moved, Edge };
+// What a movement key did, for the key's event that carries (x, y): moved there and the tile reader
+// read it (reader.h), moved there unread (a cell of the full map, a step of a drag build), or stayed
+// at the edge of the screen. Nothing when the cursor did not take the key. Each result is given once.
+enum class Step { Read, Moved, Edge };
 std::optional<Step> step(int playerIndex, double x, double y);
 
 // The cursor's tile, for this client's player. Only this client knows it: the mod may speak and

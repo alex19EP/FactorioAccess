@@ -747,8 +747,16 @@ end
 ---@param pindex integer
 ---@param event EventData.CustomInputEvent
 local function cursor_mode_move(pindex, event)
-   if Cursor.step(pindex, event) == "edge" then
+   local step = Cursor.step(pindex, event)
+   if step == "edge" then
       ViewLimit.say_edge(pindex)
+      return
+   end
+
+   -- The DLL read the tile as the key was pressed; the mod adds what only it tells
+   if step == "read" then
+      Cursor.read_more(pindex, TileReader.read_tile_more(pindex))
+      play_cursor_step(pindex, 0.75)
       return
    end
 

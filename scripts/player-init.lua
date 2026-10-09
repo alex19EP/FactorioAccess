@@ -57,7 +57,7 @@ function mod.initialize(player)
    faplayer.custom_GUI_sprite = nil
    faplayer.direction_lag = faplayer.direction_lag or true
    faplayer.previous_hand_item_name = faplayer.previous_hand_item_name or ""
-   faplayer.last = faplayer.last or ""
+   faplayer.last = nil
    faplayer.last_indexed_ent = faplayer.last_indexed_ent or nil
    faplayer.last_move_tick = faplayer.last_move_tick or 0
    faplayer.last_build_tick = faplayer.last_build_tick or 0

@@ -12,6 +12,8 @@ namespace {
 
 constexpr std::array kFormattingTags{std::string_view("color"), std::string_view("font")};
 
+thread_local bool g_withoutDecorations = false;
+
 bool isTagNameChar(char c) { return (c >= 'a' && c <= 'z') || c == '-' || c == '_'; }
 
 // Letters and digits of any script: UTF-8 lead and continuation bytes count as letters.
@@ -119,6 +121,12 @@ size_t appendTag(std::string_view text, std::string& out) {
 
    // The info icon only marks a text with a tooltip, which the tooltip key reads.
    if (tag == "img" && value == "info") return close + 1;
+   // The quality info icon marks a value whose tooltip tells it per quality, and a tooltip
+   // category's icon heads a line that names the category in words: left out where asked.
+   if (tag == "img" && g_withoutDecorations &&
+       (value == "quality_info" || value == "utility/quality_info" || value.starts_with("tooltip-category-") ||
+        value.starts_with("utility/tooltip_category_")))
+      return close + 1;
 
    // [gps=-44.5,12.5,nauvis] is a map position: its coordinates are numbers, signs included.
    if (tag == "gps") {
@@ -142,6 +150,9 @@ size_t appendTag(std::string_view text, std::string& out) {
 }
 
 } // namespace
+
+WithoutDecorations::WithoutDecorations() : _outer(g_withoutDecorations) { g_withoutDecorations = true; }
+WithoutDecorations::~WithoutDecorations() { g_withoutDecorations = _outer; }
 
 std::string speakable(std::string_view text) {
    std::string raw;

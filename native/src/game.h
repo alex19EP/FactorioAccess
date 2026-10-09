@@ -35,6 +35,40 @@ inline constexpr NamedPrototype kNamedPrototypes[] = {
 };
 inline constexpr size_t kNamedPrototypeCount = sizeof(kNamedPrototypes) / sizeof(kNamedPrototypes[0]);
 
+// EntityStatus::Enum names of the statuses that tell of a problem, which the tile reader says.
+inline constexpr const char* kProblemStatuses[] = {
+   "Broken",
+   "CantDivideRailSegments",
+   "Disabled",
+   "DisabledByControlBehavior",
+   "DisabledByScript",
+   "Frozen",
+   "FullBurntResultOutput",
+   "FullOutput",
+   "LowPower",
+   "NoPower",
+   "NotPluggedInElectricNetwork",
+   "NoFuel",
+   "NoAmmo",
+   "NoMinableResources",
+   "MissingRequiredFluid",
+   "NoIngredients",
+   "NoInputFluid",
+   "ItemIngredientShortage",
+   "FluidIngredientShortage",
+   "NotConnectedToRail",
+   "NoPath",
+   "PipelineOverextended",
+   "OutOfLogisticNetwork",
+   "NotConnectedToHubOrPad",
+   "NotEnoughThrust",
+   "MarkedForDeconstruction",
+   "RechargingAfterPowerOutage",
+   "RecipeNotResearched",
+   "NoFilter",
+};
+inline constexpr size_t kProblemStatusCount = sizeof(kProblemStatuses) / sizeof(kProblemStatuses[0]);
+
 // Addresses and class layouts read from factorio.pdb, so nothing here is tied to one build.
 struct Layout {
    // Functions and globals.
@@ -1539,6 +1573,57 @@ struct Layout {
    // void PlayerInputSource::openRemoteView(Surface const&, MapPosition const&,
    // std::optional<StrongTypedef<double, ZoomTag>>): remote view there, as an alert click opens it.
    uintptr_t openRemoteView = 0;
+
+   // The tile reader (see reader.h). Entity* EntitySelector::deduceSelectedEntity(Surface&,
+   // MapPosition const&, NamedBool<AllowToSelectMyCharacterTag>, LatencyState*, Entity* only,
+   // EntitySelectionMode): what the mouse there selects, as Player::updateEntitySelector asks it
+   // every frame (Normal mode, no single entity to test). bool Player::shouldRespectFogOfWar(bool)
+   // const: whether it gives nothing in a chunk under fog (remote view and the map).
+   uintptr_t deduceSelectedEntity = 0;
+   uint32_t selectionModeNormal = 0;
+   uintptr_t respectsFogOfWar = 0;
+   // The tooltip's content: SelectedInfo::update builds a Description, has the entity add itself
+   // (virtual void Entity::addToDescription(Description&) const) and fills the panel from it with
+   // void Description::fill(agui::Widget&, NamedBool<PlainTag>) const. Description(std::optional<
+   // GuiContext>), ~Description(). Its categories (std::vector<std::unique_ptr<PropertyCategory>>)
+   // hold the lines: PropertyCategory::category (Category) and ::properties (std::vector<
+   // std::unique_ptr<PropertyItem>>); PropertyItem::type is the line's label as shown (the whole
+   // text of a remark) and ::order its place, 1 for the entity's status.
+   uintptr_t descriptionConstruct = 0;
+   uintptr_t descriptionDestroy = 0;
+   uintptr_t descriptionFill = 0;
+   uint32_t descriptionSize = 0;
+   uint32_t descriptionName = 0;         // Description::name, std::string
+   uint32_t descriptionText = 0;         // Description::description, std::string
+   uint32_t descriptionModLists = 0;     // Description::modLists, std::set<std::string>
+   uint32_t descriptionCategories = 0;
+   uint32_t descriptionSourceEntity = 0; // Description::sourceEntity, Entity*
+   uint32_t descriptionQuality = 0;      // Description::qualityID, uint8_t
+   uint32_t categoryKind = 0;
+   uint32_t categoryProperties = 0;
+   uint32_t categoryNone = 0;                   // PropertyCategory::Category::None: drawn without a heading
+   uint32_t categoryDebug = 0;                  // PropertyCategory::Category::Debug
+   uint32_t categoryCraftingConditions = 0;     // ::CraftingSurfaceConditions
+   uint32_t categoryConstructionConditions = 0; // ::ConstructionSurfaceConditions
+   uint32_t propertyLabel = 0;
+   uint32_t propertyOrder = 0;
+   uint32_t propertyDestroy = 0;         // slot of PropertyItem::~PropertyItem, the scalar deleting one
+   // Lines known by their class: a crafting machine's recipe (its ingredients and products a
+   // second, no label) and a progress bar, which follows the line it shows unlabelled.
+   uintptr_t recipeItemVtable = 0;
+   uintptr_t progressBarItemVtable = 0;
+   uintptr_t fluidBoxItemVtable = 0; // a fluid box's fluid, amount and bar ("Steam: 100 of 100")
+   uint32_t entityAddToDescription = 0;  // slot
+   // slots of ID<QualityPrototype> Entity::getQuality() const and EntityStatus Entity::getStatus()
+   // const, both returned through a pointer to the caller's copy. EntityStatus::value is the
+   // EntityStatus::Enum, a byte.
+   uint32_t entityGetQuality = 0;
+   uint32_t entityGetStatus = 0;
+   uint32_t entityStatusSize = 0;
+   uint32_t entityHealth = 0;            // EntityWithHealth::health, a float, 1 when whole
+   // The statuses the reader says (scripts/consts.lua VERBOSE_STATUSES): EntityStatus::Enum values
+   // by name, in kProblemStatuses order.
+   uint32_t problemStatuses[kProblemStatusCount] = {};
 };
 
 // Bits of agui::Widget::usageBitMask, read from Widget::setVisible and Widget::isEnabled in

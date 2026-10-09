@@ -14,4 +14,18 @@ namespace fa::text {
 // hooks), never on a thread of our own.
 std::string speakable(std::string_view text);
 
+// While one lives, on its thread, speakable also leaves out the icons that only decorate a line
+// the words beside them already tell: the quality info icon after a value, a tooltip category's
+// icon before its heading. For short readings such as the tile reader's.
+class WithoutDecorations {
+public:
+   WithoutDecorations();
+   ~WithoutDecorations();
+   WithoutDecorations(const WithoutDecorations&) = delete;
+   WithoutDecorations& operator=(const WithoutDecorations&) = delete;
+
+private:
+   bool _outer;
+};
+
 } // namespace fa::text

@@ -7,6 +7,7 @@
 #include "input.h"
 #include "log.h"
 #include "navigator/ScreenManager.hpp"
+#include "reader.h"
 #include "screens/BeltScreen.hpp"
 #include "screens/AlertsScreen.hpp"
 #include "screens/CharacterScreen.hpp"
@@ -68,6 +69,7 @@ void tick(const agui::Gui* gui) {
    screens::WindowScreen::SetGui(gui);
    nav::ScreenManager::Get().Update();
    screens::QuickBarScreen::WatchPage();
+   reader::tick();
    chart::tick();
    dev::pump();
 }

@@ -8,12 +8,14 @@
 #include "modfiles.h"
 #include "movement.h"
 #include "parts.h"
+#include "reader.h"
 #include "scanner.h"
 #include "selectedinfo.h"
 #include "speech.h"
 #include "world.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <iterator>
 #include <memory>
@@ -71,6 +73,10 @@ void pushByte(lua_State* L, uint8_t value) {
    reinterpret_cast<void (*)(lua_State*, uint8_t)>(layout.luaPushByte)(L, value);
 }
 void pushInt(lua_State* L, int value) { reinterpret_cast<void (*)(lua_State*, int)>(layout.luaPushInt)(L, value); }
+
+void pushNumber(lua_State* L, double value) {
+   reinterpret_cast<void (*)(lua_State*, lua_Number)>(layout.luaPushNumber)(L, value);
+}
 void pushBoolean(lua_State* L, bool value) {
    reinterpret_cast<void (*)(lua_State*, int)>(layout.luaPushBoolean)(L, value ? 1 : 0);
 }
@@ -195,13 +201,35 @@ int cursorJump(lua_State* L) {
    return 0;
 }
 
-// fa_native.cursor_step(pindex, x, y): "moved" or "edge" for a movement key whose event carries the
-// position, or nil when the cursor did not take that key. Only this client knows it.
+// fa_native.cursor_step(pindex, x, y): "read", "moved" or "edge" for a movement key whose event
+// carries the position, or nil when the cursor did not take that key. Only this client knows it.
 int cursorStep(lua_State* L) {
    const auto step = cursor::step(static_cast<int>(checkInteger(L, 1)), checkNumber(L, 2), checkNumber(L, 3));
    if (!step) return 0;
-   pushString(L, *step == cursor::Step::Moved ? "moved" : "edge");
+   pushString(L, *step == cursor::Step::Read ? "read" : *step == cursor::Step::Moved ? "moved" : "edge");
    return 1;
+}
+
+// fa_native.cursor_read_more(pindex, x, y, text): the mod's own words for the tile (x, y) a step
+// read, said after the reading unless a later step has been read since. See reader::more.
+int cursorReadMore(lua_State* L) {
+   if (!world::mayBeLocalPlayer(static_cast<int>(checkInteger(L, 1)))) return 0;
+   const auto tile = [&](int index) { return static_cast<int32_t>(std::floor(checkNumber(L, index))); };
+   reader::more(tile(2), tile(3), nameKeys(L, stripRichText(translate(L, 4))));
+   return 0;
+}
+
+// fa_native.cursor_read_entity(pindex, x, y): the prototype name and the position of the entity the
+// step's reading of the tile (x, y) described, or nothing. Only this client knows it.
+int cursorReadEntity(lua_State* L) {
+   if (!world::mayBeLocalPlayer(static_cast<int>(checkInteger(L, 1)))) return 0;
+   const auto tile = [&](int index) { return static_cast<int32_t>(std::floor(checkNumber(L, index))); };
+   const auto entity = reader::entity(tile(2), tile(3));
+   if (!entity) return 0;
+   pushString(L, entity->name);
+   pushNumber(L, entity->x);
+   pushNumber(L, entity->y);
+   return 3;
 }
 
 // fa_native.cursor_position(pindex): the cursor's tile x and y, or nothing. Only this client knows
@@ -545,10 +573,6 @@ int playAudio(lua_State* L) {
    return 0;
 }
 
-void pushNumber(lua_State* L, double value) {
-   reinterpret_cast<void (*)(lua_State*, lua_Number)>(layout.luaPushNumber)(L, value);
-}
-
 // The number in field `name` of the table at `table`, if it holds one.
 std::optional<double> numberField(lua_State* L, int table, const char* name) {
    getField(L, table, name);
@@ -709,6 +733,8 @@ constexpr Function kFunctions[] = {
    {"cursor_mode", &cursorMode},
    {"cursor_jump", &cursorJump},
    {"cursor_step", &cursorStep},
+   {"cursor_read_more", &cursorReadMore},
+   {"cursor_read_entity", &cursorReadEntity},
    {"cursor_position", &cursorPosition},
    {"speak", &speak},
    {"next_part", &nextPart},

@@ -100,6 +100,31 @@ function mod.read_tile_rails(pindex, message)
    end
 end
 
+---What the mod says of the cursor's tile after the DLL's reading of it (native/src/reader.h), which
+---said the entity's name, status and tooltip, or the tile's name: what only the mod tells.
+---@param pindex integer
+---@return LocalisedString
+function mod.read_tile_more(pindex)
+   local message = MessageBuilder.new()
+   local ent = Cursor.read_entity(pindex)
+   if ent then
+      local is_rail = Consts.RAIL_TYPES_SET[ent.type]
+         or (ent.type == "entity-ghost" and Consts.RAIL_TYPES_SET[ent.ghost_type])
+      if is_rail then
+         mod.read_tile_rails(pindex, message)
+      else
+         message:fragment(FaInfo.ent_info(pindex, ent, false, true))
+      end
+   else
+      local tile_name = EntitySelection.get_player_tile(pindex)
+      if tile_name and Consts.WATER_TILE_NAMES_SET[tile_name] then
+         message:fragment(FaUtils.identify_water_shores(pindex))
+      end
+   end
+   message:fragment(Mouse.cursor_visibility_info(pindex))
+   return message:build()
+end
+
 ---Internal function that gathers information about the tile at the cursor position
 ---@param pindex integer Player index
 ---@param message fa.MessageBuilder MessageBuilder to append information to

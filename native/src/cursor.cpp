@@ -1,6 +1,7 @@
 #include "cursor.h"
 
 #include "game.h"
+#include "reader.h"
 #include "world.h"
 
 #include <algorithm>
@@ -273,7 +274,14 @@ void moveForKey(const void* event, const void* context) {
       }
    }
    place(target);
-   record(target, Step::Moved);
+   // A drag build builds on the tile after this; the game's build preview tells what blocks it.
+   const int playerIndex = at<uint16_t>(view->player, layout.playerIndex) + 1;
+   if (size > 0 || world::dragBuild(playerIndex)) {
+      record(target, Step::Moved);
+      return;
+   }
+   reader::moved(tileOf(target.x), tileOf(target.y));
+   record(target, Step::Read);
 }
 
 // The remote view's camera, kept on the cursor as a sighted player's map drag keeps it: by

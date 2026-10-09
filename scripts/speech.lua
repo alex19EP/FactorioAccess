@@ -222,11 +222,7 @@ function mod.speak(pindex, str)
       })
    end
 
-   if pindex ~= nil and pindex > 0 then
-      storage.players[pindex].last = processed
-   else
-      return
-   end
+   if pindex == nil or pindex <= 0 then return end
    if not VanillaMode.is_enabled(pindex) then
       if native then
          native.speak(pindex, processed)
