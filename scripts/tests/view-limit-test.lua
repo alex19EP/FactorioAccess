@@ -208,6 +208,49 @@ describe("Cursor limited to the screen", function()
       end)
    end)
 
+   it("limits the cursor in god mode as in the character view", function(ctx)
+      local player, character, vp, far
+
+      ctx:init(function()
+         player = game.get_player(1)
+         character = player.character
+         vp = Viewpoint.get_viewpoint(1)
+      end)
+
+      -- As the sandbox scenario leaves the player, without a character
+      ctx:at_tick(1, function()
+         Speech.start_capture()
+         player.set_controller({ type = defines.controllers.god })
+      end)
+
+      ctx:at_tick(5, function()
+         local found = false
+         for _, m in ipairs(Speech.stop_capture()) do
+            if contains(m.message, "fa.zoom-view-god") then found = true end
+         end
+         ctx:assert(found, "Entering god mode is said")
+         ctx:assert_equals(defines.controllers.god, player.controller_type)
+         local x, y = math.floor(player.position.x), math.floor(player.position.y)
+         ctx:assert(ViewLimit.allows(1, { x = x + 2, y = y + 2 }), "A tile next to the god is on the screen")
+         ctx:assert(not ViewLimit.allows(1, { x = x + 1000, y = y }), "A tile 1000 tiles away is off the screen")
+         far = { x = x + 400, y = y }
+         vp:set_cursor_pos(far)
+         ctx:assert_equals(defines.controllers.remote, player.controller_type, "The jump opens remote view")
+      end)
+
+      ctx:at_tick(6, function()
+         player.exit_remote_view()
+      end)
+
+      ctx:at_tick(7, function()
+         ctx:assert_equals(defines.controllers.god, player.controller_type, "Leaving remote view goes back to god mode")
+         local cursor = vp:get_cursor_pos()
+         ctx:assert_equals(math.floor(player.position.x), cursor.x, "Leaving remote view puts the cursor on the god")
+         ctx:assert_equals(math.floor(player.position.y), cursor.y)
+         player.set_controller({ type = defines.controllers.character, character = character })
+      end)
+   end)
+
    it("pulls an unanchored cursor back onto the screen", function(ctx)
       local player, vp, old_zoom
 

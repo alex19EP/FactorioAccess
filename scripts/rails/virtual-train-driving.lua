@@ -353,7 +353,7 @@ local function pop_move(pindex, destroy_entities)
 
    -- Remove entities if requested
    if destroy_entities and #move.entities > 0 then
-      -- Check upfront if we have character/inventory for real entities
+      -- Real entities go back to the player's inventory
       local player = game.get_player(pindex)
       local main_inv = nil
       local has_real_entity = false
@@ -365,17 +365,7 @@ local function pop_move(pindex, destroy_entities)
          end
       end
 
-      if has_real_entity then
-         if not player or not player.character then
-            table.insert(state.moves, move)
-            return nil, false
-         end
-         main_inv = player.character.get_inventory(defines.inventory.character_main)
-         if not main_inv then
-            table.insert(state.moves, move)
-            return nil, false
-         end
-      end
+      if has_real_entity then main_inv = player.get_main_inventory() end
 
       -- Remove entities in reverse order (signals before rails)
       for i = #move.entities, 1, -1 do
