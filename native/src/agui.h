@@ -505,8 +505,10 @@ ChartSearchResults chartSearchResults();
 // tag and add ping buttons, and on the map the overlay toggles. Null in the character view.
 const Widget* mapViewOptions();
 
-// The scenario's goal at the top left (GoalDescription's label), while it shows one.
-const Widget* goalLabel();
+// The scenario's goal window at the top left while it shows (GoalDescription): its frame, which
+// holds the goal text, hidden while empty, and under it what the scenario adds to player.gui.goal.
+// The window shows while either has something.
+const Widget* goalFrame();
 
 // The bars over the quickbar (ControllerProgressBar), those the game shows.
 struct HudBars {

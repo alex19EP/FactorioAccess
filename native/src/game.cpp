@@ -903,7 +903,7 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.mapViewNonstandardInfo, "MapViewSettings", "showNonstandardMapInfo");
    offset(layout.iconButtonCount, "IconButtonWithNumber", "count");
    offset(layout.gameViewGoal, "GameView", "goalDescription");
-   offset(layout.goalLabel, "GoalDescription", "label");
+   offset(layout.goalInnerFrame, "GoalDescription", "innerFrame");
    offset(layout.gameViewBottom, "GameView", "bottomContainer");
    offset(layout.bottomHealthBar, "BottomContainer", "healthProgressBar");
    offset(layout.bottomShieldBar, "BottomContainer", "shieldProgressBar");
