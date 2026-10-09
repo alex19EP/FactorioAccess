@@ -1,7 +1,6 @@
 #include "TipsAndTricksScreen.hpp"
 
 #include <functional>
-#include <optional>
 #include <string>
 #include <vector>
 
@@ -42,38 +41,37 @@ graph::NodeVtable TipNode(const Widget* button, bool suggested, std::function<vo
     return vtable;
 }
 
-// The tips the game shows and the search leaves, each title tip a group of the indented tips after
-// it. The game hides locked tips. A title the search hides leaves its tips at the top level.
-void AddList(graph::GraphBuilder& builder, const Widget* window, bool searching, std::function<void()> chosen)
+// The tips the game shows and the search leaves, as one list. The game hides locked tips. Each title
+// tip and the indented tips after it are a region, as are the tips before the first title and any
+// unindented run after a title's tips, so Ctrl+Up and Ctrl+Down move from heading to heading.
+void AddList(graph::GraphBuilder& builder, const Widget* window, std::function<void()> chosen)
 {
     builder.BeginStop("list");
     std::vector<const Widget*> buttons = agui::listBoxItems(agui::member(window, layout.tipsList));
     std::vector<agui::Tip> tips = agui::tips();
-    bool inGroup = false;
+    std::string region = "region/start";
+    std::string declared;
+    bool underTitle = false;
     for (std::size_t i = 0; i < buttons.size(); ++i)
     {
         agui::Tip tip = i < tips.size() ? tips[i] : agui::Tip{};
-        if (inGroup && tip.indent == 0)
-        {
-            builder.EndGroup();
-            inGroup = false;
-        }
+        // A title the search hides still ends the region before it.
+        if (tip.title || (tip.indent == 0 && underTitle))
+            region = "region/" + std::to_string(i);
+        underTitle = tip.title || (tip.indent > 0 && underTitle);
         const Widget* button = buttons[i];
         if (!Shows(button))
             continue;
-        // Keyed by the tip, not the button: reading a tip makes the game build the list anew.
-        graph::ControlId id = graph::ControlId::Referenced(button, "tips/" + std::to_string(i));
-        graph::NodeVtable vtable = TipNode(button, tip.suggested, chosen);
-        if (tip.title)
+        if (region != declared)
         {
-            builder.BeginGroup(std::move(id), std::move(vtable), searching ? std::optional<bool>(true) : std::nullopt);
-            inGroup = true;
+            builder.SetRegion(region);
+            declared = region;
         }
-        else
-            builder.AddItem(std::move(id), std::move(vtable));
+        // Keyed by the tip, not the button: reading a tip makes the game build the list anew.
+        builder.AddItem(graph::ControlId::Referenced(button, "tips/" + std::to_string(i)),
+            TipNode(button, tip.suggested, chosen));
     }
-    if (inGroup)
-        builder.EndGroup();
+    builder.SetRegion("");
 }
 
 void AddPage(graph::GraphBuilder& builder, const Widget* window)
@@ -137,7 +135,7 @@ void TipsAndTricksScreen::BuildWindow(graph::GraphBuilder& builder, const Widget
         builder.BeginStop("search");
         builder.AddItem(graph::ControlId::Referenced(field, kSearchKey), ControlNode(field));
     }
-    AddList(builder, window, field != nullptr, [this]() { _landing = kTitleKey; });
+    AddList(builder, window, [this]() { _landing = kTitleKey; });
     AddPage(builder, window);
     AddControls(builder, window);
 

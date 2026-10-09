@@ -8,10 +8,10 @@
 //     the list as in vanilla;
 //   - list: the tips in the game's order, each its name, then "new" for a suggested tip and
 //     "selected" for the tip shown; the game hides locked tips. A title tip heads the tips
-//     indented under it, so it is a group: Right expands it or steps into it, Left collapses it or
-//     goes back up to it. While the search filters the list, every group is expanded. Enter clicks
-//     the tip as the mouse would, which shows it (and marks it read, unlocking the tips under it),
-//     and lands on its title in the page;
+//     indented under it; Ctrl+Up and Ctrl+Down jump from heading to heading, as between the
+//     sections of the controls settings. Nothing folds: the game shows every tip it unlocked. Enter
+//     clicks the tip as the mouse would, which shows it (and marks it read, unlocking the tips
+//     under it), and lands on its title in the page;
 //   - page: the tip's title, then its description a line each, the icons the game makes clickable
 //     in a line beside it as links, then Play tutorial (Replay tutorial) and Mark as unread. With
 //     nothing found, the game's "No tips and tricks selected" and its note on new tips instead.
