@@ -224,7 +224,7 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.chunkTiles, "Chunk", "tiles");
    size(layout.tileSize, "Tile");
    address(layout.surfaceTileAt, "?getTileOptional@Surface@@QEBAPEBVTile@@AEBVTilePosition@@@Z");
-   offset(layout.patchInfoResources, "ResourcePatchInfo", "resources");
+   offset(layout.resourceSearchRadius, "ResourceEntityPrototype", "resourcePatchSearchRadius");
    offset(layout.resourceInfinite, "ResourceEntityPrototype", "infiniteType");
    classSlot(layout.prototypeGetType, "PrototypeBase", "getType");
    address(layout.entityTargeterVtable, "??_7?$Targeter@VEntity@@$0A@$0A@@@6B@");

@@ -289,9 +289,11 @@ struct Layout {
    uint32_t chunkTiles = 0;                // Chunk::tiles
    uint32_t tileSize = 0;                  // sizeof(Tile)
    uintptr_t surfaceTileAt = 0;
-   // Resource patches as the map finds them: ResourcePatchInfo::update (see the chart ones below)
-   // leaves the patch's resources in ResourcePatchInfo::resources, a std::set<ResourceEntity const*>.
-   uint32_t patchInfoResources = 0;
+   // Resource patches as the map finds them (ResourcePatchInfo::addPatch and scanPatch): a grid of
+   // cells twice the prototype's resourcePatchSearchRadius a side (at most 32, shrunk until it
+   // divides 32; 0 makes every resource a patch of its own), joined to their 8 neighbours while one
+   // of the prototype's resources is in each, in charted chunks.
+   uint32_t resourceSearchRadius = 0;      // ResourceEntityPrototype::resourcePatchSearchRadius, uint32
    uint32_t resourceInfinite = 0;          // ResourceEntityPrototype::infiniteType, bool
    uint32_t prototypeGetType = 0;          // virtual slot of char const* PrototypeBase::getType() const
    // Entries keep their entities through the game's own weak references, as its GUIs do: a

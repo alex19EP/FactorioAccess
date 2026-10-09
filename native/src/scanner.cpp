@@ -8,6 +8,8 @@
 
 #include <algorithm>
 #include <array>
+#include <bit>
+#include <chrono>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -17,7 +19,6 @@
 #include <string_view>
 #include <tuple>
 #include <unordered_map>
-#include <unordered_set>
 #include <utility>
 
 namespace fa::scanner {
@@ -252,11 +253,23 @@ struct Rule {
    Cat category = Other;
    bool detailed = false;
    bool infinite = false; // a resource that never runs out, such as crude oil
+   int8_t cellShift = -1; // a resource's patch cells, log2 of their side in tiles; -1 when each is a patch
 };
+
+// The side of a resource's patch cells as the map has it (see game.h): log2 of it, or -1 when every
+// resource is a patch of its own.
+int8_t patchCellShift(const std::byte* prototype) {
+   uint32_t side = std::min<uint32_t>(at<uint32_t>(prototype, layout.resourceSearchRadius) * 2, 32);
+   if (side == 0) return -1;
+   while (32 % side != 0) --side;
+   return static_cast<int8_t>(std::countr_zero(side));
+}
 
 Rule ruleFor(const std::byte* prototype, std::string_view type, std::string_view name) {
    if (type == "tree") return {Listing::Tree, Resources};
-   if (type == "resource") return {Listing::Resource, Resources, false, at<bool>(prototype, layout.resourceInfinite)};
+   if (type == "resource")
+      return {Listing::Resource, Resources, false, at<bool>(prototype, layout.resourceInfinite),
+              patchCellShift(prototype)};
    if (std::find(std::begin(kRocks), std::end(kRocks), name) != std::end(kRocks)) return {Listing::Alone, Resources};
    if (name.ends_with("-remnants")) return {Listing::Alone, Remnants};
    const bool detailed =
@@ -390,8 +403,9 @@ private:
 
 using IteratorFunction = void (*)(std::byte* iterator);
 
-// Calls `visit` with each entity on `surface` whose position lies in the advanced tiles (two tiles
-// a side) from `first` to `last`, each once.
+// Calls `visit` with the entities on `surface` in the advanced tiles (two tiles a side) from `first`
+// to `last`. Some stand up to about a tile past the area's edge, and the area beside it gives them
+// again.
 template <class Visit>
 void forEachEntity(const std::byte* surface, Position first, Position last, Visit&& visit) {
    alignas(8) std::byte iterator[game::kEntityIteratorCapacity]{};
@@ -428,35 +442,11 @@ std::optional<uint16_t> tileAt(const std::byte* surface, int32_t x, int32_t y) {
    return at<uint16_t>(tile, 0);
 }
 
-// The node of a std::set or std::map (MSVC): left, parent, right, colour, end marker, then the value.
-struct TreeNode {
-   TreeNode* left;
-   TreeNode* parent;
-   TreeNode* right;
-   char colour;
-   char isNil;
-};
-constexpr uint32_t kTreeValue = 0x20;
-
-TreeNode* nextNode(TreeNode* node) {
-   if (!node->right->isNil) {
-      node = node->right;
-      while (!node->left->isNil) node = node->left;
-      return node;
-   }
-   TreeNode* parent = node->parent;
-   while (!parent->isNil && node == parent->right) {
-      node = parent;
-      parent = parent->parent;
-   }
-   return parent;
-}
-
 using PatchConstructFunction = void* (*)(void* info, bool useClockLimiter);
 using PatchDestroyFunction = void (*)(void* info);
 using PatchUpdateFunction = bool (*)(void* info, const void* resource, const void* force, bool keepIfUnchanged);
 
-// A ResourcePatchInfo of our own, for as long as one refresh or announcement needs it.
+// A ResourcePatchInfo of our own, for as long as one announcement needs it.
 class PatchFinder {
 public:
    explicit PatchFinder(const std::byte* force) : force_(force) {
@@ -469,14 +459,6 @@ public:
    // Finds the patch `resource` is in, as the map does.
    void find(const std::byte* resource) {
       reinterpret_cast<PatchUpdateFunction>(layout.patchInfoUpdate)(info_, resource, force_, false);
-   }
-
-   // The resources of the patch found last.
-   template <class Visit>
-   void forEachResource(Visit&& visit) const {
-      auto* head = at<TreeNode*>(info_, layout.patchInfoResources);
-      for (TreeNode* node = head->left; node != head; node = nextNode(node))
-         visit(at<const std::byte*>(node, kTreeValue));
    }
 
    // The map's label of the patch found last.
@@ -595,9 +577,9 @@ struct Item {
    const std::byte* prototype = nullptr; // an entity's or patch's prototype
    Position position{};             // where to go: kept up to date as the entry is checked
    std::string key;                 // its subcategory
-   uint32_t first = 0;              // its entities in Links
-   uint32_t count = 0;
-   TileBox box;                     // water and ice
+   uint32_t first = 0;              // an entity's link in Links
+   uint32_t count = 0;              // links of an entity; trees of a forest, resources of a patch
+   TileBox box;                     // water, ice, forests and patches
 };
 
 struct Subcategory {
@@ -659,6 +641,140 @@ struct Found {
    Position position;
 };
 
+// Trees and resources, counted by cell rather than kept one by one. Touching cells of one group
+// (all trees, or one resource prototype) make one forest or patch. Every cell lies in one chunk, as
+// the cells' sides divide 32.
+class Cells {
+public:
+   explicit Cells(Position origin) : origin_(origin) {}
+
+   // Starts the next chunk: the walk adds each chunk's entities together, all standing in it.
+   void beginChunk() {
+      ++generation_;
+      groupsHere_ = 0;
+   }
+
+   // Puts `found` in its cell of `group`, cells being 2^shift tiles a side. One listed alone only
+   // joins the cells around it: it is neither counted nor the forest's or patch's place.
+   void add(const std::byte* group, int shift, const Found& found, bool counted) {
+      const int32_t x = tileOf(found.position.x), y = tileOf(found.position.y);
+      // The chunk's own table of the group's cells, by place in the chunk.
+      Local* local = nullptr;
+      for (size_t i = 0; i < groupsHere_; ++i)
+         if (locals_[i].group == group) local = &locals_[i];
+      if (!local) {
+         if (groupsHere_ == locals_.size()) locals_.emplace_back();
+         local = &locals_[groupsHere_++];
+         local->group = group;
+      }
+      const size_t slot = static_cast<size_t>(((x & 31) >> shift) + ((y & 31) >> shift) * (32 >> shift));
+      if (local->stamps[slot] != generation_) {
+         local->stamps[slot] = generation_;
+         local->cells[slot] = cellAt({group, x >> shift, y >> shift});
+      }
+      Cell& cell = cells_[local->cells[slot]];
+      if (!counted) return;
+      ++cell.count;
+      cell.box.add(x, y);
+      const double distance = distanceSquared(found.position, origin_);
+      if (distance < cell.nearest) {
+         cell.nearest = distance;
+         cell.position = found.position;
+         cell.prototype = found.prototype;
+      }
+   }
+
+   // A forest or patch: its group, how many it counted, and the one nearest the origin.
+   struct Group {
+      const std::byte* group;
+      uint32_t count = 0;
+      double nearest = INFINITY;
+      Position position{};
+      const std::byte* prototype = nullptr;
+      TileBox box;
+   };
+
+   std::vector<Group> groups() const {
+      Sets sets;
+      for (size_t i = 0; i < cells_.size(); ++i) sets.add();
+      // Half the 8 neighbours: the other half joins from the far side.
+      constexpr std::array<std::pair<int32_t, int32_t>, 4> kNeighbours{{{1, 0}, {1, 1}, {0, 1}, {-1, 1}}};
+      for (uint32_t i = 0; i < cells_.size(); ++i) {
+         const Key& key = cells_[i].key;
+         for (auto [dx, dy] : kNeighbours)
+            if (auto other = index_.find({key.group, key.x + dx, key.y + dy}); other != index_.end())
+               sets.join(i, other->second);
+      }
+
+      std::vector<uint32_t> groupOf(cells_.size(), UINT32_MAX);
+      std::vector<Group> groups;
+      for (uint32_t i = 0; i < cells_.size(); ++i) {
+         const uint32_t root = sets.find(i);
+         if (groupOf[root] == UINT32_MAX) {
+            groupOf[root] = static_cast<uint32_t>(groups.size());
+            groups.push_back({cells_[i].key.group});
+         }
+         const Cell& cell = cells_[i];
+         Group& group = groups[groupOf[root]];
+         group.count += cell.count;
+         if (cell.count == 0) continue;
+         group.box.add(cell.box);
+         if (cell.nearest < group.nearest) {
+            group.nearest = cell.nearest;
+            group.position = cell.position;
+            group.prototype = cell.prototype;
+         }
+      }
+      std::erase_if(groups, [](const Group& group) { return group.count == 0; });
+      return groups;
+   }
+
+   size_t size() const { return cells_.size(); }
+
+private:
+   struct Key {
+      const std::byte* group;
+      int32_t x;
+      int32_t y;
+      bool operator==(const Key&) const = default;
+   };
+   struct KeyHash {
+      size_t operator()(const Key& key) const {
+         return std::hash<const void*>{}(key.group) ^
+                std::hash<uint64_t>{}(packCell(key.x, key.y) * 0x9e3779b97f4a7c15);
+      }
+   };
+   struct Cell {
+      Key key;
+      uint32_t count = 0;
+      double nearest = INFINITY;
+      Position position{};
+      const std::byte* prototype = nullptr;
+      TileBox box;
+   };
+
+   // One group's cells in the current chunk, by place: valid where the stamp is the chunk's
+   // generation, so a table taken over from an earlier chunk needs no clearing.
+   struct Local {
+      const std::byte* group = nullptr;
+      std::array<uint32_t, 1024> stamps{};
+      std::array<uint32_t, 1024> cells{};
+   };
+
+   uint32_t cellAt(const Key& key) {
+      auto [index, added] = index_.try_emplace(key, static_cast<uint32_t>(cells_.size()));
+      if (added) cells_.push_back({key});
+      return index->second;
+   }
+
+   Position origin_;
+   std::vector<Cell> cells_;
+   std::unordered_map<Key, uint32_t, KeyHash> index_;
+   std::deque<Local> locals_;
+   size_t groupsHere_ = 0;
+   uint32_t generation_ = 0;
+};
+
 // Builds a list's items from what one refresh walked, and the entities to link, in item order.
 class Builder {
 public:
@@ -668,96 +784,45 @@ public:
       if (rule.detailed) list_.detailed.push_back(static_cast<uint32_t>(list_.items.size()));
       add({Kind::Entity, rule.category, rule.detailed, found.prototype, found.position,
            std::string(prototypeName(found.prototype))},
-          {found});
+          found);
    }
 
-   // Trees in the same or touching cells are one forest. Trees near the origin are listed alone,
-   // and so is a forest of one.
-   void forests(const std::vector<Found>& trees) {
-      std::unordered_map<uint64_t, uint32_t> cells;
-      Sets sets;
-      std::vector<uint32_t> cellOf(trees.size());
-      for (size_t i = 0; i < trees.size(); ++i) {
-         const int32_t cx = tileOf(trees[i].position.x) >> kForestCellShift;
-         const int32_t cy = tileOf(trees[i].position.y) >> kForestCellShift;
-         auto [cell, added] = cells.try_emplace(packCell(cx, cy), sets.size());
-         if (added) sets.add();
-         cellOf[i] = cell->second;
-      }
-      for (const auto& [key, node] : cells) {
-         const auto cx = static_cast<int32_t>(static_cast<uint32_t>(key));
-         const auto cy = static_cast<int32_t>(key >> 32);
-         for (int dx = -1; dx <= 1; ++dx)
-            for (int dy = -1; dy <= 1; ++dy)
-               if (auto other = cells.find(packCell(cx + dx, cy + dy)); other != cells.end())
-                  sets.join(node, other->second);
-      }
-      std::unordered_map<uint32_t, std::vector<const Found*>> forests;
-      for (size_t i = 0; i < trees.size(); ++i) forests[sets.find(cellOf[i])].push_back(&trees[i]);
-
-      const double zoomSquared = kForestZoomDistance * kForestZoomDistance;
-      for (auto& [root, members] : forests) {
-         std::vector<Found> far;
-         for (const Found* tree : members) {
-            if (distanceSquared(tree->position, list_.origin) < zoomSquared)
-               add({Kind::Entity, Resources, false, tree->prototype, tree->position, "tree"}, {*tree});
-            else
-               far.push_back(*tree);
-         }
-         if (far.size() == 1)
-            add({Kind::Entity, Resources, false, far.front().prototype, far.front().position, "tree"}, far);
-         else if (!far.empty())
-            group(Kind::Forest, Resources, "tree", nullptr, std::move(far));
-      }
+   // A tree, or a well of an infinite resource, near enough the origin to be listed by itself.
+   void near(const Found& found, std::string key) {
+      add({Kind::Entity, Resources, false, found.prototype, found.position, std::move(key)}, found);
    }
 
-   // Resources form patches as the map finds them. The wells of an infinite resource near the
-   // origin are listed alone.
-   void patches(const std::vector<Found>& resources, const std::unordered_map<const std::byte*, Rule>& rules) {
-      PatchFinder finder(list_.force);
-      std::unordered_set<const std::byte*> seen;
-      const double zoomSquared = kInfiniteResourceZoomDistance * kInfiniteResourceZoomDistance;
-      for (const Found& resource : resources) {
-         if (seen.contains(resource.entity)) continue;
-         finder.find(resource.entity);
-         std::vector<Found> members;
-         finder.forEachResource([&](const std::byte* member) {
-            if (!seen.insert(member).second) return;
-            members.push_back({const_cast<std::byte*>(member), at<const std::byte*>(member, layout.entityPrototypeOf),
-                               at<Position>(member, layout.entityPosition)});
-         });
-         if (members.empty()) {
-            seen.insert(resource.entity);
-            members.push_back(resource);
-         }
-         const std::string key(prototypeName(resource.prototype));
-         if (rules.at(resource.prototype).infinite) {
-            std::vector<Found> far;
-            for (const Found& member : members) {
-               if (distanceSquared(member.position, list_.origin) < zoomSquared)
-                  add({Kind::Entity, Resources, false, member.prototype, member.position, key}, {member});
-               else
-                  far.push_back(member);
-            }
-            members = std::move(far);
-         }
-         if (!members.empty()) group(Kind::Patch, Resources, key, resource.prototype, std::move(members));
+   // A resource whose prototype makes every resource a patch of its own.
+   void patchOfOne(const Found& found) {
+      Item item{Kind::Patch,     Resources,      false,
+                found.prototype, found.position, std::string(prototypeName(found.prototype))};
+      item.count = 1;
+      item.box.add(tileOf(found.position.x), tileOf(found.position.y));
+      list_.items.push_back(std::move(item));
+   }
+
+   // The forests (trees grouped under null) and patches of `cells`.
+   void groups(const Cells& cells) {
+      for (const Cells::Group& group : cells.groups()) {
+         const bool forest = !group.group;
+         Item item{forest ? Kind::Forest : Kind::Patch,
+                   Resources,
+                   false,
+                   forest ? group.prototype : group.group,
+                   group.position,
+                   forest ? "tree" : std::string(prototypeName(group.group))};
+         item.count = group.count;
+         item.box = group.box;
+         list_.items.push_back(std::move(item));
       }
    }
 
 private:
-   void add(Item item, const std::vector<Found>& members) {
+   void add(Item item, const Found& found) {
       item.first = static_cast<uint32_t>(entities_.size());
-      item.count = static_cast<uint32_t>(members.size());
-      for (const Found& member : members) entities_.push_back(member.entity);
+      item.count = 1;
+      entities_.push_back(found.entity);
       list_.items.push_back(std::move(item));
-   }
-
-   void group(Kind kind, Cat category, std::string key, const std::byte* prototype, std::vector<Found> members) {
-      std::sort(members.begin(), members.end(), [&](const Found& a, const Found& b) {
-         return distanceSquared(a.position, list_.origin) < distanceSquared(b.position, list_.origin);
-      });
-      add({kind, category, false, prototype, members.front().position, std::move(key)}, members);
    }
 
    List& list_;
@@ -974,16 +1039,50 @@ const std::byte* firstLive(const World& world, const Item& item) {
    return nullptr;
 }
 
+// The tree of a forest, or resource of a patch, nearest the list's origin in `box`, if any.
+const std::byte* nearestMember(const World& world, const Item& item, const TileBox& box) {
+   const std::byte* nearest = nullptr;
+   double nearestDistance = INFINITY;
+   forEachEntity(world.surface, {box.left >> 1, box.top >> 1}, {box.right >> 1, box.bottom >> 1},
+                 [&](const std::byte* entity) {
+                    const auto* prototype = at<const std::byte*>(entity, layout.entityPrototypeOf);
+                    if (item.kind == Kind::Patch ? prototype != item.prototype
+                                                 : std::string_view(prototypeType(prototype)) != "tree")
+                       return;
+                    const Position position = at<Position>(entity, layout.entityPosition);
+                    const double distance = distanceSquared(position, g_list.origin);
+                    if (distance < nearestDistance) {
+                       nearestDistance = distance;
+                       nearest = entity;
+                    }
+                 });
+   return nearest;
+}
+
+// The forest's tree or patch's resource where the entry stands, else the nearest one left in it.
+const std::byte* memberAt(const World& world, const Item& item) {
+   const int32_t x = tileOf(item.position.x), y = tileOf(item.position.y);
+   TileBox here;
+   here.add(x, y);
+   if (const std::byte* member = nearestMember(world, item, here)) return member;
+   return nearestMember(world, item, item.box);
+}
+
 // Whether entry `index` is still there, bringing its position up to date. Reads the world, so only
 // while it stands still.
 bool validate(const World& world, uint32_t index) {
    Item& item = g_list.items[index];
    switch (item.kind) {
    case Kind::Entity:
-   case Kind::Forest:
-   case Kind::Patch:
       if (const std::byte* entity = firstLive(world, item)) {
          item.position = at<Position>(entity, layout.entityPosition);
+         return true;
+      }
+      return false;
+   case Kind::Forest:
+   case Kind::Patch:
+      if (const std::byte* member = memberAt(world, item)) {
+         item.position = at<Position>(member, layout.entityPosition);
          return true;
       }
       return false;
@@ -1100,23 +1199,17 @@ void describe(const World& world, const Item& item, Entry& entry) {
    switch (item.kind) {
    case Kind::Entity: entry.prototype = std::string(prototypeName(item.prototype)); break;
    case Kind::Forest: {
-      uint32_t live = 0;
-      const std::byte* tree = nullptr;
-      for (uint32_t i = item.first; i < item.first + item.count; ++i)
-         if (const std::byte* entity = liveEntity(world, i)) {
-            if (!tree) tree = entity;
-            ++live;
-         }
-      if (live == 1) {
-         // What is left of the forest is one tree: say it as a tree.
+      if (item.count == 1) {
+         // A forest of one tree is said as a tree.
+         const std::byte* tree = memberAt(world, item);
          entry.kind = std::string(kindName(Kind::Entity));
          entry.prototype = std::string(prototypeName(at<const std::byte*>(tree, layout.entityPrototypeOf)));
       }
-      entry.trees = live;
+      entry.trees = item.count;
       break;
    }
    case Kind::Patch: {
-      const std::byte* resource = firstLive(world, item);
+      const std::byte* resource = memberAt(world, item);
       PatchFinder finder(g_list.force);
       finder.find(resource);
       entry.text = finder.label(resource);
@@ -1213,9 +1306,24 @@ std::vector<uint8_t> tileClasses(const Refresh& request) {
    return classes;
 }
 
+// Milliseconds since the last lap, for the refresh's log line.
+class Stopwatch {
+public:
+   double lap() {
+      const auto now = std::chrono::steady_clock::now();
+      const double ms = std::chrono::duration<double, std::milli>(now - last_).count();
+      last_ = now;
+      return ms;
+   }
+
+private:
+   std::chrono::steady_clock::time_point last_ = std::chrono::steady_clock::now();
+};
+
 } // namespace
 
 std::optional<std::vector<Detail>> refresh(const Refresh& request) {
+   Stopwatch stopwatch;
    const std::byte* game = currentGame();
    const std::byte* player = localPlayer(game, request.playerIndex);
    if (!player) return std::nullopt;
@@ -1242,14 +1350,19 @@ std::optional<std::vector<Detail>> refresh(const Refresh& request) {
    std::vector<std::byte*> entities;
    Builder builder(list, entities);
    std::unordered_map<const std::byte*, Rule> rules;
-   std::vector<Found> trees;
-   std::vector<Found> resources;
+   const std::byte* lastPrototype = nullptr;
+   const Rule* lastRule = nullptr;
+   Cells cells(list.origin);
+   size_t trees = 0, resources = 0;
+   const double treeZoomSquared = kForestZoomDistance * kForestZoomDistance;
+   const double wellZoomSquared = kInfiniteResourceZoomDistance * kInfiniteResourceZoomDistance;
    TileBodies water(WaterTile);
    TileBodies ice(IceTile);
    water.setOrigin(list.origin);
    ice.setOrigin(list.origin);
 
    const auto& chunks = at<MsvcVector<const std::byte*>>(surface, layout.surfaceChunks);
+   size_t chunksWalked = 0;
    for (const std::byte* const* chunkSlot = chunks.first; chunkSlot < chunks.last; ++chunkSlot) {
       const std::byte* chunk = *chunkSlot;
       if (!chunk) continue;
@@ -1264,28 +1377,56 @@ std::optional<std::vector<Detail>> refresh(const Refresh& request) {
 
       const Position first{chunkPosition.x * 16, chunkPosition.y * 16};
       const Position last{first.x + 15, first.y + 15};
+      cells.beginChunk();
       forEachEntity(surface, first, last, [&](const std::byte* entity) {
+         // The iterator also gives entities standing just past the chunk's edge, which their own
+         // chunk gives again: each chunk keeps those standing in it.
+         const Position position = at<Position>(entity, layout.entityPosition);
+         if ((tileOf(position.x) >> 5) != chunkPosition.x || (tileOf(position.y) >> 5) != chunkPosition.y) return;
          if (at<uint16_t>(entity, layout.entityUsageBits) & kNotListedBits) return;
          const std::byte* prototype = at<const std::byte*>(entity, layout.entityPrototypeOf);
-         auto [rule, added] = rules.try_emplace(prototype);
-         if (added) rule->second = ruleFor(prototype, prototypeType(prototype), prototypeName(prototype));
-         if (rule->second.listing == Listing::No) return;
-         const Position position = at<Position>(entity, layout.entityPosition);
+         if (prototype != lastPrototype) {
+            auto [found, added] = rules.try_emplace(prototype);
+            if (added) found->second = ruleFor(prototype, prototypeType(prototype), prototypeName(prototype));
+            lastPrototype = prototype;
+            lastRule = &found->second;
+         }
+         const Rule& rule = *lastRule;
+         if (rule.listing == Listing::No) return;
          if (!wanted(position)) return;
          const Found found{const_cast<std::byte*>(entity), prototype, position};
-         switch (rule->second.listing) {
-         case Listing::Alone: builder.alone(found, rule->second); break;
-         case Listing::Tree: trees.push_back(found); break;
-         case Listing::Resource: resources.push_back(found); break;
+         switch (rule.listing) {
+         case Listing::Alone: builder.alone(found, rule); break;
+         case Listing::Tree: {
+            ++trees;
+            // Trees near the origin are listed alone, but still join the forest around them.
+            const bool near = distanceSquared(position, list.origin) < treeZoomSquared;
+            if (near) builder.near(found, "tree");
+            cells.add(nullptr, kForestCellShift, found, !near);
+            break;
+         }
+         case Listing::Resource: {
+            ++resources;
+            if (rule.cellShift < 0) {
+               builder.patchOfOne(found);
+               break;
+            }
+            // So are the wells of an infinite resource.
+            const bool near = rule.infinite && distanceSquared(position, list.origin) < wellZoomSquared;
+            if (near) builder.near(found, std::string(prototypeName(prototype)));
+            cells.add(prototype, rule.cellShift, found, !near);
+            break;
+         }
          case Listing::No: break;
          }
       });
       water.addChunk(chunk, chunkPosition.x, chunkPosition.y, list.tileClasses);
       ice.addChunk(chunk, chunkPosition.x, chunkPosition.y, list.tileClasses);
+      ++chunksWalked;
    }
+   const double walkMs = stopwatch.lap();
 
-   builder.forests(trees);
-   builder.patches(resources, rules);
+   builder.groups(cells);
    for (auto [bodies, kind, category, key] :
         {std::tuple{&water, Kind::Water, Resources, "water"}, std::tuple{&ice, Kind::Ice, Terrain, "iceberg"}}) {
       for (const TileBodies::Body& body : bodies->bodies()) {
@@ -1311,8 +1452,11 @@ std::optional<std::vector<Detail>> refresh(const Refresh& request) {
       item.first = static_cast<uint32_t>(i);
       list.items.push_back(std::move(item));
    }
+   const double clusterMs = stopwatch.lap();
    list.links = Links(game, entities);
+   const double linkMs = stopwatch.lap();
    group(list);
+   const double groupMs = stopwatch.lap();
 
    std::vector<Detail> details;
    details.reserve(list.detailed.size());
@@ -1324,9 +1468,13 @@ std::optional<std::vector<Detail>> refresh(const Refresh& request) {
    Cursor cursor{g_cursor.category.value_or(All), {}, {}};
    g_list = std::move(list);
    g_cursor = cursor;
-   log::info("Scanner: {} entries ({} entities, {} trees, {} resources) on surface {}, {} for the mod to detail",
-             g_list.items.size(), entities.size(), trees.size(), resources.size(), request.surfaceIndex,
+   log::info("Scanner: {} entries ({} linked, {} trees, {} resources in {} cells) on surface {}, {} for the mod "
+             "to detail",
+             g_list.items.size(), entities.size(), trees, resources, cells.size(), request.surfaceIndex,
              details.size());
+   log::info("Scanner: {} chunks walked in {:.1f} ms, clustered in {:.1f}, linked in {:.1f}, grouped in {:.1f}, "
+             "the rest {:.1f}",
+             chunksWalked, walkMs, clusterMs, linkMs, groupMs, stopwatch.lap());
    return details;
 }
 
