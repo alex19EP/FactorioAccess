@@ -20,6 +20,8 @@ local BumpDetection = require("scripts.bump-detection")
 local CircuitNetworks = require("scripts.circuit-network")
 local Combat = require("scripts.combat")
 local Consts = require("scripts.consts")
+local SettingDecls = require("scripts.settings-decls")
+local SETTING_NAMES = SettingDecls.SETTING_NAMES
 local CursorChanges = require("scripts.cursor-changes")
 local Driving = require("scripts.driving")
 local HandMonitor = require("scripts.hand-monitor")
@@ -2699,6 +2701,24 @@ EventManager.on_event("fa-cas-d", function(event)
    local router = UiRouter.get_router(pindex)
    router:open_ui(UiRouter.UI_NAMES.DEBUG)
 end)
+
+-- Keys that toggle a per-player setting, the same one the game's Mod settings window shows
+for key, setting in pairs({
+   ["fa-cas-i"] = SETTING_NAMES.SONIFICATION_INSERTER,
+   ["fa-cas-c"] = SETTING_NAMES.SONIFICATION_CRAFTING,
+   ["fa-cas-e"] = SETTING_NAMES.SONIFICATION_COMBAT_ENEMIES,
+   ["fa-cas-s"] = SETTING_NAMES.SONIFICATION_COMBAT_SPAWNERS,
+}) do
+   EventManager.on_event(key, function(event, pindex)
+      local mod_settings = game.get_player(pindex).mod_settings
+      local enabled = not mod_settings[setting].value
+      mod_settings[setting] = { value = enabled }
+      Speech.speak(
+         pindex,
+         { enabled and "fa.setting-enabled" or "fa.setting-disabled", { "mod-setting-name." .. setting } }
+      )
+   end)
+end
 
 -- Toggle combat mode (changes sound reference point from cursor to character)
 EventManager.on_event("fa-cs-i", function(event)

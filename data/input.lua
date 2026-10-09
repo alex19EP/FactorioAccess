@@ -828,6 +828,34 @@ data:extend({
 
    {
       type = "custom-input",
+      name = "fa-cas-i",
+      key_sequence = "CONTROL + ALT + SHIFT + I",
+      consuming = "game-only",
+   },
+
+   {
+      type = "custom-input",
+      name = "fa-cas-c",
+      key_sequence = "CONTROL + ALT + SHIFT + C",
+      consuming = "game-only",
+   },
+
+   {
+      type = "custom-input",
+      name = "fa-cas-e",
+      key_sequence = "CONTROL + ALT + SHIFT + E",
+      consuming = "game-only",
+   },
+
+   {
+      type = "custom-input",
+      name = "fa-cas-s",
+      key_sequence = "CONTROL + ALT + SHIFT + S",
+      consuming = "game-only",
+   },
+
+   {
+      type = "custom-input",
       name = "fa-s-enter",
       key_sequence = "SHIFT + RETURN",
       consuming = "none",
