@@ -12,8 +12,8 @@
 // lowercase, after the mod's own speech style.
 namespace fa::vocab {
 
-// The most parameters a key takes here (the mod's own keys take up to eight; the game allows 20).
-inline constexpr size_t kMaxParameters = 8;
+// The most parameters a key takes here (the mod's own keys take up to twelve; the game allows 20).
+inline constexpr size_t kMaxParameters = 12;
 
 // The text of a key of the game's or the mod's locale, its parameters (__1__, __2__, __3__) filled
 // in, in the game's current language. Translating touches the game's locale, so this runs where
@@ -301,6 +301,22 @@ inline constexpr Word kPoleWires{"fa.ent-info-electrical-connections-count"};
 inline constexpr Word kPoleNoWires{"fa.ent-info-electrical-connections-nothing"};
 inline constexpr Word kPoleSupplying{"fa.ent-info-electric-pole-supplying"};
 inline constexpr Word kPoleDrawingFrom{"fa.ent-info-electric-pole-drawing-from"};
+// What a belt carries, by lane: the most common item, how many tiles behind (0), here (1) or
+// ahead (2) it was found, how many other items, the lane here (1 full, 2 stopped, 3 backed up),
+// and the other item when there is one; both lanes take two sets.
+inline constexpr Word kBeltCarriesNothing{"fa.ent-info-belt-contents-empty"};
+inline constexpr Word kBeltCarriesLeft{"fa.ent-info-belt-contents-left"};
+inline constexpr Word kBeltCarriesRight{"fa.ent-info-belt-contents-right"};
+inline constexpr Word kBeltCarriesBothSame{"fa.ent-info-belt-contents-both-same"};
+inline constexpr Word kBeltCarriesBoth{"fa.ent-info-belt-contents-both"};
+// A splitter's priorities, each side named with the way it leads.
+inline constexpr Word kSplitterInputBalanced{"fa.splitter-info-input-balanced"};
+inline constexpr Word kSplitterInputLeft{"fa.splitter-info-input-priority-left"};
+inline constexpr Word kSplitterInputRight{"fa.splitter-info-input-priority-right"};
+inline constexpr Word kSplitterOutputBalanced{"fa.splitter-info-output-balanced"};
+inline constexpr Word kSplitterOutputLeft{"fa.splitter-info-output-priority-left"};
+inline constexpr Word kSplitterOutputRight{"fa.splitter-info-output-priority-right"};
+inline constexpr Word kSplitterFiltering{"fa.splitter-info-output-filtering"};
 // The heat connections on the tile: the ways they lead ("heat to the North and East"), by how many,
 // and what they join with the way to it ("connected to Heat pipe North"), up to four.
 inline constexpr Word kHeatPorts[4] = {

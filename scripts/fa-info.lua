@@ -1142,8 +1142,8 @@ local function ent_info_belt_contents(ctx)
       right = node:carries_heuristic(defines.transport_line.right_line, 5),
    }
    local empty = { left = true, right = true }
-   local most_common_for_both = { left = nil, right = nil }
-   local other_count_for_both = { left = nil, right = nil }
+   -- Each lane's item, distance, way, others and second item, to tell whether both say the same.
+   local summary = {}
 
    local params = {}
    for _, side in pairs({ "left", "right" }) do
@@ -1152,18 +1152,27 @@ local function ent_info_belt_contents(ctx)
       if next(carries.results) then
          empty[side] = false
          local most_common = TH.max_counts2(carries.results, TH.max_counts2_tiebreak_quality)
-         most_common_for_both[side] = most_common
 
+         -- 0 behind, 1 here, 2 ahead.
          local dist = carries.distance
          local dist_dir = 1
          if dist < 0 then
-            dist_dir = 1
+            dist_dir = 0
          elseif dist > 0 then
             dist_dir = 2
          end
          local others = table_size(carries.results) - 1
-         other_count_for_both[side] = others
-         TH.concat_arrays(params, { most_common, dist, dist_dir, others, is_full and 1 or 0 })
+         -- The other item, when there is just one.
+         local second, second_name = nil, ""
+         if others == 1 then
+            for item in pairs(carries.results) do
+               if item ~= most_common then second = item end
+            end
+            second_name = Localising.get_localised_name_with_fallback(prototypes.item[second])
+         end
+         summary[side] = table.concat({ most_common, dist, others, second or "", is_full and 1 or 0 }, " ")
+         local name = Localising.get_localised_name_with_fallback(prototypes.item[most_common])
+         TH.concat_arrays(params, { name, math.abs(dist), dist_dir, others, is_full and 1 or 0, second_name })
       end
    end
 
@@ -1176,12 +1185,7 @@ local function ent_info_belt_contents(ctx)
       key = "fa.ent-info-belt-contents-both"
 
       -- If they're the same simplify to the simpler key.
-      if
-         most_common_for_both.left == most_common_for_both.right
-         and other_count_for_both.left == other_count_for_both.right
-      then
-         key = "fa.ent-info-belt-contents-both-same"
-      end
+      if summary.left == summary.right then key = "fa.ent-info-belt-contents-both-same" end
    end
    table.insert(params, 1, key)
    ctx.message:fragment(params)
@@ -1462,7 +1466,8 @@ function mod.ent_info(pindex, ent, is_scanner, after_native)
    end
    -- What the DLL's reading says itself (native/src/facts.cpp): facing, an underground belt's end
    -- and partner, a belt's shape, a pipe's or heat pipe's shape, the fluid and heat connections on the
-   -- tile, a nuclear reactor's state, a power pole's wires and what it powers.
+   -- tile, a nuclear reactor's state, a power pole's wires and what it powers, what a belt carries,
+   -- a splitter's priorities.
    local run_native_fact_handler = run_tooltip_handler
    if not is_scanner and native then ctx.drawn = native.entity_icons(pindex, ent) end
    -- The status icons tell what the tooltip's status says
@@ -1497,7 +1502,7 @@ function mod.ent_info(pindex, ent, is_scanner, after_native)
    run_native_fact_handler(ent_info_underground_belt_type, true)
 
    run_native_fact_handler(ent_info_belt_shape, true)
-   run_handler(ent_info_belt_contents, true)
+   run_native_fact_handler(ent_info_belt_contents, true)
    run_native_fact_handler(ent_info_pole_neighbors, true)
 
    run_tooltip_handler(ent_info_resource)
@@ -1519,7 +1524,7 @@ function mod.ent_info(pindex, ent, is_scanner, after_native)
    run_handler(ent_info_marked_for_upgrade)
    run_tooltip_handler(ent_info_power_production)
    run_native_fact_handler(ent_info_underground_belt_connection)
-   run_handler(ent_info_splitter_states)
+   run_native_fact_handler(ent_info_splitter_states)
    run_drawn_handler(ent_info_cargo_wagon)
    run_handler(ent_info_radar)
    run_native_fact_handler(ent_info_electric_pole)

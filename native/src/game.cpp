@@ -1182,6 +1182,27 @@ bool resolve(pdb::SymbolTable& symbols) {
    enumerator(layout.beltShapeLeft, "TransportBelt::Shape", "Left");
    enumerator(layout.beltShapeRight, "TransportBelt::Shape", "Right");
    offset(layout.undergroundPartner, "UndergroundBelt", "connection");
+   for (size_t i = 0; i < 4; ++i)
+      offset(layout.splitterNeighbours[i], "Splitter", std::format("secondaryConnections.{}", kSides[i]).c_str());
+   offset(layout.beltLeftLine, "TransportBeltConnectable", "leftLine");
+   offset(layout.beltRightLine, "TransportBeltConnectable", "rightLine");
+   offset(layout.connectorLine, "TransportLineConnector", "line");
+   offset(layout.connectorStart, "TransportLineConnector", "range.start");
+   offset(layout.connectorEnd, "TransportLineConnector", "range.end");
+   offset(layout.lineFirst, "TransportLine", "distanceToFirst");
+   offset(layout.lineItems, "TransportLine", "items._data");
+   offset(layout.lineItemsCapacity, "TransportLine", "items._capacity");
+   offset(layout.lineItemsHead, "TransportLine", "items._head");
+   offset(layout.lineItemsSize, "TransportLine", "items._size");
+   size(layout.lineItemSize, "ItemOnTransportLine");
+   offset(layout.lineItemGap, "ItemOnTransportLine", "distanceToNext");
+   offset(layout.lineItemStack, "ItemOnTransportLine", "stack");
+   offset(layout.lineGapIndex, "TransportLine", "firstGapIndex");
+   offset(layout.lineLength, "TransportLine", "length");
+   offset(layout.lineDirectConnection, "TransportLine", "directConnection");
+   offset(layout.lineDirectPosition, "TransportLine", "directConnectionPosition");
+   offset(layout.lineDirectInput, "TransportLine", "directInput");
+   offset(layout.qualityLevel, "QualityPrototype", "level");
    address(layout.entityGetFluidBoxes, "?getFluidBoxes@Entity@@QEAA?AVFluidBoxSet@@XZ");
    address(layout.fluidBoxSetDestroy, "??1?$SmallVector@PEAVFluidBox@@$00$0A@@@QEAA@XZ");
    size(layout.fluidBoxSetSize, "FluidBoxSet");

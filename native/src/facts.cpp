@@ -59,6 +59,20 @@ std::string_view typeName(const void* prototype) {
 
 const std::byte* prototypeOf(const void* entity) { return at<const std::byte*>(entity, layout.entityPrototypeOf); }
 
+// A prototype's internal name ("nuclear-reactor"), as Lua's name reads it.
+std::string_view internalName(const std::byte* prototype) {
+   struct MsvcString {
+      union {
+         char buffer[16];
+         const char* pointer;
+      };
+      size_t size;
+      size_t capacity;
+   };
+   const auto& name = *reinterpret_cast<const MsvcString*>(prototype + layout.prototypeName);
+   return {name.capacity >= sizeof(name.buffer) ? name.pointer : name.buffer, name.size};
+}
+
 // Entity::usageBitMask bits of entities the Lua API never hands out, which belt_neighbours skips
 // (LuaEntity::luaReadBeltNeighbours).
 constexpr uint16_t kNotListedBit = 0x10;
@@ -117,22 +131,25 @@ struct Neighbours {
    size_t outputCount = 0;
 };
 
-// A splitter's other half has its own neighbours too (Splitter::secondaryConnections), which these
-// facts never ask for: only belts and underground belts have a shape.
+// A splitter's other half has its own neighbours (Splitter::secondaryConnections), counted too.
 Neighbours neighboursOf(Belt belt) {
    Neighbours out;
    const uint8_t own = belt.direction();
-   for (size_t i = 0; i < 4; ++i) {
-      const Belt other{at<const std::byte*>(belt.entity, layout.beltNeighbours[i])};
-      if (!other || other == belt || (at<uint16_t>(other.entity, layout.entityUsageBits) & kNotListedBit)) continue;
-      const uint8_t side = kStraight[i];
-      if (side == own) {
-         if (other.direction() != opposite(own) && out.outputCount < std::size(out.outputs))
-            out.outputs[out.outputCount++] = other;
-      } else if (other.direction() == opposite(side) && out.inputCount < std::size(out.inputs)) {
-         out.inputs[out.inputCount++] = other;
+   auto add = [&](const uint32_t (&sides)[4]) {
+      for (size_t i = 0; i < 4; ++i) {
+         const Belt other{at<const std::byte*>(belt.entity, sides[i])};
+         if (!other || other == belt || (at<uint16_t>(other.entity, layout.entityUsageBits) & kNotListedBit)) continue;
+         const uint8_t side = kStraight[i];
+         if (side == own) {
+            if (other.direction() != opposite(own) && out.outputCount < std::size(out.outputs))
+               out.outputs[out.outputCount++] = other;
+         } else if (other.direction() == opposite(side) && out.inputCount < std::size(out.inputs)) {
+            out.inputs[out.inputCount++] = other;
+         }
       }
-   }
+   };
+   add(layout.beltNeighbours);
+   if (belt.type() == "splitter") add(layout.splitterNeighbours);
    return out;
 }
 
@@ -144,31 +161,42 @@ uint8_t inputDirection(Belt belt) {
    return belt.direction();
 }
 
-// The words for a transport belt's or an underground belt's shape (scripts/transport-belts.lua,
-// Node:get_shape_info, and fa-info.lua's ent_info_belt_shape).
-std::vector<std::string> beltShape(Belt belt) {
-   const Neighbours neighbours = neighboursOf(belt);
-   const uint8_t outgoing = belt.direction();
-
-   // The belts behind and to each side that feed it.
+// The belts behind and to each side that feed a transport belt or an underground belt
+// (transport-belts.lua's get_parents); an underground exit's behind is its entrance.
+struct Parents {
    Belt behind;
    Belt left;
    Belt right;
+};
+
+Parents parentsOf(Belt belt, const Neighbours& neighbours) {
+   Parents out;
+   if (!belt.isTransportBelt() && !belt.isUnderground()) return out;
+   const uint8_t outgoing = belt.direction();
    if (neighbours.inputCount == 1 && neighbours.inputs[0].direction() == outgoing) {
-      behind = neighbours.inputs[0];
+      out.behind = neighbours.inputs[0];
    } else {
       const uint8_t incoming = inputDirection(belt);
       for (size_t i = 0; i < neighbours.inputCount; ++i) {
          const Belt input = neighbours.inputs[i];
          if (input.direction() == incoming)
-            behind = input;
+            out.behind = input;
          else if (input.direction() == clockwise(incoming))
-            left = input;
+            out.left = input;
          else if (input.direction() == counterclockwise(incoming))
-            right = input;
+            out.right = input;
       }
    }
-   if (belt.isUndergroundExit()) behind = belt.partner();
+   if (belt.isUndergroundExit()) out.behind = belt.partner();
+   return out;
+}
+
+// The words for a transport belt's or an underground belt's shape (scripts/transport-belts.lua,
+// Node:get_shape_info, and fa-info.lua's ent_info_belt_shape).
+std::vector<std::string> beltShape(Belt belt) {
+   const Neighbours neighbours = neighboursOf(belt);
+   const uint8_t outgoing = belt.direction();
+   const auto [behind, left, right] = parentsOf(belt, neighbours);
 
    // An entrance feeds its exit.
    Belt child = neighbours.outputCount > 0 ? neighbours.outputs[0] : Belt{};
@@ -551,16 +579,7 @@ bool isHeatPipe(const std::byte* entity) { return typeName(prototypeOf(entity)) 
 // hot, burning a fuel cell, and its neighbour bonus.
 std::vector<std::string> reactorState(const std::byte* entity) {
    std::vector<std::string> out;
-   struct MsvcString {
-      union {
-         char buffer[16];
-         const char* pointer;
-      };
-      size_t size;
-      size_t capacity;
-   };
-   const auto& name = *reinterpret_cast<const MsvcString*>(prototypeOf(entity) + layout.prototypeName);
-   if (std::string_view(name.capacity >= 16 ? name.pointer : name.buffer, name.size) != "nuclear-reactor") return out;
+   if (internalName(prototypeOf(entity)) != "nuclear-reactor") return out;
    if (const std::byte* buffer =
           virtualAt<const std::byte* (*)(const void*)>(entity, layout.entityGetHeatBuffer)(entity)) {
       const std::byte* prototype = at<const std::byte*>(buffer, layout.heatBufferPrototype);
@@ -622,6 +641,300 @@ std::string heatConnections(const std::byte* entity, Position tile) {
    return joined(words);
 }
 
+// ---- what a belt carries ----
+
+// An item on a lane: its item and quality IDs and how many are stacked.
+struct LaneItem {
+   uint16_t item;
+   uint8_t quality;
+   uint32_t count;
+};
+
+// A lane line's items front to back, each with its index and position (fixed point, 0 at the
+// line's front, growing upstream), until `visit` returns false.
+template <class Visit>
+void eachItem(const std::byte* line, Visit&& visit) {
+   const std::byte* data = at<const std::byte*>(line, layout.lineItems);
+   const uint32_t capacity = at<uint32_t>(line, layout.lineItemsCapacity);
+   const uint32_t head = at<uint32_t>(line, layout.lineItemsHead);
+   const uint32_t size = at<uint32_t>(line, layout.lineItemsSize);
+   int32_t position = at<int32_t>(line, layout.lineFirst);
+   for (uint32_t i = 0; i < size; ++i) {
+      uint32_t slot = head + i;
+      if (slot >= capacity) slot -= capacity;
+      const std::byte* item = data + static_cast<size_t>(slot) * layout.lineItemSize;
+      if (!visit(i, position, item)) return;
+      position += at<int32_t>(item, layout.lineItemGap);
+   }
+}
+
+LaneItem laneItem(const std::byte* item) {
+   const std::byte* stack = item + layout.lineItemStack;
+   return {at<uint16_t>(stack, layout.itemStackItem), at<uint8_t>(stack, layout.itemStackQuality),
+           at<uint32_t>(stack, layout.itemStackCount)};
+}
+
+// Lane 1 (left) or 2 (right) of a belt connectable: its lane line and the range [start, end) of it
+// on this entity.
+struct LaneRange {
+   const std::byte* line = nullptr;
+   int32_t start = 0;
+   int32_t end = 0;
+};
+
+LaneRange rangeOf(Belt belt, int index) {
+   const std::byte* connector = belt.entity + (index == 1 ? layout.beltLeftLine : layout.beltRightLine);
+   return {at<const std::byte*>(connector, layout.connectorLine), at<int32_t>(connector, layout.connectorStart),
+           at<int32_t>(connector, layout.connectorEnd)};
+}
+
+// TransportLine::firstGapIndex when no item has room behind it.
+constexpr uint32_t kNoGap = 0xffffffff;
+
+// The items on a belt's lane; whether they fill it, four a tile, as LuaTransportLine counts a full
+// lane; and whether they stand still. TransportLine::move moves a line's items while its front
+// item has room to go on; when it has none (it is at the front, distanceToFirst 0) it only closes
+// the first gap, so the items from the front up to the first one with room behind it
+// (firstGapIndex) stay where they are, and with no gap none move.
+struct Lane {
+   std::vector<LaneItem> items;
+   bool full = false;
+   bool stopped = false;
+};
+
+Lane laneOf(LaneRange range) {
+   Lane lane;
+   if (!range.line) return lane;
+   uint32_t last = 0;
+   eachItem(range.line, [&](uint32_t index, int32_t position, const std::byte* item) {
+      if (position >= range.end) return false;
+      if (position >= range.start) {
+         lane.items.push_back(laneItem(item));
+         last = index;
+      }
+      return true;
+   });
+   lane.full = static_cast<int64_t>(lane.items.size()) * kScale == static_cast<int64_t>(range.end - range.start) * 4;
+   const uint32_t gap = at<uint32_t>(range.line, layout.lineGapIndex);
+   lane.stopped =
+      !lane.items.empty() && at<int32_t>(range.line, layout.lineFirst) == 0 && (gap == kNoGap || last <= gap);
+   return lane;
+}
+
+// Items found off a belt: those on the nearest tile with any, and how many tiles away it is,
+// negative behind.
+struct Carried {
+   std::vector<LaneItem> items;
+   int distance = 0;
+};
+
+// The most lane lines a search follows; a loop of belts comes back to one it has seen first.
+constexpr size_t kMaxLines = 1000;
+
+// Behind a belt: further back along its lane line, then along each line feeding the back of the
+// one before (TransportLine::directInput), as the items came.
+Carried behind(LaneRange range) {
+   Carried out;
+   const std::byte* line = range.line;
+   int32_t from = range.end;
+   int64_t offset = 0;
+   std::vector<const std::byte*> seen;
+   while (line && seen.size() < kMaxLines && std::find(seen.begin(), seen.end(), line) == seen.end()) {
+      seen.push_back(line);
+      int64_t tile = -1;
+      eachItem(line, [&](uint32_t, int32_t position, const std::byte* item) {
+         if (position < from) return true;
+         const int64_t here = (position - from + offset) / kScale;
+         if (tile < 0) tile = here;
+         if (here != tile) return false;
+         out.items.push_back(laneItem(item));
+         return true;
+      });
+      if (!out.items.empty()) {
+         out.distance = -static_cast<int>(tile + 1);
+         return out;
+      }
+      offset += at<int32_t>(line, layout.lineLength) - from;
+      from = 0;
+      line = at<const std::byte*>(line, layout.lineDirectInput);
+   }
+   return out;
+}
+
+// Ahead of a belt: further on along its lane line, then along the line each one feeds
+// (TransportLine::directConnection), from where it joins it: its back, or the place it pours onto
+// from the side (directConnectionPosition), as the items will go.
+Carried ahead(LaneRange range) {
+   Carried out;
+   const std::byte* line = range.line;
+   int32_t to = range.start;
+   int64_t offset = 0;
+   std::vector<const std::byte*> seen;
+   while (line && seen.size() < kMaxLines && std::find(seen.begin(), seen.end(), line) == seen.end()) {
+      seen.push_back(line);
+      // Front to back, so the nearest tile comes last.
+      int64_t tile = -1;
+      std::vector<LaneItem> nearest;
+      eachItem(line, [&](uint32_t, int32_t position, const std::byte* item) {
+         if (position >= to) return false;
+         const int64_t here = (to - 1 - position + offset) / kScale;
+         if (here != tile) {
+            tile = here;
+            nearest.clear();
+         }
+         nearest.push_back(laneItem(item));
+         return true;
+      });
+      if (!nearest.empty()) {
+         out.items = std::move(nearest);
+         out.distance = static_cast<int>(tile + 1);
+         return out;
+      }
+      const std::byte* next = at<const std::byte*>(line, layout.lineDirectConnection);
+      if (!next) break;
+      const int32_t joins = at<int32_t>(line, layout.lineDirectPosition);
+      offset += to;
+      to = joins != 0 ? joins : at<int32_t>(next, layout.lineLength);
+      line = next;
+   }
+   return out;
+}
+
+// What one lane carries (Node:carries_heuristic, without its five-belt limit): the items on this
+// belt's lane, else the nearest behind, else the nearest ahead.
+Carried carried(const Lane& lane, LaneRange range) {
+   if (!lane.items.empty()) return {lane.items, 0};
+   if (!range.line) return {};
+   if (Carried found = behind(range); !found.items.empty()) return found;
+   return ahead(range);
+}
+
+// One lane's words for fa.ent-info-belt-contents-*: the most common item (highest quality, then
+// name, on a tie), how far it was found, 0 behind, 1 here or 2 ahead, how many other items, this
+// belt's lane (1 full, 2 stopped, 3 backed up: full and stopped), and the other item when there is
+// just one.
+struct LaneWords {
+   uint16_t item = 0;
+   std::string name;
+   int distance = 0;
+   int way = 1;
+   size_t others = 0;
+   int state = 0;
+   uint16_t second = 0;
+   std::string secondName;
+
+   bool operator==(const LaneWords& other) const {
+      return item == other.item && distance == other.distance && way == other.way && others == other.others &&
+             state == other.state && second == other.second;
+   }
+};
+
+LaneWords laneWords(const Carried& lane, const Lane& here) {
+   struct Count {
+      uint16_t item;
+      uint8_t quality;
+      uint64_t count;
+   };
+   std::vector<Count> counts;
+   std::vector<uint16_t> items;
+   for (const LaneItem& entry : lane.items) {
+      auto same = [&](const Count& c) { return c.item == entry.item && c.quality == entry.quality; };
+      if (auto it = std::find_if(counts.begin(), counts.end(), same); it != counts.end())
+         it->count += entry.count;
+      else
+         counts.push_back({entry.item, entry.quality, entry.count});
+      if (std::find(items.begin(), items.end(), entry.item) == items.end()) items.push_back(entry.item);
+   }
+   auto level = [](uint8_t quality) {
+      const std::byte* prototype = prototypeAt(layout.qualityPrototypes, quality);
+      return prototype ? at<uint32_t>(prototype, layout.qualityLevel) : 0u;
+   };
+   auto itemName = [](uint16_t item) {
+      const std::byte* prototype = prototypeAt(layout.itemPrototypes, item);
+      return prototype ? internalName(prototype) : std::string_view{};
+   };
+   const Count* best = nullptr;
+   for (const Count& c : counts) {
+      if (!best || c.count > best->count ||
+          (c.count == best->count &&
+           (level(c.quality) > level(best->quality) ||
+            (level(c.quality) == level(best->quality) && itemName(c.item) < itemName(best->item)))))
+         best = &c;
+   }
+   auto nameOf = [](uint16_t item) {
+      const std::byte* prototype = prototypeAt(layout.itemPrototypes, item);
+      return prototype ? localisedName(prototype) : std::string();
+   };
+   LaneWords out;
+   out.item = best->item;
+   out.name = nameOf(best->item);
+   out.distance = std::abs(lane.distance);
+   out.way = lane.distance < 0 ? 0 : lane.distance > 0 ? 2 : 1;
+   out.others = items.size() - 1;
+   out.state = (here.full ? 1 : 0) + (here.stopped ? 2 : 0);
+   if (items.size() == 2) {
+      out.second = items[0] == best->item ? items[1] : items[0];
+      out.secondName = nameOf(out.second);
+   }
+   return out;
+}
+
+// What a transport belt carries on each lane (fa-info.lua's ent_info_belt_contents).
+std::string beltContents(Belt belt) {
+   const LaneRange leftRange = rangeOf(belt, 1);
+   const LaneRange rightRange = rangeOf(belt, 2);
+   const Lane leftLane = laneOf(leftRange);
+   const Lane rightLane = laneOf(rightRange);
+   const Carried left = carried(leftLane, leftRange);
+   const Carried right = carried(rightLane, rightRange);
+   if (left.items.empty() && right.items.empty()) return vocab::kBeltCarriesNothing;
+   if (right.items.empty()) {
+      const LaneWords l = laneWords(left, leftLane);
+      return vocab::kBeltCarriesLeft(l.name, l.distance, l.way, l.others, l.state, l.secondName);
+   }
+   if (left.items.empty()) {
+      const LaneWords r = laneWords(right, rightLane);
+      return vocab::kBeltCarriesRight(r.name, r.distance, r.way, r.others, r.state, r.secondName);
+   }
+   const LaneWords l = laneWords(left, leftLane);
+   const LaneWords r = laneWords(right, rightLane);
+   if (l == r) return vocab::kBeltCarriesBothSame(l.name, l.distance, l.way, l.others, l.state, l.secondName);
+   return vocab::kBeltCarriesBoth(l.name, l.distance, l.way, l.others, l.state, l.secondName, r.name, r.distance, r.way,
+                                  r.others, r.state, r.secondName);
+}
+
+// A splitter's input and output priorities and its filter (transport-belts.lua's
+// splitter_priority_info), each side named with the way it leads.
+std::string splitterState(Belt splitter) {
+   const std::byte* logic = splitter.entity + layout.splitterLogic;
+   const uint8_t direction = splitter.direction();
+   auto isRight = [&](uint32_t offset) { return at<uint32_t>(logic, offset) == layout.splitterRight; };
+   auto way = [&](uint32_t offset) {
+      return directionName(isRight(offset) ? clockwise(direction) : counterclockwise(direction));
+   };
+   std::vector<std::string> words;
+   if (!at<bool>(logic, layout.splitterInputLocked))
+      words.emplace_back(vocab::kSplitterInputBalanced);
+   else if (isRight(layout.splitterTakeFrom))
+      words.push_back(vocab::kSplitterInputRight(way(layout.splitterTakeFrom)));
+   else
+      words.push_back(vocab::kSplitterInputLeft(way(layout.splitterTakeFrom)));
+
+   const uint16_t filter = at<uint16_t>(logic + layout.splitterFilter, layout.itemFilterId);
+   const std::byte* filtered = filter ? prototypeAt(layout.itemPrototypes, filter) : nullptr;
+   if (filtered) {
+      const std::string side = isRight(layout.splitterGoesTo) ? vocab::kRight : vocab::kLeft;
+      words.push_back(vocab::kSplitterFiltering(localisedName(filtered), side, way(layout.splitterGoesTo)));
+   } else if (!at<bool>(logic, layout.splitterOutputLocked)) {
+      words.emplace_back(vocab::kSplitterOutputBalanced);
+   } else if (isRight(layout.splitterGoesTo)) {
+      words.push_back(vocab::kSplitterOutputRight(way(layout.splitterGoesTo)));
+   } else {
+      words.push_back(vocab::kSplitterOutputLeft(way(layout.splitterGoesTo)));
+   }
+   return joined(words);
+}
+
 // ---- power poles ----
 
 bool isPole(const std::byte* entity) { return typeName(prototypeOf(entity)) == "electric-pole"; }
@@ -678,15 +991,18 @@ std::vector<std::string> describe(const void* object, int32_t tileX, int32_t til
    const Belt candidate{entity};
    const Belt belt = candidate.isTransportBelt() || candidate.isUnderground() ? candidate : Belt{};
 
-   // One list item, as the mod's Lua said them: facing, an underground belt's end, a belt's shape.
+   // One list item, as the mod's Lua said them: facing, an underground belt's end, a belt's shape,
+   // what a belt carries.
    std::vector<std::string> first{facing(entity)};
    if (belt && belt.isUnderground())
       first.emplace_back(belt.isUndergroundExit() ? vocab::kUndergroundExit : vocab::kUndergroundEntrance);
    if (belt)
       for (std::string& word : beltShape(belt)) first.push_back(std::move(word));
+   if (belt && belt.isTransportBelt()) first.push_back(beltContents(belt));
 
    std::vector<std::string> parts{joined(first)};
    if (belt && belt.isUnderground()) parts.push_back(undergroundConnection(belt));
+   if (candidate.type() == "splitter") parts.push_back(splitterState(candidate));
    if (isPole(entity)) {
       parts.push_back(poleWires(entity));
       parts.push_back(poleSupply(entity));

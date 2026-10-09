@@ -1645,6 +1645,37 @@ struct Layout {
    uint32_t beltShapeRight = 0;  // ::Right
    // With undergroundType and undergroundOutput above.
    uint32_t undergroundPartner = 0; // UndergroundBelt::connection, UndergroundBelt*
+   // A splitter's other half: Splitter::secondaryConnections, by side as connections.
+   uint32_t splitterNeighbours[4] = {};
+   // A belt connectable's lanes 1 and 2 (left and right, as get_transport_line numbers them):
+   // TransportBeltConnectable::leftLine and rightLine, each a TransportLineConnector holding the
+   // range [start, end) of a TransportLine that lies on this entity. The line's items are a
+   // CompactDeque<ItemOnTransportLine> (a ring: _data, _capacity, _head, _size); the first is
+   // distanceToFirst along the line and each lies distanceToNext before the next (fixed point, 256 a
+   // tile), as LuaTransportLine's length operator and get_detailed_contents walk them.
+   uint32_t beltLeftLine = 0;
+   uint32_t beltRightLine = 0;
+   uint32_t connectorLine = 0;      // TransportLineConnector::line, TransportLine*
+   uint32_t connectorStart = 0;     // ::range.start
+   uint32_t connectorEnd = 0;       // ::range.end
+   uint32_t lineFirst = 0;          // TransportLine::distanceToFirst
+   uint32_t lineItems = 0;          // ::items._data, ItemOnTransportLine*
+   uint32_t lineItemsCapacity = 0;
+   uint32_t lineItemsHead = 0;
+   uint32_t lineItemsSize = 0;
+   uint32_t lineItemSize = 0;
+   uint32_t lineItemGap = 0;        // ItemOnTransportLine::distanceToNext
+   uint32_t lineItemStack = 0;      // ::stack, an ItemStack
+   // TransportLine::firstGapIndex, the first item with room behind it (more than 0x40 to the
+   // next), 0xffffffff for none; ::length; the line it feeds (::directConnection), at its back or,
+   // when ::directConnectionPosition is not 0, from the side at that position; and the line that
+   // feeds its back (::directInput).
+   uint32_t lineGapIndex = 0;
+   uint32_t lineLength = 0;
+   uint32_t lineDirectConnection = 0;
+   uint32_t lineDirectPosition = 0;
+   uint32_t lineDirectInput = 0;
+   uint32_t qualityLevel = 0;       // QualityPrototype::level, uint32
 
    // An entity's fluid boxes, as LuaEntity's fluid functions find them: FluidBoxSet
    // Entity::getFluidBoxes(), a SmallVector<FluidBox*,1> returned through a pointer, and its
