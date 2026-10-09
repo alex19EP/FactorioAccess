@@ -47,7 +47,8 @@ DWORD WINAPI initialize(void*) {
    dev::start(directory);
 
    auto started = std::chrono::steady_clock::now();
-   pdb::SymbolTable symbols(GetModuleHandleW(nullptr), modulePath(nullptr), directory / "factorio-access-native.symbols");
+   pdb::SymbolTable symbols(GetModuleHandleW(nullptr), modulePath(nullptr),
+                            directory / "factorio-access-native.symbols");
    bool resolved = game::resolve(symbols);
    symbols.finish();
    log::info("Symbol resolution took {} ms",

@@ -16,7 +16,8 @@ void MenuScreen::BuildWindow(graph::GraphBuilder& builder, const agui::Widget* w
     agui::MenuParts parts = agui::menuParts(window);
     const agui::Widget* title = agui::frameTitle(window);
     builder.BeginStop("menu");
-    for (auto [key, part] : {std::pair{"menu/top", parts.top}, {"menu/main", parts.main}, {"menu/bottom", parts.bottom}})
+    for (auto [key, part] :
+        {std::pair{"menu/top", parts.top}, {"menu/main", parts.main}, {"menu/bottom", parts.bottom}})
         if (Shows(part))
             AddSubtree(builder, key, part, {title});
 

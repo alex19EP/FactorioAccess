@@ -63,9 +63,8 @@ bool checkInlining(fa::pdb::SymbolTable& symbols) {
          continue;
       }
       for (const auto& into : copies[i].into) {
-         auto reviewed = std::ranges::find_if(kReviewedCopies, [&](const ReviewedCopy& copy) {
-            return copy.field == target.field && copy.into == into;
-         });
+         auto reviewed = std::ranges::find_if(
+            kReviewedCopies, [&](const ReviewedCopy& copy) { return copy.field == target.field && copy.into == into; });
          if (reviewed != std::end(kReviewedCopies)) {
             fa::log::info("Hooked {} is inlined into {}; reviewed: {}", target.name, into, reviewed->reason);
          } else {

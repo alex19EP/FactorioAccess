@@ -55,8 +55,8 @@ void AddHistory(graph::GraphBuilder& builder, const Widget* window, const agui::
 
 // The tabs, then the search and the shelves of the chosen one: the "synchronising" label until a
 // shelf has arrived, then its records.
-void AddShelves(graph::GraphBuilder& builder, const Widget* window, const Widget* header, const Widget* field,
-    RecordKeys& shown)
+void AddShelves(
+    graph::GraphBuilder& builder, const Widget* window, const Widget* header, const Widget* field, RecordKeys& shown)
 {
     const Widget* tabs = agui::member(window, layout.libraryTabs);
     builder.BeginStop("tabs");
@@ -90,19 +90,18 @@ void AddShelves(graph::GraphBuilder& builder, const Widget* window, const Widget
 
 // A book record opened in the library, laid out as a book's window, with the search over its
 // contents.
-void AddOpenBook(graph::GraphBuilder& builder, const Widget* book, const Widget* header, const Widget* field,
-    RecordKeys& shown)
+void AddOpenBook(
+    graph::GraphBuilder& builder, const Widget* book, const Widget* header, const Widget* field, RecordKeys& shown)
 {
     const Widget* navigation = agui::member(book, layout.bookRecordGuiNavigation);
     AddBook(builder,
-        {agui::member(navigation, layout.bookHeaderName),
-            agui::member(navigation, layout.bookHeaderRename),
-            agui::member(book, layout.bookRecordGuiDescription),
-            navigation});
+        {agui::member(navigation, layout.bookHeaderName), agui::member(navigation, layout.bookHeaderRename),
+            agui::member(book, layout.bookRecordGuiDescription), navigation});
     AddSubheaderButtons(builder, "buttons", agui::member(book, layout.bookRecordGuiHeader));
     builder.BeginStop("contents");
     AddSearch(builder, header, field);
-    AddNoMatch(builder, field, AddBlueprintList(builder, "contents", agui::member(book, layout.bookRecordGuiList), &shown));
+    AddNoMatch(
+        builder, field, AddBlueprintList(builder, "contents", agui::member(book, layout.bookRecordGuiList), &shown));
     AddListView(builder, agui::member(book, layout.bookRecordGuiInside));
 }
 
@@ -133,7 +132,8 @@ void BlueprintLibraryScreen::BuildWindow(graph::GraphBuilder& builder, const Wid
         AddShelves(builder, window, parts.header, field, shown);
         AddListView(builder, inside);
     }
-    else if (const Widget* book = FindDescendant(agui::member(window, layout.libraryBookHolder), "BlueprintBookRecordWidget"))
+    else if (const Widget* book =
+                 FindDescendant(agui::member(window, layout.libraryBookHolder), "BlueprintBookRecordWidget"))
     {
         openBook = agui::openBookRecordId(book);
         AddOpenBook(builder, book, parts.header, field, shown);

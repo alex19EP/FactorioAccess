@@ -34,8 +34,8 @@ void PreviewCanvas::Add(graph::GraphBuilder& builder, const agui::Widget* pictur
     graph::NodeVtable vtable;
     vtable.HostTag = picture;
     vtable.SpeaksOwnPosition = true;
-    vtable.Announcements.emplace_back([this, picture]() { return preview::describe(picture, _x, _y); }, true,
-        graph::AnnouncementKinds::Label);
+    vtable.Announcements.emplace_back(
+        [this, picture]() { return preview::describe(picture, _x, _y); }, true, graph::AnnouncementKinds::Label);
     vtable.OnMoveWithin = [this, picture, inside](graph::GraphDir dir, bool skip)
     {
         int dx = dir == graph::GraphDir::Left ? -1 : dir == graph::GraphDir::Right ? 1 : 0;

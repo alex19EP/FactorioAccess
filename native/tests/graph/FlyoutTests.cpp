@@ -26,10 +26,7 @@ NodeVtable Vt(const std::string& label)
     return vt;
 }
 
-ControlId Id(const std::string& key)
-{
-    return ControlId::Structural(key);
-}
+ControlId Id(const std::string& key) { return ControlId::Structural(key); }
 
 // A hub in miniature: a five-item strip where two items own columns.
 //   cyber   inventory[backpack, crafting]   map   journal[shards, tarot, gallery]
@@ -159,7 +156,10 @@ TEST(EmptyFlyoutLeavesTheOwnerAPlainItem)
 {
     // Screens filter their children (hidden, unavailable) and must not have to pre-count them.
     auto render = GraphBuilder()
-                      .StartRow().AddItem(Id("a"), Vt("A")).AddItem(Id("b"), Vt("B")).EndRow()
+                      .StartRow()
+                      .AddItem(Id("a"), Vt("A"))
+                      .AddItem(Id("b"), Vt("B"))
+                      .EndRow()
                       .BeginFlyout(Id("b"))
                       .EndFlyout()
                       .Build();
@@ -174,9 +174,15 @@ TEST(FlyoutDoesNotBreakARowDeclaredAfterIt)
     // The flyout is skipped by the row segmenter rather than closing the stop's open segment, so
     // the two strips still chain to each other.
     auto render = GraphBuilder()
-                      .StartRow().AddItem(Id("a"), Vt("A")).EndRow()
-                      .BeginFlyout(Id("a")).AddItem(Id("a1"), Vt("A1")).EndFlyout()
-                      .StartRow().AddItem(Id("b"), Vt("B")).EndRow()
+                      .StartRow()
+                      .AddItem(Id("a"), Vt("A"))
+                      .EndRow()
+                      .BeginFlyout(Id("a"))
+                      .AddItem(Id("a1"), Vt("A1"))
+                      .EndFlyout()
+                      .StartRow()
+                      .AddItem(Id("b"), Vt("B"))
+                      .EndRow()
                       .Build();
 
     // 'a' Down belongs to its column; 'b' still reaches back up to the row above it.
@@ -221,14 +227,11 @@ TEST(FlyoutInsideAnExpandedGroupWiresNormally)
 
 TEST(FlyoutMisuseThrows)
 {
-    CHECK_THROWS(std::logic_error,
-        GraphBuilder().StartRow().AddItem(Id("a"), Vt("A")).BeginFlyout(Id("a")));
+    CHECK_THROWS(std::logic_error, GraphBuilder().StartRow().AddItem(Id("a"), Vt("A")).BeginFlyout(Id("a")));
     CHECK_THROWS(std::invalid_argument, GraphBuilder().BeginFlyout(Id("nope")));
-    CHECK_THROWS(std::logic_error,
-        GraphBuilder().AddNode(Id("raw"), Vt("Raw")).BeginFlyout(Id("raw")));
+    CHECK_THROWS(std::logic_error, GraphBuilder().AddNode(Id("raw"), Vt("Raw")).BeginFlyout(Id("raw")));
     CHECK_THROWS(std::logic_error, GraphBuilder().AddItem(Id("a"), Vt("A")).EndFlyout());
-    CHECK_THROWS(std::logic_error,
-        GraphBuilder().AddItem(Id("a"), Vt("A")).BeginFlyout(Id("a")).Build());
+    CHECK_THROWS(std::logic_error, GraphBuilder().AddItem(Id("a"), Vt("A")).BeginFlyout(Id("a")).Build());
 
     {
         GraphBuilder b;
@@ -365,15 +368,14 @@ TEST(OwnerAnnouncesItsColumnBeforeItsPosition)
             GraphAnnouncer::FlyoutHintText = nullptr;
             GraphAnnouncer::PositionText = nullptr;
         }};
-    GraphAnnouncer::FlyoutHintText = [](int count)
-    { return "submenu, " + std::to_string(count) + " items"; };
+    GraphAnnouncer::FlyoutHintText = [](int count) { return "submenu, " + std::to_string(count) + " items"; };
     GraphAnnouncer::PositionText = [](int index, int count)
     { return std::to_string(index) + " of " + std::to_string(count); };
 
     auto render = BuildHub();
 
-    CHECK_EQ(std::string("Inventory, submenu, 2 items, 2 of 4"),
-        GraphAnnouncer::LeafText(render->NodeAt(Id("inventory"))));
+    CHECK_EQ(
+        std::string("Inventory, submenu, 2 items, 2 of 4"), GraphAnnouncer::LeafText(render->NodeAt(Id("inventory"))));
     CHECK_EQ(std::string("Map, 3 of 4"), GraphAnnouncer::LeafText(render->NodeAt(Id("map"))));
 }
 
@@ -426,9 +428,7 @@ namespace
 std::unique_ptr<GraphRender> BuildList()
 {
     GraphBuilder b;
-    b.AddItem(Id("guillotine"), Vt("Guillotine"))
-        .AddItem(Id("unity"), Vt("Unity"))
-        .AddItem(Id("maxdoc"), Vt("Maxdoc"));
+    b.AddItem(Id("guillotine"), Vt("Guillotine")).AddItem(Id("unity"), Vt("Unity")).AddItem(Id("maxdoc"), Vt("Maxdoc"));
     b.BeginFlyout(Id("unity"), GraphBuilder::FlyoutEntry::KeyOnly)
         .AddItem(Id("equip"), Vt("Equip"))
         .AddItem(Id("drop"), Vt("Drop"))
@@ -544,13 +544,11 @@ TEST(KeyOnlyOwnerStillGetsTheSubmenuHint)
             GraphAnnouncer::FlyoutHintText = nullptr;
             GraphAnnouncer::PositionText = nullptr;
         }};
-    GraphAnnouncer::FlyoutHintText = [](int count)
-    { return "submenu, " + std::to_string(count) + " items"; };
+    GraphAnnouncer::FlyoutHintText = [](int count) { return "submenu, " + std::to_string(count) + " items"; };
     GraphAnnouncer::PositionText = nullptr;
 
     auto render = BuildList();
-    CHECK_EQ(std::string("Unity, submenu, 2 items"),
-        GraphAnnouncer::LeafText(render->NodeAt(Id("unity"))));
+    CHECK_EQ(std::string("Unity, submenu, 2 items"), GraphAnnouncer::LeafText(render->NodeAt(Id("unity"))));
 }
 
 TEST(FlyoutOwnerCarryingASecondaryActionThrows)
@@ -561,8 +559,6 @@ TEST(FlyoutOwnerCarryingASecondaryActionThrows)
     NodeVtable vt = Vt("Unity");
     vt.OnSecondary = [] {};
     b.AddItem(Id("unity"), std::move(vt));
-    b.BeginFlyout(Id("unity"), GraphBuilder::FlyoutEntry::KeyOnly)
-        .AddItem(Id("equip"), Vt("Equip"))
-        .EndFlyout();
+    b.BeginFlyout(Id("unity"), GraphBuilder::FlyoutEntry::KeyOnly).AddItem(Id("equip"), Vt("Equip")).EndFlyout();
     CHECK_THROWS(std::logic_error, b.Build());
 }

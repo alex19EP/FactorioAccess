@@ -18,20 +18,13 @@ NodeVtable Vt(const std::string& label)
     return vt;
 }
 
-ControlId Id(const std::string& key)
-{
-    return ControlId::Structural(key);
-}
+ControlId Id(const std::string& key) { return ControlId::Structural(key); }
 
 } // namespace
 
 TEST(SingleItemsFormVerticalMenu)
 {
-    auto render = GraphBuilder()
-                      .AddItem(Id("a"), Vt("A"))
-                      .AddItem(Id("b"), Vt("B"))
-                      .AddItem(Id("c"), Vt("C"))
-                      .Build();
+    auto render = GraphBuilder().AddItem(Id("a"), Vt("A")).AddItem(Id("b"), Vt("B")).AddItem(Id("c"), Vt("C")).Build();
 
     CHECK_EQ(Id("a"), render->StartKey);
     CHECK_EQ(Id("b"), render->NodeAt(Id("a"))->GetTransition(GraphDir::Down)->Destination);
@@ -44,9 +37,7 @@ TEST(SingleItemsFormVerticalMenu)
 
 TEST(RowsWireHorizontally)
 {
-    auto render = GraphBuilder()
-                      .StartRow().AddItem(Id("a"), Vt("A")).AddItem(Id("b"), Vt("B")).EndRow()
-                      .Build();
+    auto render = GraphBuilder().StartRow().AddItem(Id("a"), Vt("A")).AddItem(Id("b"), Vt("B")).EndRow().Build();
 
     CHECK_EQ(Id("b"), render->NodeAt(Id("a"))->GetTransition(GraphDir::Right)->Destination);
     CHECK_EQ(Id("a"), render->NodeAt(Id("b"))->GetTransition(GraphDir::Left)->Destination);
@@ -55,8 +46,14 @@ TEST(RowsWireHorizontally)
 TEST(SharedRowKeysPreserveColumn)
 {
     auto render = GraphBuilder()
-                      .StartRow("grid").AddItem(Id("a1"), Vt("A1")).AddItem(Id("a2"), Vt("A2")).EndRow()
-                      .StartRow("grid").AddItem(Id("b1"), Vt("B1")).AddItem(Id("b2"), Vt("B2")).EndRow()
+                      .StartRow("grid")
+                      .AddItem(Id("a1"), Vt("A1"))
+                      .AddItem(Id("a2"), Vt("A2"))
+                      .EndRow()
+                      .StartRow("grid")
+                      .AddItem(Id("b1"), Vt("B1"))
+                      .AddItem(Id("b2"), Vt("B2"))
+                      .EndRow()
                       .Build();
 
     CHECK_EQ(Id("b2"), render->NodeAt(Id("a2"))->GetTransition(GraphDir::Down)->Destination);
@@ -66,8 +63,14 @@ TEST(SharedRowKeysPreserveColumn)
 TEST(UnkeyedRowsLandOnFirstItem)
 {
     auto render = GraphBuilder()
-                      .StartRow().AddItem(Id("a1"), Vt("A1")).AddItem(Id("a2"), Vt("A2")).EndRow()
-                      .StartRow().AddItem(Id("b1"), Vt("B1")).AddItem(Id("b2"), Vt("B2")).EndRow()
+                      .StartRow()
+                      .AddItem(Id("a1"), Vt("A1"))
+                      .AddItem(Id("a2"), Vt("A2"))
+                      .EndRow()
+                      .StartRow()
+                      .AddItem(Id("b1"), Vt("B1"))
+                      .AddItem(Id("b2"), Vt("B2"))
+                      .EndRow()
                       .Build();
 
     CHECK_EQ(Id("b1"), render->NodeAt(Id("a2"))->GetTransition(GraphDir::Down)->Destination);
@@ -77,9 +80,13 @@ TEST(RaggedKeyedRowFallsToFirstItem)
 {
     auto render = GraphBuilder()
                       .StartRow("grid")
-                      .AddItem(Id("a1"), Vt("A1")).AddItem(Id("a2"), Vt("A2")).AddItem(Id("a3"), Vt("A3"))
+                      .AddItem(Id("a1"), Vt("A1"))
+                      .AddItem(Id("a2"), Vt("A2"))
+                      .AddItem(Id("a3"), Vt("A3"))
                       .EndRow()
-                      .StartRow("grid").AddItem(Id("b1"), Vt("B1")).EndRow()
+                      .StartRow("grid")
+                      .AddItem(Id("b1"), Vt("B1"))
+                      .EndRow()
                       .Build();
 
     // Column 3 doesn't exist below → first item.
@@ -88,11 +95,7 @@ TEST(RaggedKeyedRowFallsToFirstItem)
 
 TEST(ArrowsNeverCrossStops)
 {
-    auto render = GraphBuilder()
-                      .AddItem(Id("a"), Vt("A"))
-                      .BeginStop()
-                      .AddItem(Id("b"), Vt("B"))
-                      .Build();
+    auto render = GraphBuilder().AddItem(Id("a"), Vt("A")).BeginStop().AddItem(Id("b"), Vt("B")).Build();
 
     CHECK_FALSE(render->NodeAt(Id("a"))->HasTransition(GraphDir::Down));
     CHECK_FALSE(render->NodeAt(Id("b"))->HasTransition(GraphDir::Up));
@@ -128,10 +131,10 @@ TEST(GroupsEmitHeadersAndSuppressCollapsedSubtrees)
     {
         return GraphBuilder(&expansion)
             .BeginGroup(Id("combat"), Vt("Combat"))
-                .AddItem(Id("pause"), Vt("Auto pause"))
-                .BeginGroup(Id("nested"), Vt("Nested"))
-                    .AddItem(Id("deep"), Vt("Deep"))
-                .EndGroup()
+            .AddItem(Id("pause"), Vt("Auto pause"))
+            .BeginGroup(Id("nested"), Vt("Nested"))
+            .AddItem(Id("deep"), Vt("Deep"))
+            .EndGroup()
             .EndGroup()
             .AddItem(Id("after"), Vt("After"))
             .Build();
@@ -165,14 +168,17 @@ TEST(PositionsAutoStampBySiblingGroup)
     auto render = GraphBuilder(&expansion)
                       .AddItem(Id("a"), Vt("A"))       // top level: a, g = 2 siblings
                       .BeginGroup(Id("g"), Vt("G"))
-                          .AddItem(Id("c1"), Vt("C1")) // group level: 3 siblings
-                          .AddItem(Id("c2"), Vt("C2"))
-                          .AddItem(Id("c3"), Vt("C3"))
+                      .AddItem(Id("c1"), Vt("C1")) // group level: 3 siblings
+                      .AddItem(Id("c2"), Vt("C2"))
+                      .AddItem(Id("c3"), Vt("C3"))
                       .EndGroup()
                       .BeginStop()
                       .AddItem(Id("lone"), Vt("Lone")) // single sibling → no position
                       .BeginStop()
-                      .StartRow().AddItem(Id("r1"), Vt("R1")).AddItem(Id("r2"), Vt("R2")).EndRow() // row members
+                      .StartRow()
+                      .AddItem(Id("r1"), Vt("R1"))
+                      .AddItem(Id("r2"), Vt("R2"))
+                      .EndRow() // row members
                       .Build();
 
     CHECK_EQ(1, render->NodeAt(Id("a"))->PositionIndex);
@@ -189,9 +195,16 @@ TEST(PositionsAutoStampBySiblingGroup)
 TEST(LineFirstItemsArePositionedAsTheList)
 {
     auto render = GraphBuilder()
-                      .StartLine().AddItem(Id("s1"), Vt("S1")).EndRow()
-                      .StartLine().AddItem(Id("s2"), Vt("S2")).AddItem(Id("reset2"), Vt("Reset")).EndRow()
-                      .StartLine().AddItem(Id("s3"), Vt("S3")).EndRow()
+                      .StartLine()
+                      .AddItem(Id("s1"), Vt("S1"))
+                      .EndRow()
+                      .StartLine()
+                      .AddItem(Id("s2"), Vt("S2"))
+                      .AddItem(Id("reset2"), Vt("Reset"))
+                      .EndRow()
+                      .StartLine()
+                      .AddItem(Id("s3"), Vt("S3"))
+                      .EndRow()
                       .Build();
 
     CHECK_EQ(1, render->NodeAt(Id("s1"))->PositionIndex);
@@ -206,8 +219,10 @@ TEST(LineFirstItemsArePositionedAsTheList)
 TEST(RegionsAreStamped)
 {
     auto render = GraphBuilder()
-                      .SetRegion("filters").AddItem(Id("a"), Vt("A"))
-                      .SetRegion("items").AddItem(Id("b"), Vt("B"))
+                      .SetRegion("filters")
+                      .AddItem(Id("a"), Vt("A"))
+                      .SetRegion("items")
+                      .AddItem(Id("b"), Vt("B"))
                       .Build();
 
     CHECK_EQ("filters", render->NodeAt(Id("a"))->RegionKey);
@@ -237,7 +252,10 @@ TEST(MixedStopStitchesMenuToRawVertically)
     // must be arrow-traversable across the mode boundary.
     auto render = GraphBuilder()
                       .AddItem(Id("search"), Vt("Search"))
-                      .StartRow().AddItem(Id("f1"), Vt("F1")).AddItem(Id("f2"), Vt("F2")).EndRow()
+                      .StartRow()
+                      .AddItem(Id("f1"), Vt("F1"))
+                      .AddItem(Id("f2"), Vt("F2"))
+                      .EndRow()
                       .AddNode(Id("r0"), Vt("Row0"))
                       .AddNode(Id("r1"), Vt("Row1"))
                       .Connect(Id("r0"), GraphDir::Down, Id("r1"))

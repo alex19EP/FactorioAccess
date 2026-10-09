@@ -14,10 +14,8 @@ bool BlueprintBookScreen::Handles(const Widget* window) const { return agui::der
 void BlueprintBookScreen::BuildWindow(graph::GraphBuilder& builder, const Widget* window)
 {
     AddBook(builder,
-        {agui::member(window, layout.bookGuiName),
-            agui::member(window, layout.bookGuiRename),
-            agui::member(window, layout.bookGuiDescription),
-            agui::member(window, layout.bookGuiNavigation)});
+        {agui::member(window, layout.bookGuiName), agui::member(window, layout.bookGuiRename),
+            agui::member(window, layout.bookGuiDescription), agui::member(window, layout.bookGuiNavigation)});
     // The header's subheader: the book's item name as its caption, then its buttons.
     AddSubheaderButtons(builder, "buttons", agui::member(window, layout.bookGuiHeader));
     builder.BeginStop("contents");

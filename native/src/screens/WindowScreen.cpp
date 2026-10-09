@@ -120,9 +120,6 @@ void WindowScreen::OnCursorMoved(const graph::GraphNode& node)
         agui::focus(widget);
 }
 
-void WindowScreen::OnPop()
-{
-    _window = nullptr;
-}
+void WindowScreen::OnPop() { _window = nullptr; }
 
 } // namespace fa::screens

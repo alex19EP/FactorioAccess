@@ -79,7 +79,7 @@ bool guardedTick(const agui::Gui* gui) {
       tick(gui);
       return true;
    } __except (GetExceptionCode() == EXCEPTION_ACCESS_VIOLATION ? EXCEPTION_EXECUTE_HANDLER
-                                                                 : EXCEPTION_CONTINUE_SEARCH) {
+                                                                : EXCEPTION_CONTINUE_SEARCH) {
       return false;
    }
 }

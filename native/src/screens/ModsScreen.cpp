@@ -64,8 +64,7 @@ void ModsScreen::BuildManage(graph::GraphBuilder& builder, const Widget* window)
     if (rows > 0)
     {
         if (const Widget* all = FindDescendant(cells[0], "agui::CheckBox"))
-            AddControl(builder, "mods/all",
-                all,
+            AddControl(builder, "mods/all", all,
                 [all]()
                 {
                     std::string name = NameOf(all);

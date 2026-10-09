@@ -50,8 +50,8 @@ void AddMod(graph::GraphBuilder& builder, const Widget* table, const Widget* hea
             continue;
         }
         builder.StartLine(key);
-        builder.AddItem(graph::ControlId::Referenced(control, key),
-            label ? ControlNode(control, label) : ControlNode(control));
+        builder.AddItem(
+            graph::ControlId::Referenced(control, key), label ? ControlNode(control, label) : ControlNode(control));
         // At its default the reset icon is disabled on every row, which says nothing.
         if (reset && agui::enabled(reset))
             AddControl(builder, key + "/reset", reset);

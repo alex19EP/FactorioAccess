@@ -73,10 +73,8 @@ void collect(const Widget* widget, std::vector<const Widget*>& titles, std::vect
    } else if (kind == Kind::TextBox && agui::readOnly(widget)) {
       if (!agui::textBoxText(widget).empty()) texts.emplace_back(agui::textBoxText(widget));
    }
-   for (const Widget* child : agui::children(widget))
-      collect(child, titles, texts, depth + 1);
-   for (const Widget* child : agui::privateChildren(widget))
-      collect(child, titles, texts, depth + 1);
+   for (const Widget* child : agui::children(widget)) collect(child, titles, texts, depth + 1);
+   for (const Widget* child : agui::privateChildren(widget)) collect(child, titles, texts, depth + 1);
 }
 
 // What each manager showed when its boxes last changed. MainLoop::prepare updates the managers
@@ -102,7 +100,8 @@ InfoBoxesUpdate g_infoBoxesOriginal = nullptr;
 void infoBoxesUpdate(void* manager) {
    bool added = at<bool>(manager, layout.infoBoxManagerRebuild);
    g_infoBoxesOriginal(manager);
-   auto shown = std::find_if(g_shown.begin(), g_shown.end(), [&](const Shown& entry) { return entry.manager == manager; });
+   auto shown =
+      std::find_if(g_shown.begin(), g_shown.end(), [&](const Shown& entry) { return entry.manager == manager; });
    if (shown == g_shown.end()) shown = g_shown.insert(g_shown.end(), {manager, 0, {}});
    ptrdiff_t connectors = connectorBytes(manager);
    if (!added && connectors == shown->connectors) return;

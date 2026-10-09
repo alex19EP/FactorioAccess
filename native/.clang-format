@@ -1,0 +1,28 @@
+# Core style: src/*, tools/. src/graph, src/navigator, src/screens and tests/ override it with the
+# CyberAccess style in their own .clang-format. Needs clang-format 20 or later; CI pins 23.1.2.
+---
+Language: Cpp
+BasedOnStyle: LLVM
+Standard: Latest
+ColumnLimit: 120
+IndentWidth: 3
+ContinuationIndentWidth: 3
+AccessModifierOffset: -3
+ConstructorInitializerIndentWidth: 3
+IndentCaseLabels: false
+AlignEscapedNewlines: Left
+PointerAlignment: Left
+FixNamespaceComments: false
+AllowShortIfStatementsOnASingleLine: WithoutElse
+AllowShortLoopsOnASingleLine: true
+AllowShortCaseLabelsOnASingleLine: true
+BreakTemplateDeclarations: Yes
+# Comments after code are aligned by hand where a column of them reads better.
+AlignTrailingComments: Leave
+KeepEmptyLines:
+  AtStartOfBlock: false
+# <windows.h> has to come before the headers that build on it.
+SortIncludes: Never
+LineEnding: LF
+InsertNewlineAtEOF: true
+...

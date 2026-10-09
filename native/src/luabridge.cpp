@@ -118,8 +118,7 @@ std::string translate(lua_State* L, int index) {
                  sizeof(localised));
       return {};
    }
-   reinterpret_cast<void* (*)(void*, lua_State*, int, bool)>(layout.parseLocalisedString)(localised, L, index,
-                                                                                          true);
+   reinterpret_cast<void* (*)(void*, lua_State*, int, bool)>(layout.parseLocalisedString)(localised, L, index, true);
    struct Destroy {
       void* object;
       ~Destroy() { reinterpret_cast<void (*)(void*)>(layout.localisedStringDestroy)(object); }
@@ -131,8 +130,9 @@ std::string translate(lua_State* L, int index) {
 
 // Rich text tags the screen reader would read out as markup.
 std::string stripRichText(const std::string& text) {
-   static const std::regex tag(R"(\[/?(font|color|img|item|entity|technology|recipe|item-group|fluid|tile|)"
-                               R"(virtual-signal|achievement|gps|special-item|armor|train|train-stop|tooltip)[^\]]*\])");
+   static const std::regex tag(
+      R"(\[/?(font|color|img|item|entity|technology|recipe|item-group|fluid|tile|)"
+      R"(virtual-signal|achievement|gps|special-item|armor|train|train-stop|tooltip)[^\]]*\])");
    return std::regex_replace(text, tag, "");
 }
 
@@ -167,8 +167,7 @@ std::string nameKeys(lua_State* L, const std::string& text) {
       size_t length = lead < 0x80 ? 1 : lead >= 0xf0 ? 4 : lead >= 0xe0 ? 3 : lead >= 0xc0 ? 2 : 1;
       length = std::min(length, text.size() - i);
       const size_t next = i + length;
-      if (i > 0 && next < text.size() && isSeparator(text[i - 1]) && isSeparator(text[next]) &&
-          !isSeparator(text[i]))
+      if (i > 0 && next < text.size() && isSeparator(text[i - 1]) && isSeparator(text[next]) && !isSeparator(text[i]))
          out += keyName(L, std::string_view(text).substr(i, length));
       else
          out.append(text, i, length);
@@ -321,8 +320,8 @@ int entityIcons(lua_State* L) {
 int mapOverlays(lua_State* L) {
    if (!world::mayBeLocalPlayer(static_cast<int>(checkInteger(L, 1)))) return 0;
    const auto* context = *reinterpret_cast<const std::byte* const*>(layout.globalContext);
-   const auto* settings = context ? *reinterpret_cast<const std::byte* const*>(context + layout.globalMapViewSettings)
-                                  : nullptr;
+   const auto* settings =
+      context ? *reinterpret_cast<const std::byte* const*>(context + layout.globalMapViewSettings) : nullptr;
    if (!settings) return 0;
    const auto on = [&](uint32_t item) {
       return *reinterpret_cast<const bool*>(settings + item + layout.configBoolValue);

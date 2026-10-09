@@ -20,9 +20,9 @@ using game::layout;
 
 // The version and the log line name the DLL to Wube, so they read the same in every language.
 const std::string kVersionSuffix = " with FactorioAccess native " FA_NATIVE_VERSION;
-constexpr const char* kLogLine = "FactorioAccess native " FA_NATIVE_VERSION
-                                 " is loaded as winmm.dll. Crash log uploading is off; report crashes at "
-                                 "https://github.com/Factorio-Access/FactorioAccess/issues";
+constexpr const char* kLogLine =
+   "FactorioAccess native " FA_NATIVE_VERSION " is loaded as winmm.dll. Crash log uploading is off; report crashes at "
+   "https://github.com/Factorio-Access/FactorioAccess/issues";
 
 // LogLevel::Notice: printed without level or source file, like the game's own version line.
 constexpr int kLogNotice = 7;
@@ -68,7 +68,7 @@ VersionFunction g_versionOriginal = nullptr;
 void* versionForDisplay(const void* version, void* out) {
    void* result = g_versionOriginal(version, out);
    reinterpret_cast<void* (*)(void*, const char*, size_t)>(layout.stringAppend)(result, kVersionSuffix.data(),
-                                                                                 kVersionSuffix.size());
+                                                                                kVersionSuffix.size());
    return result;
 }
 

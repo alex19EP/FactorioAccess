@@ -68,8 +68,8 @@ void AddList(graph::GraphBuilder& builder, const Widget* window, std::function<v
             declared = region;
         }
         // Keyed by the tip, not the button: reading a tip makes the game build the list anew.
-        builder.AddItem(graph::ControlId::Referenced(button, "tips/" + std::to_string(i)),
-            TipNode(button, tip.suggested, chosen));
+        builder.AddItem(
+            graph::ControlId::Referenced(button, "tips/" + std::to_string(i)), TipNode(button, tip.suggested, chosen));
     }
     builder.SetRegion("");
 }
@@ -83,7 +83,8 @@ void AddPage(graph::GraphBuilder& builder, const Widget* window)
         return;
     }
     const Widget* title = agui::member(window, layout.tipsTitle);
-    builder.AddItem(graph::ControlId::Referenced(title, kTitleKey), TextNode(title, [title]() { return LabelText(title); }));
+    builder.AddItem(
+        graph::ControlId::Referenced(title, kTitleKey), TextNode(title, [title]() { return LabelText(title); }));
     AddLinkLines(builder, "page/text", agui::member(window, layout.tipsText));
     AddControl(builder, "page/tutorial", agui::member(window, layout.tipsPlayTutorial));
     AddControl(builder, "page/unread", agui::member(window, layout.tipsUnread));

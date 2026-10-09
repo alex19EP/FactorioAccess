@@ -4,8 +4,8 @@
 // far a tap goes depends on how long the key stays down. Here a press of a key bound to zoom in or
 // zoom out makes one zoom action, as a wheel notch does, of as many of the game's steps as make a
 // doubling in the current view: the game snaps such a zoom to powers of two, so every press
-// doubles or halves the view and lands on the same zoom levels. Holding the key does nothing more. The wheel is left as it is. The key zooms
-// around the middle of the screen, never towards the mouse, which a blind player does not place.
+// doubles or halves the view and lands on the same zoom levels. Holding the key does nothing more. The wheel is left as
+// it is. The key zooms around the middle of the screen, never towards the mouse, which a blind player does not place.
 namespace fa::zoom {
 
 // Whether `control` is the zoom in or zoom out ControlInput.

@@ -100,10 +100,13 @@ enum Cat : uint8_t {
    kCategoryCount,
 };
 constexpr std::array<std::string_view, kCategoryCount> kCategoryKeys{
-   "all",        "build_spots",         "pins",       "tags",     "resources", "enemies",
-   "remnants",   "production",          "logistics_and_power",    "containers", "military",
-   "vehicles",   "spidertrons",         "trains",     "ghosts",   "players",   "corpses",
-   "other",      "terrain",
+   "all",         "build_spots", "pins",
+   "tags",        "resources",   "enemies",
+   "remnants",    "production",  "logistics_and_power",
+   "containers",  "military",    "vehicles",
+   "spidertrons", "trains",      "ghosts",
+   "players",     "corpses",     "other",
+   "terrain",
 };
 static_assert(!kCategoryKeys.back().empty(), "a category has no key");
 
@@ -213,18 +216,32 @@ constexpr TypeRule kTypes[] = {
 
 // Rocks are resources: they are mined for stone and coal.
 constexpr std::string_view kRocks[] = {
-   "big-rock",   "big-sand-rock", "huge-rock",       "medium-rock",
-   "medium-sand-rock", "small-rock", "small-sand-rock", "tiny-rock",
+   "big-rock",         "big-sand-rock", "huge-rock",       "medium-rock",
+   "medium-sand-rock", "small-rock",    "small-sand-rock", "tiny-rock",
 };
 
 // Types whose subcategory says more than the prototype: what a machine makes, what a chest or pipe
 // holds, which train a wagon is in, which network a roboport names. The Lua API reads all of it, so
 // the mod's Lua gives these entities their subcategories (scripts/scanner/subcategories.lua).
 constexpr std::string_view kDetailedTypes[] = {
-   "artillery-wagon",    "assembling-machine", "cargo-wagon",   "container",  "entity-ghost",
-   "fluid-wagon",        "furnace",            "infinity-container", "infinity-pipe", "locomotive",
-   "logistic-container", "mining-drill",       "pipe",          "pipe-to-ground", "roboport",
-   "storage-tank",       "tile-ghost",         "unit-spawner",
+   "artillery-wagon",
+   "assembling-machine",
+   "cargo-wagon",
+   "container",
+   "entity-ghost",
+   "fluid-wagon",
+   "furnace",
+   "infinity-container",
+   "infinity-pipe",
+   "locomotive",
+   "logistic-container",
+   "mining-drill",
+   "pipe",
+   "pipe-to-ground",
+   "roboport",
+   "storage-tank",
+   "tile-ghost",
+   "unit-spawner",
 };
 
 // How an entity is listed.
@@ -242,7 +259,8 @@ Rule ruleFor(const std::byte* prototype, std::string_view type, std::string_view
    if (type == "resource") return {Listing::Resource, Resources, false, at<bool>(prototype, layout.resourceInfinite)};
    if (std::find(std::begin(kRocks), std::end(kRocks), name) != std::end(kRocks)) return {Listing::Alone, Resources};
    if (name.ends_with("-remnants")) return {Listing::Alone, Remnants};
-   const bool detailed = std::find(std::begin(kDetailedTypes), std::end(kDetailedTypes), type) != std::end(kDetailedTypes);
+   const bool detailed =
+      std::find(std::begin(kDetailedTypes), std::end(kDetailedTypes), type) != std::end(kDetailedTypes);
    for (const TypeRule& rule : kTypes)
       if (rule.type == type) return {Listing::Alone, rule.category, detailed};
    return {};
@@ -871,13 +889,15 @@ private:
       for (int32_t i = 0; i < 32; ++i) {
          const uint16_t label = chunk.at(mine(i));
          if (!label) continue;
-         for (int32_t j = std::max(0, i - 1); j <= std::min(31, i + 1); ++j) join(chunk, label, *other, other->at(theirs(j)));
+         for (int32_t j = std::max(0, i - 1); j <= std::min(31, i + 1); ++j)
+            join(chunk, label, *other, other->at(theirs(j)));
       }
    }
 
    void joinCorner(const Chunk& chunk, int32_t dx, int32_t dy, std::pair<int32_t, int32_t> mine,
                    std::pair<int32_t, int32_t> theirs) {
-      if (const Chunk* other = chunkAt(chunk.x + dx, chunk.y + dy)) join(chunk, chunk.at(mine), *other, other->at(theirs));
+      if (const Chunk* other = chunkAt(chunk.x + dx, chunk.y + dy))
+         join(chunk, chunk.at(mine), *other, other->at(theirs));
    }
 
    TileClass class_;
@@ -909,9 +929,12 @@ struct ScannerKey {
    Action action;
 };
 constexpr ScannerKey kKeys[] = {
-   {"fa-pageup", Action::SubcategoryBack},   {"fa-pagedown", Action::SubcategoryNext},
-   {"fa-s-pageup", Action::EntryBack},       {"fa-s-pagedown", Action::EntryNext},
-   {"fa-c-pageup", Action::CategoryBack},    {"fa-c-pagedown", Action::CategoryNext},
+   {"fa-pageup", Action::SubcategoryBack},
+   {"fa-pagedown", Action::SubcategoryNext},
+   {"fa-s-pageup", Action::EntryBack},
+   {"fa-s-pagedown", Action::EntryNext},
+   {"fa-c-pageup", Action::CategoryBack},
+   {"fa-c-pagedown", Action::CategoryNext},
    {"fa-home", Action::Repeat},
 };
 
@@ -1075,9 +1098,7 @@ std::optional<std::pair<uint32_t, uint32_t>> current(const World& world) {
 void describe(const World& world, const Item& item, Entry& entry) {
    entry.kind = std::string(kindName(item.kind));
    switch (item.kind) {
-   case Kind::Entity:
-      entry.prototype = std::string(prototypeName(item.prototype));
-      break;
+   case Kind::Entity: entry.prototype = std::string(prototypeName(item.prototype)); break;
    case Kind::Forest: {
       uint32_t live = 0;
       const std::byte* tree = nullptr;
@@ -1107,9 +1128,7 @@ void describe(const World& world, const Item& item, Entry& entry) {
       entry.width = item.box.width();
       entry.height = item.box.height();
       break;
-   case Kind::Extra:
-      entry.extra = item.first + 1;
-      break;
+   case Kind::Extra: entry.extra = item.first + 1; break;
    }
 }
 
@@ -1267,8 +1286,8 @@ std::optional<std::vector<Detail>> refresh(const Refresh& request) {
 
    builder.forests(trees);
    builder.patches(resources, rules);
-   for (auto [bodies, kind, category, key] : {std::tuple{&water, Kind::Water, Resources, "water"},
-                                              std::tuple{&ice, Kind::Ice, Terrain, "iceberg"}}) {
+   for (auto [bodies, kind, category, key] :
+        {std::tuple{&water, Kind::Water, Resources, "water"}, std::tuple{&ice, Kind::Ice, Terrain, "iceberg"}}) {
       for (const TileBodies::Body& body : bodies->bodies()) {
          const Position nearest = tileCentre(body.nearestX, body.nearestY);
          if (!wanted(nearest)) continue;

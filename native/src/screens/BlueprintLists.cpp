@@ -92,8 +92,8 @@ int AddBlueprintList(graph::GraphBuilder& builder, const std::string& key, const
                 if (labels.size() > 1)
                 {
                     const Widget* description = labels[1];
-                    node.Announcements.emplace_back([description]() { return LabelText(description); }, false,
-                        graph::AnnouncementKinds::Value);
+                    node.Announcements.emplace_back(
+                        [description]() { return LabelText(description); }, false, graph::AnnouncementKinds::Value);
                 }
             }
             if (!rowStarted)

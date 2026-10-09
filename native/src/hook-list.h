@@ -10,8 +10,7 @@
      "agui::Gui::logic")                                                                                               \
    X(sdlPollEvent, input::pollEventDetour(), input::pollEventOriginal(), "SDL_PollEvent")                              \
    X(determineWidgetUnderMouse, agui::underMouseDetour(), agui::underMouseOriginal(), "determineWidgetUnderMouse")     \
-   X(playerCursorPosition, world::playerCursorDetour(), world::playerCursorOriginal(),                                 \
-     "Player::getCursorMapPosition")                                                                                   \
+   X(playerCursorPosition, world::playerCursorDetour(), world::playerCursorOriginal(), "Player::getCursorMapPosition") \
    X(sourceCursorPosition, world::sourceCursorDetour(), world::sourceCursorOriginal(),                                 \
      "PlayerInputSource::getCursorMapPosition")                                                                        \
    X(gameViewMapPosition, world::mapPositionDetour(), world::mapPositionOriginal(), "GameView::getMapPosition")        \
@@ -62,5 +61,5 @@
      "the TipsAndTricksNotificationButton constructor")                                                                \
    X(speechBubbleGui, popups::speechBubbleDetour(), popups::speechBubbleOriginal(), "the SpeechBubbleGui constructor") \
    X(infoBoxManagerUpdate, popups::infoBoxesDetour(), popups::infoBoxesOriginal(), "InfoBoxManager::update")           \
-   X(characterChangePosition, movement::changePositionDetour(), movement::changePositionOriginal(),                     \
+   X(characterChangePosition, movement::changePositionDetour(), movement::changePositionOriginal(),                    \
      "Character::changePosition")

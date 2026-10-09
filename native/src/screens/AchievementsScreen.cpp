@@ -25,15 +25,15 @@ void AddSummary(graph::GraphBuilder& builder, const Widget* window)
     const Widget* bar = agui::member(window, layout.achievementsBar);
     if (Shows(label) && !LabelText(label).empty())
         builder.AddItem(graph::ControlId::Referenced(label, "summary/progress"),
-            TextNode(label, [label, bar]()
-                { return std::format("{}, {}", LabelText(label), text::speakable(agui::text(bar))); }));
+            TextNode(label,
+                [label, bar]() { return std::format("{}, {}", LabelText(label), text::speakable(agui::text(bar))); }));
     for (const auto& [offset, key] : {std::pair{layout.achievementsModded, "summary/modded"},
              std::pair{layout.achievementsPlaytime, "summary/playtime"}})
     {
         const Widget* note = agui::member(window, offset);
         if (Shows(note) && !LabelText(note).empty())
-            builder.AddItem(graph::ControlId::Referenced(note, key),
-                TextNode(note, [note]() { return LabelText(note); }));
+            builder.AddItem(
+                graph::ControlId::Referenced(note, key), TextNode(note, [note]() { return LabelText(note); }));
     }
 }
 

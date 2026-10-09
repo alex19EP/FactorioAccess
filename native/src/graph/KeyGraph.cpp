@@ -27,15 +27,11 @@ int IndexOf(const std::vector<std::string>& keys, const std::string& key)
 } // namespace
 
 KeyGraph::KeyGraph(RenderCallback renderCallback, GraphState* state)
-    : _renderCallback(std::move(renderCallback))
-    , _state(state)
+    : _renderCallback(std::move(renderCallback)), _state(state)
 {
 }
 
-GraphNode* KeyGraph::CurrentNode()
-{
-    return _current ? _current->NodeAt(_state->CurKey) : nullptr;
-}
+GraphNode* KeyGraph::CurrentNode() { return _current ? _current->NodeAt(_state->CurKey) : nullptr; }
 
 bool KeyGraph::Rerender()
 {
@@ -288,8 +284,7 @@ MoveResult KeyGraph::MoveRegion(int dir)
 
     std::vector<std::string> regions;
     for (GraphNode* n : _current->Order)
-        if (n->StopKey == node->StopKey && !n->RegionKey.empty()
-            && IndexOf(regions, n->RegionKey) < 0)
+        if (n->StopKey == node->StopKey && !n->RegionKey.empty() && IndexOf(regions, n->RegionKey) < 0)
             regions.push_back(n->RegionKey);
 
     int idx = IndexOf(regions, node->RegionKey);
@@ -341,8 +336,7 @@ MoveResult KeyGraph::MoveToType(int dir, const std::string& typeKey)
         const ControlType* type = n ? n->Vtable.Type : nullptr;
         if (type
             && (type->Key == typeKey
-                || std::find(type->Aliases.begin(), type->Aliases.end(), typeKey)
-                    != type->Aliases.end()))
+                || std::find(type->Aliases.begin(), type->Aliases.end(), typeKey) != type->Aliases.end()))
         {
             SetCurrent(n);
             result.To = n;
@@ -387,10 +381,7 @@ std::vector<std::string> KeyGraph::StopOrder() const
     return stops;
 }
 
-GraphNode* KeyGraph::StopLanding(const std::string& stopKey)
-{
-    return StopLandingIn(*_current, *_state, stopKey);
-}
+GraphNode* KeyGraph::StopLanding(const std::string& stopKey) { return StopLandingIn(*_current, *_state, stopKey); }
 
 GraphNode* KeyGraph::StopLandingIn(const GraphRender& render, const GraphState& state, const std::string& stopKey)
 {
@@ -459,10 +450,7 @@ bool KeyGraph::InTree(const GraphNode* node)
     return false;
 }
 
-bool KeyGraph::InFlyout(const GraphNode* node)
-{
-    return node && node->Parent && node->Parent->FlyoutOwner;
-}
+bool KeyGraph::InFlyout(const GraphNode* node) { return node && node->Parent && node->Parent->FlyoutOwner; }
 
 KeyGraph::TreeResult KeyGraph::TreeRight()
 {

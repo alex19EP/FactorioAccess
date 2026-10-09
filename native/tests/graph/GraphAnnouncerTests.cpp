@@ -43,8 +43,8 @@ struct Cleanup
 
 const ControlType TestButton{
     "button",
-    {AnnouncementKinds::Label, AnnouncementKinds::Role, AnnouncementKinds::Value,
-        AnnouncementKinds::Enabled, AnnouncementKinds::Position},
+    {AnnouncementKinds::Label, AnnouncementKinds::Role, AnnouncementKinds::Value, AnnouncementKinds::Enabled,
+        AnnouncementKinds::Position},
     []()
     {
         return std::vector<NodeAnnouncement>{
@@ -69,8 +69,7 @@ TEST(EntryFromNothingReadsFullChain)
     GraphNode list = MakeContext("Difficulty settings", "list", &options);
     GraphNode node = MakeNode("Normal, radio button, selected", &list);
 
-    CHECK_EQ("Options, Difficulty settings, list, Normal, radio button, selected",
-        GraphAnnouncer::ComposeFull(&node));
+    CHECK_EQ("Options, Difficulty settings, list, Normal, radio button, selected", GraphAnnouncer::ComposeFull(&node));
 }
 
 TEST(SiblingMoveReadsLeafOnly)
@@ -122,8 +121,7 @@ TEST(EnteringAGroupFromOutsideReadsTheGroup)
     GraphNode child = MakeNode("Auto pause on combat start, toggle, on", &group);
     GraphNode elsewhere = MakeNode("Tabs");
 
-    CHECK_EQ("Combat, Auto pause on combat start, toggle, on",
-        GraphAnnouncer::Compose(&elsewhere, &child));
+    CHECK_EQ("Combat, Auto pause on combat start, toggle, on", GraphAnnouncer::Compose(&elsewhere, &child));
 }
 
 TEST(ExpandedStateWordAppendsToGroups)
@@ -153,8 +151,7 @@ TEST(DuplicateContainerLabelIsSkipped)
     // But a control that merely STARTS with different text keeps its container.
     GraphNode section2 = MakeContext("Game difficulty");
     GraphNode other = MakeNode("Game difficulty presets, menu button", &section2);
-    CHECK_EQ("Game difficulty, Game difficulty presets, menu button",
-        GraphAnnouncer::ComposeFull(&other));
+    CHECK_EQ("Game difficulty, Game difficulty presets, menu button", GraphAnnouncer::ComposeFull(&other));
 }
 
 TEST(ControlTypeSuppliesRoleAndOrdering)

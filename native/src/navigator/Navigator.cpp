@@ -125,7 +125,8 @@ std::string Navigator::Describe()
         return out + "render: empty\n";
     graph::GraphNode* focus = _graph->CurrentNode();
     if (focus)
-        out += std::format("focus: {}\nspoken: {}\n", focus->Id.StructuralKey, graph::GraphAnnouncer::ComposeFull(focus));
+        out +=
+            std::format("focus: {}\nspoken: {}\n", focus->Id.StructuralKey, graph::GraphAnnouncer::ComposeFull(focus));
     if (_adjusting.IsValid())
         out += "adjusting\n";
     const std::string* stop = nullptr;
@@ -136,8 +137,8 @@ std::string Navigator::Describe()
             stop = &node->StopKey;
             out += std::format("[{}]\n", *stop);
         }
-        out += std::format("{} {}: {}\n", node == focus ? '>' : ' ', node->Id.StructuralKey,
-            graph::GraphAnnouncer::LeafText(node));
+        out += std::format(
+            "{} {}: {}\n", node == focus ? '>' : ' ', node->Id.StructuralKey, graph::GraphAnnouncer::LeafText(node));
     }
     return out;
 }
@@ -281,11 +282,9 @@ void Navigator::HandleArrow(graph::GraphDir dir, bool ctrl)
     }
 
     // At an edge: Left/Right get tree semantics when the focused node is in a tree.
-    if ((dir == graph::GraphDir::Left || dir == graph::GraphDir::Right) && r.To
-        && graph::KeyGraph::InTree(r.To))
+    if ((dir == graph::GraphDir::Left || dir == graph::GraphDir::Right) && r.To && graph::KeyGraph::InTree(r.To))
     {
-        graph::KeyGraph::TreeResult tr =
-            dir == graph::GraphDir::Right ? _graph->TreeRight() : _graph->TreeLeft();
+        graph::KeyGraph::TreeResult tr = dir == graph::GraphDir::Right ? _graph->TreeRight() : _graph->TreeLeft();
         AnnounceTree(tr);
     }
 }
@@ -339,8 +338,7 @@ void Navigator::HandleHomeEnd(bool home)
     }
     // Inside a tree or a flyout column, Home/End mean the first/last SIBLING at this level; the
     // plain edge walk would climb out of the column through its head.
-    graph::MoveResult r =
-        (node && (graph::KeyGraph::InTree(node) || graph::KeyGraph::InFlyout(node)))
+    graph::MoveResult r = (node && (graph::KeyGraph::InTree(node) || graph::KeyGraph::InFlyout(node)))
         ? _graph->MoveToSiblingEdge(/*first*/ home)
         : _graph->MoveToEdge(home ? graph::GraphDir::Up : graph::GraphDir::Down);
     if (r.Moved)
@@ -362,9 +360,7 @@ void Navigator::HandleEnter(bool shift, bool ctrl)
         return;
     }
 
-    bool ok = shift ? _graph->ActivateShift()
-        : ctrl      ? _graph->ActivateCtrl()
-                    : _graph->Activate();
+    bool ok = shift ? _graph->ActivateShift() : ctrl ? _graph->ActivateCtrl() : _graph->Activate();
     // A refusal is silent: the game's own voice or nothing.
     if (ok)
         SpeakStateFeedback();
@@ -601,14 +597,12 @@ void Navigator::UpdateClaims(bool haveRender)
         // chords never match, so Alt+F4 and friends always reach the game. Shift+arrows skip
         // across a canvas.
         auto arrows = static_cast<uint8_t>(plain | mods::Ctrl | (canvas ? mods::Shift : 0));
-        claims = {{keys::Up, arrows}, {keys::Down, arrows},
-            {keys::Left, arrows}, {keys::Right, arrows}, {keys::Tab, shiftable | mods::Ctrl},
-            {keys::Home, plain}, {keys::End, plain}, {keys::Return, plain | mods::Shift | mods::Ctrl},
-            {keys::KeypadEnter, plain | mods::Shift | mods::Ctrl}, {keys::Y, plain},
-            {keys::LeftBracket, plain | mods::Shift | mods::Ctrl},
+        claims = {{keys::Up, arrows}, {keys::Down, arrows}, {keys::Left, arrows}, {keys::Right, arrows},
+            {keys::Tab, shiftable | mods::Ctrl}, {keys::Home, plain}, {keys::End, plain},
+            {keys::Return, plain | mods::Shift | mods::Ctrl}, {keys::KeypadEnter, plain | mods::Shift | mods::Ctrl},
+            {keys::Y, plain}, {keys::LeftBracket, plain | mods::Shift | mods::Ctrl},
             // A held Shift or Control reaches the game's own handling of the right click.
-            {keys::Backspace, plain | mods::Shift | mods::Ctrl},
-            {keys::RightBracket, plain | mods::Shift | mods::Ctrl},
+            {keys::Backspace, plain | mods::Shift | mods::Ctrl}, {keys::RightBracket, plain | mods::Shift | mods::Ctrl},
             {keys::Backslash, plain | mods::Shift | mods::Ctrl}};
         // WASD mirrors the arrows. With Shift or Control it also drives the FA world cursor
         // (fa-w, fa-s-w, fa-c-w, fa-cs-w), which must stay where the window was opened.

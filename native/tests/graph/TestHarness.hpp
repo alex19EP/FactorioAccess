@@ -59,13 +59,13 @@ std::string Repr(const T& value)
 }
 
 template <typename A, typename B>
-void CheckEq(const A& expected, const B& actual, const char* exprExpected, const char* exprActual,
-    const char* file, int line)
+void CheckEq(
+    const A& expected, const B& actual, const char* exprExpected, const char* exprActual, const char* file, int line)
 {
     if (!(expected == actual))
     {
-        Fail(std::string("CHECK_EQ(") + exprExpected + ", " + exprActual + ") failed\n  expected: "
-                + Repr(expected) + "\n  actual:   " + Repr(actual),
+        Fail(std::string("CHECK_EQ(") + exprExpected + ", " + exprActual + ") failed\n  expected: " + Repr(expected)
+                + "\n  actual:   " + Repr(actual),
             file, line);
     }
 }
@@ -75,8 +75,7 @@ void CheckNe(const A& lhs, const B& rhs, const char* exprL, const char* exprR, c
 {
     if (lhs == rhs)
     {
-        Fail(std::string("CHECK_NE(") + exprL + ", " + exprR + ") failed\n  both were: " + Repr(lhs),
-            file, line);
+        Fail(std::string("CHECK_NE(") + exprL + ", " + exprR + ") failed\n  both were: " + Repr(lhs), file, line);
     }
 }
 
@@ -107,46 +106,44 @@ inline int RunAll()
 
 } // namespace GraphTest
 
-#define TEST(name)                                                     \
-    static void name();                                                \
-    static ::GraphTest::Registrar reg_##name(#name, &name);            \
+#define TEST(name)                                          \
+    static void name();                                     \
+    static ::GraphTest::Registrar reg_##name(#name, &name); \
     static void name()
 
-#define CHECK(cond)                                                    \
-    do                                                                 \
-    {                                                                  \
-        if (!(cond))                                                   \
+#define CHECK(cond)                                                           \
+    do                                                                        \
+    {                                                                         \
+        if (!(cond))                                                          \
             ::GraphTest::Fail("CHECK(" #cond ") failed", __FILE__, __LINE__); \
     } while (0)
 
-#define CHECK_FALSE(cond)                                              \
-    do                                                                 \
-    {                                                                  \
-        if (cond)                                                      \
+#define CHECK_FALSE(cond)                                                           \
+    do                                                                              \
+    {                                                                               \
+        if (cond)                                                                   \
             ::GraphTest::Fail("CHECK_FALSE(" #cond ") failed", __FILE__, __LINE__); \
     } while (0)
 
-#define CHECK_EQ(expected, actual) \
-    ::GraphTest::CheckEq((expected), (actual), #expected, #actual, __FILE__, __LINE__)
+#define CHECK_EQ(expected, actual) ::GraphTest::CheckEq((expected), (actual), #expected, #actual, __FILE__, __LINE__)
 
-#define CHECK_NE(lhs, rhs) \
-    ::GraphTest::CheckNe((lhs), (rhs), #lhs, #rhs, __FILE__, __LINE__)
+#define CHECK_NE(lhs, rhs) ::GraphTest::CheckNe((lhs), (rhs), #lhs, #rhs, __FILE__, __LINE__)
 
-#define CHECK_THROWS(ExType, expr)                                     \
-    do                                                                 \
-    {                                                                  \
-        bool caught_ = false;                                          \
-        try                                                            \
-        {                                                              \
-            (void)(expr);                                              \
-        }                                                              \
-        catch (const ExType&)                                          \
-        {                                                              \
-            caught_ = true;                                            \
-        }                                                              \
-        catch (...)                                                    \
-        {                                                              \
-        }                                                              \
-        if (!caught_)                                                  \
+#define CHECK_THROWS(ExType, expr)                                                      \
+    do                                                                                  \
+    {                                                                                   \
+        bool caught_ = false;                                                           \
+        try                                                                             \
+        {                                                                               \
+            (void)(expr);                                                               \
+        }                                                                               \
+        catch (const ExType&)                                                           \
+        {                                                                               \
+            caught_ = true;                                                             \
+        }                                                                               \
+        catch (...)                                                                     \
+        {                                                                               \
+        }                                                                               \
+        if (!caught_)                                                                   \
             ::GraphTest::Fail("expected " #ExType " from: " #expr, __FILE__, __LINE__); \
     } while (0)

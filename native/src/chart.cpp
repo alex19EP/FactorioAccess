@@ -68,7 +68,9 @@ const std::byte* chartSource() {
    return at<uint8_t>(player, layout.playerRenderMode) == game::kRenderModeChart ? source : nullptr;
 }
 
-const std::byte* sourcePlayer(const std::byte* source) { return at<const std::byte*>(source, layout.inputSourcePlayer); }
+const std::byte* sourcePlayer(const std::byte* source) {
+   return at<const std::byte*>(source, layout.inputSourcePlayer);
+}
 
 using LocalisedStr = const MsvcString* (*)(const void* localisedString, const void* localeProvider);
 

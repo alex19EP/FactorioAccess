@@ -14,10 +14,7 @@ class GenericWindowScreen final : public WindowScreen
 {
 public:
     /// `recipes` are the screens whose windows this one leaves alone.
-    explicit GenericWindowScreen(std::vector<const WindowScreen*> recipes)
-        : _recipes(std::move(recipes))
-    {
-    }
+    explicit GenericWindowScreen(std::vector<const WindowScreen*> recipes) : _recipes(std::move(recipes)) {}
 
     bool Handles(const agui::Widget* window) const override;
 

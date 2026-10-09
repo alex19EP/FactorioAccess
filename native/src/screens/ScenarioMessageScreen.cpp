@@ -41,17 +41,14 @@ void ScenarioMessageScreen::Build(graph::GraphBuilder& builder)
     AddSubtree(builder, "text", agui::scenarioMessageLabel(_message));
 
     graph::NodeVtable vtable;
-    vtable.Announcements.emplace_back([]() { return std::string(vocab::kContinue); }, false,
-        graph::AnnouncementKinds::Label);
-    vtable.Announcements.emplace_back([]() { return std::string(vocab::kButton); }, false,
-        graph::AnnouncementKinds::Role);
+    vtable.Announcements.emplace_back(
+        []() { return std::string(vocab::kContinue); }, false, graph::AnnouncementKinds::Label);
+    vtable.Announcements.emplace_back(
+        []() { return std::string(vocab::kButton); }, false, graph::AnnouncementKinds::Role);
     vtable.OnActivate = [this]() { _confirm = true; };
     builder.AddItem(graph::ControlId::Structural("continue"), std::move(vtable));
 }
 
-void ScenarioMessageScreen::OnPop()
-{
-    _message = nullptr;
-}
+void ScenarioMessageScreen::OnPop() { _message = nullptr; }
 
 } // namespace fa::screens

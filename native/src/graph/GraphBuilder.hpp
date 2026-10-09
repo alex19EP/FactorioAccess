@@ -74,8 +74,8 @@ public:
     /// constructed with, else `defaultExpanded`. The engine's tree operations (Right/Left)
     /// expand/collapse via the vtable's OnExpand/OnCollapse overrides when set, else by mutating
     /// the persistent set.
-    GraphBuilder& BeginGroup(ControlId id, NodeVtable vtable, std::optional<bool> expanded = std::nullopt,
-        bool defaultExpanded = false);
+    GraphBuilder& BeginGroup(
+        ControlId id, NodeVtable vtable, std::optional<bool> expanded = std::nullopt, bool defaultExpanded = false);
 
     GraphBuilder& EndGroup() { return PopContext(); }
 

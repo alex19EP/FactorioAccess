@@ -352,9 +352,13 @@ CheckState checkState(const Widget* toggleButton) {
       at<uint32_t>(asBaseChecked(toggleButton, ".?AVToggleButton@agui@@"), layout.toggleChecked));
 }
 
-bool buttonToggled(const Widget* button) { return at<bool>(asBaseChecked(button, ".?AVButton@agui@@"), layout.buttonToggled); }
+bool buttonToggled(const Widget* button) {
+   return at<bool>(asBaseChecked(button, ".?AVButton@agui@@"), layout.buttonToggled);
+}
 
-bool buttonIsToggle(const Widget* button) { return at<bool>(asBaseChecked(button, ".?AVButton@agui@@"), layout.buttonIsToggle); }
+bool buttonIsToggle(const Widget* button) {
+   return at<bool>(asBaseChecked(button, ".?AVButton@agui@@"), layout.buttonIsToggle);
+}
 
 SliderValue sliderValue(const Widget* slider) {
    const std::byte* base = asBaseChecked(slider, ".?AVSlider@agui@@");
@@ -366,7 +370,9 @@ SwitchState switchState(const Widget* widget) {
    return static_cast<SwitchState>(at<uint8_t>(asBaseChecked(widget, ".?AVSwitch@agui@@"), layout.switchState));
 }
 
-bool readOnly(const Widget* textBox) { return at<bool>(asBaseChecked(textBox, ".?AVTextBox@agui@@"), layout.textBoxReadOnly); }
+bool readOnly(const Widget* textBox) {
+   return at<bool>(asBaseChecked(textBox, ".?AVTextBox@agui@@"), layout.textBoxReadOnly);
+}
 
 std::string_view textBoxText(const Widget* textBox) {
    return readString(asBaseChecked(textBox, ".?AVTextBox@agui@@"), layout.textBoxText);
@@ -396,7 +402,9 @@ bool tabSelected(const Widget* tab) {
    return fromTargeter(selected, layout.tabEntryTab) == tab;
 }
 
-unsigned tableColumns(const Widget* table) { return at<uint32_t>(asBaseChecked(table, ".?AVTable@agui@@"), layout.tableColumns); }
+unsigned tableColumns(const Widget* table) {
+   return at<uint32_t>(asBaseChecked(table, ".?AVTable@agui@@"), layout.tableColumns);
+}
 
 ToolTip toolTip(const Widget* widget) {
    const auto* creator = at<const Widget*>(widget, layout.widgetToolTipCreator);
@@ -477,7 +485,7 @@ namespace {
 std::string_view localisedName(const std::byte* prototype) {
    using Str = const MsvcString* (*)(const void* localisedString, const void* localeProvider);
    const MsvcString* name =
-       reinterpret_cast<Str>(layout.localisedStringStr)(prototype + layout.prototypeLocalisedName, nullptr);
+      reinterpret_cast<Str>(layout.localisedStringStr)(prototype + layout.prototypeLocalisedName, nullptr);
    return {name->capacity >= sizeof(name->buffer) ? name->pointer : name->buffer, name->size};
 }
 
@@ -583,8 +591,10 @@ AchievementCard achievementCard(const Widget* card) {
    // AchievementCard::updateRightFlow puts the track button there for a normal card or any card on
    // the HUD, a warning icon for a failed one in the window, and nothing for an earned one there.
    for (const Widget* child : children(reinterpret_cast<const Widget*>(self + layout.achievementCardRight))) {
-      if (kind(child) == Kind::Button) result.track = child;
-      else if (derivesFrom(child, "agui::ImageWidget")) result.warning = child;
+      if (kind(child) == Kind::Button)
+         result.track = child;
+      else if (derivesFrom(child, "agui::ImageWidget"))
+         result.warning = child;
    }
    return result;
 }
@@ -672,7 +682,9 @@ SlotButton slotButton(const Widget* slot) {
    return button;
 }
 
-double progress(const Widget* bar) { return at<double>(asBaseChecked(bar, ".?AVProgressBar@agui@@"), layout.progressBarValue); }
+double progress(const Widget* bar) {
+   return at<double>(asBaseChecked(bar, ".?AVProgressBar@agui@@"), layout.progressBarValue);
+}
 
 bool isRecordSlot(const Widget* widget) { return asBase(widget, ".?AVBlueprintRecordSlotButton@@"); }
 
@@ -1031,8 +1043,7 @@ ModScreenWindows modScreenWindows() {
 
    // A mod may open the window itself or an element inside it.
    const Widget* opened = openedElementWidget(player);
-   while (opened && parent(opened) != root)
-      opened = parent(opened);
+   while (opened && parent(opened) != root) opened = parent(opened);
    if (opened && std::ranges::find(windows, opened) != windows.end()) found.opened = opened;
    return found;
 }
@@ -1040,9 +1051,8 @@ ModScreenWindows modScreenWindows() {
 ResearchBox researchBox() {
    const Widget* button = shownMember(gameView(), layout.gameViewResearch);
    if (!button) return {};
-   const Widget* progress = visible(member(button, layout.researchProgressFlow))
-                                ? member(button, layout.researchProgressLabel)
-                                : nullptr;
+   const Widget* progress =
+      visible(member(button, layout.researchProgressFlow)) ? member(button, layout.researchProgressLabel) : nullptr;
    return {button, member(button, layout.researchTitle), progress};
 }
 
@@ -1082,8 +1092,7 @@ ChartSearchResults chartSearchResults() {
    std::vector<const Widget*> items = listBoxItems(member(window, layout.chartSearchList));
    std::span<const Widget* const> pins = children(member(window, layout.chartSearchPins));
    // The list and the pin column are filled together, a pin per row.
-   for (size_t i = 0; i < items.size(); ++i)
-      results.rows.push_back({items[i], i < pins.size() ? pins[i] : nullptr});
+   for (size_t i = 0; i < items.size(); ++i) results.rows.push_back({items[i], i < pins.size() ? pins[i] : nullptr});
    return results;
 }
 
@@ -1285,12 +1294,12 @@ std::span<const std::byte> itemSections(const void* item) {
 int drawnWidth(const std::byte* console) {
    const std::byte* saved = newestItem(console, layout.outputConsoleItems);
    const std::byte* unsaved = newestItem(console, layout.outputConsoleItemsNotSaved);
-   const std::byte* newest = !saved                                     ? unsaved
-                             : !unsaved                                 ? saved
-                             : at<uint64_t>(saved, layout.consoleItemUpdateTick) >=
-                                     at<uint64_t>(unsaved, layout.consoleItemUpdateTick)
-                                 ? saved
-                                 : unsaved;
+   const std::byte* newest =
+      !saved     ? unsaved
+      : !unsaved ? saved
+      : at<uint64_t>(saved, layout.consoleItemUpdateTick) >= at<uint64_t>(unsaved, layout.consoleItemUpdateTick)
+         ? saved
+         : unsaved;
    const std::byte* text = newest ? wrappedText(newest) : nullptr;
    return text ? at<int>(text, layout.resizableTextMaxWidth) : 0;
 }
@@ -1469,7 +1478,7 @@ TechnologyInfo technologyInfo(const Widget* slot) {
    const std::byte* queue = at<const std::byte*>(self, layout.techSlotResearchQueue);
    info.queuePosition = queue ? queuePosition(queue, info.id) : 0;
    auto state = reinterpret_cast<ResearchState (*)(const std::byte*, const std::byte*)>(layout.technologyState)(
-       technology, queue);
+      technology, queue);
    // The words of the selected technology's status (TechnologyGui::updateTitle), the research going
    // on as the research box words it.
    const char* key = "gui-technology-preview.status-not-available";
@@ -1487,8 +1496,8 @@ TechnologyInfo technologyInfo(const Widget* slot) {
 
    const std::byte* manager = at<const std::byte*>(self, layout.techSlotResearchManager);
    if (manager && at<uint32_t>(self, layout.techSlotIndicateProgress) != 0 && state != ResearchState::Researched)
-      info.progress = reinterpret_cast<double (*)(const std::byte*, const std::byte*)>(layout.researchProgress)(
-          manager, technology);
+      info.progress =
+         reinterpret_cast<double (*)(const std::byte*, const std::byte*)>(layout.researchProgress)(manager, technology);
    return info;
 }
 
@@ -1575,7 +1584,6 @@ std::vector<const Widget*> shortcutBarListCheckBoxes(const Widget* shortcutBar) 
    return boxes;
 }
 
-
 bool isFocusable(const Widget* widget) { return callVirtual<bool>(widget, layout.slotIsFocusable); }
 
 void focus(const Widget* widget) {
@@ -1603,9 +1611,7 @@ MsvcString borrow(const std::string& text) {
 
 } // namespace
 
-void setEnabled(const Widget* widget, bool enabled) {
-   callVirtual<Widget*>(widget, layout.slotSetEnabled, enabled);
-}
+void setEnabled(const Widget* widget, bool enabled) { callVirtual<Widget*>(widget, layout.slotSetEnabled, enabled); }
 
 void setToolTip(const Widget* widget, const std::string& text) {
    MsvcString view = borrow(text);

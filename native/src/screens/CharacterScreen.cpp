@@ -49,9 +49,8 @@ graph::NodeVtable RecipeNode(const Widget* list, const Widget* recipe)
     vtable.Announcements.clear();
     vtable.Announcements.emplace_back([list, recipe]() { return std::string(agui::recipeItem(list, recipe).name); },
         false, graph::AnnouncementKinds::Label);
-    vtable.Announcements.emplace_back(
-        [list, recipe]() { return std::to_string(agui::recipeItem(list, recipe).craftable); }, true,
-        graph::AnnouncementKinds::Value);
+    vtable.Announcements.emplace_back([list, recipe]()
+        { return std::to_string(agui::recipeItem(list, recipe).craftable); }, true, graph::AnnouncementKinds::Value);
     return vtable;
 }
 
@@ -65,8 +64,8 @@ void AddInventory(graph::GraphBuilder& builder, const std::string& key, const Wi
     if (!title.empty())
         builder.PushContext(title);
     AddGrid(
-        builder, key, agui::parent(slot), [](const Widget* cell) { return agui::derivesFrom(cell, "InventoryGuiSlot"); },
-        [](const Widget* cell) { return ControlNode(cell); });
+        builder, key, agui::parent(slot), [](const Widget* cell)
+        { return agui::derivesFrom(cell, "InventoryGuiSlot"); }, [](const Widget* cell) { return ControlNode(cell); });
     if (!title.empty())
         builder.PopContext();
 }
@@ -88,7 +87,8 @@ void AddCrafting(graph::GraphBuilder& builder, const Widget* crafting)
     {
         builder.StartRow("groups");
         for (std::size_t i = 0; i < groups.size(); ++i)
-            builder.AddItem(graph::ControlId::Referenced(groups[i], "groups/" + std::to_string(i)), ControlNode(groups[i]));
+            builder.AddItem(
+                graph::ControlId::Referenced(groups[i], "groups/" + std::to_string(i)), ControlNode(groups[i]));
         if (search)
             builder.AddItem(graph::ControlId::Referenced(search, "groups/search"), ControlNode(search));
         builder.EndRow();
@@ -120,7 +120,8 @@ void AddQueue(graph::GraphBuilder& builder, const Widget* window)
         builder.PushContext(title);
     if (FindDescendant(queue.table, "CraftingQueueSlot"))
         AddGrid(
-            builder, "queue", queue.table, [](const Widget* cell) { return agui::derivesFrom(cell, "CraftingQueueSlot"); },
+            builder, "queue", queue.table,
+            [](const Widget* cell) { return agui::derivesFrom(cell, "CraftingQueueSlot"); },
             [](const Widget* cell) { return ControlNode(cell); });
     else
         builder.AddItem(graph::ControlId::Referenced(queue.table, "queue/empty"),

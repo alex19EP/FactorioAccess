@@ -7,10 +7,7 @@
 namespace fa::graph
 {
 
-GraphBuilder::GraphBuilder(const ControlIdSet* expansion)
-    : _expansion(expansion)
-{
-}
+GraphBuilder::GraphBuilder(const ControlIdSet* expansion) : _expansion(expansion) {}
 
 // ---- stops / regions ----
 
@@ -43,8 +40,7 @@ GraphBuilder& GraphBuilder::PushContext(const std::string& label, const std::str
     GraphNode* parent = CurrentParent();
     auto node = std::make_unique<GraphNode>();
     // Stable synthetic identity (label-pathed) so cross-render chain diffs match up.
-    node->Id = ControlId::Structural(
-        "ctx:" + (parent ? parent->Id.StructuralKey : std::string()) + "/" + label);
+    node->Id = ControlId::Structural("ctx:" + (parent ? parent->Id.StructuralKey : std::string()) + "/" + label);
     node->Vtable.Announcements.push_back(NodeAnnouncement::Static(label));
     if (!role.empty())
         node->Vtable.Announcements.push_back(NodeAnnouncement::Static(role));
@@ -66,8 +62,8 @@ GraphBuilder& GraphBuilder::PopContext()
     return *this;
 }
 
-GraphBuilder& GraphBuilder::BeginGroup(ControlId id, NodeVtable vtable, std::optional<bool> expanded,
-    bool defaultExpanded)
+GraphBuilder& GraphBuilder::BeginGroup(
+    ControlId id, NodeVtable vtable, std::optional<bool> expanded, bool defaultExpanded)
 {
     if (!id.IsValid())
         throw std::invalid_argument("BeginGroup requires a valid id");
@@ -75,9 +71,7 @@ GraphBuilder& GraphBuilder::BeginGroup(ControlId id, NodeVtable vtable, std::opt
         throw std::logic_error("Cannot begin a group inside an open row");
     if (_currentFlyout >= 0)
         throw std::logic_error("Cannot begin a group inside a flyout");
-    bool isExpanded = expanded.has_value()
-        ? *expanded
-        : (_expansion ? _expansion->count(id) > 0 : defaultExpanded);
+    bool isExpanded = expanded.has_value() ? *expanded : (_expansion ? _expansion->count(id) > 0 : defaultExpanded);
 
     GraphNode* header = nullptr;
     if (!Suppressed())
@@ -317,9 +311,7 @@ std::unique_ptr<GraphRender> GraphBuilder::Build()
             render->Nodes[e.From]->SetTransition(e.Dir, Transition{e.To, e.Label});
     StitchModeBoundaries();
 
-    render->StartKey = (_start.IsValid() && render->Nodes.count(_start))
-        ? _start
-        : render->Order[0]->Id;
+    render->StartKey = (_start.IsValid() && render->Nodes.count(_start)) ? _start : render->Order[0]->Id;
     StampPositions();
 
     render->LandLastStops = std::move(_landLast);
@@ -526,8 +518,7 @@ void GraphBuilder::WireFlyoutEdges()
         // Both are the right-click equivalent and share the navigator's one key, so a node
         // carrying both would silently never run its secondary action. Fail loudly at build.
         if (f.Owner->Vtable.OnSecondary)
-            throw std::logic_error(
-                "Flyout owner must not also declare OnSecondary: " + f.Owner->Id.ToString());
+            throw std::logic_error("Flyout owner must not also declare OnSecondary: " + f.Owner->Id.ToString());
 
         f.Owner->FlyoutOwner = true;
         f.Owner->FlyoutCount = static_cast<int>(f.Items.size());
@@ -541,8 +532,7 @@ void GraphBuilder::WireFlyoutEdges()
         {
             GraphNode* item = f.Items[i];
             item->SetTransition(GraphDir::Left, Transition{f.Owner->Id});
-            item->SetTransition(
-                GraphDir::Up, Transition{i == 0 ? f.Owner->Id : f.Items[i - 1]->Id});
+            item->SetTransition(GraphDir::Up, Transition{i == 0 ? f.Owner->Id : f.Items[i - 1]->Id});
             if (i + 1 < f.Items.size())
                 item->SetTransition(GraphDir::Down, Transition{f.Items[i + 1]->Id});
         }

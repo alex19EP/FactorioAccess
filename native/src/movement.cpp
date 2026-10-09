@@ -40,9 +40,9 @@ bool changePosition(void* character, const void* vector) {
    const std::byte* controller = at<const std::byte*>(character, layout.characterController);
    const std::byte* player = controller ? at<const std::byte*>(controller, layout.controllerPlayer) : nullptr;
    if (player && player == localPlayer()) {
-      Step step = full                                                       ? Step::Full
+      Step step = full                                                          ? Step::Full
                   : at<uint64_t>(character, layout.characterPosition) != before ? Step::Partial
-                                                                             : Step::None;
+                                                                                : Step::None;
       const uint64_t tick = at<uint64_t>(at<const std::byte*>(character, layout.characterMap), layout.mapUpdateTick);
       g_count++;
       g_step.store(tick << 10 | static_cast<uint64_t>(g_count) << 2 | static_cast<uint64_t>(step));

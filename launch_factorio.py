@@ -567,6 +567,55 @@ def run_stylua(
         return -1, "", f"Error running stylua: {e}"
 
 
+NATIVE_SOURCE_DIRS = ["native/src", "native/tests", "native/tools"]
+NATIVE_SOURCE_SUFFIXES = (".c", ".cpp", ".h", ".hpp")
+
+
+def run_clang_format(
+    clang_format_path: Optional[str] = None, check_only: bool = False
+) -> Tuple[int, str, str]:
+    """Run clang-format on the native DLL's sources (native/.clang-format and the overrides below it)."""
+    mod_path = Path(__file__).parent.resolve()
+
+    if clang_format_path is None:
+        clang_format_path = shutil.which("clang-format")
+
+    if not clang_format_path:
+        return -1, "", "clang-format not found in PATH. Please install LLVM 20 or later."
+
+    # Tracked files only, so worktrees under .claude and build trees are never touched.
+    listed = subprocess.run(
+        ["git", "ls-files", "-z", "--", *NATIVE_SOURCE_DIRS],
+        cwd=mod_path,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    files = [
+        f for f in listed.stdout.split("\0") if f.endswith(NATIVE_SOURCE_SUFFIXES)
+    ]
+
+    cmd = [clang_format_path]
+    cmd += ["--dry-run", "--Werror"] if check_only else ["-i"]
+    cmd += files
+
+    try:
+        result = subprocess.run(
+            cmd,
+            cwd=mod_path,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=120,
+        )
+        return result.returncode, result.stdout, result.stderr
+    except subprocess.TimeoutExpired:
+        return -1, "", "clang-format timed out after 120 seconds"
+    except Exception as e:
+        return -1, "", f"Error running clang-format: {e}"
+
+
 def run_lua_tests(test_suite: str = "all") -> Tuple[int, str, str]:
     """Run Lua unit tests (syntrax and/or data structures)."""
     if not shutil.which(LUA_EXE):
@@ -858,7 +907,9 @@ def parse_factorio_args() -> argparse.Namespace:
     )
     commands.add_argument("--lint", action="store_true", help="Run Lua linter")
     commands.add_argument(
-        "--format", action="store_true", help="Apply code formatting with stylua"
+        "--format",
+        action="store_true",
+        help="Apply code formatting with stylua and clang-format",
     )
     commands.add_argument(
         "--format-check", action="store_true", help="Check code formatting"
@@ -869,6 +920,7 @@ def parse_factorio_args() -> argparse.Namespace:
     tools = parser.add_argument_group("tool paths")
     tools.add_argument("--lua-ls-path", help="Path to lua-language-server executable")
     tools.add_argument("--stylua-path", help="Path to stylua executable")
+    tools.add_argument("--clang-format-path", help="Path to clang-format executable")
 
     # Factorio options
     factorio = parser.add_argument_group("factorio options")
@@ -1056,12 +1108,23 @@ def main():
         if stderr:
             print(stderr, file=sys.stderr)
 
-        if exit_code == 0:
+        print(f"[INFO] {action} formatting with clang-format on native/")
+        native_exit_code, native_stdout, native_stderr = run_clang_format(
+            args.clang_format_path, check_only=args.format_check
+        )
+
+        if native_stdout:
+            print(native_stdout)
+        if native_stderr:
+            print(native_stderr, file=sys.stderr)
+
+        if exit_code == 0 and native_exit_code == 0:
             if args.format_check:
                 print("[INFO] All files are properly formatted")
             else:
                 print("[INFO] Formatting applied successfully")
         else:
+            exit_code = exit_code or native_exit_code
             if args.format_check:
                 print(f"[ERROR] Formatting check failed with exit code {exit_code}")
             else:

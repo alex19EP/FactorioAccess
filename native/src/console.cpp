@@ -43,9 +43,7 @@ bool isLocalConsole(const void* console) {
 
 // The newest line of one of the console's two std::lists: the head node's next. A line that was
 // added takes that place, even when the oldest line drops off past the cap.
-const void* newest(const void* console, uint32_t list) {
-   return at<const void*>(at<const void*>(console, list), 0);
-}
+const void* newest(const void* console, uint32_t list) { return at<const void*>(at<const void*>(console, list), 0); }
 
 // void OutputConsole::add(std::string const& playerName, Color, LocalisedString const& body,
 // Player const* speaker, PrintSettings const&, std::vector<SavedSpecialItemReference>&&). Color

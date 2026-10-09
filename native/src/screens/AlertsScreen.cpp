@@ -84,8 +84,7 @@ void AlertsScreen::Build(graph::GraphBuilder& builder)
     builder.PopContext();
 
     builder.BeginStop("close");
-    AddControl(builder, "close",
-        FindDescendant(agui::member(alerts.window, game::layout.frameHeader), "CloseButton"));
+    AddControl(builder, "close", FindDescendant(agui::member(alerts.window, game::layout.frameHeader), "CloseButton"));
 }
 
 void AlertsScreen::OnCursorMoved(const graph::GraphNode& node) { FollowCursor(node); }

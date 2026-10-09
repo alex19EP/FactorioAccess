@@ -18,9 +18,8 @@ namespace
 // Only over the map itself: any window or part of the HUD the player moves to takes over.
 bool OverMap()
 {
-    return agui::inGame() && !agui::menuStateWindow() && !agui::gameWindowOpen() &&
-           parts::current() == parts::Part::None && !agui::factoriopedia().window &&
-           !agui::technologyWindow().window;
+    return agui::inGame() && !agui::menuStateWindow() && !agui::gameWindowOpen()
+        && parts::current() == parts::Part::None && !agui::factoriopedia().window && !agui::technologyWindow().window;
 }
 
 } // namespace
@@ -52,10 +51,7 @@ void SelectedInfoScreen::OnEscape()
     selectedinfo::close();
 }
 
-void SelectedInfoScreen::OnPop()
-{
-    selectedinfo::close();
-}
+void SelectedInfoScreen::OnPop() { selectedinfo::close(); }
 
 std::string SelectedInfoScreen::LeaveLine() const
 {
