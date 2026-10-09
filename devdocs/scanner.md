@@ -36,6 +36,14 @@ base charts millions of them. The chunk iterator also gives entities standing ju
 chunk's edge, which the next chunk gives again, so each chunk keeps only the entities standing in
 it.
 
+The walk runs on several threads (`parallelFor`), each taking batches of chunks and keeping its own
+items, cells and tiles. This is safe because the world stands still while the update thread waits in
+the Lua call, and everything the walk calls in the game only reads (the entity iterator,
+`ForceData::isChunkCharted`, prototype getters). Anything that writes into the game, such as
+linking the weak references, stays on the calling thread. The threads' items are put back in chunk
+order, and ties for the nearest go to the topmost, then the leftmost, so the list is the same however
+the chunks were shared out. Sorting the subcategories also runs on several threads.
+
 Entries keep their entities through the game's own weak references (`Targeter`, as its GUIs keep
 theirs), so moving entities stay listed where they move to, and an entry drops out once the game
 removes its entity. Forests and patches keep none: landing on one finds a live tree or resource at

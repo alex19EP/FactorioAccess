@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <array>
+#include <atomic>
 #include <bit>
 #include <chrono>
 #include <cmath>
@@ -15,9 +16,13 @@
 #include <cstdint>
 #include <cstring>
 #include <deque>
+#include <exception>
 #include <format>
+#include <functional>
 #include <mutex>
+#include <span>
 #include <string_view>
+#include <thread>
 #include <tuple>
 #include <unordered_map>
 #include <utility>
@@ -615,6 +620,13 @@ double distanceSquared(Position a, Position b) {
    return dx * dx + dy * dy;
 }
 
+// Whether `position`, `distance` from the origin, comes before the nearest so far. Ties go to the
+// topmost, then the leftmost, so that the list does not depend on how the walk was shared out.
+bool nearer(double distance, Position position, double nearest, Position nearestPosition) {
+   if (distance != nearest) return distance < nearest;
+   return std::tie(position.y, position.x) < std::tie(nearestPosition.y, nearestPosition.x);
+}
+
 // Disjoint sets, for joining touching cells and tiles into forests and bodies of water.
 class Sets {
 public:
@@ -724,36 +736,92 @@ struct List {
    std::vector<uint8_t> tileClasses; // TileClass by tile ID
 };
 
+constexpr unsigned kMaxThreads = 16;
+
+// How many threads `count` pieces of work take, a thread for each `perThread` of them.
+unsigned threadsFor(size_t count, size_t perThread) {
+   return static_cast<unsigned>(
+      std::clamp<size_t>(count / perThread, 1, std::clamp(std::thread::hardware_concurrency(), 1u, kMaxThreads)));
+}
+
+// Calls `work(thread, i)` for every `i` below `count` on `threads` threads, this one among them,
+// handing out `batch` at a time. Work that reads the game must only read it, and only while it stands
+// still.
+template <class Work>
+void parallelFor(unsigned threads, size_t count, size_t batch, const Work& work) {
+   std::atomic<size_t> next{0};
+   std::vector<std::exception_ptr> failures(threads);
+   auto run = [&](unsigned thread) {
+      try {
+         for (;;) {
+            const size_t begin = next.fetch_add(batch, std::memory_order_relaxed);
+            if (begin >= count) return;
+            for (size_t i = begin; i < std::min(begin + batch, count); ++i) work(thread, i);
+         }
+      } catch (...) {
+         failures[thread] = std::current_exception();
+      }
+   };
+   {
+      std::vector<std::jthread> helpers;
+      for (unsigned thread = 1; thread < threads; ++thread) helpers.emplace_back(run, thread);
+      run(0);
+   }
+   for (const std::exception_ptr& failure : failures)
+      if (failure) std::rethrow_exception(failure);
+}
+
 // Groups the items into categories and subcategories, every item into All as well, nearest first:
 // the entries of each subcategory, then the subcategories by their nearest.
 void group(List& list) {
-   std::array<std::unordered_map<std::string_view, size_t>, kCategoryCount> index;
-   for (auto& subcategories : list.categories) subcategories.clear();
-   auto add = [&](Cat category, const std::string& key, uint32_t item) {
-      auto [found, added] = index[category].try_emplace(key, list.categories[category].size());
-      if (added) list.categories[category].push_back({key, {}});
-      list.categories[category][found->second].items.push_back(item);
-   };
-   for (uint32_t i = 0; i < list.items.size(); ++i) {
+   const auto count = static_cast<uint32_t>(list.items.size());
+   // Each item's key by number, so that each is hashed once.
+   std::unordered_map<std::string_view, uint32_t> ids;
+   std::vector<uint32_t> keyOf(count);
+   std::vector<double> distance(count);
+   std::array<std::vector<uint32_t>, kCategoryCount> byCategory;
+   for (uint32_t i = 0; i < count; ++i) {
       const Item& item = list.items[i];
-      add(All, item.key, i);
-      if (item.category != All) add(item.category, item.key, i);
+      keyOf[i] = ids.try_emplace(item.key, static_cast<uint32_t>(ids.size())).first->second;
+      distance[i] = distanceSquared(item.position, list.origin);
+      if (item.category != All) byCategory[item.category].push_back(i);
    }
 
-   for (auto& subcategories : list.categories) {
-      for (Subcategory& subcategory : subcategories) {
-         std::vector<std::pair<double, uint32_t>> keyed;
-         keyed.reserve(subcategory.items.size());
-         for (uint32_t item : subcategory.items)
-            keyed.emplace_back(distanceSquared(list.items[item].position, list.origin), item);
-         std::sort(keyed.begin(), keyed.end());
-         for (size_t i = 0; i < keyed.size(); ++i) subcategory.items[i] = keyed[i].second;
-      }
-      std::stable_sort(subcategories.begin(), subcategories.end(), [&](const Subcategory& a, const Subcategory& b) {
-         return distanceSquared(list.items[a.items.front()].position, list.origin) <
-                distanceSquared(list.items[b.items.front()].position, list.origin);
-      });
+   std::vector<uint32_t> subcategoryOf(ids.size());
+   std::vector<Subcategory*> subcategories;
+   for (size_t category = 0; category < kCategoryCount; ++category) {
+      auto& found = list.categories[category];
+      found.clear();
+      std::ranges::fill(subcategoryOf, UINT32_MAX);
+      auto add = [&](uint32_t i) {
+         uint32_t& place = subcategoryOf[keyOf[i]];
+         if (place == UINT32_MAX) {
+            place = static_cast<uint32_t>(found.size());
+            found.push_back({list.items[i].key, {}});
+         }
+         found[place].items.push_back(i);
+      };
+      if (category == All)
+         for (uint32_t i = 0; i < count; ++i) add(i);
+      else
+         for (uint32_t i : byCategory[category]) add(i);
+      for (Subcategory& subcategory : found) subcategories.push_back(&subcategory);
    }
+
+   // The biggest first, so that no thread is left with one at the end.
+   std::ranges::sort(subcategories, std::greater{}, [](const Subcategory* s) { return s->items.size(); });
+   parallelFor(threadsFor(count, 1 << 16), subcategories.size(), 1, [&](unsigned, size_t index) {
+      auto& items = subcategories[index]->items;
+      std::vector<std::pair<double, uint32_t>> keyed;
+      keyed.reserve(items.size());
+      for (uint32_t item : items) keyed.emplace_back(distance[item], item);
+      std::sort(keyed.begin(), keyed.end());
+      for (size_t i = 0; i < keyed.size(); ++i) items[i] = keyed[i].second;
+   });
+   for (auto& found : list.categories)
+      std::stable_sort(found.begin(), found.end(), [&](const Subcategory& a, const Subcategory& b) {
+         return distance[a.items.front()] < distance[b.items.front()];
+      });
 }
 
 // An entity met in the walk.
@@ -765,41 +833,41 @@ struct Found {
 
 // Trees and resources, counted by cell rather than kept one by one. Touching cells of one group
 // (all trees, or one resource prototype) make one forest or patch. Every cell lies in one chunk, as
-// the cells' sides divide 32.
+// the cells' sides divide 32, so each chunk keeps a table of its cells of each group, and only
+// neighbours across a chunk's edge are looked up by chunk.
 class Cells {
 public:
    explicit Cells(Position origin) : origin_(origin) {}
 
-   // Starts the next chunk: the walk adds each chunk's entities together, all standing in it.
-   void beginChunk() {
-      ++generation_;
-      groupsHere_ = 0;
+   // Starts chunk (`x`, `y`): the walk adds each chunk's entities together, all standing in it.
+   void beginChunk(int32_t x, int32_t y) {
+      chunkX_ = x;
+      chunkY_ = y;
+      firstHere_ = tables_.size();
    }
 
    // Puts `found` in its cell of `group`, cells being 2^shift tiles a side. One listed alone only
    // joins the cells around it: it is neither counted nor the forest's or patch's place.
    void add(const std::byte* group, int shift, const Found& found, bool counted) {
       const int32_t x = tileOf(found.position.x), y = tileOf(found.position.y);
-      // The chunk's own table of the group's cells, by place in the chunk.
-      Local* local = nullptr;
-      for (size_t i = 0; i < groupsHere_; ++i)
-         if (locals_[i].group == group) local = &locals_[i];
-      if (!local) {
-         if (groupsHere_ == locals_.size()) locals_.emplace_back();
-         local = &locals_[groupsHere_++];
-         local->group = group;
+      const int32_t side = 32 >> shift;
+      size_t table = firstHere_;
+      while (table < tables_.size() && tables_[table].group != group) ++table;
+      if (table == tables_.size()) {
+         tables_.push_back({chunkX_, chunkY_, group, side, static_cast<uint32_t>(slots_.size())});
+         slots_.resize(slots_.size() + static_cast<size_t>(side * side), kNoCell);
       }
-      const size_t slot = static_cast<size_t>(((x & 31) >> shift) + ((y & 31) >> shift) * (32 >> shift));
-      if (local->stamps[slot] != generation_) {
-         local->stamps[slot] = generation_;
-         local->cells[slot] = cellAt({group, x >> shift, y >> shift});
+      uint32_t& index = slots_[tables_[table].offset + ((x & 31) >> shift) + ((y & 31) >> shift) * side];
+      if (index == kNoCell) {
+         index = static_cast<uint32_t>(cells_.size());
+         cells_.push_back({group});
       }
-      Cell& cell = cells_[local->cells[slot]];
+      Cell& cell = cells_[index];
       if (!counted) return;
       ++cell.count;
       cell.box.add(x, y);
       const double distance = distanceSquared(found.position, origin_);
-      if (distance < cell.nearest) {
+      if (nearer(distance, found.position, cell.nearest, cell.position)) {
          cell.nearest = distance;
          cell.position = found.position;
          cell.prototype = found.prototype;
@@ -816,58 +884,101 @@ public:
       TileBox box;
    };
 
-   std::vector<Group> groups() const {
+   // The forests and patches of the cells of `parts`, each of which walked chunks of its own.
+   static std::vector<Group> groups(std::span<const Cells* const> parts) {
+      // Every part's cells, numbered one after another.
+      std::vector<uint32_t> bases;
+      uint32_t cellCount = 0;
+      size_t tableCount = 0;
+      for (const Cells* part : parts) {
+         bases.push_back(cellCount);
+         cellCount += static_cast<uint32_t>(part->cells_.size());
+         tableCount += part->tables_.size();
+      }
+      struct Place {
+         const Cells* part = nullptr;
+         uint32_t base = 0;
+         const Table* table = nullptr;
+         uint32_t cell(int32_t x, int32_t y) const {
+            return part->slots_[table->offset + static_cast<uint32_t>(x + y * table->side)];
+         }
+      };
+      std::unordered_map<TableKey, Place, TableKeyHash> tables;
+      tables.reserve(tableCount);
+      for (size_t p = 0; p < parts.size(); ++p)
+         for (const Table& table : parts[p]->tables_)
+            tables.emplace(TableKey{table.x, table.y, table.group}, Place{parts[p], bases[p], &table});
+
       Sets sets;
-      for (size_t i = 0; i < cells_.size(); ++i) sets.add();
+      for (uint32_t i = 0; i < cellCount; ++i) sets.add();
       // Half the 8 neighbours: the other half joins from the far side.
       constexpr std::array<std::pair<int32_t, int32_t>, 4> kNeighbours{{{1, 0}, {1, 1}, {0, 1}, {-1, 1}}};
-      for (uint32_t i = 0; i < cells_.size(); ++i) {
-         const Key& key = cells_[i].key;
-         for (auto [dx, dy] : kNeighbours)
-            if (auto other = index_.find({key.group, key.x + dx, key.y + dy}); other != index_.end())
-               sets.join(i, other->second);
+      for (size_t p = 0; p < parts.size(); ++p) {
+         for (const Table& table : parts[p]->tables_) {
+            const Place here{parts[p], bases[p], &table};
+            // The same group's tables in the chunks beside, below and below beside, by (dx + 1) + 3 * dy.
+            std::array<std::optional<Place>, 6> around;
+            auto beside = [&](int32_t dx, int32_t dy) -> const Place& {
+               std::optional<Place>& place = around[static_cast<size_t>(dx + 1 + 3 * dy)];
+               if (!place) {
+                  auto found = tables.find({table.x + dx, table.y + dy, table.group});
+                  place = found == tables.end() ? Place{} : found->second;
+               }
+               return *place;
+            };
+            const int32_t side = table.side;
+            for (int32_t y = 0; y < side; ++y)
+               for (int32_t x = 0; x < side; ++x) {
+                  const uint32_t cell = here.cell(x, y);
+                  if (cell == kNoCell) continue;
+                  for (auto [dx, dy] : kNeighbours) {
+                     const int32_t nx = x + dx, ny = y + dy;
+                     const int32_t chunkDx = nx < 0 ? -1 : nx >= side ? 1 : 0, chunkDy = ny >= side ? 1 : 0;
+                     const Place& there = chunkDx || chunkDy ? beside(chunkDx, chunkDy) : here;
+                     if (!there.part) continue;
+                     const uint32_t other = there.cell(nx - chunkDx * side, ny - chunkDy * side);
+                     if (other != kNoCell) sets.join(here.base + cell, there.base + other);
+                  }
+               }
+         }
       }
 
-      std::vector<uint32_t> groupOf(cells_.size(), UINT32_MAX);
+      std::vector<uint32_t> groupOf(cellCount, UINT32_MAX);
       std::vector<Group> groups;
-      for (uint32_t i = 0; i < cells_.size(); ++i) {
-         const uint32_t root = sets.find(i);
-         if (groupOf[root] == UINT32_MAX) {
-            groupOf[root] = static_cast<uint32_t>(groups.size());
-            groups.push_back({cells_[i].key.group});
-         }
-         const Cell& cell = cells_[i];
-         Group& group = groups[groupOf[root]];
-         group.count += cell.count;
-         if (cell.count == 0) continue;
-         group.box.add(cell.box);
-         if (cell.nearest < group.nearest) {
-            group.nearest = cell.nearest;
-            group.position = cell.position;
-            group.prototype = cell.prototype;
+      for (size_t p = 0; p < parts.size(); ++p) {
+         const auto& cells = parts[p]->cells_;
+         for (uint32_t i = 0; i < cells.size(); ++i) {
+            const Cell& cell = cells[i];
+            const uint32_t root = sets.find(bases[p] + i);
+            if (groupOf[root] == UINT32_MAX) {
+               groupOf[root] = static_cast<uint32_t>(groups.size());
+               groups.push_back({cell.group});
+            }
+            Group& group = groups[groupOf[root]];
+            group.count += cell.count;
+            if (cell.count == 0) continue;
+            group.box.add(cell.box);
+            if (nearer(cell.nearest, cell.position, group.nearest, group.position)) {
+               group.nearest = cell.nearest;
+               group.position = cell.position;
+               group.prototype = cell.prototype;
+            }
          }
       }
       std::erase_if(groups, [](const Group& group) { return group.count == 0; });
+      // In an order of their own, not the cells'. Groups of two resources may share their nearest.
+      std::sort(groups.begin(), groups.end(), [](const Group& a, const Group& b) {
+         if (a.position != b.position) return nearer(a.nearest, a.position, b.nearest, b.position);
+         return std::less<const void*>{}(a.group, b.group);
+      });
       return groups;
    }
 
    size_t size() const { return cells_.size(); }
 
 private:
-   struct Key {
-      const std::byte* group;
-      int32_t x;
-      int32_t y;
-      bool operator==(const Key&) const = default;
-   };
-   struct KeyHash {
-      size_t operator()(const Key& key) const {
-         return std::hash<const void*>{}(key.group) ^
-                std::hash<uint64_t>{}(packCell(key.x, key.y) * 0x9e3779b97f4a7c15);
-      }
-   };
    struct Cell {
-      Key key;
+      const std::byte* group;
       uint32_t count = 0;
       double nearest = INFINITY;
       Position position{};
@@ -875,32 +986,44 @@ private:
       TileBox box;
    };
 
-   // One group's cells in the current chunk, by place: valid where the stamp is the chunk's
-   // generation, so a table taken over from an earlier chunk needs no clearing.
-   struct Local {
-      const std::byte* group = nullptr;
-      std::array<uint32_t, 1024> stamps{};
-      std::array<uint32_t, 1024> cells{};
-   };
+   static constexpr uint32_t kNoCell = UINT32_MAX;
 
-   uint32_t cellAt(const Key& key) {
-      auto [index, added] = index_.try_emplace(key, static_cast<uint32_t>(cells_.size()));
-      if (added) cells_.push_back({key});
-      return index->second;
-   }
+   // A chunk's cells of one group: `side` a side, by place in the chunk from `offset` in slots_, each
+   // its index in cells_ or kNoCell.
+   struct Table {
+      int32_t x;
+      int32_t y;
+      const std::byte* group;
+      int32_t side;
+      uint32_t offset;
+   };
+   struct TableKey {
+      int32_t x;
+      int32_t y;
+      const std::byte* group;
+      bool operator==(const TableKey&) const = default;
+   };
+   struct TableKeyHash {
+      size_t operator()(const TableKey& key) const {
+         return std::hash<const void*>{}(key.group) ^
+                std::hash<uint64_t>{}(packCell(key.x, key.y) * 0x9e3779b97f4a7c15);
+      }
+   };
 
    Position origin_;
    std::vector<Cell> cells_;
-   std::unordered_map<Key, uint32_t, KeyHash> index_;
-   std::deque<Local> locals_;
-   size_t groupsHere_ = 0;
-   uint32_t generation_ = 0;
+   std::vector<Table> tables_;
+   std::vector<uint32_t> slots_;
+   int32_t chunkX_ = 0;
+   int32_t chunkY_ = 0;
+   size_t firstHere_ = 0; // the current chunk's first table
 };
 
-// Builds a list's items from what one refresh walked, and the entities to link, in item order.
+// Builds items from what a refresh walked, and the entities to link: an entity item's `first` is its
+// place in `entities`.
 class Builder {
 public:
-   Builder(List& list, std::vector<std::byte*>& entities) : list_(list), entities_(entities) {}
+   Builder(std::vector<Item>& items, std::vector<std::byte*>& entities) : items_(items), entities_(entities) {}
 
    void alone(const Found& found, const Rule& rule) {
       add({Kind::Entity, rule.category, found.prototype, found.position,
@@ -918,18 +1041,18 @@ public:
       Item item{Kind::Patch, Resources, found.prototype, found.position, std::string(prototypeName(found.prototype))};
       item.count = 1;
       item.box.add(tileOf(found.position.x), tileOf(found.position.y));
-      list_.items.push_back(std::move(item));
+      items_.push_back(std::move(item));
    }
 
    // The forests (trees grouped under null) and patches of `cells`.
-   void groups(const Cells& cells) {
-      for (const Cells::Group& group : cells.groups()) {
+   void groups(std::span<const Cells* const> cells) {
+      for (const Cells::Group& group : Cells::groups(cells)) {
          const bool forest = !group.group;
          Item item{forest ? Kind::Forest : Kind::Patch, Resources, forest ? group.prototype : group.group,
                    group.position, forest ? "tree" : std::string(prototypeName(group.group))};
          item.count = group.count;
          item.box = group.box;
-         list_.items.push_back(std::move(item));
+         items_.push_back(std::move(item));
       }
    }
 
@@ -938,10 +1061,10 @@ private:
       item.first = static_cast<uint32_t>(entities_.size());
       item.count = 1;
       entities_.push_back(found.entity);
-      list_.items.push_back(std::move(item));
+      items_.push_back(std::move(item));
    }
 
-   List& list_;
+   std::vector<Item>& items_;
    std::vector<std::byte*>& entities_;
 };
 
@@ -949,7 +1072,7 @@ private:
 // own components; components touching across chunk borders are then joined.
 class TileBodies {
 public:
-   explicit TileBodies(TileClass tileClass) : class_(tileClass) {}
+   TileBodies(TileClass tileClass, Position origin) : class_(tileClass), origin_(origin) {}
 
    void addChunk(const std::byte* chunk, int32_t cx, int32_t cy, const std::vector<uint8_t>& classes) {
       std::array<uint16_t, 1024> labels{};
@@ -994,9 +1117,22 @@ public:
       chunks_.push_back(std::move(entry));
    }
 
-   void setOrigin(Position origin) { origin_ = origin; }
+   // Takes over the chunks another thread labelled, none of them this one's. Their components are
+   // all apart still: only bodies() joins them.
+   void absorb(TileBodies&& other) {
+      const uint32_t base = sets_.size();
+      for (uint32_t i = 0; i < other.sets_.size(); ++i) sets_.add();
+      stats_.insert(stats_.end(), other.stats_.begin(), other.stats_.end());
+      index_.reserve(index_.size() + other.chunks_.size());
+      for (Chunk& chunk : other.chunks_) {
+         chunk.base += base;
+         index_.emplace(packCell(chunk.x, chunk.y), chunks_.size());
+         chunks_.push_back(chunk);
+      }
+      other = TileBodies(class_, origin_);
+   }
 
-   // Each body: its box, and its tile nearest the origin.
+   // Each body, nearest first: its box, and its tile nearest the origin.
    struct Body {
       TileBox box;
       int32_t nearestX = 0;
@@ -1011,9 +1147,15 @@ public:
       }
       std::unordered_map<uint32_t, Stats> roots;
       for (uint32_t node = 0; node < sets_.size(); ++node) roots[sets_.find(node)].add(stats_[node]);
+      std::vector<Stats> found;
+      found.reserve(roots.size());
+      for (const auto& [root, stats] : roots) found.push_back(stats);
+      std::sort(found.begin(), found.end(), [](const Stats& a, const Stats& b) {
+         return nearer(a.nearest, a.position(), b.nearest, b.position());
+      });
       std::vector<Body> result;
-      result.reserve(roots.size());
-      for (const auto& [root, stats] : roots) result.push_back({stats.box, stats.nearestX, stats.nearestY});
+      result.reserve(found.size());
+      for (const Stats& stats : found) result.push_back({stats.box, stats.nearestX, stats.nearestY});
       return result;
    }
 
@@ -1025,10 +1167,11 @@ private:
       double nearest = INFINITY;
       int32_t nearestX = 0;
       int32_t nearestY = 0;
+      Position position() const { return tileCentre(nearestX, nearestY); }
       void add(int32_t x, int32_t y, Position origin) {
          box.add(x, y);
          const double distance = distanceSquared(tileCentre(x, y), origin);
-         if (distance < nearest) {
+         if (nearer(distance, tileCentre(x, y), nearest, position())) {
             nearest = distance;
             nearestX = x;
             nearestY = y;
@@ -1036,7 +1179,7 @@ private:
       }
       void add(const Stats& other) {
          box.add(other.box);
-         if (other.nearest < nearest) {
+         if (nearer(other.nearest, other.position(), nearest, position())) {
             nearest = other.nearest;
             nearestX = other.nearestX;
             nearestY = other.nearestY;
@@ -1436,6 +1579,176 @@ private:
    std::chrono::steady_clock::time_point last_ = std::chrono::steady_clock::now();
 };
 
+constexpr double kTreeZoomSquared = kForestZoomDistance * kForestZoomDistance;
+constexpr double kWellZoomSquared = kInfiniteResourceZoomDistance * kInfiniteResourceZoomDistance;
+
+// What a refresh lists, read by every thread of its walk.
+struct Scan {
+   const Refresh& request;
+   const std::byte* surface;
+   uint32_t surfaceIndex; // the game's SurfaceIndex, one less than the LuaSurface's
+   const std::byte* force;
+   Position origin;
+   const std::vector<uint8_t>& tileClasses;
+
+   bool wanted(Position position) const {
+      return distanceSquared(position, origin) < request.radius * request.radius &&
+             (!request.direction || directionBiased(position, origin) == *request.direction);
+   }
+
+   bool charted(Position position) const {
+      return reinterpret_cast<ChartedFunction>(layout.forceIsChunkCharted)(force, surfaceIndex, &position);
+   }
+
+   // Whether the walk takes `chunk`: charted, and some of it within the radius.
+   bool takes(const std::byte* chunk) const {
+      const Position chunkPosition = at<Position>(chunk, layout.chunkPosition);
+      // The chunk's nearest point to the origin, in tiles.
+      const double left = chunkPosition.x * 32.0, top = chunkPosition.y * 32.0;
+      const double nearX = std::clamp(request.x, left, left + 32), nearY = std::clamp(request.y, top, top + 32);
+      if ((nearX - request.x) * (nearX - request.x) + (nearY - request.y) * (nearY - request.y) >
+          request.radius * request.radius)
+         return false;
+      return charted({fixedPoint(left + 16), fixedPoint(top + 16)});
+   }
+};
+
+// One thread's share of a refresh's walk: whole chunks, handed out a batch at a time.
+struct Walk {
+   explicit Walk(Position origin) : cells(origin), water(WaterTile, origin), ice(IceTile, origin) {}
+
+   std::vector<Item> items;
+   std::vector<std::byte*> entities;
+   // The items of the chunks walked, by the chunk's place in Surface::chunks: up to `end` in items.
+   struct Range {
+      size_t chunk;
+      size_t end;
+   };
+   std::vector<Range> ranges;
+   Cells cells;
+   TileBodies water;
+   TileBodies ice;
+   std::unordered_map<const std::byte*, Rule> rules;
+   const std::byte* lastPrototype = nullptr;
+   const Rule* lastRule = nullptr;
+   size_t trees = 0;
+   size_t resources = 0;
+   size_t chunks = 0;
+
+   const Rule& ruleOf(const std::byte* prototype) {
+      if (prototype != lastPrototype) {
+         auto [found, added] = rules.try_emplace(prototype);
+         if (added) found->second = ruleFor(prototype, prototypeType(prototype), prototypeName(prototype));
+         lastPrototype = prototype;
+         lastRule = &found->second;
+      }
+      return *lastRule;
+   }
+};
+
+void walkChunk(const Scan& scan, Walk& walk, const std::byte* chunk, size_t place) {
+   const Position chunkPosition = at<Position>(chunk, layout.chunkPosition);
+   const Position first{chunkPosition.x * 16, chunkPosition.y * 16};
+   const Position last{first.x + 15, first.y + 15};
+   Builder builder(walk.items, walk.entities);
+   walk.cells.beginChunk(chunkPosition.x, chunkPosition.y);
+   forEachEntity(scan.surface, first, last, [&](const std::byte* entity) {
+      // The iterator also gives entities standing just past the chunk's edge, which their own
+      // chunk gives again: each chunk keeps those standing in it.
+      const Position position = at<Position>(entity, layout.entityPosition);
+      if ((tileOf(position.x) >> 5) != chunkPosition.x || (tileOf(position.y) >> 5) != chunkPosition.y) return;
+      if (at<uint16_t>(entity, layout.entityUsageBits) & kNotListedBits) return;
+      const std::byte* prototype = at<const std::byte*>(entity, layout.entityPrototypeOf);
+      const Rule& rule = walk.ruleOf(prototype);
+      if (rule.listing == Listing::No) return;
+      if (!scan.wanted(position)) return;
+      const Found found{const_cast<std::byte*>(entity), prototype, position};
+      switch (rule.listing) {
+      case Listing::Alone: builder.alone(found, rule); break;
+      case Listing::Tree: {
+         ++walk.trees;
+         // Trees near the origin are listed alone, but still join the forest around them.
+         const bool near = distanceSquared(position, scan.origin) < kTreeZoomSquared;
+         if (near) builder.near(found, "tree");
+         walk.cells.add(nullptr, kForestCellShift, found, !near);
+         break;
+      }
+      case Listing::Resource: {
+         ++walk.resources;
+         if (rule.cellShift < 0) {
+            builder.patchOfOne(found);
+            break;
+         }
+         // So are the wells of an infinite resource.
+         const bool near = rule.infinite && distanceSquared(position, scan.origin) < kWellZoomSquared;
+         if (near) builder.near(found, std::string(prototypeName(prototype)));
+         walk.cells.add(prototype, rule.cellShift, found, !near);
+         break;
+      }
+      case Listing::No: break;
+      }
+   });
+   if (walk.items.size() != (walk.ranges.empty() ? 0 : walk.ranges.back().end))
+      walk.ranges.push_back({place, walk.items.size()});
+   walk.water.addChunk(chunk, chunkPosition.x, chunkPosition.y, scan.tileClasses);
+   walk.ice.addChunk(chunk, chunkPosition.x, chunkPosition.y, scan.tileClasses);
+   ++walk.chunks;
+}
+
+// Chunks a thread takes at a time: few enough that the threads finish together.
+constexpr size_t kChunksPerBatch = 64;
+
+// Walks the surface's chunks on several threads. The world stands still meanwhile (the update thread
+// waits in the Lua call), and what the walk calls in the game only reads.
+std::deque<Walk> walkSurface(const Scan& scan) {
+   const auto& chunks = at<MsvcVector<const std::byte*>>(scan.surface, layout.surfaceChunks);
+   const size_t count = static_cast<size_t>(chunks.last - chunks.first);
+   const unsigned threads = threadsFor(count, kChunksPerBatch);
+   std::deque<Walk> walks;
+   for (unsigned i = 0; i < threads; ++i) walks.emplace_back(scan.origin);
+   parallelFor(threads, count, kChunksPerBatch, [&](unsigned thread, size_t i) {
+      if (const std::byte* chunk = chunks.first[i]; chunk && scan.takes(chunk))
+         walkChunk(scan, walks[thread], chunk, i);
+   });
+   return walks;
+}
+
+// Puts the walks' items into `items` in the order of their chunks, as one thread would have listed
+// them, and their entities into `entities`.
+void mergeItems(std::deque<Walk>& walks, std::vector<Item>& items, std::vector<std::byte*>& entities) {
+   struct Piece {
+      size_t chunk;
+      Walk* walk;
+      size_t begin;
+      size_t end;
+   };
+   std::vector<Piece> pieces;
+   size_t total = 0, linked = 0;
+   for (Walk& walk : walks) {
+      size_t begin = 0;
+      for (const Walk::Range& range : walk.ranges) {
+         pieces.push_back({range.chunk, &walk, begin, range.end});
+         begin = range.end;
+      }
+      total += walk.items.size();
+      linked += walk.entities.size();
+   }
+   std::sort(pieces.begin(), pieces.end(), [](const Piece& a, const Piece& b) { return a.chunk < b.chunk; });
+   items.reserve(items.size() + total);
+   entities.reserve(entities.size() + linked);
+   for (const Piece& piece : pieces) {
+      for (size_t i = piece.begin; i < piece.end; ++i) {
+         Item& item = piece.walk->items[i];
+         if (item.kind == Kind::Entity) {
+            const uint32_t first = static_cast<uint32_t>(entities.size());
+            for (uint32_t j = 0; j < item.count; ++j) entities.push_back(piece.walk->entities[item.first + j]);
+            item.first = first;
+         }
+         items.push_back(std::move(item));
+      }
+   }
+}
+
 } // namespace
 
 void refresh(const Refresh& request) {
@@ -1457,97 +1770,34 @@ void refresh(const Refresh& request) {
    list.force = forceOf(player);
    list.origin = {fixedPoint(request.x), fixedPoint(request.y)};
    list.tileClasses = tileClasses(request);
-   const double radiusSquared = request.radius * request.radius;
-   auto wanted = [&](Position position) {
-      return distanceSquared(position, list.origin) < radiusSquared &&
-             (!request.direction || directionBiased(position, list.origin) == *request.direction);
-   };
+   const Scan scan{request, surface, surfaceIndex, list.force, list.origin, list.tileClasses};
 
-   std::vector<std::byte*> entities;
-   Builder builder(list, entities);
-   std::unordered_map<const std::byte*, Rule> rules;
-   const std::byte* lastPrototype = nullptr;
-   const Rule* lastRule = nullptr;
-   Cells cells(list.origin);
-   size_t trees = 0, resources = 0;
-   const double treeZoomSquared = kForestZoomDistance * kForestZoomDistance;
-   const double wellZoomSquared = kInfiniteResourceZoomDistance * kInfiniteResourceZoomDistance;
-   TileBodies water(WaterTile);
-   TileBodies ice(IceTile);
-   water.setOrigin(list.origin);
-   ice.setOrigin(list.origin);
-
-   const auto& chunks = at<MsvcVector<const std::byte*>>(surface, layout.surfaceChunks);
-   size_t chunksWalked = 0;
-   for (const std::byte* const* chunkSlot = chunks.first; chunkSlot < chunks.last; ++chunkSlot) {
-      const std::byte* chunk = *chunkSlot;
-      if (!chunk) continue;
-      const Position chunkPosition = at<Position>(chunk, layout.chunkPosition);
-      // The chunk's nearest point to the origin, in tiles.
-      const double left = chunkPosition.x * 32.0, top = chunkPosition.y * 32.0;
-      const double nearX = std::clamp(request.x, left, left + 32), nearY = std::clamp(request.y, top, top + 32);
-      if ((nearX - request.x) * (nearX - request.x) + (nearY - request.y) * (nearY - request.y) > radiusSquared)
-         continue;
-      const Position centre{fixedPoint(left + 16), fixedPoint(top + 16)};
-      if (!reinterpret_cast<ChartedFunction>(layout.forceIsChunkCharted)(list.force, surfaceIndex, &centre)) continue;
-
-      const Position first{chunkPosition.x * 16, chunkPosition.y * 16};
-      const Position last{first.x + 15, first.y + 15};
-      cells.beginChunk();
-      forEachEntity(surface, first, last, [&](const std::byte* entity) {
-         // The iterator also gives entities standing just past the chunk's edge, which their own
-         // chunk gives again: each chunk keeps those standing in it.
-         const Position position = at<Position>(entity, layout.entityPosition);
-         if ((tileOf(position.x) >> 5) != chunkPosition.x || (tileOf(position.y) >> 5) != chunkPosition.y) return;
-         if (at<uint16_t>(entity, layout.entityUsageBits) & kNotListedBits) return;
-         const std::byte* prototype = at<const std::byte*>(entity, layout.entityPrototypeOf);
-         if (prototype != lastPrototype) {
-            auto [found, added] = rules.try_emplace(prototype);
-            if (added) found->second = ruleFor(prototype, prototypeType(prototype), prototypeName(prototype));
-            lastPrototype = prototype;
-            lastRule = &found->second;
-         }
-         const Rule& rule = *lastRule;
-         if (rule.listing == Listing::No) return;
-         if (!wanted(position)) return;
-         const Found found{const_cast<std::byte*>(entity), prototype, position};
-         switch (rule.listing) {
-         case Listing::Alone: builder.alone(found, rule); break;
-         case Listing::Tree: {
-            ++trees;
-            // Trees near the origin are listed alone, but still join the forest around them.
-            const bool near = distanceSquared(position, list.origin) < treeZoomSquared;
-            if (near) builder.near(found, "tree");
-            cells.add(nullptr, kForestCellShift, found, !near);
-            break;
-         }
-         case Listing::Resource: {
-            ++resources;
-            if (rule.cellShift < 0) {
-               builder.patchOfOne(found);
-               break;
-            }
-            // So are the wells of an infinite resource.
-            const bool near = rule.infinite && distanceSquared(position, list.origin) < wellZoomSquared;
-            if (near) builder.near(found, std::string(prototypeName(prototype)));
-            cells.add(prototype, rule.cellShift, found, !near);
-            break;
-         }
-         case Listing::No: break;
-         }
-      });
-      water.addChunk(chunk, chunkPosition.x, chunkPosition.y, list.tileClasses);
-      ice.addChunk(chunk, chunkPosition.x, chunkPosition.y, list.tileClasses);
-      ++chunksWalked;
-   }
+   std::deque<Walk> walks = walkSurface(scan);
    const double walkMs = stopwatch.lap();
 
-   builder.groups(cells);
-   for (auto [bodies, kind, category, key] :
-        {std::tuple{&water, Kind::Water, Resources, "water"}, std::tuple{&ice, Kind::Ice, Terrain, "iceberg"}}) {
+   std::vector<std::byte*> entities;
+   mergeItems(walks, list.items, entities);
+   Walk& merged = walks.front();
+   size_t trees = 0, resources = 0, chunksWalked = 0, cellCount = 0;
+   std::vector<const Cells*> cells;
+   for (Walk& walk : walks) {
+      trees += walk.trees;
+      resources += walk.resources;
+      chunksWalked += walk.chunks;
+      cellCount += walk.cells.size();
+      cells.push_back(&walk.cells);
+      if (&walk == &merged) continue;
+      merged.water.absorb(std::move(walk.water));
+      merged.ice.absorb(std::move(walk.ice));
+   }
+   const double mergeMs = stopwatch.lap();
+
+   Builder(list.items, entities).groups(cells);
+   for (auto [bodies, kind, category, key] : {std::tuple{&merged.water, Kind::Water, Resources, "water"},
+                                              std::tuple{&merged.ice, Kind::Ice, Terrain, "iceberg"}}) {
       for (const TileBodies::Body& body : bodies->bodies()) {
          const Position nearest = tileCentre(body.nearestX, body.nearestY);
-         if (!wanted(nearest)) continue;
+         if (!scan.wanted(nearest)) continue;
          Item item{kind, category, nullptr, nearest, key};
          item.box = body.box;
          list.items.push_back(std::move(item));
@@ -1561,9 +1811,7 @@ void refresh(const Refresh& request) {
          continue;
       }
       const Position position{fixedPoint(extra.x), fixedPoint(extra.y)};
-      if (!wanted(position) ||
-          !reinterpret_cast<ChartedFunction>(layout.forceIsChunkCharted)(list.force, surfaceIndex, &position))
-         continue;
+      if (!scan.wanted(position) || !scan.charted(position)) continue;
       Item item{Kind::Extra, *category, nullptr, position, extra.key};
       item.first = static_cast<uint32_t>(i);
       list.items.push_back(std::move(item));
@@ -1580,10 +1828,10 @@ void refresh(const Refresh& request) {
    g_list = std::move(list);
    g_cursor = cursor;
    log::info("Scanner: {} entries ({} linked, {} trees, {} resources in {} cells) on surface {}", g_list.items.size(),
-             entities.size(), trees, resources, cells.size(), request.surfaceIndex);
-   log::info("Scanner: {} chunks walked in {:.1f} ms, clustered in {:.1f}, linked in {:.1f}, grouped in {:.1f}, "
-             "the rest {:.1f}",
-             chunksWalked, walkMs, clusterMs, linkMs, groupMs, stopwatch.lap());
+             entities.size(), trees, resources, cellCount, request.surfaceIndex);
+   log::info("Scanner: {} chunks walked by {} threads in {:.1f} ms, merged in {:.1f}, clustered in {:.1f}, linked in "
+             "{:.1f}, grouped in {:.1f}, the rest {:.1f}",
+             chunksWalked, walks.size(), walkMs, mergeMs, clusterMs, linkMs, groupMs, stopwatch.lap());
 }
 
 void setModUiOpen(int playerIndex, bool open) {
