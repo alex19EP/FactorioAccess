@@ -1,0 +1,5 @@
+# Commits that only reformat. GitHub skips them in blame; locally run
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+
+# Native: format with clang-format
+94e1827e146977ca14b2e8ee5adcca5172ac54e2
