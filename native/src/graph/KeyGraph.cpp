@@ -403,6 +403,21 @@ GraphNode* KeyGraph::StopLandingIn(const GraphRender& render, const GraphState& 
     }
     if (GraphNode* selected = SelectedNodeInStop(render, stopKey))
         return selected;
+    if (render.LandLastStops.contains(stopKey))
+    {
+        // The start of the last row: the line itself, not the last of its links.
+        GraphNode* last = nullptr;
+        for (auto it = render.Order.rbegin(); it != render.Order.rend(); ++it)
+        {
+            if ((*it)->StopKey != stopKey)
+                continue;
+            if (!last)
+                last = *it;
+            if (!(*it)->HasTransition(GraphDir::Left))
+                return *it;
+        }
+        return last;
+    }
     for (GraphNode* n : render.Order)
         if (n->StopKey == stopKey)
             return n;

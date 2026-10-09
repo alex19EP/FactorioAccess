@@ -1254,6 +1254,29 @@ struct Layout {
    uintptr_t richTextHandleHover = 0;
    uintptr_t richTextClearTooltip = 0;   // void RichTextHoverManager::clearTooltip()
 
+   // The console's log, as the open console draws it: OutputConsoleRenderer::getRenderItems merges
+   // the two lists of the player's OutputConsole newest first, until the top of the screen. Each
+   // line keeps its text wrapped at the width it was last drawn at, with the line's rich text laid
+   // out in sections as a label's are; its icons hover and click through the player's own hover
+   // manager, which needs the line (a gps tag pings and opens the map).
+   uint32_t playerOutputConsole = 0;      // Player::outputConsole, OutputConsole*
+   uint32_t playerConsoleHoverManager = 0; // Player::outputConsoleRichTextHoverManager, std::unique_ptr
+   // Each list (outputConsoleItems, outputConsoleItemsNotSaved) starts with its head node pointer.
+   uint32_t consoleNodeNext = 0;          // std::_List_node<OutputConsole::Item>::_Next
+   uint32_t consoleNodeValue = 0;         // std::_List_node<OutputConsole::Item>::_Myval, the Item
+   uint32_t consoleItemUpdateTick = 0;    // OutputConsole::Item::updateTick, MapTick (u64)
+   uint32_t consoleItemWrappedText = 0;   // OutputConsole::Item::wrappedText, std::unique_ptr<agui::ResizableText>
+   uint32_t resizableTextData = 0;        // agui::ResizableText::data, std::string: "[color=#..]Name[/color]: text"
+   uint32_t resizableTextRichText = 0;    // agui::ResizableText::richTextData, std::unique_ptr to TextDrawSections
+   uint32_t resizableTextMaxWidth = 0;    // agui::ResizableText::lastMaxWidth, int
+   uint32_t consoleRenderItemSize = 0;    // sizeof(OutputConsoleRenderer::RenderItem)
+   uint32_t consoleRenderItemItem = 0;    // OutputConsoleRenderer::RenderItem::item, OutputConsole::Item const*
+   // std::vector<RenderItem> OutputConsoleRenderer::getRenderItems(OutputConsole const&, bool consoleOpen,
+   // MapTick, DrawQueue*, int maxWidth): reads no member, so any `this` will do.
+   uintptr_t consoleGetRenderItems = 0;
+   uintptr_t consoleRenderItemsFree = 0;  // std::vector<OutputConsoleRenderer::RenderItem>::~vector
+   uintptr_t resizableTextLines = 0;      // agui::ResizableText::lines() const: wraps and lays out, if stale
+
    // The technology window (T), which also stacks over whatever window is open: the research queue,
    // the selected technology and the list of every technology on the left, the selected
    // technology's graph of prerequisites and unlocks on the right.

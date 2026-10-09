@@ -190,8 +190,9 @@ void Navigator::HandleKey(const input::KeyEvent& e)
     case input::keys::Tab:
         if (e.repeat)
             break;
-        // Ctrl+Tab moves between the parts of the screen: the open window and the HUD.
-        if (e.ctrl)
+        // Ctrl+Tab moves between the parts of the screen: the open window and the HUD. A command
+        // line keeps Tab for the game, so Ctrl+Tab moves between its stops.
+        if (e.ctrl && !_screen->CommandLine())
             parts::cycle(e.shift ? -1 : +1);
         else
             HandleTab(e.shift);
@@ -584,7 +585,12 @@ void Navigator::UpdateClaims(bool haveRender)
     constexpr uint8_t shiftable = mods::None | mods::Shift;
     std::vector<Claim> claims;
     _positionKeys.clear();
-    if (typing)
+    if (typing && _screen->CommandLine())
+    {
+        // Tab completes and Up and Down recall history in the game's own field.
+        claims = {{keys::Tab, mods::Ctrl}};
+    }
+    else if (typing)
     {
         // The field edits with everything else; these are the ways out of it.
         claims = {{keys::Tab, shiftable | mods::Ctrl}, {keys::Up, plain}, {keys::Down, plain}};

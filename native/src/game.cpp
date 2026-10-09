@@ -928,6 +928,26 @@ bool resolve(pdb::SymbolTable& symbols) {
    address(layout.richTextHandleHover,
            "?handleHover@RichTextHoverManager@@IEAAXAEBVTextDrawSection@@PEBVItem@OutputConsole@@_N@Z");
    address(layout.richTextClearTooltip, "?clearTooltip@RichTextHoverManager@@QEAAXXZ");
+   offset(layout.playerOutputConsole, "Player", "outputConsole");
+   offset(layout.playerConsoleHoverManager, "Player", "outputConsoleRichTextHoverManager");
+   offset(layout.consoleNodeNext, "std::_List_node<OutputConsole::Item,void *>", "_Next");
+   offset(layout.consoleNodeValue, "std::_List_node<OutputConsole::Item,void *>", "_Myval");
+   offset(layout.consoleItemUpdateTick, "OutputConsole::Item", "updateTick.value");
+   offset(layout.consoleItemWrappedText, "OutputConsole::Item", "wrappedText");
+   offset(layout.resizableTextData, "agui::ResizableText", "data");
+   offset(layout.resizableTextRichText, "agui::ResizableText", "richTextData");
+   offset(layout.resizableTextMaxWidth, "agui::ResizableText", "lastMaxWidth");
+   size(layout.consoleRenderItemSize, "OutputConsoleRenderer::RenderItem");
+   offset(layout.consoleRenderItemItem, "OutputConsoleRenderer::RenderItem", "item");
+   address(layout.consoleGetRenderItems,
+           "?getRenderItems@OutputConsoleRenderer@@QEAA?AV?$vector@URenderItem@OutputConsoleRenderer@@V?$allocator@"
+           "URenderItem@OutputConsoleRenderer@@@std@@@std@@AEBVOutputConsole@@_NVMapTick@@PEAVDrawQueue@@H@Z");
+   address(layout.consoleRenderItemsFree,
+           "??1?$vector@URenderItem@OutputConsoleRenderer@@V?$allocator@URenderItem@OutputConsoleRenderer@@@std@@@"
+           "std@@QEAA@XZ");
+   address(layout.resizableTextLines,
+           "?lines@ResizableText@agui@@QEBAAEBV?$vector@V?$basic_string_view@DU?$char_traits@D@std@@@std@@V?$"
+           "allocator@V?$basic_string_view@DU?$char_traits@D@std@@@std@@@2@@std@@XZ");
    offset(layout.gameViewTechnology, "GameView", "technologyGui");
    offset(layout.technologyQueue, "TechnologyGui", "researchQueueGui");
    offset(layout.technologyTitle, "TechnologyGui", "featuredTechnologyTitle");

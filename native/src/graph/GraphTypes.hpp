@@ -324,6 +324,9 @@ struct GraphRender
     /// Declaration order — drives stop/region cycling and type-ahead scan order.
     std::vector<GraphNode*> Order;
 
+    /// Stops entered on their last line when they have no remembered position (LandOnLast).
+    std::unordered_set<std::string> LandLastStops;
+
     std::vector<std::unique_ptr<GraphNode>> Pool;
 
     GraphNode* NodeAt(const ControlId& key) const

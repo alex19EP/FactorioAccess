@@ -160,6 +160,12 @@ inline constexpr Word kPin{"fa.native-pin"};
 inline constexpr Word kMap{"fa.native-map"};
 // An icon in a text that the game lets the mouse click (a Factoriopedia description's).
 inline constexpr Word kLink{"fa.native-link"};
+// The game's console, said as it opens, and its log of messages, which has no heading on screen.
+inline constexpr Word kConsole{"fa.native-console"};
+inline constexpr Word kConsoleLog{"fa.native-console-log"};
+// The console's icon button, which shows only an icon: named by the game's own title of the chooser
+// it opens.
+inline constexpr Word kSelectIcon{"gui.select-icon"};
 // The technology window: a queued research's X, which takes it out of the queue, and the graph's
 // button standing for the technologies the view leaves out ("12 omitted").
 inline constexpr Word kCancel{"fa.native-cancel"};
