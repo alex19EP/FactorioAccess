@@ -284,6 +284,16 @@ struct Layout {
    uint32_t surfaceIndex = 0;              // Surface::index, SurfaceIndex (uint32), LuaSurface::index
    uint32_t surfaceChunks = 0;             // Surface::chunks, std::vector<Chunk*>
    uint32_t chunkPosition = 0;             // Chunk::position, ChunkPosition (two ints)
+   // Water and ice are tiles: Chunk::tiles is Tile[32][32] by x then y, each a tileID
+   // (ID<TilePrototype>, uint16) and a variation byte. Tile const* Surface::getTileOptional(
+   // TilePosition const&) const reads one, null where no chunk is.
+   uint32_t chunkTiles = 0;                // Chunk::tiles
+   uint32_t tileSize = 0;                  // sizeof(Tile)
+   uintptr_t surfaceTileAt = 0;
+   // Resource patches as the map finds them: ResourcePatchInfo::update (see the chart ones below)
+   // leaves the patch's resources in ResourcePatchInfo::resources, a std::set<ResourceEntity const*>.
+   uint32_t patchInfoResources = 0;
+   uint32_t resourceInfinite = 0;          // ResourceEntityPrototype::infiniteType, bool
    uint32_t prototypeGetType = 0;          // virtual slot of char const* PrototypeBase::getType() const
    // Entries keep their entities through the game's own weak references, as its GUIs do: a
    // TargeterBase {vfptr, target, next, previous} linked first into the Targetable's (the entity's,

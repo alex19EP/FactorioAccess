@@ -1,6 +1,7 @@
 #include "scanner.h"
 
 #include "bindings.h"
+#include "chart.h"
 #include "game.h"
 #include "log.h"
 #include "world.h"
@@ -9,11 +10,14 @@
 #include <array>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <cstring>
 #include <deque>
 #include <mutex>
 #include <string_view>
+#include <tuple>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 
 namespace fa::scanner {
@@ -65,6 +69,12 @@ struct Position {
 int32_t fixedPoint(double tiles) { return static_cast<int32_t>(std::lround(tiles * game::kMapPositionScale)); }
 double tiles(int32_t fixed) { return static_cast<double>(fixed) / game::kMapPositionScale; }
 
+// The tile a position is on.
+int32_t tileOf(int32_t fixed) { return fixed >> 8; }
+
+// The centre of a tile, as a position.
+Position tileCentre(int32_t x, int32_t y) { return {x * 256 + 128, y * 256 + 128}; }
+
 // The categories in the order the category keys move through them, by the keys of scanner-consts.lua
 // CATEGORIES, which name them in the mod's locale (fa.scanner-category-<key>).
 enum Cat : uint8_t {
@@ -95,9 +105,10 @@ constexpr std::array<std::string_view, kCategoryCount> kCategoryKeys{
    "vehicles",   "spidertrons",         "trains",     "ghosts",   "players",   "corpses",
    "other",      "terrain",
 };
+static_assert(!kCategoryKeys.back().empty(), "a category has no key");
 
-// The category of each entity type the scanner lists. Types left out (beams, explosions,
-// particles ...) are not listed.
+// The category of each entity type the scanner lists one by one. Types left out (beams,
+// explosions, particles ...) are not listed; trees and resources are listed as forests and patches.
 struct TypeRule {
    std::string_view type;
    Cat category;
@@ -205,7 +216,6 @@ constexpr std::string_view kRocks[] = {
    "big-rock",   "big-sand-rock", "huge-rock",       "medium-rock",
    "medium-sand-rock", "small-rock", "small-sand-rock", "tiny-rock",
 };
-static_assert(!kCategoryKeys.back().empty(), "a category has no key");
 
 // Types whose subcategory says more than the prototype: what a machine makes, what a chest or pipe
 // holds, which train a wagon is in, which network a roboport names. The Lua API reads all of it, so
@@ -217,20 +227,33 @@ constexpr std::string_view kDetailedTypes[] = {
    "storage-tank",       "tile-ghost",         "unit-spawner",
 };
 
+// How an entity is listed.
+enum class Listing : uint8_t { No, Alone, Tree, Resource };
+
 struct Rule {
-   bool listed = false;
+   Listing listing = Listing::No;
    Cat category = Other;
    bool detailed = false;
+   bool infinite = false; // a resource that never runs out, such as crude oil
 };
 
-Rule ruleFor(std::string_view type, std::string_view name) {
-   if (std::find(std::begin(kRocks), std::end(kRocks), name) != std::end(kRocks)) return {true, Resources};
-   if (name.ends_with("-remnants")) return {true, Remnants};
+Rule ruleFor(const std::byte* prototype, std::string_view type, std::string_view name) {
+   if (type == "tree") return {Listing::Tree, Resources};
+   if (type == "resource") return {Listing::Resource, Resources, false, at<bool>(prototype, layout.resourceInfinite)};
+   if (std::find(std::begin(kRocks), std::end(kRocks), name) != std::end(kRocks)) return {Listing::Alone, Resources};
+   if (name.ends_with("-remnants")) return {Listing::Alone, Remnants};
    const bool detailed = std::find(std::begin(kDetailedTypes), std::end(kDetailedTypes), type) != std::end(kDetailedTypes);
    for (const TypeRule& rule : kTypes)
-      if (rule.type == type) return {true, rule.category, detailed};
+      if (rule.type == type) return {Listing::Alone, rule.category, detailed};
    return {};
 }
+
+// scanner-consts.lua: how close trees and the wells of an infinite resource are listed one by one
+// rather than in their forest or field, in tiles.
+constexpr double kForestZoomDistance = 25;
+constexpr double kInfiniteResourceZoomDistance = 50;
+// Trees in the same or touching cells of this many tiles a side are one forest.
+constexpr int kForestCellShift = 3;
 
 const std::byte* currentGame() {
    auto* context = *reinterpret_cast<const std::byte* const*>(layout.globalContext);
@@ -252,6 +275,12 @@ const std::byte* surfaceAt(const std::byte* map, uint32_t index) {
    for (const std::byte* const* surface = surfaces.first; surface < surfaces.last; ++surface)
       if (*surface && at<uint32_t>(*surface, layout.surfaceIndex) + 1 == index) return *surface;
    return nullptr;
+}
+
+// The player's force, for what it charted and how it sees resource patches.
+const std::byte* forceOf(const std::byte* player) {
+   const std::byte* map = at<const std::byte*>(player, layout.playerMap);
+   return at<const std::byte* const*>(map, layout.mapForces)[at<uint8_t>(player, layout.playerForce)];
 }
 
 std::string_view prototypeName(const std::byte* prototype) {
@@ -298,9 +327,9 @@ void unlink(Targeter& targeter) {
    targeter.target = nullptr;
 }
 
-// One weak reference per entry, made and dropped while the world stands still (in a refresh, or
-// at a key). They are dropped from the game they were made in; once that game is gone they are
-// left as they are, since their entities may be gone without having told them.
+// The weak references of a list's entities, made and dropped while the world stands still (in a
+// refresh, or at a key). They are dropped from the game they were made in; once that game is gone
+// they are left as they are, since their entities may be gone without having told them.
 class Links {
 public:
    Links() = default;
@@ -317,12 +346,12 @@ public:
    Links& operator=(const Links&) = delete;
    ~Links() { release(); }
 
-   // Links every entity, in order: entry i is entities[i].
+   // Links every entity, in order.
    Links(const std::byte* game, const std::vector<std::byte*>& entities) : targeters_(entities.size()), game_(game) {
       for (size_t i = 0; i < entities.size(); ++i) link(targeters_[i], entities[i]);
    }
 
-   // The entity of entry `index`, or null once the game dropped it.
+   // Entity `index`, or null once the game dropped it.
    const std::byte* entity(size_t index) const { return targeters_[index].target; }
 
 private:
@@ -366,11 +395,85 @@ constexpr uint16_t kNotListedBits = 0x4 | 0x10;
 
 using ChartedFunction = bool (*)(const void* force, uint32_t surfaceIndex, const Position* position);
 
+// TilePosition: two ints.
+struct TilePosition {
+   int32_t x;
+   int32_t y;
+};
+using TileAtFunction = const std::byte* (*)(const void* surface, const TilePosition* position);
+
+// The tile ID at `x`, `y` (tiles) on `surface`, if a chunk is there.
+std::optional<uint16_t> tileAt(const std::byte* surface, int32_t x, int32_t y) {
+   const TilePosition position{x, y};
+   const std::byte* tile = reinterpret_cast<TileAtFunction>(layout.surfaceTileAt)(surface, &position);
+   if (!tile) return std::nullopt;
+   return at<uint16_t>(tile, 0);
+}
+
+// The node of a std::set or std::map (MSVC): left, parent, right, colour, end marker, then the value.
+struct TreeNode {
+   TreeNode* left;
+   TreeNode* parent;
+   TreeNode* right;
+   char colour;
+   char isNil;
+};
+constexpr uint32_t kTreeValue = 0x20;
+
+TreeNode* nextNode(TreeNode* node) {
+   if (!node->right->isNil) {
+      node = node->right;
+      while (!node->left->isNil) node = node->left;
+      return node;
+   }
+   TreeNode* parent = node->parent;
+   while (!parent->isNil && node == parent->right) {
+      node = parent;
+      parent = parent->parent;
+   }
+   return parent;
+}
+
+using PatchConstructFunction = void* (*)(void* info, bool useClockLimiter);
+using PatchDestroyFunction = void (*)(void* info);
+using PatchUpdateFunction = bool (*)(void* info, const void* resource, const void* force, bool keepIfUnchanged);
+
+// A ResourcePatchInfo of our own, for as long as one refresh or announcement needs it.
+class PatchFinder {
+public:
+   explicit PatchFinder(const std::byte* force) : force_(force) {
+      reinterpret_cast<PatchConstructFunction>(layout.patchInfoConstruct)(info_, false);
+   }
+   ~PatchFinder() { reinterpret_cast<PatchDestroyFunction>(layout.patchInfoDestroy)(info_); }
+   PatchFinder(const PatchFinder&) = delete;
+   PatchFinder& operator=(const PatchFinder&) = delete;
+
+   // Finds the patch `resource` is in, as the map does.
+   void find(const std::byte* resource) {
+      reinterpret_cast<PatchUpdateFunction>(layout.patchInfoUpdate)(info_, resource, force_, false);
+   }
+
+   // The resources of the patch found last.
+   template <class Visit>
+   void forEachResource(Visit&& visit) const {
+      auto* head = at<TreeNode*>(info_, layout.patchInfoResources);
+      for (TreeNode* node = head->left; node != head; node = nextNode(node))
+         visit(at<const std::byte*>(node, kTreeValue));
+   }
+
+   // The map's label of the patch found last.
+   std::string label(const std::byte* resource) const { return chart::patchLabel(info_, resource); }
+
+private:
+   alignas(16) std::byte info_[game::kPatchInfoCapacity];
+   const std::byte* force_;
+};
+
 // FaUtils.get_direction_biased: the 8-way defines.direction (16-way numbering) from `origin` to
 // `target`, by whole tiles, keeping to a cardinal unless the diagonal is clear.
 int directionBiased(Position target, Position origin) {
-   int dx = (target.x >> 8) - (origin.x >> 8);
-   int dy = (target.y >> 8) - (origin.y >> 8);
+   int dx = tileOf(target.x) - tileOf(origin.x);
+   int dy = tileOf(target.y) - tileOf(origin.y);
    constexpr int north = 0, northeast = 2, east = 4, southeast = 6, south = 8, southwest = 10, west = 12,
                  northwest = 14;
    if (std::abs(dx) > 4 * std::abs(dy)) return dx > 0 ? east : west;
@@ -388,13 +491,87 @@ double distanceSquared(Position a, Position b) {
    return dx * dx + dy * dy;
 }
 
-// An entry: one entity, in Links at the same index.
+// Disjoint sets, for joining touching cells and tiles into forests and bodies of water.
+class Sets {
+public:
+   uint32_t add() {
+      parent_.push_back(static_cast<uint32_t>(parent_.size()));
+      return parent_.back();
+   }
+   uint32_t find(uint32_t a) {
+      while (parent_[a] != a) {
+         parent_[a] = parent_[parent_[a]];
+         a = parent_[a];
+      }
+      return a;
+   }
+   void join(uint32_t a, uint32_t b) {
+      a = find(a);
+      b = find(b);
+      if (a != b) parent_[b] = a;
+   }
+   uint32_t size() const { return static_cast<uint32_t>(parent_.size()); }
+
+private:
+   std::vector<uint32_t> parent_;
+};
+
+uint64_t packCell(int32_t x, int32_t y) {
+   return static_cast<uint32_t>(x) | static_cast<uint64_t>(static_cast<uint32_t>(y)) << 32;
+}
+
+// A rectangle of whole tiles, both corners in it.
+struct TileBox {
+   int32_t left = INT32_MAX;
+   int32_t top = INT32_MAX;
+   int32_t right = INT32_MIN;
+   int32_t bottom = INT32_MIN;
+   void add(int32_t x, int32_t y) {
+      left = std::min(left, x);
+      top = std::min(top, y);
+      right = std::max(right, x);
+      bottom = std::max(bottom, y);
+   }
+   void add(const TileBox& other) {
+      left = std::min(left, other.left);
+      top = std::min(top, other.top);
+      right = std::max(right, other.right);
+      bottom = std::max(bottom, other.bottom);
+   }
+   int32_t width() const { return right - left + 1; }
+   int32_t height() const { return bottom - top + 1; }
+};
+
+// What an entry stands for.
+enum class Kind : uint8_t {
+   Entity, // one entity
+   Forest, // trees, nearest first
+   Patch,  // a resource patch's resources, nearest first
+   Water,  // a body of water, by its tile nearest the origin
+   Ice,    // a body of ice, likewise
+};
+
+constexpr std::string_view kindName(Kind kind) {
+   switch (kind) {
+   case Kind::Entity: return "entity";
+   case Kind::Forest: return "forest";
+   case Kind::Patch: return "patch";
+   case Kind::Water: return "water";
+   case Kind::Ice: return "ice";
+   }
+   return {};
+}
+
 struct Item {
-   const std::byte* prototype;
-   Position position;   // where it was when last seen
+   Kind kind;
    Cat category;
-   std::string key;     // its subcategory
-   bool detailed;       // the mod is to give it a subcategory of its own
+   bool detailed = false;           // the mod is to give it a subcategory of its own
+   const std::byte* prototype = nullptr; // an entity's or patch's prototype
+   Position position{};             // where to go: kept up to date as the entry is checked
+   std::string key;                 // its subcategory
+   uint32_t first = 0;              // its entities in Links
+   uint32_t count = 0;
+   TileBox box;                     // water and ice
 };
 
 struct Subcategory {
@@ -402,14 +579,19 @@ struct Subcategory {
    std::vector<uint32_t> items; // into List::items
 };
 
+// What a tile is to the scanner.
+enum TileClass : uint8_t { NoClass, WaterTile, IceTile };
+
 struct List {
    const std::byte* game = nullptr;
    uint32_t surfaceIndex = 0;
+   const std::byte* force = nullptr;
    Position origin{};
    std::vector<Item> items;
    Links links;
    std::array<std::vector<Subcategory>, kCategoryCount> categories;
-   std::vector<uint32_t> detailed; // the items handed to the mod for subcategories, in order
+   std::vector<uint32_t> detailed;  // the items handed to the mod for subcategories, in order
+   std::vector<uint8_t> tileClasses; // TileClass by tile ID
 };
 
 // Groups the items into categories and subcategories, every item into All as well, nearest first:
@@ -443,6 +625,260 @@ void group(List& list) {
       });
    }
 }
+
+// An entity met in the walk.
+struct Found {
+   std::byte* entity;
+   const std::byte* prototype;
+   Position position;
+};
+
+// Builds a list's items from what one refresh walked, and the entities to link, in item order.
+class Builder {
+public:
+   Builder(List& list, std::vector<std::byte*>& entities) : list_(list), entities_(entities) {}
+
+   void alone(const Found& found, const Rule& rule) {
+      if (rule.detailed) list_.detailed.push_back(static_cast<uint32_t>(list_.items.size()));
+      add({Kind::Entity, rule.category, rule.detailed, found.prototype, found.position,
+           std::string(prototypeName(found.prototype))},
+          {found});
+   }
+
+   // Trees in the same or touching cells are one forest. Trees near the origin are listed alone,
+   // and so is a forest of one.
+   void forests(const std::vector<Found>& trees) {
+      std::unordered_map<uint64_t, uint32_t> cells;
+      Sets sets;
+      std::vector<uint32_t> cellOf(trees.size());
+      for (size_t i = 0; i < trees.size(); ++i) {
+         const int32_t cx = tileOf(trees[i].position.x) >> kForestCellShift;
+         const int32_t cy = tileOf(trees[i].position.y) >> kForestCellShift;
+         auto [cell, added] = cells.try_emplace(packCell(cx, cy), sets.size());
+         if (added) sets.add();
+         cellOf[i] = cell->second;
+      }
+      for (const auto& [key, node] : cells) {
+         const auto cx = static_cast<int32_t>(static_cast<uint32_t>(key));
+         const auto cy = static_cast<int32_t>(key >> 32);
+         for (int dx = -1; dx <= 1; ++dx)
+            for (int dy = -1; dy <= 1; ++dy)
+               if (auto other = cells.find(packCell(cx + dx, cy + dy)); other != cells.end())
+                  sets.join(node, other->second);
+      }
+      std::unordered_map<uint32_t, std::vector<const Found*>> forests;
+      for (size_t i = 0; i < trees.size(); ++i) forests[sets.find(cellOf[i])].push_back(&trees[i]);
+
+      const double zoomSquared = kForestZoomDistance * kForestZoomDistance;
+      for (auto& [root, members] : forests) {
+         std::vector<Found> far;
+         for (const Found* tree : members) {
+            if (distanceSquared(tree->position, list_.origin) < zoomSquared)
+               add({Kind::Entity, Resources, false, tree->prototype, tree->position, "tree"}, {*tree});
+            else
+               far.push_back(*tree);
+         }
+         if (far.size() == 1)
+            add({Kind::Entity, Resources, false, far.front().prototype, far.front().position, "tree"}, far);
+         else if (!far.empty())
+            group(Kind::Forest, Resources, "tree", nullptr, std::move(far));
+      }
+   }
+
+   // Resources form patches as the map finds them. The wells of an infinite resource near the
+   // origin are listed alone.
+   void patches(const std::vector<Found>& resources, const std::unordered_map<const std::byte*, Rule>& rules) {
+      PatchFinder finder(list_.force);
+      std::unordered_set<const std::byte*> seen;
+      const double zoomSquared = kInfiniteResourceZoomDistance * kInfiniteResourceZoomDistance;
+      for (const Found& resource : resources) {
+         if (seen.contains(resource.entity)) continue;
+         finder.find(resource.entity);
+         std::vector<Found> members;
+         finder.forEachResource([&](const std::byte* member) {
+            if (!seen.insert(member).second) return;
+            members.push_back({const_cast<std::byte*>(member), at<const std::byte*>(member, layout.entityPrototypeOf),
+                               at<Position>(member, layout.entityPosition)});
+         });
+         if (members.empty()) {
+            seen.insert(resource.entity);
+            members.push_back(resource);
+         }
+         const std::string key(prototypeName(resource.prototype));
+         if (rules.at(resource.prototype).infinite) {
+            std::vector<Found> far;
+            for (const Found& member : members) {
+               if (distanceSquared(member.position, list_.origin) < zoomSquared)
+                  add({Kind::Entity, Resources, false, member.prototype, member.position, key}, {member});
+               else
+                  far.push_back(member);
+            }
+            members = std::move(far);
+         }
+         if (!members.empty()) group(Kind::Patch, Resources, key, resource.prototype, std::move(members));
+      }
+   }
+
+private:
+   void add(Item item, const std::vector<Found>& members) {
+      item.first = static_cast<uint32_t>(entities_.size());
+      item.count = static_cast<uint32_t>(members.size());
+      for (const Found& member : members) entities_.push_back(member.entity);
+      list_.items.push_back(std::move(item));
+   }
+
+   void group(Kind kind, Cat category, std::string key, const std::byte* prototype, std::vector<Found> members) {
+      std::sort(members.begin(), members.end(), [&](const Found& a, const Found& b) {
+         return distanceSquared(a.position, list_.origin) < distanceSquared(b.position, list_.origin);
+      });
+      add({kind, category, false, prototype, members.front().position, std::move(key)}, members);
+   }
+
+   List& list_;
+   std::vector<std::byte*>& entities_;
+};
+
+// Bodies of water or ice: connected tiles of one class, 8 ways, chunk by chunk. Each chunk labels its
+// own components; components touching across chunk borders are then joined.
+class TileBodies {
+public:
+   explicit TileBodies(TileClass tileClass) : class_(tileClass) {}
+
+   void addChunk(const std::byte* chunk, int32_t cx, int32_t cy, const std::vector<uint8_t>& classes) {
+      std::array<uint16_t, 1024> labels{};
+      bool any = false;
+      for (int32_t i = 0; i < 1024; ++i) {
+         const uint16_t id = at<uint16_t>(chunk, layout.chunkTiles + static_cast<uint32_t>(i) * layout.tileSize);
+         if (id < classes.size() && classes[id] == class_) {
+            labels[i] = kUnlabelled;
+            any = true;
+         }
+      }
+      if (!any) return;
+
+      Chunk entry{cx, cy, sets_.size(), {}};
+      uint16_t next = 1;
+      std::vector<int32_t> stack;
+      for (int32_t start = 0; start < 1024; ++start) {
+         if (labels[start] != kUnlabelled) continue;
+         const uint16_t label = next++;
+         const uint32_t node = sets_.add();
+         stats_.push_back({});
+         labels[start] = label;
+         stack.push_back(start);
+         while (!stack.empty()) {
+            const int32_t tile = stack.back();
+            stack.pop_back();
+            const int32_t x = tile / 32, y = tile % 32;
+            stats_[node].add(cx * 32 + x, cy * 32 + y, origin_);
+            for (int32_t dx = -1; dx <= 1; ++dx)
+               for (int32_t dy = -1; dy <= 1; ++dy) {
+                  const int32_t nx = x + dx, ny = y + dy;
+                  if (nx < 0 || nx >= 32 || ny < 0 || ny >= 32) continue;
+                  const int32_t neighbour = nx * 32 + ny;
+                  if (labels[neighbour] != kUnlabelled) continue;
+                  labels[neighbour] = label;
+                  stack.push_back(neighbour);
+               }
+         }
+      }
+      entry.labels = labels;
+      index_.emplace(packCell(cx, cy), chunks_.size());
+      chunks_.push_back(std::move(entry));
+   }
+
+   void setOrigin(Position origin) { origin_ = origin; }
+
+   // Each body: its box, and its tile nearest the origin.
+   struct Body {
+      TileBox box;
+      int32_t nearestX = 0;
+      int32_t nearestY = 0;
+   };
+   std::vector<Body> bodies() {
+      for (const Chunk& chunk : chunks_) {
+         joinAcross(chunk, 1, 0, [](int32_t i) { return std::pair{31, i}; }, [](int32_t i) { return std::pair{0, i}; });
+         joinAcross(chunk, 0, 1, [](int32_t i) { return std::pair{i, 31}; }, [](int32_t i) { return std::pair{i, 0}; });
+         joinCorner(chunk, 1, 1, {31, 31}, {0, 0});
+         joinCorner(chunk, -1, 1, {0, 31}, {31, 0});
+      }
+      std::unordered_map<uint32_t, Stats> roots;
+      for (uint32_t node = 0; node < sets_.size(); ++node) roots[sets_.find(node)].add(stats_[node]);
+      std::vector<Body> result;
+      result.reserve(roots.size());
+      for (const auto& [root, stats] : roots) result.push_back({stats.box, stats.nearestX, stats.nearestY});
+      return result;
+   }
+
+private:
+   static constexpr uint16_t kUnlabelled = 0xffff;
+
+   struct Stats {
+      TileBox box;
+      double nearest = INFINITY;
+      int32_t nearestX = 0;
+      int32_t nearestY = 0;
+      void add(int32_t x, int32_t y, Position origin) {
+         box.add(x, y);
+         const double distance = distanceSquared(tileCentre(x, y), origin);
+         if (distance < nearest) {
+            nearest = distance;
+            nearestX = x;
+            nearestY = y;
+         }
+      }
+      void add(const Stats& other) {
+         box.add(other.box);
+         if (other.nearest < nearest) {
+            nearest = other.nearest;
+            nearestX = other.nearestX;
+            nearestY = other.nearestY;
+         }
+      }
+   };
+
+   struct Chunk {
+      int32_t x;
+      int32_t y;
+      uint32_t base; // node of label 1
+      std::array<uint16_t, 1024> labels;
+      uint16_t at(std::pair<int32_t, int32_t> tile) const { return labels[tile.first * 32 + tile.second]; }
+   };
+
+   const Chunk* chunkAt(int32_t x, int32_t y) const {
+      auto found = index_.find(packCell(x, y));
+      return found == index_.end() ? nullptr : &chunks_[found->second];
+   }
+
+   void join(const Chunk& a, uint16_t labelA, const Chunk& b, uint16_t labelB) {
+      if (labelA && labelB) sets_.join(a.base + labelA - 1, b.base + labelB - 1);
+   }
+
+   // Joins along the border with the chunk at (dx, dy): edge tile i of this chunk touches edge tiles
+   // i - 1 to i + 1 of the other.
+   template <class Mine, class Theirs>
+   void joinAcross(const Chunk& chunk, int32_t dx, int32_t dy, Mine mine, Theirs theirs) {
+      const Chunk* other = chunkAt(chunk.x + dx, chunk.y + dy);
+      if (!other) return;
+      for (int32_t i = 0; i < 32; ++i) {
+         const uint16_t label = chunk.at(mine(i));
+         if (!label) continue;
+         for (int32_t j = std::max(0, i - 1); j <= std::min(31, i + 1); ++j) join(chunk, label, *other, other->at(theirs(j)));
+      }
+   }
+
+   void joinCorner(const Chunk& chunk, int32_t dx, int32_t dy, std::pair<int32_t, int32_t> mine,
+                   std::pair<int32_t, int32_t> theirs) {
+      if (const Chunk* other = chunkAt(chunk.x + dx, chunk.y + dy)) join(chunk, chunk.at(mine), *other, other->at(theirs));
+   }
+
+   TileClass class_;
+   Position origin_{};
+   Sets sets_;
+   std::vector<Stats> stats_;
+   std::vector<Chunk> chunks_;
+   std::unordered_map<uint64_t, size_t> index_;
+};
 
 // Where the scanner keys stand, as entrypoint.lua's scanner_cursor: unset parts start at the first.
 struct Cursor {
@@ -494,13 +930,41 @@ World worldOf(const List& list) {
    return {surfaceAt(map, list.surfaceIndex)};
 }
 
-// The entity of entry `index` when it is still there on the list's surface, with its position
-// brought up to date. Reads the world, so only while it stands still.
-const std::byte* validate(const World& world, uint32_t index) {
+// Entity `index` of the list's links, when it is still there on the list's surface.
+const std::byte* liveEntity(const World& world, uint32_t index) {
    const std::byte* entity = g_list.links.entity(index);
-   if (!entity || at<const std::byte*>(entity, layout.entitySurface) != world.surface) return nullptr;
-   g_list.items[index].position = at<Position>(entity, layout.entityPosition);
-   return entity;
+   return entity && at<const std::byte*>(entity, layout.entitySurface) == world.surface ? entity : nullptr;
+}
+
+// The first of an item's entities still there, nearest first as they were listed.
+const std::byte* firstLive(const World& world, const Item& item) {
+   for (uint32_t i = item.first; i < item.first + item.count; ++i)
+      if (const std::byte* entity = liveEntity(world, i)) return entity;
+   return nullptr;
+}
+
+// Whether entry `index` is still there, bringing its position up to date. Reads the world, so only
+// while it stands still.
+bool validate(const World& world, uint32_t index) {
+   Item& item = g_list.items[index];
+   switch (item.kind) {
+   case Kind::Entity:
+   case Kind::Forest:
+   case Kind::Patch:
+      if (const std::byte* entity = firstLive(world, item)) {
+         item.position = at<Position>(entity, layout.entityPosition);
+         return true;
+      }
+      return false;
+   case Kind::Water:
+   case Kind::Ice: {
+      // Landfill may have covered the tile.
+      const auto id = tileAt(world.surface, tileOf(item.position.x), tileOf(item.position.y));
+      const TileClass wanted = item.kind == Kind::Water ? WaterTile : IceTile;
+      return id && *id < g_list.tileClasses.size() && g_list.tileClasses[*id] == wanted;
+   }
+   }
+   return false;
 }
 
 enum class Result { Moved, AtBeginning, AtEnd };
@@ -596,6 +1060,45 @@ std::optional<std::pair<uint32_t, uint32_t>> current(const World& world) {
    return std::nullopt;
 }
 
+// Fills in what the mod says of a valid item.
+void describe(const World& world, const Item& item, Entry& entry) {
+   entry.kind = std::string(kindName(item.kind));
+   switch (item.kind) {
+   case Kind::Entity:
+      entry.prototype = std::string(prototypeName(item.prototype));
+      break;
+   case Kind::Forest: {
+      uint32_t live = 0;
+      const std::byte* tree = nullptr;
+      for (uint32_t i = item.first; i < item.first + item.count; ++i)
+         if (const std::byte* entity = liveEntity(world, i)) {
+            if (!tree) tree = entity;
+            ++live;
+         }
+      if (live == 1) {
+         // What is left of the forest is one tree: say it as a tree.
+         entry.kind = std::string(kindName(Kind::Entity));
+         entry.prototype = std::string(prototypeName(at<const std::byte*>(tree, layout.entityPrototypeOf)));
+      }
+      entry.trees = live;
+      break;
+   }
+   case Kind::Patch: {
+      const std::byte* resource = firstLive(world, item);
+      PatchFinder finder(g_list.force);
+      finder.find(resource);
+      entry.text = finder.label(resource);
+      entry.prototype = std::string(prototypeName(item.prototype));
+      break;
+   }
+   case Kind::Water:
+   case Kind::Ice:
+      entry.width = item.box.width();
+      entry.height = item.box.height();
+      break;
+   }
+}
+
 std::optional<Action> actionFor(const input::KeyEvent& key) {
    for (const ScannerKey& scannerKey : kKeys)
       for (const bindings::Key& bound : bindings::customInput(scannerKey.input))
@@ -645,18 +1148,36 @@ std::optional<Position> act(Action action) {
    } else {
       const auto& subcategory = g_list.categories[*g_cursor.category][*g_cursor.subcategory];
       const Item& item = g_list.items[subcategory.items[*g_cursor.entry]];
-      move.target = item.position;
+      move.target = item.kind == Kind::Water || item.kind == Kind::Ice
+                       ? tileCentre(tileOf(item.position.x), tileOf(item.position.y))
+                       : item.position;
       move.entry.index = place->first + 1;
       move.entry.count = place->second;
-      move.entry.prototype = std::string(prototypeName(item.prototype));
-      move.entry.x = tiles(item.position.x);
-      move.entry.y = tiles(item.position.y);
+      describe(world, item, move.entry);
+      move.entry.x = tiles(move.target->x);
+      move.entry.y = tiles(move.target->y);
       move.entry.originX = tiles(g_list.origin.x);
       move.entry.originY = tiles(g_list.origin.y);
    }
    std::optional<Position> target = move.target;
    remember(std::move(move));
    return target;
+}
+
+// TileClass by tile ID, from the mod's names of water and ice tiles.
+std::vector<uint8_t> tileClasses(const Refresh& request) {
+   const auto& prototypes = *reinterpret_cast<const MsvcVector<const std::byte*>*>(layout.tilePrototypes);
+   std::vector<uint8_t> classes(static_cast<size_t>(prototypes.last - prototypes.first), NoClass);
+   for (size_t id = 0; id < classes.size(); ++id) {
+      const std::byte* prototype = prototypes.first[id];
+      if (!prototype) continue;
+      const std::string_view name = prototypeName(prototype);
+      if (std::find(request.water.begin(), request.water.end(), name) != request.water.end())
+         classes[id] = WaterTile;
+      else if (std::find(request.ice.begin(), request.ice.end(), name) != request.ice.end())
+         classes[id] = IceTile;
+   }
+   return classes;
 }
 
 } // namespace
@@ -671,17 +1192,29 @@ std::optional<std::vector<Detail>> refresh(const Refresh& request) {
       log::error("Scanner: no surface {} to list", request.surfaceIndex);
       return std::nullopt;
    }
-   const std::byte* force = at<const std::byte* const*>(map, layout.mapForces)[at<uint8_t>(player, layout.playerForce)];
    const uint32_t surfaceIndex = at<uint32_t>(surface, layout.surfaceIndex);
 
    List list;
    list.game = game;
    list.surfaceIndex = request.surfaceIndex;
+   list.force = forceOf(player);
    list.origin = {fixedPoint(request.x), fixedPoint(request.y)};
+   list.tileClasses = tileClasses(request);
    const double radiusSquared = request.radius * request.radius;
+   auto wanted = [&](Position position) {
+      return distanceSquared(position, list.origin) < radiusSquared &&
+             (!request.direction || directionBiased(position, list.origin) == *request.direction);
+   };
 
-   std::unordered_map<const std::byte*, Rule> rules;
    std::vector<std::byte*> entities;
+   Builder builder(list, entities);
+   std::unordered_map<const std::byte*, Rule> rules;
+   std::vector<Found> trees;
+   std::vector<Found> resources;
+   TileBodies water(WaterTile);
+   TileBodies ice(IceTile);
+   water.setOrigin(list.origin);
+   ice.setOrigin(list.origin);
 
    const auto& chunks = at<MsvcVector<const std::byte*>>(surface, layout.surfaceChunks);
    for (const std::byte* const* chunkSlot = chunks.first; chunkSlot < chunks.last; ++chunkSlot) {
@@ -694,7 +1227,7 @@ std::optional<std::vector<Detail>> refresh(const Refresh& request) {
       if ((nearX - request.x) * (nearX - request.x) + (nearY - request.y) * (nearY - request.y) > radiusSquared)
          continue;
       const Position centre{fixedPoint(left + 16), fixedPoint(top + 16)};
-      if (!reinterpret_cast<ChartedFunction>(layout.forceIsChunkCharted)(force, surfaceIndex, &centre)) continue;
+      if (!reinterpret_cast<ChartedFunction>(layout.forceIsChunkCharted)(list.force, surfaceIndex, &centre)) continue;
 
       const Position first{chunkPosition.x * 16, chunkPosition.y * 16};
       const Position last{first.x + 15, first.y + 15};
@@ -702,16 +1235,33 @@ std::optional<std::vector<Detail>> refresh(const Refresh& request) {
          if (at<uint16_t>(entity, layout.entityUsageBits) & kNotListedBits) return;
          const std::byte* prototype = at<const std::byte*>(entity, layout.entityPrototypeOf);
          auto [rule, added] = rules.try_emplace(prototype);
-         if (added) rule->second = ruleFor(prototypeType(prototype), prototypeName(prototype));
-         if (!rule->second.listed) return;
+         if (added) rule->second = ruleFor(prototype, prototypeType(prototype), prototypeName(prototype));
+         if (rule->second.listing == Listing::No) return;
          const Position position = at<Position>(entity, layout.entityPosition);
-         if (distanceSquared(position, list.origin) >= radiusSquared) return;
-         if (request.direction && directionBiased(position, list.origin) != *request.direction) return;
-         const Rule& found = rule->second;
-         if (found.detailed) list.detailed.push_back(static_cast<uint32_t>(list.items.size()));
-         list.items.push_back({prototype, position, found.category, std::string(prototypeName(prototype)), found.detailed});
-         entities.push_back(const_cast<std::byte*>(entity));
+         if (!wanted(position)) return;
+         const Found found{const_cast<std::byte*>(entity), prototype, position};
+         switch (rule->second.listing) {
+         case Listing::Alone: builder.alone(found, rule->second); break;
+         case Listing::Tree: trees.push_back(found); break;
+         case Listing::Resource: resources.push_back(found); break;
+         case Listing::No: break;
+         }
       });
+      water.addChunk(chunk, chunkPosition.x, chunkPosition.y, list.tileClasses);
+      ice.addChunk(chunk, chunkPosition.x, chunkPosition.y, list.tileClasses);
+   }
+
+   builder.forests(trees);
+   builder.patches(resources, rules);
+   for (auto [bodies, kind, category, key] : {std::tuple{&water, Kind::Water, Resources, "water"},
+                                              std::tuple{&ice, Kind::Ice, Terrain, "iceberg"}}) {
+      for (const TileBodies::Body& body : bodies->bodies()) {
+         const Position nearest = tileCentre(body.nearestX, body.nearestY);
+         if (!wanted(nearest)) continue;
+         Item item{kind, category, false, nullptr, nearest, key};
+         item.box = body.box;
+         list.items.push_back(std::move(item));
+      }
    }
    list.links = Links(game, entities);
    group(list);
@@ -726,7 +1276,8 @@ std::optional<std::vector<Detail>> refresh(const Refresh& request) {
    Cursor cursor{g_cursor.category.value_or(All), {}, {}};
    g_list = std::move(list);
    g_cursor = cursor;
-   log::info("Scanner: {} entries on surface {}, {} for the mod to detail", g_list.items.size(), request.surfaceIndex,
+   log::info("Scanner: {} entries ({} entities, {} trees, {} resources) on surface {}, {} for the mod to detail",
+             g_list.items.size(), entities.size(), trees.size(), resources.size(), request.surfaceIndex,
              details.size());
    return details;
 }

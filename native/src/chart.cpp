@@ -122,15 +122,7 @@ TreeNode* nextNode(TreeNode* node) {
    return parent;
 }
 
-// The map's label of the patch `resource` is in: a line for each thing mining it gives, with how
-// much is left, else the resource's name.
-std::string describePatch(const std::byte* player, const std::byte* resource) {
-   const std::byte* map = at<const std::byte*>(player, layout.playerMap);
-   const auto* forces = at<const std::byte* const*>(map, layout.mapForceData);
-   const std::byte* force = forces[at<uint8_t>(player, layout.playerForce)];
-   void* info = patchInfo(currentGame());
-   reinterpret_cast<PatchUpdateFunction>(layout.patchInfoUpdate)(info, resource, force, true);
-
+std::string labelOf(const void* info, const std::byte* resource) {
    const void* prototype = at<const void*>(info, layout.patchInfoPrototype);
    auto* head = at<TreeNode*>(info, layout.patchInfoCounts);
    std::string label;
@@ -146,6 +138,16 @@ std::string describePatch(const std::byte* player, const std::byte* resource) {
    }
    if (label.empty()) label = prototypeName(at<const std::byte*>(resource, layout.entityPrototypeOf));
    return label;
+}
+
+// The map's label of the patch `resource` is in.
+std::string describePatch(const std::byte* player, const std::byte* resource) {
+   const std::byte* map = at<const std::byte*>(player, layout.playerMap);
+   const auto* forces = at<const std::byte* const*>(map, layout.mapForceData);
+   const std::byte* force = forces[at<uint8_t>(player, layout.playerForce)];
+   void* info = patchInfo(currentGame());
+   reinterpret_cast<PatchUpdateFunction>(layout.patchInfoUpdate)(info, resource, force, true);
+   return labelOf(info, resource);
 }
 
 std::string describe(const std::byte* player, const std::byte* selection) {
@@ -168,6 +170,10 @@ std::string g_said;
 std::optional<world::CursorPosition> g_selectedAt;
 
 } // namespace
+
+std::string patchLabel(const void* info, const void* resource) {
+   return labelOf(info, static_cast<const std::byte*>(resource));
+}
 
 void tick() {
    const std::optional<world::CursorPosition> cursor = world::cursorPosition();

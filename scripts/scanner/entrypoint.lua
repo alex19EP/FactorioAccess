@@ -79,16 +79,27 @@ local function announce(pindex, event)
 
    local player = game.get_player(pindex)
    ---@cast player LuaPlayer
-   local candidates = entities_at(player.surface, position)
-   local entity = candidates[1]
-   for _, candidate in ipairs(candidates) do
-      if candidate.name == entry.prototype then
-         entity = candidate
-         break
+   local readout
+   if entry.kind == "forest" then
+      readout = { "fa.scanner-forest", entry.trees }
+   elseif entry.kind == "patch" then
+      readout = entry.text
+   elseif entry.kind == "water" then
+      readout = { "fa.scanner-water", entry.width, entry.height }
+   elseif entry.kind == "ice" then
+      readout = { "fa.scanner-iceberg", entry.width, entry.height }
+   else
+      local candidates = entities_at(player.surface, position)
+      local entity = candidates[1]
+      for _, candidate in ipairs(candidates) do
+         if candidate.name == entry.prototype then
+            entity = candidate
+            break
+         end
       end
+      readout = entity and Subcategories.readout(pindex, entity)
+         or Localising.get_localised_name_with_fallback(prototypes.entity[entry.prototype])
    end
-   local readout = entity and Subcategories.readout(pindex, entity)
-      or Localising.get_localised_name_with_fallback(prototypes.entity[entry.prototype])
 
    -- In remote view the camera follows the cursor onto each entry, so distances are from where
    -- the scan was sorted, such as the place a map search jumped to
@@ -118,6 +129,8 @@ function mod.do_refresh(pindex, direction_filter)
          y = player.position.y,
          radius = ScannerConsts.SCANNER_DISTANCE,
          direction = direction_filter,
+         water = ScannerConsts.WATER_PROTOS,
+         ice = script.feature_flags.space_travel and ScannerConsts.ICEBERG_PROTOS or nil,
       })
       if details then native.scanner_subcategories(pindex, Subcategories.keys(player.surface, details)) end
    end

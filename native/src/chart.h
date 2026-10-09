@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 // The full map (Player::renderMode CHART): what a sighted player learns there by pointing.
 //
 // The map selects no entity in the world. It selects what it draws at the cursor
@@ -10,5 +12,10 @@ namespace fa::chart {
 
 // Every frame, on the main thread.
 void tick();
+
+// The map's label of the patch a ResourcePatchInfo (`info`) last found, from `resource` in it: a
+// line for each thing mining it gives, with how much is left, else the resource's name. Translates,
+// so on the game's own threads.
+std::string patchLabel(const void* info, const void* resource);
 
 } // namespace fa::chart

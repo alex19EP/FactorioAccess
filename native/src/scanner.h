@@ -27,6 +27,8 @@ struct Refresh {
    double y = 0;
    double radius = 0;             // how far the scanner sees, in tiles
    std::optional<int> direction;  // only entries in this direction (an 8-way defines.direction)
+   std::vector<std::string> water; // tile names that are water
+   std::vector<std::string> ice;   // tile names that are ice (Aquilo)
 };
 
 // An entity whose subcategory the mod gives (setSubcategories): what a machine makes, what a chest
@@ -59,7 +61,13 @@ struct Entry {
    bool empty = false;         // nothing in the category: the fields below are unset
    uint32_t index = 0;         // one-based place in its subcategory
    uint32_t count = 0;         // entries in the subcategory
-   std::string prototype;      // the entity's prototype name
+   // "entity", "forest" (several trees), "patch" (a resource patch), "water" or "ice".
+   std::string kind;
+   std::string prototype;      // an entity's or patch's prototype name
+   std::string text;           // a patch: the map's label of it, what is left in it
+   uint32_t trees = 0;         // a forest: how many trees are left
+   int32_t width = 0;          // water and ice: the size of the body, in tiles
+   int32_t height = 0;
    double x = 0;               // where it is, in tiles
    double y = 0;
    double originX = 0;         // where the list was sorted from

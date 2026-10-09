@@ -1,8 +1,10 @@
 --[[
 Scanner subcategories that say more than the prototype: what a machine makes, what a chest or
 pipe holds, which train a wagon is in. The DLL lists the entities and leaves these types to the
-Lua API, which reads all of it (native/src/scanner.cpp kDetailedTypes). Runs only on the client of
-the player who scans, and only reads the game.
+Lua API, which reads all of it (native/src/scanner.cpp kDetailedTypes).
+
+This runs only on the client of the player who scans, so it must only read: no storage, no change
+to any entity or player, no math.random (its state is shared). Any of those would desync that client.
 ]]
 local BuildingTools = require("scripts.building-tools")
 local Info = require("scripts.fa-info")
