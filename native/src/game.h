@@ -305,6 +305,42 @@ struct Layout {
    // Entity::usageBitMask (uint16). The scanner skips what LuaEntity's constructor refuses: 0x4,
    // the entity inside a ghost, which Entity::getOuterEntity trades for its ghost, and 0x10.
    uint32_t entityUsageBits = 0;
+   // What sets an entity apart from others of its prototype in the scanner's subcategories, read
+   // from the class each prototype type makes; each member is found through that class's bases.
+   uint32_t scanAssemblerRecipe = 0;       // AssemblingMachine::recipeID, IDWithQuality<RecipeID>
+   uint32_t scanFurnaceRecipe = 0;         // Furnace::recipeID
+   uint32_t scanFurnaceResult = 0;         // Furnace::resultInventory, an Inventory
+   // MiningDrill::resourcesToMine, std::vector<Targeter<ResourceEntity,33,0>>: what it mines
+   uint32_t scanDrillResources = 0;
+   uint32_t resourceTargeterSize = 0;      // sizeof(Targeter<ResourceEntity,33,0>)
+   uint32_t scanLocomotiveTrain = 0;       // Locomotive::train, Train*
+   uint32_t scanCargoWagonTrain = 0;       // CargoWagon::train
+   uint32_t scanFluidWagonTrain = 0;       // FluidWagon::train
+   uint32_t scanArtilleryWagonTrain = 0;   // ArtilleryWagon::train
+   uint32_t trainId = 0;                   // Train::id, uint32: LuaTrain::id
+   uint32_t scanGhostInner = 0;            // EntityGhost::innerEntity, Entity*
+   uint32_t scanSpawnerPollution = 0;      // EnemySpawner::absorbedPollution, double
+   uint32_t scanContainerInventory = 0;    // ContainerEntity::inventory, Inventory*
+   uint32_t scanLogisticInventory = 0;     // LogisticContainer::inventory
+   uint32_t scanInfinityInventory = 0;     // InfinityContainer::inventory
+   uint32_t scanRoboportName = 0;          // Roboport::backerName, std::string
+   uint32_t scanPipeFluidBox = 0;          // Pipe::fluidBox, a FluidBox
+   uint32_t scanInfinityPipeFluidBox = 0;  // InfinityPipe::fluidBox
+   uint32_t scanUndergroundFluidBox = 0;   // PipeToGround::fluidBox
+   uint32_t scanTankFluidBox = 0;          // StorageTank::fluidBox
+   // A fluid box's fluid is its FluidSegment's while it has one (Entity::getFluidAmount): the
+   // fluid's ID (ID<FluidPrototype>, uint16, 0 for none) and amount (fixed point int64).
+   uint32_t fluidBoxSegment = 0;           // FluidBox::fluidSegment, FluidSegment*
+   uint32_t fluidBoxFluid = 0;             // FluidBox::buffer.fluid.fluidID
+   uint32_t fluidBoxAmount = 0;            // FluidBox::buffer.fluid.amount
+   uint32_t segmentFluid = 0;              // FluidSegment::buffer.fluid.fluidID
+   uint32_t segmentAmount = 0;             // FluidSegment::buffer.fluid.amount
+   // FluidBox::connections, SmallVector<FluidBoxConnection,4>: one per pipe connection, its target
+   // (FluidBox*) null while nothing is connected there.
+   uint32_t fluidBoxConnectionsBegin = 0;  // FluidBox::connections.begin_
+   uint32_t fluidBoxConnectionsEnd = 0;    // FluidBox::connections.end_
+   uint32_t fluidConnectionSize = 0;       // sizeof(FluidBoxConnection)
+   uint32_t fluidConnectionTarget = 0;     // FluidBoxConnection::target
    // bool ForceData::isChunkCharted(SurfaceIndex, MapPosition const&) const
    uintptr_t forceIsChunkCharted = 0;
    // ElectricPolePrototype const* EntityPrototype::asElectricPole() const, a virtual slot: null but

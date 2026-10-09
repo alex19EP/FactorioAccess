@@ -5,7 +5,7 @@ can be built.
 
 They are read at refresh, on the client of the player who scans, and kept in a table of this module
 outside storage until the next refresh: only that client has a scanner list. So this must only read
-the game, never change it (see subcategories.lua).
+the game, never change it (see readout.lua).
 ]]
 local CircuitNetwork = require("scripts.circuit-network")
 local FaInfo = require("scripts.fa-info")

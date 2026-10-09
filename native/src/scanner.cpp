@@ -15,6 +15,7 @@
 #include <cstdint>
 #include <cstring>
 #include <deque>
+#include <format>
 #include <mutex>
 #include <string_view>
 #include <tuple>
@@ -221,28 +222,48 @@ constexpr std::string_view kRocks[] = {
    "medium-sand-rock", "small-rock",    "small-sand-rock", "tiny-rock",
 };
 
-// Types whose subcategory says more than the prototype: what a machine makes, what a chest or pipe
-// holds, which train a wagon is in, which network a roboport names. The Lua API reads all of it, so
-// the mod's Lua gives these entities their subcategories (scripts/scanner/subcategories.lua).
-constexpr std::string_view kDetailedTypes[] = {
-   "artillery-wagon",
-   "assembling-machine",
-   "cargo-wagon",
-   "container",
-   "entity-ghost",
-   "fluid-wagon",
-   "furnace",
-   "infinity-container",
-   "infinity-pipe",
-   "locomotive",
-   "logistic-container",
-   "mining-drill",
-   "pipe",
-   "pipe-to-ground",
-   "roboport",
-   "storage-tank",
-   "tile-ghost",
-   "unit-spawner",
+// What sets an entity apart from others of its prototype in its subcategory: what a machine makes,
+// what a drill mines, what a chest or pipe holds, which train a wagon is in, how polluted a spawner
+// is, which network a roboport names.
+enum class Detail : uint8_t {
+   None,
+   Recipe,
+   Furnace,
+   Drill,
+   Train,
+   Ghost,
+   TileGhost,
+   Spawner,
+   Contents,
+   Fluid,
+   Pipe,
+   Roboport
+};
+
+struct DetailRule {
+   std::string_view type;
+   Detail detail;
+   uint32_t game::Layout::* member; // where the entity class keeps what is read
+};
+constexpr DetailRule kDetails[] = {
+   {"artillery-wagon", Detail::Train, &game::Layout::scanArtilleryWagonTrain},
+   {"assembling-machine", Detail::Recipe, &game::Layout::scanAssemblerRecipe},
+   {"cargo-wagon", Detail::Train, &game::Layout::scanCargoWagonTrain},
+   {"container", Detail::Contents, &game::Layout::scanContainerInventory},
+   {"entity-ghost", Detail::Ghost, &game::Layout::scanGhostInner},
+   {"fluid-wagon", Detail::Train, &game::Layout::scanFluidWagonTrain},
+   {"furnace", Detail::Furnace, &game::Layout::scanFurnaceRecipe},
+   {"infinity-container", Detail::Contents, &game::Layout::scanInfinityInventory},
+   {"infinity-pipe", Detail::Fluid, &game::Layout::scanInfinityPipeFluidBox},
+   {"locomotive", Detail::Train, &game::Layout::scanLocomotiveTrain},
+   {"logistic-container", Detail::Contents, &game::Layout::scanLogisticInventory},
+   {"mining-drill", Detail::Drill, &game::Layout::scanDrillResources},
+   {"pipe", Detail::Pipe, &game::Layout::scanPipeFluidBox},
+   {"pipe-to-ground", Detail::Fluid, &game::Layout::scanUndergroundFluidBox},
+   {"roboport", Detail::Roboport, &game::Layout::scanRoboportName},
+   {"storage-tank", Detail::Fluid, &game::Layout::scanTankFluidBox},
+   {"tile-ghost", Detail::TileGhost, nullptr},
+   {"unit-spawner", Detail::Spawner, &game::Layout::scanSpawnerPollution},
 };
 
 // How an entity is listed.
@@ -251,7 +272,8 @@ enum class Listing : uint8_t { No, Alone, Tree, Resource };
 struct Rule {
    Listing listing = Listing::No;
    Cat category = Other;
-   bool detailed = false;
+   Detail detail = Detail::None;
+   uint32_t member = 0;   // the detail's offset in the entity
    bool infinite = false; // a resource that never runs out, such as crude oil
    int8_t cellShift = -1; // a resource's patch cells, log2 of their side in tiles; -1 when each is a patch
 };
@@ -267,15 +289,24 @@ int8_t patchCellShift(const std::byte* prototype) {
 
 Rule ruleFor(const std::byte* prototype, std::string_view type, std::string_view name) {
    if (type == "tree") return {Listing::Tree, Resources};
-   if (type == "resource")
-      return {Listing::Resource, Resources, false, at<bool>(prototype, layout.resourceInfinite),
-              patchCellShift(prototype)};
+   if (type == "resource") {
+      Rule rule{Listing::Resource, Resources};
+      rule.infinite = at<bool>(prototype, layout.resourceInfinite);
+      rule.cellShift = patchCellShift(prototype);
+      return rule;
+   }
    if (std::find(std::begin(kRocks), std::end(kRocks), name) != std::end(kRocks)) return {Listing::Alone, Resources};
    if (name.ends_with("-remnants")) return {Listing::Alone, Remnants};
-   const bool detailed =
-      std::find(std::begin(kDetailedTypes), std::end(kDetailedTypes), type) != std::end(kDetailedTypes);
-   for (const TypeRule& rule : kTypes)
-      if (rule.type == type) return {Listing::Alone, rule.category, detailed};
+   for (const TypeRule& typeRule : kTypes) {
+      if (typeRule.type != type) continue;
+      Rule rule{Listing::Alone, typeRule.category};
+      for (const DetailRule& detail : kDetails)
+         if (detail.type == type) {
+            rule.detail = detail.detail;
+            rule.member = detail.member ? layout.*detail.member : 0;
+         }
+      return rule;
+   }
    return {};
 }
 
@@ -400,6 +431,99 @@ private:
    std::vector<Targeter> targeters_;
    const std::byte* game_ = nullptr;
 };
+
+// Spawners are grouped by how much pollution they absorbed, at these thresholds: those of
+// scripts/scanner/readout.lua's SPAWNER_POLLUTION_BUCKETS, which says the group.
+constexpr double kSpawnerPollution[] = {0, 1, 99};
+
+// The fluid in a fluid box, by ID, or 0 for none.
+uint16_t fluidIn(const std::byte* box) {
+   if (const std::byte* segment = at<const std::byte*>(box, layout.fluidBoxSegment))
+      return at<int64_t>(segment, layout.segmentAmount) > 0 ? at<uint16_t>(segment, layout.segmentFluid) : 0;
+   return at<int64_t>(box, layout.fluidBoxAmount) > 0 ? at<uint16_t>(box, layout.fluidBoxFluid) : 0;
+}
+
+// An entity's subcategory: its prototype's name and what sets it apart from others of its prototype.
+// Only grouped by, never said.
+std::string subcategoryKey(const std::byte* entity, const std::byte* prototype, const Rule& rule) {
+   std::string key(prototypeName(prototype));
+   switch (rule.detail) {
+   case Detail::None: break;
+   case Detail::Recipe: key += std::format("/{}", at<uint16_t>(entity + rule.member, layout.idWithQualityBase)); break;
+   case Detail::Furnace: {
+      // One without a recipe yet may still hold what it made.
+      if (const uint16_t recipe = at<uint16_t>(entity + rule.member, layout.idWithQualityBase)) {
+         key += std::format("/{}", recipe);
+         break;
+      }
+      const std::byte* result = entity + layout.scanFurnaceResult;
+      const std::byte* stacks = at<const std::byte*>(result, layout.inventoryData);
+      if (at<uint16_t>(result, layout.inventorySize) > 0 && at<uint32_t>(stacks, layout.itemStackCount) > 0)
+         key += std::format("/item{}", at<uint16_t>(stacks, layout.itemStackItem));
+      break;
+   }
+   case Detail::Drill: {
+      const auto& targeters = at<MsvcVector<const std::byte>>(entity, rule.member);
+      std::vector<std::string_view> resources;
+      for (const std::byte* targeter = targeters.first; targeter < targeters.last;
+           targeter += layout.resourceTargeterSize)
+         if (const auto* resource = at<const std::byte*>(targeter, offsetof(Targeter, target)))
+            resources.push_back(prototypeName(at<const std::byte*>(resource, layout.entityPrototypeOf)));
+      std::sort(resources.begin(), resources.end());
+      resources.erase(std::unique(resources.begin(), resources.end()), resources.end());
+      for (std::string_view resource : resources) key += std::format("/{}", resource);
+      break;
+   }
+   case Detail::Train:
+      // Wagons are grouped by train, so that the scanner isn't cluttered with every wagon.
+      if (const std::byte* train = at<const std::byte*>(entity, rule.member))
+         return std::format("train/{}", at<uint32_t>(train, layout.trainId));
+      break;
+   case Detail::Ghost:
+      if (const std::byte* inner = at<const std::byte*>(entity, rule.member))
+         return std::format("ghost/{}", prototypeType(at<const std::byte*>(inner, layout.entityPrototypeOf)));
+      break;
+   case Detail::TileGhost: return "ghost/tile";
+   case Detail::Spawner: {
+      const double pollution = at<double>(entity, rule.member);
+      size_t level = 0;
+      while (level + 1 < std::size(kSpawnerPollution) && kSpawnerPollution[level + 1] <= pollution) ++level;
+      key += std::format("/{}", level);
+      break;
+   }
+   case Detail::Contents: {
+      // Nothing, one item (of any qualities), or a mix.
+      std::optional<uint16_t> item;
+      bool mixed = false;
+      if (const std::byte* inventory = at<const std::byte*>(entity, rule.member)) {
+         const std::byte* stacks = at<const std::byte*>(inventory, layout.inventoryData);
+         for (uint16_t i = 0; i < at<uint16_t>(inventory, layout.inventorySize) && !mixed; ++i) {
+            const std::byte* stack = stacks + size_t{i} * layout.itemStackSize;
+            if (at<uint32_t>(stack, layout.itemStackCount) == 0) continue;
+            const uint16_t id = at<uint16_t>(stack, layout.itemStackItem);
+            if (item && *item != id) mixed = true;
+            item = id;
+         }
+      }
+      key += mixed ? std::string("/mixed") : item ? std::format("/item{}", *item) : std::string("/empty");
+      break;
+   }
+   case Detail::Fluid: key += std::format("/{}", fluidIn(entity + rule.member)); break;
+   case Detail::Pipe: {
+      // A pipe that ends: connected on one side only.
+      const std::byte* box = entity + rule.member;
+      const auto* first = at<const std::byte*>(box, layout.fluidBoxConnectionsBegin);
+      const auto* last = at<const std::byte*>(box, layout.fluidBoxConnectionsEnd);
+      int connected = 0;
+      for (const std::byte* connection = first; connection < last; connection += layout.fluidConnectionSize)
+         if (at<const std::byte*>(connection, layout.fluidConnectionTarget)) ++connected;
+      key += std::format("/{}{}", fluidIn(box), connected == 1 ? "/end" : "");
+      break;
+   }
+   case Detail::Roboport: key += std::format("/{}", view(at<MsvcString>(entity, rule.member))); break;
+   }
+   return key;
+}
 
 using IteratorFunction = void (*)(std::byte* iterator);
 
@@ -573,7 +697,6 @@ std::optional<Cat> categoryByKey(std::string_view key) {
 struct Item {
    Kind kind;
    Cat category;
-   bool detailed = false;           // the mod is to give it a subcategory of its own
    const std::byte* prototype = nullptr; // an entity's or patch's prototype
    Position position{};             // where to go: kept up to date as the entry is checked
    std::string key;                 // its subcategory
@@ -598,7 +721,6 @@ struct List {
    std::vector<Item> items;
    Links links;
    std::array<std::vector<Subcategory>, kCategoryCount> categories;
-   std::vector<uint32_t> detailed;  // the items handed to the mod for subcategories, in order
    std::vector<uint8_t> tileClasses; // TileClass by tile ID
 };
 
@@ -781,21 +903,19 @@ public:
    Builder(List& list, std::vector<std::byte*>& entities) : list_(list), entities_(entities) {}
 
    void alone(const Found& found, const Rule& rule) {
-      if (rule.detailed) list_.detailed.push_back(static_cast<uint32_t>(list_.items.size()));
-      add({Kind::Entity, rule.category, rule.detailed, found.prototype, found.position,
-           std::string(prototypeName(found.prototype))},
+      add({Kind::Entity, rule.category, found.prototype, found.position,
+           subcategoryKey(found.entity, found.prototype, rule)},
           found);
    }
 
    // A tree, or a well of an infinite resource, near enough the origin to be listed by itself.
    void near(const Found& found, std::string key) {
-      add({Kind::Entity, Resources, false, found.prototype, found.position, std::move(key)}, found);
+      add({Kind::Entity, Resources, found.prototype, found.position, std::move(key)}, found);
    }
 
    // A resource whose prototype makes every resource a patch of its own.
    void patchOfOne(const Found& found) {
-      Item item{Kind::Patch,     Resources,      false,
-                found.prototype, found.position, std::string(prototypeName(found.prototype))};
+      Item item{Kind::Patch, Resources, found.prototype, found.position, std::string(prototypeName(found.prototype))};
       item.count = 1;
       item.box.add(tileOf(found.position.x), tileOf(found.position.y));
       list_.items.push_back(std::move(item));
@@ -805,12 +925,8 @@ public:
    void groups(const Cells& cells) {
       for (const Cells::Group& group : cells.groups()) {
          const bool forest = !group.group;
-         Item item{forest ? Kind::Forest : Kind::Patch,
-                   Resources,
-                   false,
-                   forest ? group.prototype : group.group,
-                   group.position,
-                   forest ? "tree" : std::string(prototypeName(group.group))};
+         Item item{forest ? Kind::Forest : Kind::Patch, Resources, forest ? group.prototype : group.group,
+                   group.position, forest ? "tree" : std::string(prototypeName(group.group))};
          item.count = group.count;
          item.box = group.box;
          list_.items.push_back(std::move(item));
@@ -1322,16 +1438,16 @@ private:
 
 } // namespace
 
-std::optional<std::vector<Detail>> refresh(const Refresh& request) {
+void refresh(const Refresh& request) {
    Stopwatch stopwatch;
    const std::byte* game = currentGame();
    const std::byte* player = localPlayer(game, request.playerIndex);
-   if (!player) return std::nullopt;
+   if (!player) return;
    const std::byte* map = at<const std::byte*>(player, layout.playerMap);
    const std::byte* surface = map ? surfaceAt(map, request.surfaceIndex) : nullptr;
    if (!surface) {
       log::error("Scanner: no surface {} to list", request.surfaceIndex);
-      return std::nullopt;
+      return;
    }
    const uint32_t surfaceIndex = at<uint32_t>(surface, layout.surfaceIndex);
 
@@ -1432,7 +1548,7 @@ std::optional<std::vector<Detail>> refresh(const Refresh& request) {
       for (const TileBodies::Body& body : bodies->bodies()) {
          const Position nearest = tileCentre(body.nearestX, body.nearestY);
          if (!wanted(nearest)) continue;
-         Item item{kind, category, false, nullptr, nearest, key};
+         Item item{kind, category, nullptr, nearest, key};
          item.box = body.box;
          list.items.push_back(std::move(item));
       }
@@ -1448,7 +1564,7 @@ std::optional<std::vector<Detail>> refresh(const Refresh& request) {
       if (!wanted(position) ||
           !reinterpret_cast<ChartedFunction>(layout.forceIsChunkCharted)(list.force, surfaceIndex, &position))
          continue;
-      Item item{Kind::Extra, *category, false, nullptr, position, extra.key};
+      Item item{Kind::Extra, *category, nullptr, position, extra.key};
       item.first = static_cast<uint32_t>(i);
       list.items.push_back(std::move(item));
    }
@@ -1458,38 +1574,16 @@ std::optional<std::vector<Detail>> refresh(const Refresh& request) {
    group(list);
    const double groupMs = stopwatch.lap();
 
-   std::vector<Detail> details;
-   details.reserve(list.detailed.size());
-   for (uint32_t item : list.detailed)
-      details.push_back({list.items[item].key, tiles(list.items[item].position.x), tiles(list.items[item].position.y)});
-
    std::scoped_lock lock(g_mutex);
    // The category stays; the rest starts over, as the list beneath it is new.
    Cursor cursor{g_cursor.category.value_or(All), {}, {}};
    g_list = std::move(list);
    g_cursor = cursor;
-   log::info("Scanner: {} entries ({} linked, {} trees, {} resources in {} cells) on surface {}, {} for the mod "
-             "to detail",
-             g_list.items.size(), entities.size(), trees, resources, cells.size(), request.surfaceIndex,
-             details.size());
+   log::info("Scanner: {} entries ({} linked, {} trees, {} resources in {} cells) on surface {}", g_list.items.size(),
+             entities.size(), trees, resources, cells.size(), request.surfaceIndex);
    log::info("Scanner: {} chunks walked in {:.1f} ms, clustered in {:.1f}, linked in {:.1f}, grouped in {:.1f}, "
              "the rest {:.1f}",
              chunksWalked, walkMs, clusterMs, linkMs, groupMs, stopwatch.lap());
-   return details;
-}
-
-void setSubcategories(int playerIndex, const std::vector<std::optional<std::string>>& keys) {
-   if (!localPlayer(currentGame(), playerIndex)) return;
-   std::scoped_lock lock(g_mutex);
-   if (keys.size() != g_list.detailed.size()) {
-      log::error("Scanner: {} subcategories for {} entries", keys.size(), g_list.detailed.size());
-      return;
-   }
-   for (size_t i = 0; i < keys.size(); ++i)
-      if (keys[i]) g_list.items[g_list.detailed[i]].key = *keys[i];
-   g_list.detailed.clear();
-   group(g_list);
-   g_cursor = {g_cursor.category.value_or(All), {}, {}};
 }
 
 void setModUiOpen(int playerIndex, bool open) {

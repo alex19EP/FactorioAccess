@@ -556,9 +556,8 @@ std::vector<std::string> stringsField(lua_State* L, int table, const char* name)
 // for this client's player what the scanner finds on that surface within `radius` of x, y, where
 // the player's force charted it, and only in `direction` (an 8-way defines.direction) when given;
 // water and ice are arrays of the tile names that make bodies of water and of ice; extras is an
-// array of {category, key, x, y} the mod lists itself (scanner::Extra). Returns the entities
-// whose subcategories the mod is to give, as an array of {name, x, y}, or nil when it listed
-// nothing. The list is this client's only; nothing in the game depends on it.
+// array of {category, key, x, y} the mod lists itself (scanner::Extra). The list is this client's
+// only; nothing in the game depends on it.
 int scannerRefresh(lua_State* L) {
    scanner::Refresh request;
    request.playerIndex = static_cast<int>(checkInteger(L, 1));
@@ -595,35 +594,7 @@ int scannerRefresh(lua_State* L) {
       }
    }
    setTop(L, -2);
-   const auto details = scanner::refresh(request);
-   if (!details) return 0;
-   createTable(L, static_cast<int>(details->size()), 0);
-   for (size_t i = 0; i < details->size(); ++i) {
-      const scanner::Detail& detail = (*details)[i];
-      createTable(L, 0, 3);
-      pushString(L, detail.prototype);
-      setField(L, -2, "name");
-      pushNumber(L, detail.x);
-      setField(L, -2, "x");
-      pushNumber(L, detail.y);
-      setField(L, -2, "y");
-      rawSetI(L, -2, static_cast<int>(i + 1));
-   }
-   return 1;
-}
-
-// fa_native.scanner_subcategories(pindex, keys): the subcategories of the entities the last refresh
-// returned, in its order: a string each, or false to keep the entity under its prototype.
-int scannerSubcategories(lua_State* L) {
-   const int playerIndex = static_cast<int>(checkInteger(L, 1));
-   if (type(L, 2) != kTable) return 0;
-   std::vector<std::optional<std::string>> keys(rawLen(L, 2));
-   for (size_t i = 0; i < keys.size(); ++i) {
-      rawGetI(L, 2, static_cast<int>(i + 1));
-      if (type(L, -1) == kString) keys[i] = toString(L, -1);
-      setTop(L, -2);
-   }
-   scanner::setSubcategories(playerIndex, keys);
+   scanner::refresh(request);
    return 0;
 }
 
@@ -711,7 +682,6 @@ constexpr Function kFunctions[] = {
    {"map_overlays", &mapOverlays},
    {"audio", &playAudio},
    {"scanner_refresh", &scannerRefresh},
-   {"scanner_subcategories", &scannerSubcategories},
    {"scanner_mod_ui", &scannerModUi},
    {"scanner_entry", &scannerEntry},
    {"scanner_category", &scannerCategory},

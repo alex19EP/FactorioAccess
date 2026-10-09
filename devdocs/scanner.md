@@ -19,27 +19,37 @@ every chunk of the surface within `SCANNER_DISTANCE` that the player's force has
 
 - Entities by type (`kTypes` in `scanner.cpp`), each its own entry, grouped by prototype. Types not
   in the table are not listed. Rocks are resources, `*-remnants` are remnants.
+- Subcategories that say more than the prototype (`kDetails`, read by `subcategoryKey`): machines
+  by recipe, drills by what they mine, chests by contents (empty, one item, mixed), pipes and tanks
+  by fluid (pipes also by whether they end), wagons by train, ghosts by type, spawners by pollution,
+  roboports by network name.
 - Trees as forests: trees in the same or touching 8-tile cells. Trees within 25 tiles are listed one
-  by one, and so is a forest of one.
-- Resources as patches, as the map finds them (the game's `ResourcePatchInfo`). A patch says the
+  by one, and a forest of one is said as its tree.
+- Resources as patches, by the map's own rule (`ResourcePatchInfo::addPatch` and `scanPatch`): cells
+  twice the prototype's patch search radius a side, joined to their 8 neighbours. A patch says the
   map's label of what is left in it. Wells of an infinite resource within 50 tiles are listed one
   by one.
 - Water and ice as bodies of 8-way connected tiles, landing on the tile nearest the player.
 
+Trees and resources are counted by cell while the chunks are walked, not kept one by one: a big
+base charts millions of them. The chunk iterator also gives entities standing just past the
+chunk's edge, which the next chunk gives again, so each chunk keeps only the entities standing in
+it.
+
 Entries keep their entities through the game's own weak references (`Targeter`, as its GUIs keep
 theirs), so moving entities stay listed where they move to, and an entry drops out once the game
-removes its entity.
+removes its entity. Forests and patches keep none: landing on one finds a live tree or resource at
+its place, else the nearest one left in it.
 
 # What Lua adds
 
-Some of it only the Lua API reads, so Lua gives it to the DLL at refresh. This runs only on the
-scanning client, so it must only read the game, never change it (no `storage`, no `math.random`):
+Lua says the entries, and lists a few things itself. This runs only on the scanning client, so it
+must only read the game, never change it (no `storage`, no `math.random`):
 
-- `subcategories.lua`: the subcategory of machines (recipe), chests (contents), pipes and tanks
-  (fluid), wagons (train), ghosts (type), spawners (pollution) and roboports (network name). The
-  DLL hands their names and positions to Lua, which hands back the keys.
+- `readout.lua`: what is said of an entity (fa-info's scanner readout, with a spawner's pollution).
 - `extras.lua`: pins, map tags and the spots near the player where the offshore pump in hand can be
-  built. Lua keeps these objects in a table of its own until the next refresh, and says them.
+  built, handed to the DLL at refresh. Lua keeps these objects in a table of its own until the next
+  refresh, and says them.
 
 # Moving through the list: why it stays in sync in multiplayer
 
@@ -60,8 +70,9 @@ The DLL leaves the keys alone while a game window is open or one of the mod's ow
 # Adding to the scanner
 
 - A new entity type: add it to `kTypes` in `scanner.cpp` with its category.
-- A subcategory that says more than the prototype: add the type to `kDetailedTypes` in
-  `scanner.cpp` and its function to `BY_TYPE` in `subcategories.lua`.
+- A subcategory that says more than the prototype: add the type to `kDetails` in `scanner.cpp`
+  with the member its entity class keeps it in (a `game::Layout` field), and read it in
+  `subcategoryKey`.
 - Something only Lua can find (like pins): add a function to `extras.lua` returning entries with a
   category, a subcategory key, a position, `valid` and `readout`, and call it from `collect`.
 - A new category: add its key to `kCategoryKeys` (in the order the category keys move through) and

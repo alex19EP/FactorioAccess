@@ -16,7 +16,7 @@ local Extras = require("scripts.scanner.extras")
 local FaUtils = require("scripts.fa-utils")
 local Localising = require("scripts.localising")
 local ScannerConsts = require("scripts.scanner.scanner-consts")
-local Subcategories = require("scripts.scanner.subcategories")
+local Readout = require("scripts.scanner.readout")
 local UiRouter = require("scripts.ui.router")
 local Viewpoint = require("scripts.viewpoint")
 local Speech = require("scripts.speech")
@@ -99,7 +99,7 @@ local function announce(pindex, event)
             break
          end
       end
-      readout = entity and Subcategories.readout(pindex, entity)
+      readout = entity and Readout.of(pindex, entity)
          or Localising.get_localised_name_with_fallback(prototypes.entity[entry.prototype])
    end
 
@@ -125,7 +125,7 @@ function mod.do_refresh(pindex, direction_filter)
    ---@cast player LuaPlayer
    player.play_sound({ path = "scanner-pulse" })
    if native then
-      local details = native.scanner_refresh(pindex, {
+      native.scanner_refresh(pindex, {
          surface = player.surface.index,
          x = player.position.x,
          y = player.position.y,
@@ -135,7 +135,6 @@ function mod.do_refresh(pindex, direction_filter)
          ice = script.feature_flags.space_travel and ScannerConsts.ICEBERG_PROTOS or nil,
          extras = Extras.collect(player),
       })
-      if details then native.scanner_subcategories(pindex, Subcategories.keys(player.surface, details)) end
    end
    if direction_filter then
       Speech.speak(pindex, { "fa.scanner-refreshed-directional", FaUtils.direction_lookup(direction_filter) })
