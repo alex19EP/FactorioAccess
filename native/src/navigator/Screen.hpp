@@ -61,6 +61,11 @@ public:
         return false;
     }
 
+    /// True for a command line (the game's console): its field keeps Tab (completion) and Up and
+    /// Down (history) for the game, so Ctrl+Tab and Ctrl+Shift+Tab move between the screen's stops
+    /// instead of between the parts of the screen, in the field and out of it.
+    virtual bool CommandLine() const { return false; }
+
     /// True for a screen the game knows nothing of as a window (a part of the HUD), whose Escape
     /// must not reach the game's own Back. The navigator then takes Escape and calls OnEscape.
     virtual bool ClaimsEscape() const { return false; }

@@ -50,6 +50,10 @@ public:
     /// stable when the screen builds its stops in a fixed order.
     GraphBuilder& BeginStop(std::string key = "");
 
+    /// The current stop is entered on its LAST line when it has no remembered position (a log
+    /// whose newest line is at the bottom), instead of its first: the first node of its last row.
+    GraphBuilder& LandOnLast();
+
     /// Tag nodes added from here with a region (Ctrl+arrow jump target) within the current stop;
     /// empty clears. Region keys must be stable across rebuilds.
     GraphBuilder& SetRegion(std::string key);
@@ -243,6 +247,7 @@ private:
     std::string _stopKey = AutoStopKey(0);
     int _stopAuto = 1;
     std::string _regionKey;
+    std::unordered_set<std::string> _landLast;
 
     std::vector<ParentFrame> _parents;
     bool _built = false;
