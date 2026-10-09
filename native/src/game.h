@@ -627,7 +627,8 @@ struct Layout {
    // The windows of entities (GameGuiWithControllerInventory): the entity's window, which holds
    // the player's inventory beside the entity's own part.
    uint32_t entityMainWindow = 0;     // GameGuiWithControllerInventory::mainWindow, agui::Window
-   uint32_t entityInventoryHolder = 0; // GameGuiWithControllerInventory::controllerInventory, ControllerInventoryHolder*
+   // GameGuiWithControllerInventory::controllerInventory, ControllerInventoryHolder*
+   uint32_t entityInventoryHolder = 0;
    uint32_t holderInventory = 0;      // GameControllerInventoryHolder::inventoryGui, InventoryGui
    uint32_t holderTitle = 0;          // GameControllerInventoryHolder::titleLabel ("Character")
    // RemoteControllerInventoryHolder::selectGui, IDWithQualityIDSelectListGui<IDWithQuality<ID<ItemPrototype>>>:
@@ -1134,7 +1135,8 @@ struct Layout {
    // The achievements the player tracks, at the top left under the mods' gui (GameView::loadGui puts
    // it in topLeftContainer): an AchievementCardHolder of sidebar cards, each the achievement's icon
    // (its name only as the tooltip), its progress, and a track button that stops tracking it.
-   uint32_t gameViewTrackedAchievements = 0; // GameView::trackedAchievementHolder, std::unique_ptr<AchievementCardHolder>
+   // GameView::trackedAchievementHolder, std::unique_ptr<AchievementCardHolder>
+   uint32_t gameViewTrackedAchievements = 0;
 
    // The crafting queue at the bottom left (CraftingQueueGui, an agui::Flow), reached as the
    // quickbar is; CharacterView and GodView have one, the remote view none. Its slots are rebuilt on
@@ -1148,7 +1150,8 @@ struct Layout {
    // The HUD's status: the research box at the top right, the alert buttons, the scenario's goal and
    // the bars over the quickbar.
    uint32_t gameViewResearch = 0;        // GameView::currentResearchInfo, std::unique_ptr<CurrentResearchInfo>
-   uint32_t researchTitle = 0;           // CurrentResearchInfo::title, agui::Label: the technology, or "not researching"
+   // CurrentResearchInfo::title, agui::Label: the technology, or "not researching"
+   uint32_t researchTitle = 0;
    uint32_t researchProgressFlow = 0;    // CurrentResearchInfo::progressBarFlow, hidden while nothing is researched
    uint32_t researchProgressLabel = 0;   // CurrentResearchInfo::researchProgressLabel, the formatted percent
    // One AlertGui per AlertCategory, each shown while its category has alerts; its button opens the
@@ -1240,13 +1243,15 @@ struct Layout {
    // Rich text icons that a label makes hoverable (LabelWithHoverableRichText, as in descriptions):
    // hovering one shows its tooltip, clicking it opens its Factoriopedia entry or technology. The
    // label lays its text out in sections, an icon each and the plain runs between them.
-   uint32_t labelRichText = 0;           // agui::Label::resizableText.richTextData, std::unique_ptr to TextDrawSections
+   // agui::Label::resizableText.richTextData, std::unique_ptr to TextDrawSections
+   uint32_t labelRichText = 0;
    uint32_t richTextSectionsBegin = 0;   // TextDrawSections::sections.begin_, TextDrawSection*
    uint32_t richTextSectionsEnd = 0;     // TextDrawSections::sections.end_
    uint32_t richTextSectionSize = 0;     // sizeof(TextDrawSection)
    uint32_t richTextSectionType = 0;     // TextDrawSection::type, TagType
    uint32_t richTextSectionTag = 0;      // TextDrawSection::tagText, std::string_view: "item=iron-plate"
-   uint32_t richTextSectionText = 0;     // TextDrawSection::text, std::string_view: a Text section's words, line breaks included
+   // TextDrawSection::text, std::string_view: a Text section's words, line breaks included
+   uint32_t richTextSectionText = 0;
    uint32_t hoverableLabelManager = 0;   // LabelWithHoverableRichText::hoverManger, LabelRichTextHoverManager
    uint32_t hoverManagerTooltip = 0;     // RichTextHoverManager::hoverTooltip, GenericTargeter<agui::ToolTip>
    // void RichTextHoverManager::handleHover(TextDrawSection const&, OutputConsole::Item const*, bool
@@ -1358,7 +1363,8 @@ struct Layout {
    uint32_t adapterEntitySelector = 0;   // slot of EntitySelector* GameAdapter::getEntitySelector() const
    uint32_t selectorEntity = 0;          // EntitySelector::selectedEntity.target, the Entity*
    uint32_t playerController = 0;        // Player::controllerManager.controller, Controller*
-   uint32_t controllerSelectedTile = 0;  // slot of Tile const* Controller::deduceSelectedTile(MapPosition const&) const
+   // slot of Tile const* Controller::deduceSelectedTile(MapPosition const&) const
+   uint32_t controllerSelectedTile = 0;
    uint32_t gameViewActiveWindow = 0;    // GameView::activeWindow, std::unique_ptr<GameGui>: inventory, an entity's
 
    // What the game says about itself while the DLL runs (see disclosure.h).
