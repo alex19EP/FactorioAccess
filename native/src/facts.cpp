@@ -312,19 +312,11 @@ bool isPipe(const std::byte* entity) {
    return type == "pipe" || type == "infinity-pipe";
 }
 
-// A pipe's shape (fa-info.lua's pipe_shape) from the sides it joins to anything, a pipe, a
-// machine or a tank, so a pipe that leads into an engine is no lonely pipe.
-std::string pipeShape(const std::byte* entity) {
-   const std::vector<const std::byte*> boxes = fluidBoxesOf(entity);
-   if (boxes.size() != 1) return {};
-   bool joined[16] = {};
+// The shape the joined sides of a pipe or heat pipe make (fa-info.lua's pipe_shape), from the
+// ways its connections lead; nothing when one leads elsewhere than the four sides.
+std::string shapeOf(const bool (&joined)[16]) {
    int count = 0;
-   for (const PipeConnection& connection : connectionsOf(boxes[0])) {
-      if (!connection.target) continue;
-      const uint8_t side = connection.location.direction % 16;
-      if (!joined[side]) ++count;
-      joined[side] = true;
-   }
+   for (bool side : joined) count += side;
    const bool north = joined[kNorth], east = joined[kEast], south = joined[kSouth], west = joined[kWest];
    if (north + east + south + west != count) return {};
    switch (count) {
@@ -345,6 +337,17 @@ std::string pipeShape(const std::byte* entity) {
    }
    default: return vocab::kPipeCross;
    }
+}
+
+// A pipe's shape from the sides it joins to anything, a pipe, a machine or a tank, so a pipe that
+// leads into an engine is no lonely pipe.
+std::string pipeShape(const std::byte* entity) {
+   const std::vector<const std::byte*> boxes = fluidBoxesOf(entity);
+   if (boxes.size() != 1) return {};
+   bool joined[16] = {};
+   for (const PipeConnection& connection : connectionsOf(boxes[0]))
+      if (connection.target) joined[connection.location.direction % 16] = true;
+   return shapeOf(joined);
 }
 
 // What a fluid box must hold (fluids.lua's get_local_fluidbox_constraint): its filter, else its
@@ -493,6 +496,103 @@ std::vector<std::string> fluidConnections(const std::byte* entity, Position tile
    return items;
 }
 
+// ---- heat ----
+
+// A heat connection: the tile it is on, the way it leads out, and the entity it joins (null while
+// it joins none).
+struct HeatPort {
+   Position tile{};
+   uint8_t direction = kNorth;
+   const std::byte* joined = nullptr;
+};
+
+// The entity's heat connections, where the game itself finds them (HeatBuffer::findOtherEnd).
+std::vector<HeatPort> heatPortsOf(const std::byte* entity) {
+   std::vector<HeatPort> ports;
+   if (typeName(prototypeOf(entity)) == "entity-ghost") return ports;
+   const std::byte* buffer = virtualAt<const std::byte* (*)(const void*)>(entity, layout.entityGetHeatBuffer)(entity);
+   if (!buffer) return ports;
+   uint8_t direction = 0;
+   virtualAt<void* (*)(const void*, uint8_t*)>(entity, layout.entityGetDirection)(entity, &direction);
+   uint8_t mirrored = 0;
+   virtualAt<void* (*)(const void*, uint8_t*)>(entity, layout.entityIsMirrored)(entity, &mirrored);
+   const Position position = at<Position>(entity, layout.entityPosition);
+   const std::byte* definitions =
+      at<const std::byte*>(at<const std::byte*>(buffer, layout.heatBufferPrototype), layout.heatDefinitionsBegin);
+   const auto* first = at<const std::byte*>(buffer, layout.heatConnectionsBegin);
+   const auto* last = at<const std::byte*>(buffer, layout.heatConnectionsEnd);
+   for (size_t i = 0; first + i * layout.heatConnectionSize < last; ++i) {
+      const std::byte* definition = definitions + i * layout.heatDefinitionSize;
+      // A Vector2<double>: x, then y.
+      alignas(8) double offset[2] = {at<double>(definition, layout.heatDefinitionX),
+                                     at<double>(definition, layout.heatDefinitionY)};
+      auto way = at<uint8_t>(definition, layout.heatDefinitionDirection);
+      if (mirrored) {
+         offset[0] = -offset[0];
+         way = static_cast<uint8_t>(-way);
+      }
+      reinterpret_cast<void (*)(double*, uint8_t)>(layout.vectorRotate)(offset, direction);
+      HeatPort port;
+      port.tile = {(position.x - static_cast<int32_t>(offset[0] * -kScale)) >> 8,
+                   (position.y - static_cast<int32_t>(offset[1] * -kScale)) >> 8};
+      port.direction = static_cast<uint8_t>((way + direction) & 15);
+      if (const std::byte* target =
+             at<const std::byte*>(first + i * layout.heatConnectionSize, layout.heatConnectionTarget))
+         if (const std::byte* holder = at<const std::byte*>(target, layout.heatBufferHolder))
+            port.joined = at<const std::byte*>(holder, layout.heatHolderOwner);
+      ports.push_back(port);
+   }
+   return ports;
+}
+
+bool isHeatPipe(const std::byte* entity) { return typeName(prototypeOf(entity)) == "heat-pipe"; }
+
+// A heat pipe's shape from the sides it joins to anything, as a pipe's.
+std::string heatPipeShape(const std::byte* entity) {
+   bool joined[16] = {};
+   for (const HeatPort& port : heatPortsOf(entity))
+      if (port.joined) joined[port.direction] = true;
+   return shapeOf(joined);
+}
+
+// The heat connections on the tile (fa-info.lua's ent_info_heat_neighbors): which ways they lead,
+// unless it is a heat pipe, whose shape says so, and what they join, but for a heat pipe's other
+// heat pipes.
+std::string heatConnections(const std::byte* entity, Position tile) {
+   const bool pipe = isHeatPipe(entity);
+   std::vector<std::string> ways;
+   // Each joined entity's name, then the way to it.
+   std::vector<std::string> partners;
+   for (const HeatPort& port : heatPortsOf(entity)) {
+      if (port.tile.x != tile.x || port.tile.y != tile.y) continue;
+      ways.push_back(directionName(port.direction));
+      if (port.joined && !(pipe && isHeatPipe(port.joined))) {
+         partners.push_back(localisedName(prototypeOf(port.joined)));
+         partners.push_back(directionName(port.direction));
+      }
+   }
+   std::vector<std::string> words;
+   if (!pipe) {
+      const auto& w = ways;
+      switch (ways.size()) {
+      case 1: words.push_back(vocab::kHeatPorts[0](w[0])); break;
+      case 2: words.push_back(vocab::kHeatPorts[1](w[0], w[1])); break;
+      case 3: words.push_back(vocab::kHeatPorts[2](w[0], w[1], w[2])); break;
+      case 4: words.push_back(vocab::kHeatPorts[3](w[0], w[1], w[2], w[3])); break;
+      default: break;
+      }
+   }
+   const auto& j = partners;
+   switch (partners.size() / 2) {
+   case 0: break;
+   case 1: words.push_back(vocab::kHeatConnected[0](j[0], j[1])); break;
+   case 2: words.push_back(vocab::kHeatConnected[1](j[0], j[1], j[2], j[3])); break;
+   case 3: words.push_back(vocab::kHeatConnected[2](j[0], j[1], j[2], j[3], j[4], j[5])); break;
+   default: words.push_back(vocab::kHeatConnected[3](j[0], j[1], j[2], j[3], j[4], j[5], j[6], j[7])); break;
+   }
+   return joined(words);
+}
+
 } // namespace
 
 std::vector<std::string> describe(const void* object, int32_t tileX, int32_t tileY) {
@@ -511,6 +611,8 @@ std::vector<std::string> describe(const void* object, int32_t tileX, int32_t til
    if (belt && belt.isUnderground()) parts.push_back(undergroundConnection(belt));
    if (isPipe(entity)) parts.push_back(pipeShape(entity));
    for (std::string& item : fluidConnections(entity, Position{tileX, tileY})) parts.push_back(std::move(item));
+   if (isHeatPipe(entity)) parts.push_back(heatPipeShape(entity));
+   parts.push_back(heatConnections(entity, Position{tileX, tileY}));
    return parts;
 }
 

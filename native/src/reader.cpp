@@ -164,6 +164,7 @@ std::vector<std::string> fixedLabels() {
       "description.mined-by",
       "description.max-energy-consumption",
       "description.min-energy-consumption",
+      "description.constant-energy-consumption",
       "description.maximum-temperature",
       "description.minimum-temperature",
       "description.wire-reach",
@@ -335,6 +336,8 @@ std::vector<std::string> lines(const agui::Widget* panel, const std::vector<std:
    screens::AddSubtree(builder, "reader", panel, std::move(icons));
    const std::unique_ptr<graph::GraphRender> render = builder.Build();
    std::vector<std::string> out;
+   // Nothing is built when the description kept no line.
+   if (!render) return out;
    for (const graph::GraphNode* node : render->Order) {
       std::string line;
       for (const graph::NodeAnnouncement& part : graph::GraphAnnouncer::EffectiveAnnouncements(node)) {

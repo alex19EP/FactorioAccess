@@ -1034,6 +1034,12 @@ bool resolve(pdb::SymbolTable& symbols) {
            "??0LocalisedString@@QEAA@AEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEBV0@1@Z");
    address(layout.localisedStringWithParameters[2],
            "??0LocalisedString@@QEAA@AEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEBV0@11@Z");
+   address(layout.localisedStringWithVector,
+           "??0LocalisedString@@QEAA@W4Mode@0@$$QEAV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@"
+           "$$QEAV?$vector@VLocalisedString@@V?$allocator@VLocalisedString@@@std@@@3@@Z");
+   address(layout.gameOperatorNew, "??2@YAPEAX_K@Z");
+   offset(layout.localisedStringKey, "LocalisedString", "key");
+   enumerator(layout.localisedTranslation, "LocalisedString::Mode", "Translation");
    offset(layout.graphVertices, "TechnologyGraphGui", "graph");
    offset(layout.graphCentral, "TechnologyGraphGui", "central");
    offset(layout.vertexTechnology, "TechnologyGraphGui::Vertex", "technology");
@@ -1200,6 +1206,20 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.pipeLocationDirection, "PipeConnectionLocation", "direction");
    size(layout.pipeLocationSize, "PipeConnectionLocation");
    classSlot(layout.entityIsMirrored, "Entity", "isMirrored");
+   classSlot(layout.entityGetHeatBuffer, "Entity", "getHeatBuffer");
+   offset(layout.heatBufferPrototype, "HeatBuffer", "prototype");
+   offset(layout.heatBufferHolder, "HeatBuffer", "holder");
+   offset(layout.heatHolderOwner, "HeatBufferHolder", "owner");
+   offset(layout.heatConnectionsBegin, "HeatBuffer", "connections.begin_");
+   offset(layout.heatConnectionsEnd, "HeatBuffer", "connections.end_");
+   size(layout.heatConnectionSize, "HeatBuffer::Connection");
+   offset(layout.heatConnectionTarget, "HeatBuffer::Connection", "target");
+   offset(layout.heatDefinitionsBegin, "HeatBufferPrototype", "connections.begin_");
+   size(layout.heatDefinitionSize, "HeatConnectionDefinition");
+   offset(layout.heatDefinitionX, "HeatConnectionDefinition", "position.x");
+   offset(layout.heatDefinitionY, "HeatConnectionDefinition", "position.y");
+   offset(layout.heatDefinitionDirection, "HeatConnectionDefinition", "direction");
+   address(layout.vectorRotate, "?rotate@?$Vector2@NVVector@@@@QEAAXVDirection@@@Z");
 
    if (ok && (layout.chartSelectionSize > kChartSelectionCapacity || layout.patchInfoSize > kPatchInfoCapacity)) {
       log::error("A chart structure outgrew its buffer: ChartSelection {} bytes, ResourcePatchInfo {}",

@@ -693,10 +693,7 @@ local function ent_info_heat_pipe_shape(ctx)
       local shape_info = Heat.get_pipe_shape(ctx.ent)
       local s, d = shape_info.shape, shape_info.direction
       local d_str = FaUtils.direction_lookup(d)
-      local pipe_conn_count = Heat.get_total_heat_pipe_connections(ctx.ent)
-
-      -- We must be careful.  Pipe shapes do not account for other kinds of connection, so we must compare with the
-      -- expected count as well. Otherwise we will say that a pipe is both connected and not connected at the same time.
+      local pipe_conn_count = Heat.get_total_heat_connections(ctx.ent)
 
       -- This is just a boring if table which appends fragments.  no special logic here.
       if s == NetworkShape.SHAPE.END and pipe_conn_count == 1 then
@@ -1520,7 +1517,8 @@ function mod.ent_info(pindex, ent, is_scanner, after_native)
       if not after_native then run_handler(handler, nolist) end
    end
    -- What the DLL's reading says itself (native/src/facts.cpp): facing, an underground belt's end
-   -- and partner, a belt's shape, a pipe's shape and the fluid connections on the tile.
+   -- and partner, a belt's shape, a pipe's or heat pipe's shape, the fluid and heat connections on the
+   -- tile.
    local run_native_fact_handler = run_tooltip_handler
    if not is_scanner and native then ctx.drawn = native.entity_icons(pindex, ent) end
    -- The status icons tell what the tooltip's status says
@@ -1691,8 +1689,8 @@ function mod.ent_info(pindex, ent, is_scanner, after_native)
    run_handler(ent_info_nuclear_neighbor_bonus)
    run_handler(ent_info_item_on_ground)
    run_handler(ent_info_render_heat_ports)
-   run_handler(ent_info_heat_pipe_shape)
-   run_handler(ent_info_heat_neighbors)
+   run_native_fact_handler(ent_info_heat_pipe_shape)
+   run_native_fact_handler(ent_info_heat_neighbors)
 
    run_drawn_handler(ent_info_constant_combinator)
    run_handler(ent_info_combinator_connections)

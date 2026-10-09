@@ -12,8 +12,8 @@
 // lowercase, after the mod's own speech style.
 namespace fa::vocab {
 
-// The most parameters a key takes: the game has a LocalisedString constructor for each count.
-inline constexpr size_t kMaxParameters = 3;
+// The most parameters a key takes here (the mod's own keys take up to eight; the game allows 20).
+inline constexpr size_t kMaxParameters = 8;
 
 // The text of a key of the game's or the mod's locale, its parameters (__1__, __2__, __3__) filled
 // in, in the game's current language. Translating touches the game's locale, so this runs where
@@ -290,6 +290,12 @@ inline constexpr Word kAnyFluid{"fa.ent-info-fluid-connections-any"};
 inline constexpr Word kFluidClosed{"fa.ent-info-fluid-connections-closed"};
 inline constexpr Word kUndergroundUnconnected{"fa.ent-info-fluid-connections-via-underground-not-connected"};
 inline constexpr Word kNotConnected{"fa.ent-info-fluid-connections-not-connected"};
+// The heat connections on the tile: the ways they lead ("heat to the North and East"), by how many,
+// and what they join with the way to it ("connected to Heat pipe North"), up to four.
+inline constexpr Word kHeatPorts[4] = {
+   {"fa.ent-info-heat-port-1"}, {"fa.ent-info-heat-port-2"}, {"fa.ent-info-heat-port-3"}, {"fa.ent-info-heat-port-4"}};
+inline constexpr Word kHeatConnected[4] = {
+   {"fa.ent-info-heat-conn-1"}, {"fa.ent-info-heat-conn-2"}, {"fa.ent-info-heat-conn-3"}, {"fa.ent-info-heat-conn-4"}};
 
 // The Y key in the world when the cursor points at no entity and no tile.
 inline constexpr Word kNothingHere{"fa.native-nothing-here"};

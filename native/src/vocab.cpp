@@ -49,13 +49,49 @@ MsvcString keyString(const char* key) {
    return out;
 }
 
+// The most parameters the game's constructors that copy them take.
+constexpr size_t kCopiedParameters = 3;
+
+const MsvcString& textOf(const void* localised) {
+   return *reinterpret_cast<StrFunction>(layout.localisedStringStr)(localised, nullptr);
+}
+
+void destroy(void* localised) { reinterpret_cast<void (*)(void*)>(layout.localisedStringDestroy)(localised); }
+
+// More parameters than the copying constructors take: the constructor that takes over a vector of
+// them, both the vector and the key made by the game, so that it frees them as its own.
+std::string translateMany(const char* key, std::initializer_list<std::string> parameters) {
+   const size_t size = layout.localisedStringSize;
+   const size_t bytes = size * parameters.size();
+   auto* first = static_cast<std::byte*>(reinterpret_cast<void* (*)(size_t)>(layout.gameOperatorNew)(bytes));
+   std::byte* made = first;
+   for (const std::string& parameter : parameters) {
+      reinterpret_cast<LiteralFunction>(layout.localisedStringLiteral)(made, kLiteral, parameter.c_str());
+      made += size;
+   }
+   // An MSVC std::vector<LocalisedString>: first, last, end of storage.
+   std::byte* vector[3] = {first, first + bytes, first + bytes};
+   alignas(8) std::byte holder[kLocalisedCapacity];
+   reinterpret_cast<FromKeyFunction>(layout.localisedStringFromKey)(holder, key);
+   alignas(8) std::byte localised[kLocalisedCapacity];
+   using WithVector = void* (*)(void* out, int32_t mode, void* key, void* parameters);
+   reinterpret_cast<WithVector>(layout.localisedStringWithVector)(
+      localised, static_cast<int32_t>(layout.localisedTranslation), holder + layout.localisedStringKey, vector);
+   destroy(holder);
+   const MsvcString& text = textOf(localised);
+   std::string out{text.capacity >= sizeof(text.buffer) ? text.pointer : text.buffer, text.size};
+   destroy(localised);
+   return out;
+}
+
 } // namespace
 
 std::string translate(const char* key, std::initializer_list<std::string> parameters) {
    if (layout.localisedStringSize > kLocalisedCapacity || parameters.size() > kMaxParameters) return {};
+   if (parameters.size() > kCopiedParameters) return translateMany(key, parameters);
    // The parameters, then the string that copies them.
    struct Made {
-      alignas(8) std::byte strings[kMaxParameters + 1][kLocalisedCapacity];
+      alignas(8) std::byte strings[kCopiedParameters + 1][kLocalisedCapacity];
       size_t count = 0;
       ~Made() {
          for (size_t i = 0; i < count; ++i)

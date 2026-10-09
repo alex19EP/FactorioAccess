@@ -52,7 +52,11 @@
 
 #include <windows.h>
 
+#include <cstdint>
+#include <cstring>
+#include <format>
 #include <memory>
+#include <string>
 #include <vector>
 
 namespace fa::ui {
@@ -76,14 +80,37 @@ void tick(const agui::Gui* gui) {
 
 // A wrong offset or a widget freed under us shows up as an access violation. Stop rather than
 // take the game down; nothing here may unwind C++ objects, so the work lives in tick().
+// The faulting instruction and the address it touched, for the log.
+uintptr_t g_faultAt = 0;
+uintptr_t g_faultAddress = 0;
+
+int accessViolation(const EXCEPTION_POINTERS* info) {
+   const EXCEPTION_RECORD* record = info->ExceptionRecord;
+   if (record->ExceptionCode != EXCEPTION_ACCESS_VIOLATION) return EXCEPTION_CONTINUE_SEARCH;
+   g_faultAt = reinterpret_cast<uintptr_t>(record->ExceptionAddress);
+   g_faultAddress = record->NumberParameters > 1 ? record->ExceptionInformation[1] : 0;
+   return EXCEPTION_EXECUTE_HANDLER;
+}
+
 bool guardedTick(const agui::Gui* gui) {
    __try {
       tick(gui);
       return true;
-   } __except (GetExceptionCode() == EXCEPTION_ACCESS_VIOLATION ? EXCEPTION_EXECUTE_HANDLER
-                                                                : EXCEPTION_CONTINUE_SEARCH) {
+   } __except (accessViolation(GetExceptionInformation())) {
       return false;
    }
+}
+
+// "winmm.dll+0x1234": the module an address lies in and how far into it.
+std::string whereIs(uintptr_t address) {
+   HMODULE module = nullptr;
+   if (!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                           reinterpret_cast<LPCWSTR>(address), &module))
+      return std::format("{:#x}", address);
+   char path[MAX_PATH] = {};
+   GetModuleFileNameA(module, path, MAX_PATH);
+   const char* name = std::strrchr(path, '\\');
+   return std::format("{}+{:#x}", name ? name + 1 : path, address - reinterpret_cast<uintptr_t>(module));
 }
 
 } // namespace
@@ -177,7 +204,9 @@ void afterGuiLogic(const agui::Gui* gui) {
       g_disabled = true;
       // Keys must go back to the game before anything else can go wrong.
       input::clearClaims();
-      log::error("Access violation in the navigator; FactorioAccess native UI is off until restart");
+      log::error("Access violation in the navigator at {} touching {:#x}; FactorioAccess native UI is off until "
+                 "restart",
+                 whereIs(g_faultAt), g_faultAddress);
       speech::say("FactorioAccess native UI failed and is now off", false);
    }
 }

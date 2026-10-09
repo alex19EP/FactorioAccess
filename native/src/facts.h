@@ -5,7 +5,8 @@
 #include <vector>
 
 // FA's own facts about an entity, which the game's tooltip lacks: which way it faces, a belt's
-// shape, an underground belt's partner, a pipe's shape, the fluid connections on the tile. The tile
+// shape, an underground belt's partner, a pipe's or heat pipe's shape, the fluid and heat
+// connections on the tile. The tile
 // reader says them after the entity's name, in the mod's own words (the keys the mod's Lua said
 // them with), each part a list item.
 namespace fa::facts {

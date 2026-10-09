@@ -157,8 +157,8 @@ function mod.get_pipe_shape(ent)
    if #cps == 0 then return nil end
    local cp = cps[1]
 
-   -- Get all neighboring pipes in all four directions at once
-   local neighbors = mod.get_connected_neighbors(ent, cp, true) -- pipes_only = true
+   -- Whatever it joins in the four directions: heat pipes, reactors, heat exchangers.
+   local neighbors = mod.get_connected_neighbors(ent, cp)
 
    local connections = {}
    for dir, delta in pairs(direction_deltas) do
@@ -183,20 +183,6 @@ function mod.get_total_heat_connections(ent)
    local cps = mod.get_connection_points(ent)
    for _, cp in ipairs(cps) do
       local neighbors = mod.get_connected_neighbors(ent, cp)
-      total = total + #neighbors
-   end
-   return total
-end
-
----Returns the total number of valid heat pipe connections for the given entity.
----Counts only heat-pipe-to-heat-pipe connections, excluding other heat entities.
----@param ent LuaEntity
----@return integer
-function mod.get_total_heat_pipe_connections(ent)
-   local total = 0
-   local cps = mod.get_connection_points(ent)
-   for _, cp in ipairs(cps) do
-      local neighbors = mod.get_connected_neighbors(ent, cp, true)
       total = total + #neighbors
    end
    return total

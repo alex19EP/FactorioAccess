@@ -1439,6 +1439,13 @@ struct Layout {
    // LocalisedString::LocalisedString(std::string const& key, LocalisedString const&...): a key
    // with one, two and three parameters, which it copies.
    uintptr_t localisedStringWithParameters[3] = {};
+   // LocalisedString::LocalisedString(Mode, std::string&& key, std::vector<LocalisedString>&&): a key
+   // with any number of parameters, which it takes over, so their vector and the key's characters
+   // must come from the game's own operator new (`void* operator new(size_t)`, also by name).
+   uintptr_t localisedStringWithVector = 0;
+   uintptr_t gameOperatorNew = 0;
+   uint32_t localisedStringKey = 0;      // LocalisedString::key, std::string
+   uint32_t localisedTranslation = 0;    // LocalisedString::Mode::Translation: a key to translate
    // The graph, laid out in layers top to bottom, prerequisites above what they unlock. An edge that
    // spans layers runs through dummy vertices, one per layer it crosses.
    uint32_t graphVertices = 0;           // TechnologyGraphGui::graph, std::vector<std::unique_ptr<Vertex>>
@@ -1672,6 +1679,26 @@ struct Layout {
    uint32_t pipeLocationDirection = 0; // ::direction
    uint32_t pipeLocationSize = 0;
    uint32_t entityIsMirrored = 0;
+
+   // Heat: HeatBuffer* Entity::getHeatBuffer() (a slot; null without one). Its connections run
+   // parallel to its prototype's HeatConnectionDefinitions, each with the buffer it joins (null
+   // while none). A definition's place is its position (a Vector2<double>), flipped for a mirrored
+   // entity, turned by the entity's direction with Vector2::rotate(Direction), from the entity's
+   // position (HeatBuffer::findOtherEnd).
+   uint32_t entityGetHeatBuffer = 0;
+   uint32_t heatBufferPrototype = 0;   // HeatBuffer::prototype, HeatBufferPrototype*
+   uint32_t heatBufferHolder = 0;      // HeatBuffer::holder, HeatBufferHolder*
+   uint32_t heatHolderOwner = 0;       // HeatBufferHolder::owner, Entity*
+   uint32_t heatConnectionsBegin = 0;  // HeatBuffer::connections.begin_, HeatBuffer::Connection*
+   uint32_t heatConnectionsEnd = 0;
+   uint32_t heatConnectionSize = 0;
+   uint32_t heatConnectionTarget = 0;  // HeatBuffer::Connection::target, HeatBuffer*
+   uint32_t heatDefinitionsBegin = 0;  // HeatBufferPrototype::connections.begin_
+   uint32_t heatDefinitionSize = 0;
+   uint32_t heatDefinitionX = 0;       // HeatConnectionDefinition::position.x, double
+   uint32_t heatDefinitionY = 0;
+   uint32_t heatDefinitionDirection = 0;
+   uintptr_t vectorRotate = 0;         // void Vector2<double,Vector>::rotate(Direction)
 };
 
 // Bits of agui::Widget::usageBitMask, read from Widget::setVisible and Widget::isEnabled in
