@@ -1467,7 +1467,8 @@ function mod.ent_info(pindex, ent, is_scanner, after_native)
    -- What the DLL's reading says itself (native/src/facts.cpp): facing, an underground belt's end
    -- and partner, a belt's shape, a pipe's or heat pipe's shape, the fluid and heat connections on the
    -- tile, a nuclear reactor's state, a power pole's wires and what it powers, what a belt carries,
-   -- a splitter's priorities.
+   -- a splitter's priorities, a logistic chest's network, an infinity chest's filters, an infinity
+   -- pipe draining, a drill's output tile.
    local run_native_fact_handler = run_tooltip_handler
    if not is_scanner and native then ctx.drawn = native.entity_icons(pindex, ent) end
    -- The status icons tell what the tooltip's status says
@@ -1510,14 +1511,14 @@ function mod.ent_info(pindex, ent, is_scanner, after_native)
    run_handler(ent_info_character_corpse)
    run_drawn_handler(ent_info_container)
    run_drawn_handler(ent_info_fluid_contents)
-   run_handler(ent_info_logistic_network)
-   run_handler(ent_info_infinity_chest)
-   run_handler(ent_info_infinity_pipe)
+   run_native_fact_handler(ent_info_logistic_network)
+   run_native_fact_handler(ent_info_infinity_chest)
+   run_native_fact_handler(ent_info_infinity_pipe)
    run_native_fact_handler(ent_info_pipe_shape)
    run_native_fact_handler(ent_info_fluid_connections)
 
    run_handler(ent_info_train_stop)
-   run_handler(ent_info_mining_drill_output_chute)
+   run_native_fact_handler(ent_info_mining_drill_output_chute)
    run_handler(ent_info_rail_signal_state)
 
    run_handler(ent_info_gate_connection_point)

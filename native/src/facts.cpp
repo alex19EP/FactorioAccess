@@ -984,6 +984,138 @@ std::string poleSupply(const std::byte* pole) {
    return joined(words);
 }
 
+// ---- mining drills ----
+
+struct Box {
+   Position leftTop;
+   Position rightBottom;
+};
+
+Box selectionBoxOf(const std::byte* entity) {
+   using SelectionBox = void* (*)(const void* entity, std::byte* out, const void* context);
+   // A BoundingBox, and a SelectionContext the call ignores.
+   alignas(8) std::byte out[game::kBoundingBoxCapacity]{};
+   alignas(8) std::byte context[64]{};
+   reinterpret_cast<SelectionBox>(layout.entitySelectionBox)(entity, out, context);
+   return at<Box>(out, 0);
+}
+
+// Whether the tile is the drill's own tile its output comes out of, the one nearest where it drops
+// (ResourceMining.get_solid_output_coords). A pumpjack drops at its own position: it has none.
+bool isDrillOutput(const std::byte* drill, Position tile) {
+   using DropPosition = const Position* (*)(const void* entity, Position* out);
+   Position drop{};
+   virtualAt<DropPosition>(drill, layout.entityDropPosition)(drill, &drop);
+   const Position position = at<Position>(drill, layout.entityPosition);
+   if (drop.x == position.x && drop.y == position.y) return false;
+   const Box box = selectionBoxOf(drill);
+   const int32_t centreX = tileOf(drop.x) * kScale + kScale / 2;
+   const int32_t centreY = tileOf(drop.y) * kScale + kScale / 2;
+   return tileOf(std::clamp(centreX, box.leftTop.x, box.rightBottom.x - 1)) == tile.x &&
+          tileOf(std::clamp(centreY, box.leftTop.y, box.rightBottom.y - 1)) == tile.y;
+}
+
+// ---- infinity chests and pipes ----
+
+// The first three filters, each an item and how many it keeps, the rest counted, and whether
+// the chest trashes the rest (fa-info.lua's ent_info_infinity_chest), as list items.
+std::vector<std::string> infinityChestState(const std::byte* chest) {
+   const auto* first = at<const std::byte*>(chest, layout.infinityChestFilters);
+   const auto* last = at<const std::byte*>(chest, layout.infinityChestFilters + sizeof(void*));
+   const size_t count = static_cast<size_t>(last - first) / layout.infinityFilterSize;
+   std::vector<std::string> items;
+   if (count > 0) items.emplace_back(vocab::kInfinityFilters);
+   for (size_t i = 0; i < count && i < 3; ++i) {
+      const std::byte* filter = first + i * layout.infinityFilterSize;
+      const std::byte* item = prototypeAt(layout.itemPrototypes, at<uint16_t>(filter, layout.infinityFilterItem));
+      const uint32_t keep = at<uint32_t>(filter, layout.infinityFilterCount);
+      const uint8_t mode = at<uint8_t>(filter, layout.infinityFilterMode);
+      const vocab::Word& how = mode == layout.infinityModeAtLeast  ? vocab::kInfinityAtLeast
+                               : mode == layout.infinityModeAtMost ? vocab::kInfinityAtMost
+                                                                   : vocab::kInfinityExactly;
+      items.push_back(joined({item ? localisedName(item) : std::string(), how(keep)}));
+   }
+   if (count > 3) items.back() = joined({items.back(), vocab::kAndOthers(count - 3)});
+   if (at<bool>(chest, layout.infinityChestRemoveUnfiltered)) {
+      if (items.empty())
+         items.emplace_back(vocab::kInfinityTrashUnrequested);
+      else
+         items.back() = joined({items.back(), vocab::kInfinityTrashUnrequested});
+   }
+   return items;
+}
+
+// ---- logistic networks ----
+
+// FaUtils.get_direction_biased: the 8-way direction from `origin` to `target` by whole tiles,
+// keeping to a cardinal unless the diagonal is clear.
+uint8_t directionBiased(Position target, Position origin) {
+   const int32_t dx = tileOf(target.x) - tileOf(origin.x);
+   const int32_t dy = tileOf(target.y) - tileOf(origin.y);
+   if (std::abs(dx) > 4 * std::abs(dy)) return dx > 0 ? kEast : kWest;
+   if (std::abs(dy) > 4 * std::abs(dx)) return dy > 0 ? kSouth : kNorth;
+   if (dx > 0 && dy > 0) return turned(kSouth, -1);
+   if (dx > 0 && dy < 0) return turned(kNorth, 1);
+   if (dx < 0 && dy > 0) return turned(kSouth, 1);
+   if (dx < 0 && dy < 0) return turned(kNorth, -1);
+   return kNorth;
+}
+
+// The custom name, else the number, as the mod names a network.
+std::string networkName(const std::byte* network) {
+   struct MsvcString {
+      union {
+         char buffer[16];
+         const char* pointer;
+      };
+      size_t size;
+      size_t capacity;
+   };
+   const auto& name = *reinterpret_cast<const MsvcString*>(network + layout.logisticNetworkName);
+   const std::string_view custom{name.capacity >= sizeof(name.buffer) ? name.pointer : name.buffer, name.size};
+   if (!custom.empty()) return text::speakable(custom);
+   return std::to_string(at<uint32_t>(network, layout.logisticNetworkId));
+}
+
+// The network a logistic chest is in, or how far and which way the nearest network's logistic area
+// is (fa-info.lua's ent_info_logistic_network).
+std::string logisticNetwork(const std::byte* chest) {
+   using FindNetwork = const std::byte* (*)(const void* manager, const Position* position);
+   using FindCell = const std::byte* (*)(const void* network, const Position* position);
+   using ForceId = uint8_t* (*)(const void* entity, uint8_t* out);
+
+   const std::byte* surface = at<const std::byte*>(chest, layout.entitySurface);
+   const std::byte* map = at<const std::byte*>(surface, layout.surfaceMap);
+   uint8_t forceId = 0;
+   virtualAt<ForceId>(chest, layout.entityGetForceId)(chest, &forceId);
+   const std::byte* force = at<const std::byte* const*>(map, layout.mapForceData)[forceId];
+   const auto* managers = at<const std::byte* const*>(force, layout.forceLogisticManagers);
+   const auto* managersEnd = at<const std::byte* const*>(force, layout.forceLogisticManagers + sizeof(void*));
+   const uint32_t index = at<uint32_t>(surface, layout.surfaceIndex);
+   const std::byte* manager = index < static_cast<size_t>(managersEnd - managers) ? managers[index] : nullptr;
+   if (!manager) return vocab::kLogisticNoNetwork;
+
+   const Position position = at<Position>(chest, layout.entityPosition);
+   if (const std::byte* network = reinterpret_cast<FindNetwork>(layout.findMatchingNetworkConst)(manager, &position))
+      return vocab::kLogisticInNetwork(networkName(network));
+   const std::byte* nearest = reinterpret_cast<FindNetwork>(layout.findClosestNetwork)(manager, &position);
+   if (!nearest) return vocab::kLogisticNoNetwork;
+   const std::byte* cell = reinterpret_cast<FindCell>(layout.findCellClosestTo)(nearest, &position);
+   if (!cell) return vocab::kLogisticNoNetwork;
+
+   const Position centre = at<Position>(at<const std::byte*>(cell, layout.cellOwner), layout.entityPosition);
+   const double radius = at<float>(at<const std::byte*>(cell, layout.cellParameters), layout.cellLogisticRadius);
+   auto outside = [&](int32_t point, int32_t middle) {
+      const double offset = std::abs(static_cast<double>(point - middle) / kScale);
+      return std::max(0.0, offset - radius);
+   };
+   const double dx = outside(position.x, centre.x);
+   const double dy = outside(position.y, centre.y);
+   const auto tiles = static_cast<int64_t>(std::ceil(std::sqrt(dx * dx + dy * dy)));
+   return vocab::kLogisticNearest(
+      vocab::kDistanceTilesDirection(tiles, directionName(directionBiased(centre, position))));
+}
+
 } // namespace
 
 std::vector<std::string> describe(const void* object, int32_t tileX, int32_t tileY) {
@@ -1007,8 +1139,15 @@ std::vector<std::string> describe(const void* object, int32_t tileX, int32_t til
       parts.push_back(poleWires(entity));
       parts.push_back(poleSupply(entity));
    }
+   const std::string_view type = typeName(prototypeOf(entity));
+   if (type == "logistic-container") parts.push_back(logisticNetwork(entity));
+   if (type == "infinity-container")
+      for (std::string& item : infinityChestState(entity)) parts.push_back(std::move(item));
+   if (type == "infinity-pipe" && !at<uint16_t>(entity, layout.infinityPipeFluid))
+      parts.emplace_back(vocab::kInfinityPipeDraining);
    if (isPipe(entity)) parts.push_back(pipeShape(entity));
    for (std::string& item : fluidConnections(entity, Position{tileX, tileY})) parts.push_back(std::move(item));
+   if (type == "mining-drill" && isDrillOutput(entity, Position{tileX, tileY})) parts.emplace_back(vocab::kDrillOutput);
    for (std::string& item : reactorState(entity)) parts.push_back(std::move(item));
    if (isHeatPipe(entity)) parts.push_back(heatPipeShape(entity));
    parts.push_back(heatConnections(entity, Position{tileX, tileY}));

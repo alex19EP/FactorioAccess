@@ -1761,6 +1761,39 @@ struct Layout {
    uintptr_t entityElectricSource = 0;
    uint32_t prototypePowerConsumption = 0;
    uint32_t prototypePowerOutput = 0;
+   // Where a drill drops what it mines: Optional<MapPosition> Entity::getDropTargetPosition() const,
+   // a slot returning through a pointer, as LuaEntity::drop_position. MiningDrill's always has one.
+   uint32_t entityDropPosition = 0;
+   // An infinity chest's filters: InfinityContainer::settings (an InfinityInventorySettings) holds a
+   // std::vector<InfinityFilter> and removeUnfilteredItems (bool); each filter is an item with
+   // quality, a count and an InfinityFilter::Mode (uint8).
+   uint32_t infinityChestFilters = 0;      // InfinityContainer::settings.filters, std::vector
+   uint32_t infinityChestRemoveUnfiltered = 0;
+   uint32_t infinityFilterSize = 0;
+   uint32_t infinityFilterItem = 0;        // InfinityFilter::itemWithQualityID.baseID, uint16
+   uint32_t infinityFilterCount = 0;       // InfinityFilter::count, uint32
+   uint32_t infinityFilterMode = 0;        // InfinityFilter::mode
+   uint32_t infinityModeAtLeast = 0;       // InfinityFilter::Mode::KeepAtLeast
+   uint32_t infinityModeAtMost = 0;        // InfinityFilter::Mode::KeepAtMost
+   // An infinity pipe's fluid: InfinityPipe::settings.filter.fluidID, ID<FluidPrototype> (uint16),
+   // 0 with no filter (LuaEntity::get_infinity_pipe_filter is nil).
+   uint32_t infinityPipeFluid = 0;
+   // A logistic chest's network, as LuaSurface::find_closest_logistic_network_by_position finds it:
+   // the entity's surface's Map (Surface::map), its force's ForceData::logisticManagers
+   // (std::vector<LogisticManager*> by Surface::index). LogisticNetwork const*
+   // LogisticManager::findMatchingNetworkByPosition(MapPosition const&) const is the network whose
+   // logistic area holds the position, LogisticNetwork* findClosestNetworkByPosition(MapPosition
+   // const&) the one with the nearest roboport, and LogisticCell const*
+   // LogisticNetwork::findCellClosestTo(MapPosition const&) const that roboport's cell: its owner
+   // (EntityWithOwner*) and logisticParameters->logisticsRadius (float, tiles each way).
+   uint32_t surfaceMap = 0;                // Surface::map, Map*
+   uint32_t forceLogisticManagers = 0;     // ForceData::logisticManagers, std::vector
+   uintptr_t findMatchingNetworkConst = 0;
+   uintptr_t findClosestNetwork = 0;
+   uintptr_t findCellClosestTo = 0;
+   uint32_t cellOwner = 0;                 // LogisticCell::owner
+   uint32_t cellParameters = 0;            // LogisticCell::logisticParameters
+   uint32_t cellLogisticRadius = 0;        // LogisticCellParameters::logisticsRadius, float
 };
 
 // Bits of agui::Widget::usageBitMask, read from Widget::setVisible and Widget::isEnabled in

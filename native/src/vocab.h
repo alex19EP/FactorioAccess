@@ -323,6 +323,24 @@ inline constexpr Word kHeatPorts[4] = {
    {"fa.ent-info-heat-port-1"}, {"fa.ent-info-heat-port-2"}, {"fa.ent-info-heat-port-3"}, {"fa.ent-info-heat-port-4"}};
 inline constexpr Word kHeatConnected[4] = {
    {"fa.ent-info-heat-conn-1"}, {"fa.ent-info-heat-conn-2"}, {"fa.ent-info-heat-conn-3"}, {"fa.ent-info-heat-conn-4"}};
+// The drill tile its output comes out of.
+inline constexpr Word kDrillOutput{"fa.ent-info-mining-drill-output"};
+// A logistic chest's network: none at all, the nearest one's coverage some tiles a way ("5 tiles
+// North"), or the network it is in, by name or number.
+inline constexpr Word kLogisticNoNetwork{"fa.ent-info-logistic-no-network"};
+inline constexpr Word kLogisticNearest{"fa.ent-info-logistic-not-in-network"};
+inline constexpr Word kLogisticInNetwork{"fa.ent-info-logistic-in-network"};
+inline constexpr Word kDistanceTilesDirection{"fa.distance-tiles-direction"};
+// An infinity chest's filters, each an item with how many it keeps, the rest counted ("and 2
+// others"), and whether it trashes what no filter asks for.
+inline constexpr Word kInfinityFilters{"fa.ent-info-infinity-chest-filters"};
+inline constexpr Word kInfinityAtLeast{"fa.ent-info-infinity-chest-at-least"};
+inline constexpr Word kInfinityAtMost{"fa.ent-info-infinity-chest-at-most"};
+inline constexpr Word kInfinityExactly{"fa.ent-info-infinity-chest-exactly"};
+inline constexpr Word kInfinityTrashUnrequested{"fa.ent-info-infinity-chest-trash-unrequested"};
+inline constexpr Word kAndOthers{"fa.ent-info-and-others"};
+// An infinity pipe with no fluid set.
+inline constexpr Word kInfinityPipeDraining{"fa.ent-info-infinity-pipe-draining"};
 
 // The Y key in the world when the cursor points at no entity and no tile.
 inline constexpr Word kNothingHere{"fa.native-nothing-here"};

@@ -1258,6 +1258,26 @@ bool resolve(pdb::SymbolTable& symbols) {
    address(layout.entityElectricSource, "?getElectricEnergySource@Entity@@QEBAPEAVElectricEnergySource@@XZ");
    classSlot(layout.prototypePowerConsumption, "EntityPrototype", "maximumPowerConsumption");
    classSlot(layout.prototypePowerOutput, "EntityPrototype", "maximumPowerOutput");
+   classSlot(layout.entityDropPosition, "Entity", "getDropTargetPosition");
+   offset(layout.infinityChestFilters, "InfinityContainer", "settings.filters");
+   offset(layout.infinityChestRemoveUnfiltered, "InfinityContainer", "settings.removeUnfilteredItems");
+   size(layout.infinityFilterSize, "InfinityFilter");
+   offset(layout.infinityFilterItem, "InfinityFilter", "itemWithQualityID.baseID");
+   offset(layout.infinityFilterCount, "InfinityFilter", "count");
+   offset(layout.infinityFilterMode, "InfinityFilter", "mode");
+   enumerator(layout.infinityModeAtLeast, "InfinityFilter::Mode", "KeepAtLeast");
+   enumerator(layout.infinityModeAtMost, "InfinityFilter::Mode", "KeepAtMost");
+   offset(layout.infinityPipeFluid, "InfinityPipe", "settings.filter.fluidID");
+   offset(layout.surfaceMap, "Surface", "map");
+   offset(layout.forceLogisticManagers, "ForceData", "logisticManagers");
+   address(layout.findMatchingNetworkConst,
+           "?findMatchingNetworkByPosition@LogisticManager@@QEBAPEBVLogisticNetwork@@AEBVMapPosition@@@Z");
+   address(layout.findClosestNetwork,
+           "?findClosestNetworkByPosition@LogisticManager@@QEAAPEAVLogisticNetwork@@AEBVMapPosition@@@Z");
+   address(layout.findCellClosestTo, "?findCellClosestTo@LogisticNetwork@@QEBAPEBVLogisticCell@@AEBVMapPosition@@@Z");
+   offset(layout.cellOwner, "LogisticCell", "owner");
+   offset(layout.cellParameters, "LogisticCell", "logisticParameters");
+   offset(layout.cellLogisticRadius, "LogisticCellParameters", "logisticsRadius");
 
    if (ok && (layout.chartSelectionSize > kChartSelectionCapacity || layout.patchInfoSize > kPatchInfoCapacity)) {
       log::error("A chart structure outgrew its buffer: ChartSelection {} bytes, ResourcePatchInfo {}",
