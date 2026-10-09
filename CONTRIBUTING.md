@@ -113,7 +113,7 @@ For those who do not have prior software engineering experience--if you have nev
 probably means you, coding is not the same skillset--the rest of this section discusses one of many ways to handle it.
 If you do, you can skip it.
 
-Firstly, between Factorio being popular, our mod having many docs (see docs/), and our code
+Firstly, between Factorio being popular, our mod having many docs (see docs/, the tutorial transcript), and our code
 being LLM-friendly, you can often ask LLMs for help.  Don't be afraid to do this.  "Please read CONTRIBUTING.md.  I am
 having describe-the-problem-here.  Help me figure out what to do about it. What I am thinking is
 describe-the-feature-here" kind of thing will work well enough, as long as you remember that LLMs tend to be excessively
