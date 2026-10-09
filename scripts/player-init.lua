@@ -218,7 +218,6 @@ function mod.initialize(player)
    faplayer.recent_fluid_name = faplayer.recent_fluid_name or ""
    faplayer.spider_menu = faplayer.spider_menu or {}
    faplayer.last_line_id = faplayer.last_line_id or 0
-   faplayer.tutorial_mode = faplayer.tutorial_mode or false
    faplayer.launcher_version = faplayer.launcher_version or "0.0.0"
    faplayer.in_splash_sequence = faplayer.in_splash_sequence or false
    faplayer.play_cursor_sound = faplayer.play_cursor_sound or false

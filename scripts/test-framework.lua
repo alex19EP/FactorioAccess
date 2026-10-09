@@ -63,6 +63,7 @@ local test_files = {
    "pole-views-test", -- Test the views read with an electric pole's window
    "map-overlays-test", -- Test what the map's overlays say over a map cell
    "setting-toggle-test", -- Test the keys that toggle per-player settings
+   "daytime-test", -- Test the time of day read by T
 }
 
 -- Test execution state

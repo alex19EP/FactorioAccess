@@ -6,21 +6,6 @@ local mod = {}
 -- Set of valid message list names for O(1) lookup
 mod.MESSAGE_LISTS = {
    ["category-rows-help"] = true,
-   ["ch1"] = true,
-   ["ch10"] = true,
-   ["ch11"] = true,
-   ["ch12"] = true,
-   ["ch13"] = true,
-   ["ch14"] = true,
-   ["ch15"] = true,
-   ["ch2"] = true,
-   ["ch3"] = true,
-   ["ch4"] = true,
-   ["ch5"] = true,
-   ["ch6"] = true,
-   ["ch7"] = true,
-   ["ch8"] = true,
-   ["ch9"] = true,
    ["crafting-menu-help"] = true,
    ["crafting-queue-help"] = true,
    ["debug-menu-help"] = true,
@@ -35,6 +20,6 @@ mod.MESSAGE_LISTS = {
    ["warnings-menu-help"] = true,
 }
 
-mod.MESSAGE_LISTS_HASH = "f5a358e0585fe543ffce3aa366740cac0487238f27b3dd7bff8ce5944d72e5b3"
+mod.MESSAGE_LISTS_HASH = "07ef94b4f806861cbc654b2172cacd5e8c29e287f838cf5fe3d17f30988f3b1e"
 
 return mod

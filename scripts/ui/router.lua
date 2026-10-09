@@ -155,7 +155,6 @@ mod.UI_NAMES = {
    AMMO_SELECTOR = "ammo_selector",
    ENTITY_CHOOSER = "entity_chooser",
    HELP = "help",
-   TUTORIAL = "tutorial",
    SCHEDULE_EDITOR = "schedule_editor",
    PROTOTYPE_LISTER = "prototype_lister",
    -- Test UI names (used in automated tests)
@@ -671,9 +670,9 @@ register_ui_event("fa-e", function(event, pindex)
    local router = mod.get_router(pindex)
    local stack = router_state[pindex].ui_stack
 
-   -- Check if help or tutorial UI is open on top of the stack
-   if #stack > 0 and (stack[#stack].name == mod.UI_NAMES.HELP or stack[#stack].name == mod.UI_NAMES.TUTORIAL) then
-      -- Pop help/tutorial UI instead of clearing everything
+   -- Check if help UI is open on top of the stack
+   if #stack > 0 and stack[#stack].name == mod.UI_NAMES.HELP then
+      -- Pop help UI instead of clearing everything
       router:_pop_ui()
    elseif router:is_in_overlay() then
       -- In overlay context
@@ -771,23 +770,6 @@ register_ui_event("fa-s-slash", function(event, pindex)
       else
          Speech.speak(pindex, { "fa.help-no-content" })
       end
-   end
-
-   return EventManager.FINISHED
-end)
-
--- Ctrl+T key toggles tutorial UI - can be opened from anywhere including GUIs
-register_ui_event("fa-c-t", function(event, pindex)
-   local router = mod.get_router(pindex)
-   local stack = router_state[pindex].ui_stack
-
-   -- Check if tutorial UI is on top of the stack
-   if #stack > 0 and stack[#stack].name == mod.UI_NAMES.TUTORIAL then
-      -- Close tutorial UI
-      router:_pop_ui()
-   else
-      -- Open tutorial UI
-      router:open_child_ui(mod.UI_NAMES.TUTORIAL, {})
    end
 
    return EventManager.FINISHED

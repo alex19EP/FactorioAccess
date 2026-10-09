@@ -1,8 +1,8 @@
 <#
 .SYNOPSIS
 Moves Factorio's controls to the keys FactorioAccess expects: walking to the arrow keys, connect and
-disconnect train to CONTROL + J and CONTROL + K, zoom to = and -, and every mouse button control
-onto a key: left button [, right button ], middle button \.
+disconnect train to CONTROL + J and CONTROL + K, research to CONTROL + T, zoom to = and -, and every
+mouse button control onto a key: left button [, right button ], middle button \.
 
 .DESCRIPTION
 Edits the [controls] section of Factorio's config.ini. Close Factorio first: it rewrites config.ini
@@ -14,6 +14,7 @@ Fixed bindings come from $fixedBindings below:
 - connect-train and disconnect-train become CONTROL + J and CONTROL + K, leaving J (cursor to the
   character) and K (cursor coordinates) to the mod, where pressing K otherwise has the game answer
   that it cannot disconnect rolling stock.
+- open-technology-gui (research) becomes CONTROL + T, leaving T (time of day) to the mod.
 - Zoom in and zoom out are bound on the wheel in both slots (plain and with SHIFT). Their
   alternative slot gets EQUALS and MINUS, so the plain wheel keeps working. FactorioAccess speaks
   each zoom change.
@@ -68,6 +69,7 @@ $fixedBindings = @(
    @{ Name = 'move-right'; Key = 'RIGHT'; Default = 'D' },
    @{ Name = 'connect-train'; Key = 'CONTROL + J'; Default = 'J' },
    @{ Name = 'disconnect-train'; Key = 'CONTROL + K'; Default = 'K' },
+   @{ Name = 'open-technology-gui'; Key = 'CONTROL + T'; Default = 'T' },
    @{ Name = 'zoom-in-alternative'; Key = 'EQUALS'; Default = 'SHIFT + mouse-wheel-up' },
    @{ Name = 'zoom-out-alternative'; Key = 'MINUS'; Default = 'SHIFT + mouse-wheel-down' }
 )

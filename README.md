@@ -82,6 +82,7 @@ To uninstall the DLL, delete `winmm.dll` and `winmm.pdb` from `bin\x64`. The mod
 
 - Walking moves from W, A, S and D to the arrow keys, leaving W, A, S and D to the cursor.
 - Connect and disconnect train move from J and K to CONTROL + J and CONTROL + K.
+- Research moves from T to CONTROL + T, leaving T to the time of day.
 - Zoom in and zoom out get EQUALS and MINUS.
 - Every control on a mouse button also gets a key: left button LEFTBRACKET, right button RIGHTBRACKET, middle button BACKSLASH, with the same modifiers. The key goes in the control's free second slot, so the mouse keeps working.
 
@@ -106,8 +107,6 @@ There are a huge number of keystrokes and functions in the mod. To help keep thi
 - [Circuit Network](docs/features/circuit-network.md) explains functionality applying specifically to the circuit network, such as how to drag wires.
 
 Please note that the mod wiki is out of date. The above documentation is maintained by developers and is for 2.0. The wiki is by users and primarily for 1.1.
-
-To access the in-game tutorial, press control t.
 
 # Vanilla Mode
 

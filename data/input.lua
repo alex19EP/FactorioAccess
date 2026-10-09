@@ -91,8 +91,8 @@ data:extend({
    },
    {
       type = "custom-input",
-      name = "fa-c-t",
-      key_sequence = "CONTROL + T",
+      name = "fa-t",
+      key_sequence = "T",
       consuming = "none",
    },
 

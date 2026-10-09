@@ -1,8 +1,9 @@
 #pragma once
 
 // The technology window over a loaded game (GameView::technologyGui), opened by the game's own
-// open-technology-gui control (T) or the research box. Like Factoriopedia it stacks over whatever
-// window is open, so it takes the navigator from that window's screen while it shows.
+// open-technology-gui control (CONTROL + T after the keys script) or the research box. Like
+// Factoriopedia it stacks over whatever window is open, so it takes the navigator from that
+// window's screen while it shows.
 //
 // Stops, in this order, each said by name as Tab enters it: the heading the game draws over it
 // ("Research queue", "Technology list", the tree's title), or for the two without one, "selected

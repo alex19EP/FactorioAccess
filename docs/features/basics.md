@@ -92,7 +92,7 @@ Turn a belt line while holding `left bracket`: `r`, then step to the side
 
 Cycle your cursor through vehicles near your cursor: `shift + v`
 
-Open the tutorial: `control + t`
+Read the time of day: `t`. The game has no clock, only light: you hear day, dusk, night or dawn, and at dusk and dawn how much light there is.
 
 ## Description
 

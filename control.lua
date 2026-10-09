@@ -23,6 +23,7 @@ local Consts = require("scripts.consts")
 local SettingDecls = require("scripts.settings-decls")
 local SETTING_NAMES = SettingDecls.SETTING_NAMES
 local CursorChanges = require("scripts.cursor-changes")
+local Daytime = require("scripts.daytime")
 local Driving = require("scripts.driving")
 local HandMonitor = require("scripts.hand-monitor")
 local Electrical = require("scripts.electrical")
@@ -116,7 +117,6 @@ require("scripts.ui.simple-textbox")
 require("scripts.ui.internal.cursor-coordinate-input")
 require("scripts.ui.internal.syntrax-input")
 require("scripts.ui.help")
-require("scripts.ui.menus.tutorial")
 local GameGui = require("scripts.ui.game-gui")
 local UiRouter = require("scripts.ui.router")
 local VehicleCycler = require("scripts.vehicle-cycler")
@@ -1972,14 +1972,13 @@ EventManager.on_event("fa-s-slash", function(event)
    router:open_ui(UiRouter.UI_NAMES.HELP, help_params)
 end)
 
--- Tutorial (Ctrl+T)
-EventManager.on_event("fa-c-t", function(event)
-   local pindex = event.player_index
-   local router = UiRouter.get_router(pindex)
-
-   -- Open tutorial UI
-   router:open_ui(UiRouter.UI_NAMES.TUTORIAL, {})
-end)
+EventManager.on_event(
+   "fa-t",
+   ---@param event EventData.CustomInputEvent
+   function(event, pindex)
+      Speech.speak(pindex, Daytime.describe(game.get_player(pindex).surface))
+   end
+)
 
 -- Prototype lister (Alt+P)
 EventManager.on_event("fa-a-p", function(event)
@@ -2657,9 +2656,6 @@ EventManager.on_event(
       Speech.speak(pindex, { "fa.not-implemented-factorio-2" })
    end
 )
-
---Help key and tutorial system DISABLED (tutorial content nonfunctional)
--- Tutorial system module and data left in place as dead code for future work
 
 EventManager.on_event(
    "fa-l",
