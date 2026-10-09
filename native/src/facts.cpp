@@ -1116,6 +1116,178 @@ std::string logisticNetwork(const std::byte* chest) {
       vocab::kDistanceTilesDirection(tiles, directionName(directionBiased(centre, position))));
 }
 
+// ---- inserters and drills ----
+
+const std::byte* dropTargetOf(const std::byte* entity) {
+   return virtualAt<const std::byte* (*)(const void*)>(entity, layout.entityDropTarget)(entity);
+}
+
+// What is at the end of an inserter's hand or a drill's chute, by its name, or the ground.
+std::string targetName(const std::byte* target) {
+   return target ? localisedName(prototypeOf(target)) : std::string(vocab::kGround);
+}
+
+// The way a hand reaches, from its vector in tiles, rounded as FaUtils.get_direction_biased does.
+uint8_t wayOf(double dx, double dy) {
+   const double ax = std::abs(dx);
+   const double ay = std::abs(dy);
+   if (ax > 4 * ay) return dx > 0 ? kEast : kWest;
+   if (ay > 4 * ax) return dy > 0 ? kSouth : kNorth;
+   if (dx > 0) return dy > 0 ? turned(kSouth, -1) : turned(kNorth, 1);
+   return dy > 0 ? turned(kSouth, 1) : turned(kNorth, -1);
+}
+
+// What an inserter holds, and where it picks up and drops: the entity there or the ground, how
+// many tiles and which way (fa-info.lua's inserter part).
+std::string inserterState(const std::byte* inserter) {
+   std::vector<std::string> words;
+   const std::byte* held = inserter + layout.inserterHeldStack;
+   const uint32_t count = at<uint32_t>(held, layout.itemStackCount);
+   if (count > 0) {
+      const std::byte* item = prototypeAt(layout.itemPrototypes, at<uint16_t>(held, layout.itemStackItem));
+      words.push_back(vocab::kInserterHolding(item ? localisedName(item) : std::string()));
+      if (count > 1) words.push_back(vocab::kInserterHoldingCount(count));
+   }
+   auto reach = [&](const vocab::Word& word, const std::byte* target, uint32_t vector) {
+      const double dx = at<double>(inserter, vector);
+      const double dy = at<double>(inserter, vector + static_cast<uint32_t>(sizeof(double)));
+      const auto tiles = static_cast<int64_t>(std::lround(std::sqrt(dx * dx + dy * dy)));
+      words.push_back(word(targetName(target), tiles, directionName(wayOf(dx, dy))));
+   };
+   reach(vocab::kInserterPicksUp, at<const std::byte*>(inserter, layout.inserterPickupTarget),
+         layout.inserterPickupVector);
+   reach(vocab::kInserterDrops, dropTargetOf(inserter), layout.inserterDropVector);
+   return joined(words);
+}
+
+// ---- turrets, combinators, signals and switches ----
+
+// The targets a turret shoots first or only (fa-info.lua's ent_info_turret_priority), in FA's
+// words, which are shorter than the tooltip's.
+std::string turretPriorities(const std::byte* turret) {
+   const auto* first = at<const uint16_t*>(turret, layout.turretPriorityList);
+   const auto* last = at<const uint16_t*>(turret, layout.turretPriorityList + sizeof(void*));
+   std::vector<std::string> names;
+   for (const uint16_t* id = first; id != last; ++id)
+      if (const std::byte* prototype = *id ? prototypeAt(layout.entityPrototypes, *id) : nullptr)
+         names.push_back(localisedName(prototype));
+   if (names.empty()) return {};
+   const vocab::Word& how =
+      at<bool>(turret, layout.turretIgnoreOthers) ? vocab::kTurretOnlyShoots : vocab::kTurretPrioritizes;
+   return joined({how, joined(names, ", ")});
+}
+
+// A combinator's description, as its player wrote it.
+std::string combinatorDescription(const std::byte* entity) {
+   struct MsvcString {
+      union {
+         char buffer[16];
+         const char* pointer;
+      };
+      size_t size;
+      size_t capacity;
+   };
+   const std::byte* combinator = agui::objectAsBase(entity, ".?AVCombinator@@");
+   const std::byte* constant = combinator ? nullptr : agui::objectAsBase(entity, ".?AVConstantCombinator@@");
+   if (!combinator && !constant) return {};
+   const auto& text = combinator
+                         ? *reinterpret_cast<const MsvcString*>(combinator + layout.combinatorDescription)
+                         : *reinterpret_cast<const MsvcString*>(constant + layout.constantCombinatorDescription);
+   return text::speakable({text.capacity >= sizeof(text.buffer) ? text.pointer : text.buffer, text.size});
+}
+
+std::string signalState(const std::byte* entity, std::string_view type) {
+   if (type == "rail-signal") {
+      const auto state = static_cast<uint32_t>(at<int32_t>(entity, layout.signalState));
+      if (state == layout.signalOpen) return vocab::kSignalOpen;
+      if (state == layout.signalClosed) return vocab::kSignalClosed;
+      if (state == layout.signalReserved) return vocab::kSignalReserved;
+      if (state == layout.signalReservedByCircuit) return vocab::kSignalReservedByCircuit;
+   } else if (type == "rail-chain-signal") {
+      const auto state = static_cast<uint32_t>(at<int32_t>(entity, layout.chainSignalState));
+      if (state == layout.chainAllOpen) return vocab::kChainAllOpen;
+      if (state == layout.chainNone) return vocab::kChainNone;
+      if (state == layout.chainNoneOpen) return vocab::kChainNoneOpen;
+      if (state == layout.chainPartiallyOpen) return vocab::kChainPartiallyOpen;
+   }
+   return {};
+}
+
+const std::byte* wireConnector(const std::byte* entity, uint32_t id) {
+   using Connector = const std::byte* (*)(const void* entity, uint8_t id, bool create);
+   return virtualAt<Connector>(entity, layout.entityWireConnector)(entity, static_cast<uint8_t>(id), false);
+}
+
+// The circuit network on a connector, or null.
+const std::byte* circuitNetwork(const std::byte* entity, uint32_t id) {
+   const std::byte* connector = wireConnector(entity, id);
+   const std::byte* circuit = connector ? agui::objectAsBase(connector, ".?AVCircuitWireConnector@@") : nullptr;
+   return circuit ? at<const std::byte*>(circuit, layout.circuitConnectorNetwork) : nullptr;
+}
+
+uint32_t networkId(const std::byte* network) { return at<uint32_t>(network, layout.circuitNetworkIndex); }
+
+// The electric network a power switch side is wired to, by number, or 0 (LuaWireConnector::
+// network_id, when it has wires).
+uint32_t copperNetwork(const std::byte* entity, uint32_t id) {
+   const std::byte* connector = wireConnector(entity, id);
+   const std::byte* copper = connector ? agui::objectAsBase(connector, ".?AVCopperWireConnector@@") : nullptr;
+   if (!copper || at<uintptr_t>(copper, layout.connectorWiresEnd) == at<uintptr_t>(copper, layout.connectorWiresBegin))
+      return 0;
+   const std::byte* network = at<const std::byte*>(copper, layout.copperConnectorNetwork);
+   return network ? at<uint32_t>(network, layout.electricNetworkIndex) + 1 : 0;
+}
+
+// On or off, and the electric networks on each side (fa-info.lua's ent_info_power_switch).
+std::vector<std::string> powerSwitchState(const std::byte* entity) {
+   const uint8_t state = at<uint8_t>(entity, layout.powerSwitchState);
+   const bool on = state == layout.powerSwitchOn || state == layout.powerSwitchTurningOn;
+   std::vector<std::string> items{on ? vocab::kPowerSwitchOn : vocab::kPowerSwitchOff};
+   const uint32_t left = copperNetwork(entity, layout.connectorSwitchLeft);
+   const uint32_t right = copperNetwork(entity, layout.connectorSwitchRight);
+   if (left && right)
+      items.push_back(vocab::kPowerSwitchBoth(left, right));
+   else if (left)
+      items.push_back(vocab::kPowerSwitchLeft(left));
+   else if (right)
+      items.push_back(vocab::kPowerSwitchRight(right));
+   return items;
+}
+
+bool isCombinator(std::string_view type) {
+   return type == "arithmetic-combinator" || type == "decider-combinator" || type == "selector-combinator";
+}
+
+// A combinator's input and output networks by wire (fa-info.lua's ent_info_combinator_connections),
+// or any other entity's circuit networks with how many others are on each
+// (Circuits.add_circuit_network_info).
+std::vector<std::string> circuitNetworks(const std::byte* entity, std::string_view type) {
+   std::vector<std::string> items;
+   const std::byte* red = circuitNetwork(entity, layout.connectorCircuitRed);
+   const std::byte* green = circuitNetwork(entity, layout.connectorCircuitGreen);
+   if (isCombinator(type)) {
+      auto side = [&](const std::byte* r, const std::byte* g, const vocab::Word& both, const vocab::Word& redOnly,
+                      const vocab::Word& greenOnly) {
+         if (r && g)
+            items.push_back(both(networkId(r), networkId(g)));
+         else if (r)
+            items.push_back(redOnly(networkId(r)));
+         else if (g)
+            items.push_back(greenOnly(networkId(g)));
+      };
+      side(red, green, vocab::kCombinatorInputBoth, vocab::kCombinatorInputRed, vocab::kCombinatorInputGreen);
+      side(circuitNetwork(entity, layout.connectorOutputRed), circuitNetwork(entity, layout.connectorOutputGreen),
+           vocab::kCombinatorOutputBoth, vocab::kCombinatorOutputRed, vocab::kCombinatorOutputGreen);
+      return items;
+   }
+   auto others = [](const std::byte* network) {
+      return static_cast<int64_t>(at<uint32_t>(network, layout.circuitNetworkCircuits)) - 1;
+   };
+   if (red) items.push_back(vocab::kCircuitRed(networkId(red), others(red)));
+   if (green) items.push_back(vocab::kCircuitGreen(networkId(green), others(green)));
+   return items;
+}
+
 } // namespace
 
 std::vector<std::string> describe(const void* object, int32_t tileX, int32_t tileY) {
@@ -1131,6 +1303,7 @@ std::vector<std::string> describe(const void* object, int32_t tileX, int32_t til
    if (belt)
       for (std::string& word : beltShape(belt)) first.push_back(std::move(word));
    if (belt && belt.isTransportBelt()) first.push_back(beltContents(belt));
+   first.push_back(combinatorDescription(entity));
 
    std::vector<std::string> parts{joined(first)};
    if (belt && belt.isUnderground()) parts.push_back(undergroundConnection(belt));
@@ -1148,9 +1321,24 @@ std::vector<std::string> describe(const void* object, int32_t tileX, int32_t til
    if (isPipe(entity)) parts.push_back(pipeShape(entity));
    for (std::string& item : fluidConnections(entity, Position{tileX, tileY})) parts.push_back(std::move(item));
    if (type == "mining-drill" && isDrillOutput(entity, Position{tileX, tileY})) parts.emplace_back(vocab::kDrillOutput);
+   if (const std::byte* signal = agui::objectAsBase(entity, ".?AVRailSignalBase@@"))
+      parts.push_back(
+         signalState(type == "rail-chain-signal" ? agui::objectAsBase(entity, ".?AVRailChainSignal@@") : signal, type));
+   if (const std::byte* wall = agui::objectAsBase(entity, ".?AVWall@@"))
+      if (at<const void*>(wall, layout.wallControlBehavior)) parts.emplace_back(vocab::kGateCircuit);
+   if (reinterpret_cast<bool (*)(const void*)>(layout.entityToBeUpgraded)(entity))
+      parts.emplace_back(vocab::kMarkedForUpgrade);
+   if (const std::byte* powerSwitch = agui::objectAsBase(entity, ".?AVPowerSwitch@@"))
+      for (std::string& item : powerSwitchState(powerSwitch)) parts.push_back(std::move(item));
+   if (const std::byte* turret = agui::objectAsBase(entity, ".?AVTurret@@")) parts.push_back(turretPriorities(turret));
+   if (const std::byte* inserter = agui::objectAsBase(entity, ".?AVInserter@@"))
+      parts.push_back(inserterState(inserter));
+   if (type == "mining-drill")
+      if (const std::byte* target = dropTargetOf(entity)) parts.push_back(vocab::kDrillOutputsTo(targetName(target)));
    for (std::string& item : reactorState(entity)) parts.push_back(std::move(item));
    if (isHeatPipe(entity)) parts.push_back(heatPipeShape(entity));
    parts.push_back(heatConnections(entity, Position{tileX, tileY}));
+   for (std::string& item : circuitNetworks(entity, type)) parts.push_back(std::move(item));
    return parts;
 }
 

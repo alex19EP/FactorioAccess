@@ -341,6 +341,46 @@ inline constexpr Word kInfinityTrashUnrequested{"fa.ent-info-infinity-chest-tras
 inline constexpr Word kAndOthers{"fa.ent-info-and-others"};
 // An infinity pipe with no fluid set.
 inline constexpr Word kInfinityPipeDraining{"fa.ent-info-infinity-pipe-draining"};
+// An inserter's hand ("holding iron plate", "times 3") and where it takes from and puts to: what is
+// there, or the ground, how many tiles and which way.
+inline constexpr Word kInserterHolding{"fa.ent-info-inserter-holding"};
+inline constexpr Word kInserterHoldingCount{"fa.ent-info-inserter-holding-count"};
+inline constexpr Word kInserterPicksUp{"fa.ent-info-inserter-picks-up-from"};
+inline constexpr Word kInserterDrops{"fa.ent-info-inserter-drops-to"};
+inline constexpr Word kGround{"fa.ent-info-ground"};
+// What a drill puts its output into.
+inline constexpr Word kDrillOutputsTo{"fa.ent-info-mining-drill-outputs-to"};
+inline constexpr Word kMarkedForUpgrade{"fa.ent-info-marked-for-upgrading"};
+// A wall a gate can be controlled through.
+inline constexpr Word kGateCircuit{"fa.ent-info-gate-circuit-network-connection"};
+// A turret's target priorities: shooting only them, or them first.
+inline constexpr Word kTurretOnlyShoots{"fa.ent-info-turret-only-shoots"};
+inline constexpr Word kTurretPrioritizes{"fa.ent-info-turret-prioritizes"};
+// A rail signal's light, and a chain signal's.
+inline constexpr Word kSignalOpen{"fa.ent-info-signal-open"};
+inline constexpr Word kSignalClosed{"fa.ent-info-signal-closed"};
+inline constexpr Word kSignalReserved{"fa.ent-info-signal-reserved"};
+inline constexpr Word kSignalReservedByCircuit{"fa.ent-info-signal-reserved-by-circuit"};
+inline constexpr Word kChainAllOpen{"fa.ent-info-chain-signal-all-open"};
+inline constexpr Word kChainNone{"fa.ent-info-chain-signal-none"};
+inline constexpr Word kChainNoneOpen{"fa.ent-info-chain-signal-none-open"};
+inline constexpr Word kChainPartiallyOpen{"fa.ent-info-chain-signal-partially-open"};
+// A power switch: on or off, and the electric networks on its two sides by number.
+inline constexpr Word kPowerSwitchOn{"fa.power-switch-on"};
+inline constexpr Word kPowerSwitchOff{"fa.power-switch-off"};
+inline constexpr Word kPowerSwitchLeft{"fa.power-switch-left-only"};
+inline constexpr Word kPowerSwitchRight{"fa.power-switch-right-only"};
+inline constexpr Word kPowerSwitchBoth{"fa.power-switch-both"};
+// Circuit networks by wire and number: an entity's, with how many others are on it, and a
+// combinator's input and output sides.
+inline constexpr Word kCircuitRed{"fa.circuit-network-info-red"};
+inline constexpr Word kCircuitGreen{"fa.circuit-network-info-green"};
+inline constexpr Word kCombinatorInputRed{"fa.combinator-input-red-only"};
+inline constexpr Word kCombinatorInputGreen{"fa.combinator-input-green-only"};
+inline constexpr Word kCombinatorInputBoth{"fa.combinator-input-both"};
+inline constexpr Word kCombinatorOutputRed{"fa.combinator-output-red-only"};
+inline constexpr Word kCombinatorOutputGreen{"fa.combinator-output-green-only"};
+inline constexpr Word kCombinatorOutputBoth{"fa.combinator-output-both"};
 
 // The Y key in the world when the cursor points at no entity and no tile.
 inline constexpr Word kNothingHere{"fa.native-nothing-here"};

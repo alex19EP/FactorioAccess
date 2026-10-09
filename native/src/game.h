@@ -1794,6 +1794,64 @@ struct Layout {
    uint32_t cellOwner = 0;                 // LogisticCell::owner
    uint32_t cellParameters = 0;            // LogisticCell::logisticParameters
    uint32_t cellLogisticRadius = 0;        // LogisticCellParameters::logisticsRadius, float
+   // What an inserter or drill puts into: Entity* Entity::getDropTarget() (a slot), as
+   // LuaEntity::drop_target. An inserter's pickup target is Inserter::pickupTarget (a Targeter), its
+   // hand Inserter::heldStack (an ItemStack), and where it reaches entity position plus
+   // Inserter::pickupVector / dropoffVector (two doubles, in tiles), as LuaEntity::pickup_position.
+   uint32_t entityDropTarget = 0;
+   uint32_t inserterPickupTarget = 0;      // Inserter::pickupTarget.target, Entity*
+   uint32_t inserterHeldStack = 0;
+   uint32_t inserterPickupVector = 0;
+   uint32_t inserterDropVector = 0;
+   // bool Entity::isToBeUpgraded() const, as LuaEntity::to_be_upgraded.
+   uintptr_t entityToBeUpgraded = 0;
+   // A turret's target priorities: Turret::priorityList (std::vector<ID<EntityPrototype>>, uint16,
+   // 0 for an empty slot) and Turret::ignoreUnprioritised (bool).
+   uint32_t turretPriorityList = 0;
+   uint32_t turretIgnoreOthers = 0;
+   // A combinator's description: Combinator::playerDescription, or ConstantCombinator's, std::string.
+   uint32_t combinatorDescription = 0;
+   uint32_t constantCombinatorDescription = 0;
+   // A wall the circuit network can reach a gate through has Wall::controlBehavior set.
+   uint32_t wallControlBehavior = 0;
+   // A rail signal's RailSignalBase::state (RailSignalBase::State, int: Open, Closed, Reserved,
+   // ReservedByCircuitNetwork) and a chain signal's RailChainSignal::chainState (None, AllOpen,
+   // PartiallyOpen, NoneOpen), as LuaEntity::signal_state and chain_signal_state.
+   uint32_t signalState = 0;
+   uint32_t signalOpen = 0;
+   uint32_t signalClosed = 0;
+   uint32_t signalReserved = 0;
+   uint32_t signalReservedByCircuit = 0;
+   uint32_t chainSignalState = 0;
+   uint32_t chainNone = 0;
+   uint32_t chainAllOpen = 0;
+   uint32_t chainPartiallyOpen = 0;
+   uint32_t chainNoneOpen = 0;
+   // A power switch: PowerSwitch::currentState (PowerSwitch::State, uint8; TurningOn and On power
+   // through, as LuaEntity::power_switch_state reads them).
+   uint32_t powerSwitchState = 0;
+   uint32_t powerSwitchTurningOn = 0;
+   uint32_t powerSwitchOn = 0;
+   // Wire connectors by WireConnectorID (uint8): WireConnector* Entity::getWireConnectorInternal(
+   // WireConnectorID, NamedBool create) (a slot, called with false as LuaEntity::get_circuit_network
+   // does). A circuit one (CircuitWireConnector, by RTTI) has CircuitWireConnector::network, a
+   // CircuitNetwork with index (LuaCircuitNetwork::network_id) and circuitsConnected; a copper one
+   // (CopperWireConnector) has CopperWireConnector::network, an ElectricSubNetwork whose index + 1
+   // is LuaWireConnector::network_id. WireConnector::connections are its wires (as a pole's).
+   uint32_t entityWireConnector = 0;
+   uint32_t connectorCircuitRed = 0;       // WireConnectorID::CircuitRed, also CombinatorInputRed
+   uint32_t connectorCircuitGreen = 0;
+   uint32_t connectorOutputRed = 0;        // WireConnectorID::CombinatorOutputRed
+   uint32_t connectorOutputGreen = 0;
+   uint32_t connectorSwitchLeft = 0;       // WireConnectorID::PowerSwitchLeftCopper
+   uint32_t connectorSwitchRight = 0;
+   uint32_t circuitConnectorNetwork = 0;   // CircuitWireConnector::network, CircuitNetwork*
+   uint32_t circuitNetworkIndex = 0;       // CircuitNetwork::index, uint32
+   uint32_t circuitNetworkCircuits = 0;    // CircuitNetwork::circuitsConnected, uint32
+   uint32_t copperConnectorNetwork = 0;    // CopperWireConnector::network, ElectricSubNetwork*
+   uint32_t electricNetworkIndex = 0;      // ElectricSubNetwork::index, uint32
+   uint32_t connectorWiresBegin = 0;       // WireConnector::connections.begin_
+   uint32_t connectorWiresEnd = 0;
 };
 
 // Bits of agui::Widget::usageBitMask, read from Widget::setVisible and Widget::isEnabled in

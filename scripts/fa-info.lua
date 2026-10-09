@@ -906,10 +906,10 @@ local function ent_info_power_switch(ctx)
    local ent = ctx.ent
    if ent.type ~= "power-switch" then return end
 
-   if ent.power_switch_state == false then
-      ctx.message:fragment("off,")
-   elseif ent.power_switch_state == true then
-      ctx.message:fragment("on,")
+   if ent.power_switch_state then
+      ctx.message:fragment({ "fa.power-switch-on" })
+   else
+      ctx.message:fragment({ "fa.power-switch-off" })
    end
 
    -- Announce copper connection network IDs
@@ -1460,7 +1460,9 @@ function mod.ent_info(pindex, ent, is_scanner, after_native)
       if is_scanner then run_handler(handler, nolist) end
    end
    -- What the game's tooltip says, which the DLL's reading gave already: the status, the amount of
-   -- a resource, temperature, power made and stored.
+   -- a resource, temperature, power made and stored, a train stop's name and limit, a radar's
+   -- charting, a solar panel's output, a silo's rocket parts, a spidertron's label, the item on the
+   -- ground.
    local function run_tooltip_handler(handler, nolist)
       if not after_native then run_handler(handler, nolist) end
    end
@@ -1468,7 +1470,9 @@ function mod.ent_info(pindex, ent, is_scanner, after_native)
    -- and partner, a belt's shape, a pipe's or heat pipe's shape, the fluid and heat connections on the
    -- tile, a nuclear reactor's state, a power pole's wires and what it powers, what a belt carries,
    -- a splitter's priorities, a logistic chest's network, an infinity chest's filters, an infinity
-   -- pipe draining, a drill's output tile.
+   -- pipe draining, a drill's output tile and what it outputs to, a combinator's description, a
+   -- signal's state, a wall's gate contact, an upgrade mark, a power switch, a turret's priorities,
+   -- an inserter's hand, the circuit networks.
    local run_native_fact_handler = run_tooltip_handler
    if not is_scanner and native then ctx.drawn = native.entity_icons(pindex, ent) end
    -- The status icons tell what the tooltip's status says
@@ -1499,7 +1503,7 @@ function mod.ent_info(pindex, ent, is_scanner, after_native)
    -- The DLL says which way buildings face; a vehicle's heading is the mod's.
    if not after_native or ent.type == "locomotive" or ent.type == "car" then run_handler(ent_info_facing, true) end
    run_handler(ent_info_rail, true)
-   run_handler(ent_info_combinator_description)
+   run_native_fact_handler(ent_info_combinator_description)
    run_native_fact_handler(ent_info_underground_belt_type, true)
 
    run_native_fact_handler(ent_info_belt_shape, true)
@@ -1517,19 +1521,19 @@ function mod.ent_info(pindex, ent, is_scanner, after_native)
    run_native_fact_handler(ent_info_pipe_shape)
    run_native_fact_handler(ent_info_fluid_connections)
 
-   run_handler(ent_info_train_stop)
+   run_tooltip_handler(ent_info_train_stop)
    run_native_fact_handler(ent_info_mining_drill_output_chute)
-   run_handler(ent_info_rail_signal_state)
+   run_native_fact_handler(ent_info_rail_signal_state)
 
-   run_handler(ent_info_gate_connection_point)
-   run_handler(ent_info_marked_for_upgrade)
+   run_native_fact_handler(ent_info_gate_connection_point)
+   run_native_fact_handler(ent_info_marked_for_upgrade)
    run_tooltip_handler(ent_info_power_production)
    run_native_fact_handler(ent_info_underground_belt_connection)
    run_native_fact_handler(ent_info_splitter_states)
    run_drawn_handler(ent_info_cargo_wagon)
-   run_handler(ent_info_radar)
+   run_tooltip_handler(ent_info_radar)
    run_native_fact_handler(ent_info_electric_pole)
-   run_handler(ent_info_power_switch)
+   run_native_fact_handler(ent_info_power_switch)
 
    if ent.type == "roboport" then
       local cell = ent.logistic_cell
@@ -1540,16 +1544,19 @@ function mod.ent_info(pindex, ent, is_scanner, after_native)
       ctx.message:fragment(",")
       ctx.message:fragment(BotLogistics.roboport_contents_info(ent))
    end
-   run_handler(ent_info_spidertron)
+   run_tooltip_handler(ent_info_spidertron)
    run_drawn_handler(ent_info_filters)
    run_tooltip_handler(ent_info_verbose_status)
-   run_handler(ent_info_turret_priority)
+   run_native_fact_handler(ent_info_turret_priority)
 
    --Inserters: Explain held items, pickup and drop positions
-   if ent.type == "inserter" then
+   if ent.type == "inserter" and not after_native then
       --Read held item
       if ent.held_stack ~= nil and ent.held_stack.valid_for_read and ent.held_stack.valid then
-         ctx.message:fragment({ "fa.ent-info-inserter-holding", ent.held_stack.name })
+         ctx.message:fragment({
+            "fa.ent-info-inserter-holding",
+            Localising.get_localised_name_with_fallback(ent.held_stack.prototype),
+         })
          if ent.held_stack.count > 1 then
             ctx.message:fragment({ "fa.ent-info-inserter-holding-count", ent.held_stack.count })
          end
@@ -1600,10 +1607,14 @@ function mod.ent_info(pindex, ent, is_scanner, after_native)
       else
          drop_name = { "fa.ent-info-ground" }
       end
-      --Report info
-      if drop ~= nil and drop.valid then ctx.message:fragment({ "fa.ent-info-mining-drill-outputs-to", drop_name }) end
-      if ent.status == defines.entity_status.waiting_for_space_in_destination then
-         ctx.message:fragment(", output full ")
+      --Report info. The DLL says what it outputs to, and its tooltip's status says when the output is full.
+      if not after_native then
+         if drop ~= nil and drop.valid then
+            ctx.message:fragment({ "fa.ent-info-mining-drill-outputs-to", drop_name })
+         end
+         if ent.status == defines.entity_status.waiting_for_space_in_destination then
+            ctx.message:list_item(Localising.entity_status_localised(ent.status))
+         end
       end
       --The ore left under the drill. The game draws no amounts, and alt mode shows what is mined as an icon, so the
       --tile reader leaves it to the scanner.
@@ -1632,18 +1643,18 @@ function mod.ent_info(pindex, ent, is_scanner, after_native)
    run_handler(ent_info_drawn_status)
 
    run_tooltip_handler(ent_info_accumulator)
-   run_handler(ent_info_solar)
-   run_handler(ent_info_rocket_silo)
+   run_tooltip_handler(ent_info_solar)
+   run_tooltip_handler(ent_info_rocket_silo)
    run_drawn_handler(ent_info_beacon_status)
    run_tooltip_handler(ent_info_temperature)
    run_native_fact_handler(ent_info_nuclear_neighbor_bonus)
-   run_handler(ent_info_item_on_ground)
+   run_tooltip_handler(ent_info_item_on_ground)
    run_native_fact_handler(ent_info_heat_pipe_shape)
    run_native_fact_handler(ent_info_heat_neighbors)
 
    run_drawn_handler(ent_info_constant_combinator)
-   run_handler(ent_info_combinator_connections)
-   run_handler(ent_info_circuit_network)
+   run_native_fact_handler(ent_info_combinator_connections)
+   run_native_fact_handler(ent_info_circuit_network)
 
    -- Train state handler (lowest priority, runs last)
    run_handler(ent_info_train_state)

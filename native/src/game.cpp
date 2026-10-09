@@ -1278,6 +1278,44 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.cellOwner, "LogisticCell", "owner");
    offset(layout.cellParameters, "LogisticCell", "logisticParameters");
    offset(layout.cellLogisticRadius, "LogisticCellParameters", "logisticsRadius");
+   classSlot(layout.entityDropTarget, "Entity", "getDropTarget");
+   offset(layout.inserterPickupTarget, "Inserter", "pickupTarget.target");
+   offset(layout.inserterHeldStack, "Inserter", "heldStack");
+   offset(layout.inserterPickupVector, "Inserter", "pickupVector");
+   offset(layout.inserterDropVector, "Inserter", "dropoffVector");
+   address(layout.entityToBeUpgraded, "?isToBeUpgraded@Entity@@QEBA_NXZ");
+   offset(layout.turretPriorityList, "Turret", "priorityList");
+   offset(layout.turretIgnoreOthers, "Turret", "ignoreUnprioritised");
+   offset(layout.combinatorDescription, "Combinator", "playerDescription");
+   offset(layout.constantCombinatorDescription, "ConstantCombinator", "playerDescription");
+   offset(layout.wallControlBehavior, "Wall", "controlBehavior");
+   offset(layout.signalState, "RailSignalBase", "state");
+   enumerator(layout.signalOpen, "RailSignalBase::State", "OPEN");
+   enumerator(layout.signalClosed, "RailSignalBase::State", "CLOSED");
+   enumerator(layout.signalReserved, "RailSignalBase::State", "RESERVED");
+   enumerator(layout.signalReservedByCircuit, "RailSignalBase::State", "RESERVED_BY_CIRCUIT_NETWORK");
+   offset(layout.chainSignalState, "RailChainSignal", "chainState");
+   enumerator(layout.chainNone, "RailChainSignal::ChainState", "NONE");
+   enumerator(layout.chainAllOpen, "RailChainSignal::ChainState", "ALL_OPEN");
+   enumerator(layout.chainPartiallyOpen, "RailChainSignal::ChainState", "PARTIALLY_OPEN");
+   enumerator(layout.chainNoneOpen, "RailChainSignal::ChainState", "NONE_OPEN");
+   offset(layout.powerSwitchState, "PowerSwitch", "currentState");
+   enumerator(layout.powerSwitchTurningOn, "PowerSwitch::State", "TURNING_ON");
+   enumerator(layout.powerSwitchOn, "PowerSwitch::State", "ON");
+   classSlot(layout.entityWireConnector, "Entity", "getWireConnectorInternal");
+   enumerator(layout.connectorCircuitRed, "WireConnectorID::Enum", "CircuitRed");
+   enumerator(layout.connectorCircuitGreen, "WireConnectorID::Enum", "CircuitGreen");
+   enumerator(layout.connectorOutputRed, "WireConnectorID::Enum", "CombinatorOutputRed");
+   enumerator(layout.connectorOutputGreen, "WireConnectorID::Enum", "CombinatorOutputGreen");
+   enumerator(layout.connectorSwitchLeft, "WireConnectorID::Enum", "PowerSwitchLeftCopper");
+   enumerator(layout.connectorSwitchRight, "WireConnectorID::Enum", "PowerSwitchRightCopper");
+   offset(layout.circuitConnectorNetwork, "CircuitWireConnector", "network");
+   offset(layout.circuitNetworkIndex, "CircuitNetwork", "index");
+   offset(layout.circuitNetworkCircuits, "CircuitNetwork", "circuitsConnected");
+   offset(layout.copperConnectorNetwork, "CopperWireConnector", "network");
+   offset(layout.electricNetworkIndex, "ElectricSubNetwork", "index");
+   offset(layout.connectorWiresBegin, "WireConnector", "connections.begin_");
+   offset(layout.connectorWiresEnd, "WireConnector", "connections.end_");
 
    if (ok && (layout.chartSelectionSize > kChartSelectionCapacity || layout.patchInfoSize > kPatchInfoCapacity)) {
       log::error("A chart structure outgrew its buffer: ChartSelection {} bytes, ResourcePatchInfo {}",
