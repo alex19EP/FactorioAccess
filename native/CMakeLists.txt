@@ -7,6 +7,11 @@ endif()
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+# No C++ modules here. Scanning for them (on by default from C++20) puts a dependency scan and a
+# dyndep step before every compile, and the scan records no headers; incremental builds then left
+# objects compiled against an old header behind (a DLL whose files disagreed on game::Layout). Plain
+# /showIncludes tracking rebuilds every file a changed header reaches.
+set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 # Static CRT: the game directory gets one self-contained DLL and nothing to install beside it.
 # Prism sets this itself from CMAKE_BUILD_TYPE, which is empty under a multi-config generator
 # (Ninja Multi-Config), so it is pinned in the cache before Prism is configured.
