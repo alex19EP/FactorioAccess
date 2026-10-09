@@ -278,8 +278,7 @@ struct Layout {
    uint32_t iteratorCurrentEntity = 0;     // Entity*
    uint32_t entitySurface = 0;             // Entity::surface, Surface*
    // The scanner lists a surface's entities chunk by chunk, with the iterator above over each
-   // chunk's 16 by 16 advanced tiles, where the player's force has charted it. Entities with a unit
-   // number are found again through the map's index of them; others where they stood.
+   // chunk's 16 by 16 advanced tiles, where the player's force has charted it.
    uint32_t mapSurfaces = 0;               // Map::surfaces, std::vector<Surface*>
    uint32_t surfaceIndex = 0;              // Surface::index, SurfaceIndex (uint32), LuaSurface::index
    uint32_t surfaceChunks = 0;             // Surface::chunks, std::vector<Chunk*>
@@ -304,7 +303,8 @@ struct Layout {
    // Entity::usageBitMask (uint16). The scanner skips what LuaEntity's constructor refuses: 0x4,
    // the entity inside a ghost, which Entity::getOuterEntity trades for its ghost, and 0x10.
    uint32_t entityUsageBits = 0;
-   uintptr_t forceIsChunkCharted = 0;      // bool ForceData::isChunkCharted(SurfaceIndex, MapPosition const&) const
+   // bool ForceData::isChunkCharted(SurfaceIndex, MapPosition const&) const
+   uintptr_t forceIsChunkCharted = 0;
    // ElectricPolePrototype const* EntityPrototype::asElectricPole() const, a virtual slot: null but
    // for poles.
    uint32_t entityPrototypeAsPole = 0;
@@ -404,8 +404,8 @@ struct Layout {
    uintptr_t luaSetTop = 0;
    uintptr_t luaPushLString = 0;
    uintptr_t luaRawSetI = 0;
-   // void lua_pushnumber<unsigned char>(lua_State*, unsigned char): the game pushes numbers through
-   // templates like this one; there is no plain lua_pushnumber to call.
+   // void lua_pushnumber<unsigned char>(lua_State*, unsigned char): the game pushes its own numbers
+   // through templates like this one. The plain lua_pushnumber is exported too.
    uintptr_t luaPushByte = 0;
    uintptr_t luaPushInt = 0;     // void lua_pushnumber<int>(lua_State*, int)
    uintptr_t luaPushNumber = 0;  // void lua_pushnumber(lua_State*, lua_Number)
@@ -656,8 +656,8 @@ struct Layout {
    // The windows of entities (GameGuiWithControllerInventory): the entity's window, which holds
    // the player's inventory beside the entity's own part.
    uint32_t entityMainWindow = 0;     // GameGuiWithControllerInventory::mainWindow, agui::Window
-   uint32_t entityInventoryHolder =
-      0; // GameGuiWithControllerInventory::controllerInventory, ControllerInventoryHolder*
+   // GameGuiWithControllerInventory::controllerInventory, ControllerInventoryHolder*
+   uint32_t entityInventoryHolder = 0;
    uint32_t holderInventory = 0;      // GameControllerInventoryHolder::inventoryGui, InventoryGui
    uint32_t holderTitle = 0;          // GameControllerInventoryHolder::titleLabel ("Character")
    // RemoteControllerInventoryHolder::selectGui, IDWithQualityIDSelectListGui<IDWithQuality<ID<ItemPrototype>>>:
@@ -1164,8 +1164,8 @@ struct Layout {
    // The achievements the player tracks, at the top left under the mods' gui (GameView::loadGui puts
    // it in topLeftContainer): an AchievementCardHolder of sidebar cards, each the achievement's icon
    // (its name only as the tooltip), its progress, and a track button that stops tracking it.
-   uint32_t gameViewTrackedAchievements =
-      0; // GameView::trackedAchievementHolder, std::unique_ptr<AchievementCardHolder>
+   // GameView::trackedAchievementHolder, std::unique_ptr<AchievementCardHolder>
+   uint32_t gameViewTrackedAchievements = 0;
 
    // The crafting queue at the bottom left (CraftingQueueGui, an agui::Flow), reached as the
    // quickbar is; CharacterView and GodView have one, the remote view none. Its slots are rebuilt on
@@ -1179,18 +1179,19 @@ struct Layout {
    // The HUD's status: the research box at the top right, the alert buttons, the scenario's goal and
    // the bars over the quickbar.
    uint32_t gameViewResearch = 0;        // GameView::currentResearchInfo, std::unique_ptr<CurrentResearchInfo>
-   uint32_t researchTitle = 0; // CurrentResearchInfo::title, agui::Label: the technology, or "not researching"
-   uint32_t researchProgressFlow = 0; // CurrentResearchInfo::progressBarFlow, hidden while nothing is researched
-   uint32_t researchProgressLabel = 0; // CurrentResearchInfo::researchProgressLabel, the formatted percent
+   // CurrentResearchInfo::title, agui::Label: the technology, or "not researching"
+   uint32_t researchTitle = 0;
+   uint32_t researchProgressFlow = 0;    // CurrentResearchInfo::progressBarFlow, hidden while nothing is researched
+   uint32_t researchProgressLabel = 0;   // CurrentResearchInfo::researchProgressLabel, the formatted percent
    // One AlertGui per AlertCategory, each shown while its category has alerts; its button opens the
    // category's AlertsOverview.
-   uint32_t gameViewAlerts = 0; // GameView::alertGuis, std::vector<std::unique_ptr<AlertGui>>
-   uint32_t alertGuiCategory = 0; // AlertGui::category, AlertCategory (unsigned char)
-   uint32_t alertGuiButton = 0; // AlertGui::warningSlot, IconButtonWithNumber
+   uint32_t gameViewAlerts = 0;          // GameView::alertGuis, std::vector<std::unique_ptr<AlertGui>>
+   uint32_t alertGuiCategory = 0;        // AlertGui::category, AlertCategory (unsigned char)
+   uint32_t alertGuiButton = 0;          // AlertGui::warningSlot, IconButtonWithNumber
    // The alerts window an alert button opens, one category's alerts. It stacks over whatever window
    // is open; E or Escape closes it.
-   uint32_t gameViewAlertsOverview = 0; // GameView::alertsOverview, std::unique_ptr<AlertsOverview>
-   uint32_t alertsOverviewCategory = 0; // AlertsOverview::category, AlertCategory
+   uint32_t gameViewAlertsOverview = 0;  // GameView::alertsOverview, std::unique_ptr<AlertsOverview>
+   uint32_t alertsOverviewCategory = 0;  // AlertsOverview::category, AlertCategory
    // AlertsOverview::alertGroupsList, agui::ListBox: per surface (headed by its name when there are
    // several) a row per group of alerts. A click opens remote view on the group and closes the window.
    uint32_t alertsOverviewList = 0;
@@ -1200,7 +1201,7 @@ struct Layout {
    // The map search's results in remote view (GameView::chartSearchResultGui, a Window at the right):
    // what the search box in remote view's title bar found, filled as the player types. Like the
    // alerts window, a ListBox of rows and a flow of their pin buttons.
-   uint32_t gameViewChartSearch = 0; // std::unique_ptr<ChartSearchResultGui>
+   uint32_t gameViewChartSearch = 0;     // std::unique_ptr<ChartSearchResultGui>
    // ChartSearchResultGui::listbox, agui::ListBox: a row per result, as the game words it ("[item=
    // iron-ore] Iron ore 402k"). Recipes in machines first, then map tags, train stops, resource
    // patches and tiles. A click moves the camera to the result.
@@ -1213,11 +1214,11 @@ struct Layout {
    // toggles (IconButtons named by their tooltips: logistic network, electric network, turret range,
    // pollution, station names, player names, tags, worker robots, rail signal states, recipe icons,
    // pipelines). A toggle flips its MapViewSettings item, which is this client's alone.
-   uint32_t gameViewMapViewOptions = 0; // GameView::mapViewOptionsGui, std::unique_ptr<MapViewOptionsGui>
+   uint32_t gameViewMapViewOptions = 0;  // GameView::mapViewOptionsGui, std::unique_ptr<MapViewOptionsGui>
    // What the map draws (MapViewSettings, the client's config, not game state). Each item is a
    // SimpleConfigItem<bool>; every overlay but station names, player names and tags shows only while
    // showNonstandardMapInfo is also on, as MapViewOptionsGui::updateToggleState shows them.
-   uint32_t globalMapViewSettings = 0; // GlobalContext::mapViewSettings.value, MapViewSettings*
+   uint32_t globalMapViewSettings = 0;   // GlobalContext::mapViewSettings.value, MapViewSettings*
 
    // Files inside a mod, read as the game reads them whether the mod is a folder or a zip: the
    // ModManager turns "__mod__/path" into a PackagePath, which opens a ReadStream.
@@ -1227,12 +1228,12 @@ struct Layout {
    uintptr_t resolveResourcePath = 0;
    // UniquePointer<ReadStream> PackagePath::open() const; throws when the file is missing.
    uintptr_t packagePathOpen = 0;
-   uint32_t packagePathSize = 0; // sizeof(PackagePath): Package*, then Filesystem::Path
-   uint32_t packagePathPath = 0; // PackagePath::path, Filesystem::Path, a std::wstring
-   uint32_t readStreamRead = 0; // vtable slot of uint64 ReadStream::read(char*, uint64)
-   uint32_t readStreamRemaining = 0; // vtable slot of uint64 ReadStream::remaining() const
+   uint32_t packagePathSize = 0;     // sizeof(PackagePath): Package*, then Filesystem::Path
+   uint32_t packagePathPath = 0;     // PackagePath::path, Filesystem::Path, a std::wstring
+   uint32_t readStreamRead = 0;       // vtable slot of uint64 ReadStream::read(char*, uint64)
+   uint32_t readStreamRemaining = 0;  // vtable slot of uint64 ReadStream::remaining() const
    uint32_t readStreamDestructor = 0; // vtable slot of ReadStream::~ReadStream (scalar deleting)
-   uintptr_t operatorDelete = 0; // the game's void operator delete(void*, size_t)
+   uintptr_t operatorDelete = 0;      // the game's void operator delete(void*, size_t)
    uint32_t mapViewLogisticNetwork = 0;
    uint32_t mapViewElectricNetwork = 0;
    uint32_t mapViewTurretRange = 0;
@@ -1247,11 +1248,11 @@ struct Layout {
    uint32_t mapViewNonstandardInfo = 0;
    // IconButtonWithNumber::count. The alert button blinks by setting it to 0 every other half second.
    uint32_t iconButtonCount = 0;
-   uint32_t gameViewGoal = 0; // GameView::goalDescription, std::unique_ptr<GoalDescription>
+   uint32_t gameViewGoal = 0;            // GameView::goalDescription, std::unique_ptr<GoalDescription>
    // The goal window's frame: the goal text (GoalDescription::label), then the root of the
    // scenario's player.gui.goal, where story.lua's set_info puts hints, progress bars and tables.
-   uint32_t goalInnerFrame = 0; // GoalDescription::innerFrame, agui::Frame
-   uint32_t gameViewBottom = 0; // GameView::bottomContainer, std::unique_ptr<BottomContainer>
+   uint32_t goalInnerFrame = 0;          // GoalDescription::innerFrame, agui::Frame
+   uint32_t gameViewBottom = 0;          // GameView::bottomContainer, std::unique_ptr<BottomContainer>
    // BottomContainer's bars, each a GenericTargeter<ControllerProgressBar>.
    uint32_t bottomHealthBar = 0;
    uint32_t bottomShieldBar = 0;
@@ -1261,90 +1262,91 @@ struct Layout {
 
    // Factoriopedia, which stacks over whatever window is open: the entries list on the left, the
    // chosen entry's page on the right.
-   uint32_t gameViewFactoriopedia = 0; // GameView::factoriopedia, std::unique_ptr<Factoriopedia>
-   uint32_t factoriopediaList = 0; // Factoriopedia::selectList, SelectListGui<FactoriopediaID>
-   uint32_t factoriopediaSubheader = 0; // Factoriopedia::insideFrame.subheader: the entry's title label
-   uint32_t factoriopediaPage = 0; // Factoriopedia::scrollPane, the entry's description and sections
+   uint32_t gameViewFactoriopedia = 0;   // GameView::factoriopedia, std::unique_ptr<Factoriopedia>
+   uint32_t factoriopediaList = 0;       // Factoriopedia::selectList, SelectListGui<FactoriopediaID>
+   uint32_t factoriopediaSubheader = 0;  // Factoriopedia::insideFrame.subheader: the entry's title label
+   uint32_t factoriopediaPage = 0;       // Factoriopedia::scrollPane, the entry's description and sections
    uint32_t factoriopediaUnresearched = 0; // Factoriopedia::showUnresearchedButton, a toggle IconButton
-   uint32_t factoriopediaPinned = 0; // Factoriopedia::pinned: kept open, without modal focus
+   uint32_t factoriopediaPinned = 0;     // Factoriopedia::pinned: kept open, without modal focus
 
    // Rich text icons that a label makes hoverable (LabelWithHoverableRichText, as in descriptions):
    // hovering one shows its tooltip, clicking it opens its Factoriopedia entry or technology. The
    // label lays its text out in sections, an icon each and the plain runs between them.
-   uint32_t labelRichText = 0; // agui::Label::resizableText.richTextData, std::unique_ptr to TextDrawSections
-   uint32_t richTextSectionsBegin = 0; // TextDrawSections::sections.begin_, TextDrawSection*
-   uint32_t richTextSectionsEnd = 0; // TextDrawSections::sections.end_
-   uint32_t richTextSectionSize = 0; // sizeof(TextDrawSection)
-   uint32_t richTextSectionType = 0; // TextDrawSection::type, TagType
-   uint32_t richTextSectionTag = 0; // TextDrawSection::tagText, std::string_view: "item=iron-plate"
-   uint32_t richTextSectionText =
-      0; // TextDrawSection::text, std::string_view: a Text section's words, line breaks included
-   uint32_t hoverableLabelManager = 0; // LabelWithHoverableRichText::hoverManger, LabelRichTextHoverManager
-   uint32_t hoverManagerTooltip = 0; // RichTextHoverManager::hoverTooltip, GenericTargeter<agui::ToolTip>
+   // agui::Label::resizableText.richTextData, std::unique_ptr to TextDrawSections
+   uint32_t labelRichText = 0;
+   uint32_t richTextSectionsBegin = 0;   // TextDrawSections::sections.begin_, TextDrawSection*
+   uint32_t richTextSectionsEnd = 0;     // TextDrawSections::sections.end_
+   uint32_t richTextSectionSize = 0;     // sizeof(TextDrawSection)
+   uint32_t richTextSectionType = 0;     // TextDrawSection::type, TagType
+   uint32_t richTextSectionTag = 0;      // TextDrawSection::tagText, std::string_view: "item=iron-plate"
+   // TextDrawSection::text, std::string_view: a Text section's words, line breaks included
+   uint32_t richTextSectionText = 0;
+   uint32_t hoverableLabelManager = 0;   // LabelWithHoverableRichText::hoverManger, LabelRichTextHoverManager
+   uint32_t hoverManagerTooltip = 0;     // RichTextHoverManager::hoverTooltip, GenericTargeter<agui::ToolTip>
    // void RichTextHoverManager::handleHover(TextDrawSection const&, OutputConsole::Item const*, bool
    // clicked): what the label runs for the section under the mouse, on a move and on a click.
    uintptr_t richTextHandleHover = 0;
-   uintptr_t richTextClearTooltip = 0; // void RichTextHoverManager::clearTooltip()
+   uintptr_t richTextClearTooltip = 0;   // void RichTextHoverManager::clearTooltip()
 
    // The console's log, as the open console draws it: OutputConsoleRenderer::getRenderItems merges
    // the two lists of the player's OutputConsole newest first, until the top of the screen. Each
    // line keeps its text wrapped at the width it was last drawn at, with the line's rich text laid
    // out in sections as a label's are; its icons hover and click through the player's own hover
    // manager, which needs the line (a gps tag pings and opens the map).
-   uint32_t playerOutputConsole = 0; // Player::outputConsole, OutputConsole*
+   uint32_t playerOutputConsole = 0;      // Player::outputConsole, OutputConsole*
    uint32_t playerConsoleHoverManager = 0; // Player::outputConsoleRichTextHoverManager, std::unique_ptr
    // Each list (outputConsoleItems, outputConsoleItemsNotSaved) starts with its head node pointer.
-   uint32_t consoleNodeNext = 0; // std::_List_node<OutputConsole::Item>::_Next
-   uint32_t consoleNodeValue = 0; // std::_List_node<OutputConsole::Item>::_Myval, the Item
-   uint32_t consoleItemUpdateTick = 0; // OutputConsole::Item::updateTick, MapTick (u64)
-   uint32_t consoleItemWrappedText = 0; // OutputConsole::Item::wrappedText, std::unique_ptr<agui::ResizableText>
-   uint32_t resizableTextData = 0; // agui::ResizableText::data, std::string: "[color=#..]Name[/color]: text"
-   uint32_t resizableTextRichText = 0; // agui::ResizableText::richTextData, std::unique_ptr to TextDrawSections
-   uint32_t resizableTextMaxWidth = 0; // agui::ResizableText::lastMaxWidth, int
-   uint32_t consoleRenderItemSize = 0; // sizeof(OutputConsoleRenderer::RenderItem)
-   uint32_t consoleRenderItemItem = 0; // OutputConsoleRenderer::RenderItem::item, OutputConsole::Item const*
+   uint32_t consoleNodeNext = 0;          // std::_List_node<OutputConsole::Item>::_Next
+   uint32_t consoleNodeValue = 0;         // std::_List_node<OutputConsole::Item>::_Myval, the Item
+   uint32_t consoleItemUpdateTick = 0;    // OutputConsole::Item::updateTick, MapTick (u64)
+   uint32_t consoleItemWrappedText = 0;   // OutputConsole::Item::wrappedText, std::unique_ptr<agui::ResizableText>
+   uint32_t resizableTextData = 0;        // agui::ResizableText::data, std::string: "[color=#..]Name[/color]: text"
+   uint32_t resizableTextRichText = 0;    // agui::ResizableText::richTextData, std::unique_ptr to TextDrawSections
+   uint32_t resizableTextMaxWidth = 0;    // agui::ResizableText::lastMaxWidth, int
+   uint32_t consoleRenderItemSize = 0;    // sizeof(OutputConsoleRenderer::RenderItem)
+   uint32_t consoleRenderItemItem = 0;    // OutputConsoleRenderer::RenderItem::item, OutputConsole::Item const*
    // std::vector<RenderItem> OutputConsoleRenderer::getRenderItems(OutputConsole const&, bool consoleOpen,
    // MapTick, DrawQueue*, int maxWidth): reads no member, so any `this` will do.
    uintptr_t consoleGetRenderItems = 0;
-   uintptr_t consoleRenderItemsFree = 0; // std::vector<OutputConsoleRenderer::RenderItem>::~vector
-   uintptr_t resizableTextLines = 0; // agui::ResizableText::lines() const: wraps and lays out, if stale
+   uintptr_t consoleRenderItemsFree = 0;  // std::vector<OutputConsoleRenderer::RenderItem>::~vector
+   uintptr_t resizableTextLines = 0;      // agui::ResizableText::lines() const: wraps and lays out, if stale
 
    // The technology window (T), which also stacks over whatever window is open: the research queue,
    // the selected technology and the list of every technology on the left, the selected
    // technology's graph of prerequisites and unlocks on the right.
-   uint32_t gameViewTechnology = 0; // GameView::technologyGui, TechnologyGui*
-   uint32_t technologyQueue = 0; // TechnologyGui::researchQueueGui, ResearchQueueGui
-   uint32_t technologyTitle = 0; // TechnologyGui::featuredTechnologyTitle, agui::Label
-   uint32_t technologyStatus = 0; // TechnologyGui::featuredTechnologyStatus, agui::Label: "(Available)"
-   uint32_t technologyFeatured = 0; // TechnologyGui::featuredTechnologyGui, FeaturedTechnologyGui
-   uint32_t technologyList = 0; // TechnologyGui::technologiesGui, TechnologyListGui
-   uint32_t technologyGraphTitle = 0; // TechnologyGui::technologyGraphTitleFrame: history arrows, close
-   uint32_t technologyGraphHolder = 0; // TechnologyGui::technologyGraphHolder: "show only essential"
-   uint32_t technologyGraph = 0; // TechnologyGui::technologyGraph, TechnologyGraphGui
-   uint32_t technologyListTable = 0; // TechnologyListGui::table, the grid of TechnologySlot
+   uint32_t gameViewTechnology = 0;      // GameView::technologyGui, TechnologyGui*
+   uint32_t technologyQueue = 0;         // TechnologyGui::researchQueueGui, ResearchQueueGui
+   uint32_t technologyTitle = 0;         // TechnologyGui::featuredTechnologyTitle, agui::Label
+   uint32_t technologyStatus = 0;        // TechnologyGui::featuredTechnologyStatus, agui::Label: "(Available)"
+   uint32_t technologyFeatured = 0;      // TechnologyGui::featuredTechnologyGui, FeaturedTechnologyGui
+   uint32_t technologyList = 0;          // TechnologyGui::technologiesGui, TechnologyListGui
+   uint32_t technologyGraphTitle = 0;    // TechnologyGui::technologyGraphTitleFrame: history arrows, close
+   uint32_t technologyGraphHolder = 0;   // TechnologyGui::technologyGraphHolder: "show only essential"
+   uint32_t technologyGraph = 0;         // TechnologyGui::technologyGraph, TechnologyGraphGui
+   uint32_t technologyListTable = 0;     // TechnologyListGui::table, the grid of TechnologySlot
    // ResearchQueueGui::queueTable, a table of TechnologyQueueElement, filled up to seven places with
    // empty ones.
    uint32_t queueTable = 0;
-   uint32_t queueElementSlot = 0; // TechnologyQueueElement::technologySlot, TechnologySlot
-   uint32_t queueElementCancel = 0; // TechnologyQueueElement::cancelButton, IconButton
+   uint32_t queueElementSlot = 0;        // TechnologyQueueElement::technologySlot, TechnologySlot
+   uint32_t queueElementCancel = 0;      // TechnologyQueueElement::cancelButton, IconButton
    // A technology's button, in the list, the queue and the graph.
-   uint32_t techSlotTechnology = 0; // TechnologySlot::technology, TechnologyReference
-   uint32_t techSlotResearchQueue = 0; // TechnologySlot::researchQueue, ResearchQueue* (may be null)
+   uint32_t techSlotTechnology = 0;      // TechnologySlot::technology, TechnologyReference
+   uint32_t techSlotResearchQueue = 0;   // TechnologySlot::researchQueue, ResearchQueue* (may be null)
    uint32_t techSlotResearchManager = 0; // TechnologySlot::researchManager, ResearchManager* (may be null)
    uint32_t techSlotIndicateProgress = 0; // TechnologySlot::indicateProgress: 0 none, else a bar is drawn
-   uint32_t techReferenceId = 0; // TechnologyReference::technologyID, ID<TechnologyPrototype,u16>
-   uint32_t technologyPrototype = 0; // Technology::prototype
-   uint32_t researchQueueMap = 0; // ResearchQueue::queue, std::deque<ID<TechnologyPrototype,u16>>: _Map
-   uint32_t researchQueueMapSize = 0; // ... _Mapsize
-   uint32_t researchQueueOffset = 0; // ... _Myoff
-   uint32_t researchQueueSize = 0; // ... _Mysize
-   uintptr_t getTechnology = 0; // Technology const& TechnologyReference::getTechnology() const
-   uintptr_t technologyState = 0; // ResearchState Technology::getState(ResearchQueue const*) const
-   uintptr_t techSlotLevel = 0; // unsigned TechnologySlot::getLevel() const: the level band's number
+   uint32_t techReferenceId = 0;         // TechnologyReference::technologyID, ID<TechnologyPrototype,u16>
+   uint32_t technologyPrototype = 0;     // Technology::prototype
+   uint32_t researchQueueMap = 0;        // ResearchQueue::queue, std::deque<ID<TechnologyPrototype,u16>>: _Map
+   uint32_t researchQueueMapSize = 0;    // ... _Mapsize
+   uint32_t researchQueueOffset = 0;     // ... _Myoff
+   uint32_t researchQueueSize = 0;       // ... _Mysize
+   uintptr_t getTechnology = 0;          // Technology const& TechnologyReference::getTechnology() const
+   uintptr_t technologyState = 0;        // ResearchState Technology::getState(ResearchQueue const*) const
+   uintptr_t techSlotLevel = 0;          // unsigned TechnologySlot::getLevel() const: the level band's number
    // LocalisedString TechnologyPrototype::getLocalisedNameWithLevel(unsigned) const, as the window
    // titles the selected technology: "Steel axe", "Mining productivity 3".
    uintptr_t technologyNameWithLevel = 0;
-   uintptr_t researchProgress = 0; // double ResearchManager::getProgress(Technology const&) const
+   uintptr_t researchProgress = 0;       // double ResearchManager::getProgress(Technology const&) const
    uintptr_t localisedStringFromKey = 0; // LocalisedString::LocalisedString(char const* key)
    // LocalisedString::LocalisedString(Mode, char const*): with Mode::Literal, a parameter the game
    // says as it is.
@@ -1354,16 +1356,16 @@ struct Layout {
    uintptr_t localisedStringWithParameters[3] = {};
    // The graph, laid out in layers top to bottom, prerequisites above what they unlock. An edge that
    // spans layers runs through dummy vertices, one per layer it crosses.
-   uint32_t graphVertices = 0; // TechnologyGraphGui::graph, std::vector<std::unique_ptr<Vertex>>
-   uint32_t graphCentral = 0; // TechnologyGraphGui::central, Vertex*: the selected technology
-   uint32_t vertexTechnology = 0; // TechnologyGraphGui::Vertex::technology, TechnologyReference
-   uint32_t vertexSlot = 0; // ::slot, TechnologyGraphVertex*, a base of the button drawn
-   uint32_t vertexSuccessors = 0; // ::successors, std::vector<Vertex*>: one layer down
-   uint32_t vertexPredecessors = 0; // ::predecessors, std::vector<Vertex*>: one layer up
-   uint32_t vertexLayer = 0; // ::layer, unsigned
-   uint32_t vertexType = 0; // ::type, Vertex::Type
-   uint32_t vertexNumOmitted = 0; // ::numOmitted, unsigned
-   uint32_t vertexX = 0; // ::position.x, int: left to right within the layer
+   uint32_t graphVertices = 0;           // TechnologyGraphGui::graph, std::vector<std::unique_ptr<Vertex>>
+   uint32_t graphCentral = 0;            // TechnologyGraphGui::central, Vertex*: the selected technology
+   uint32_t vertexTechnology = 0;        // TechnologyGraphGui::Vertex::technology, TechnologyReference
+   uint32_t vertexSlot = 0;              // ::slot, TechnologyGraphVertex*, a base of the button drawn
+   uint32_t vertexSuccessors = 0;        // ::successors, std::vector<Vertex*>: one layer down
+   uint32_t vertexPredecessors = 0;      // ::predecessors, std::vector<Vertex*>: one layer up
+   uint32_t vertexLayer = 0;             // ::layer, unsigned
+   uint32_t vertexType = 0;              // ::type, Vertex::Type
+   uint32_t vertexNumOmitted = 0;        // ::numOmitted, unsigned
+   uint32_t vertexX = 0;                 // ::position.x, int: left to right within the layer
 
    // The info panel the game shows for what the player points at, built every frame by
    // SelectedInfoRenderer::update from GameView::update: beside the mouse after a delay, or with the
@@ -1372,26 +1374,27 @@ struct Layout {
    // for a tile) that the entity's own addToDescription fills through a Description.
    // SelectedInfo(std::optional<GuiContext>, Entity const* const&, bool onTheSide): empty until updated.
    uintptr_t entityInfoConstruct = 0;
-   uintptr_t entityInfoUpdate = 0; // void update(Entity const* const&, bool): fills it anew when changed
-   uintptr_t entityInfoDestroy = 0; // its scalar deleting destructor
+   uintptr_t entityInfoUpdate = 0;       // void update(Entity const* const&, bool): fills it anew when changed
+   uintptr_t entityInfoDestroy = 0;      // its scalar deleting destructor
    uint32_t entityInfoSize = 0;
    // SelectedInfo(std::optional<GuiContext>, Tile const&, bool onTheSide)
    uintptr_t tileInfoConstruct = 0;
-   uintptr_t tileInfoChange = 0; // void change(Tile const&, bool)
+   uintptr_t tileInfoChange = 0;         // void change(Tile const&, bool)
    uintptr_t tileInfoDestroy = 0;
    uint32_t tileInfoSize = 0;
    uint32_t globalInterfaceSettings = 0; // GlobalContext::interfaceSettings.value
-   uint32_t tooltipOnTheSide = 0; // InterfaceSettings::entityToolTipOnTheSide.value, bool
+   uint32_t tooltipOnTheSide = 0;        // InterfaceSettings::entityToolTipOnTheSide.value, bool
    // What the player points at, as GameView::update finds it: the entity of the selector the
    // latency adapter (or, without latency hiding, the player's own adapter) gives, else the tile the
    // controller deduces at the cursor.
-   uint32_t playerLatencyAdapter = 0; // Player::latencyStateAdapter, LatencyStateAdapter* (may be null)
-   uint32_t playerGameStateAdapter = 0; // Player::gameStateAdapter, by value
-   uint32_t adapterEntitySelector = 0; // slot of EntitySelector* GameAdapter::getEntitySelector() const
-   uint32_t selectorEntity = 0; // EntitySelector::selectedEntity.target, the Entity*
-   uint32_t playerController = 0; // Player::controllerManager.controller, Controller*
-   uint32_t controllerSelectedTile = 0; // slot of Tile const* Controller::deduceSelectedTile(MapPosition const&) const
-   uint32_t gameViewActiveWindow = 0; // GameView::activeWindow, std::unique_ptr<GameGui>: inventory, an entity's
+   uint32_t playerLatencyAdapter = 0;    // Player::latencyStateAdapter, LatencyStateAdapter* (may be null)
+   uint32_t playerGameStateAdapter = 0;  // Player::gameStateAdapter, by value
+   uint32_t adapterEntitySelector = 0;   // slot of EntitySelector* GameAdapter::getEntitySelector() const
+   uint32_t selectorEntity = 0;          // EntitySelector::selectedEntity.target, the Entity*
+   uint32_t playerController = 0;        // Player::controllerManager.controller, Controller*
+   // slot of Tile const* Controller::deduceSelectedTile(MapPosition const&) const
+   uint32_t controllerSelectedTile = 0;
+   uint32_t gameViewActiveWindow = 0;    // GameView::activeWindow, std::unique_ptr<GameGui>: inventory, an entity's
 
    // What the game says about itself while the DLL runs (see disclosure.h).
    // static void Logging::log(char const* file, unsigned line, LogLevel, char const* format, ...)
@@ -1402,42 +1405,42 @@ struct Layout {
    // std::string ApplicationVersion::strDetailedNoBuildMode() const: the version the main menu's
    // corner label and the About dialog show. Saves and multiplayer compare other strings.
    uintptr_t versionForDisplay = 0;
-   uintptr_t labelSetText = 0; // void agui::Label::setText(std::string const&)
-   uintptr_t widgetSetToolTip = 0; // agui::Widget& agui::Widget::setToolTip(std::string const&)
-   uint32_t slotSetEnabled = 0; // agui::Widget& agui::Widget::setEnabled(bool)
-   uint32_t globalOtherSettings = 0; // GlobalContext::otherSettings, OtherSettings*
-   uint32_t crashLogItem = 0; // OtherSettings::enableCrashLogUploading, SimpleConfigItem<bool>
-   uint32_t configBoolValue = 0; // SimpleConfigItem<bool>::value
+   uintptr_t labelSetText = 0;        // void agui::Label::setText(std::string const&)
+   uintptr_t widgetSetToolTip = 0;    // agui::Widget& agui::Widget::setToolTip(std::string const&)
+   uint32_t slotSetEnabled = 0;       // agui::Widget& agui::Widget::setEnabled(bool)
+   uint32_t globalOtherSettings = 0;  // GlobalContext::otherSettings, OtherSettings*
+   uint32_t crashLogItem = 0;         // OtherSettings::enableCrashLogUploading, SimpleConfigItem<bool>
+   uint32_t configBoolValue = 0;      // SimpleConfigItem<bool>::value
    // OtherSettingsGui::boolOtherSettings, std::vector<std::unique_ptr<BoolGuiSetting>>: the
    // checkboxes of Settings > Other, each with the config item it edits.
    uint32_t otherSettingsBools = 0;
-   uint32_t boolSettingItem = 0; // BoolGuiSetting::setting, SimpleConfigItem<bool>*
-   uint32_t boolSettingWidget = 0; // BoolGuiSetting::widget, an embedded agui::CheckBox
+   uint32_t boolSettingItem = 0;      // BoolGuiSetting::setting, SimpleConfigItem<bool>*
+   uint32_t boolSettingWidget = 0;    // BoolGuiSetting::widget, an embedded agui::CheckBox
 
    // The full map (see chart.h).
-   uint32_t playerRenderMode = 0; // Player::renderMode, GameRenderMode
+   uint32_t playerRenderMode = 0;     // Player::renderMode, GameRenderMode
    // ChartSelection PlayerInputSource::getChartSelection() const: what the map selects at the
    // cursor, nothing off the map.
    uintptr_t chartSelection = 0;
    uint32_t chartSelectionSize = 0;
    uint32_t chartSelectionTarget = 0; // ChartSelection::target, EntityWithOwner*: a vehicle or display panel
-   uint32_t chartSelectionTag = 0; // ChartSelection::customTagTarget, CustomChartTag*
-   uint32_t chartSelectionPatch = 0; // ChartSelection::resourcePatch, ResourceEntity*: one resource of the patch
-   uint32_t chartTagText = 0; // CustomChartTag::text, std::string
+   uint32_t chartSelectionTag = 0;    // ChartSelection::customTagTarget, CustomChartTag*
+   uint32_t chartSelectionPatch = 0;  // ChartSelection::resourcePatch, ResourceEntity*: one resource of the patch
+   uint32_t chartTagText = 0;         // CustomChartTag::text, std::string
    // ResourcePatchInfo, which finds a whole resource patch from one resource as the map does to
    // outline and label it.
    uint32_t patchInfoSize = 0;
    uintptr_t patchInfoConstruct = 0; // ResourcePatchInfo::ResourcePatchInfo(bool useClockLimiter)
-   uintptr_t patchInfoDestroy = 0; // ResourcePatchInfo::~ResourcePatchInfo()
+   uintptr_t patchInfoDestroy = 0;   // ResourcePatchInfo::~ResourcePatchInfo()
    // bool ResourcePatchInfo::update(ResourceEntity const*, ForceData const&, bool keepIfUnchanged)
    uintptr_t patchInfoUpdate = 0;
    // static std::string ResourcePatchInfo::getFormattedNameFor(MaterialID const&, double amount,
    // ResourceEntityPrototype const*): a line of the map's label, "[item=iron-ore] 1.2M".
    uintptr_t patchFormattedName = 0;
-   uint32_t patchInfoCounts = 0; // ResourcePatchInfo::expectedMiningAmount.counts, std::map<MaterialID, double>
+   uint32_t patchInfoCounts = 0;    // ResourcePatchInfo::expectedMiningAmount.counts, std::map<MaterialID, double>
    uint32_t patchInfoPrototype = 0; // ResourcePatchInfo::resourcePrototype
-   uint32_t materialIdSize = 0; // sizeof(MaterialID)
-   uint32_t playerForce = 0; // Player::forceID.index, uint8_t
+   uint32_t materialIdSize = 0;     // sizeof(MaterialID)
+   uint32_t playerForce = 0;        // Player::forceID.index, uint8_t
    // Map::forceManager.sortedForceDataList.begin_, ForceData**, indexed by ForceID.
    uint32_t mapForceData = 0;
    uintptr_t gameOperatorDelete = 0; // the game's operator delete(void*), which frees what its strings hold
@@ -1462,8 +1465,8 @@ inline constexpr int32_t kMapPositionScale = 256;
 
 // Bits of EntityPrototypeFlags, read from the game's entityPrototypeFlagMapping table in 2.1.21:
 // code constants, like the widget bits above.
-inline constexpr uint32_t kEntityNotRotatable = 0x1; // "not-rotatable"
-inline constexpr uint32_t kEntityPlaceableOffGrid = 0x10; // "placeable-off-grid"
+inline constexpr uint32_t kEntityNotRotatable = 0x1;              // "not-rotatable"
+inline constexpr uint32_t kEntityPlaceableOffGrid = 0x10;         // "placeable-off-grid"
 inline constexpr uint32_t kEntitySnapToRailSupportSpot = 0x10000000; // "snap-to-rail-support-spot"
 
 // EntityFlipping, code constants: NotAvailable 0, Simple 1, DirectionTransform 2,

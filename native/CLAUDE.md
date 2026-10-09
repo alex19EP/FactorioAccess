@@ -22,6 +22,7 @@ just dev-on     # enable the loopback dev server on the next start (see below)
 ```
 
 Before committing native work:
+- `python launch_factorio.py --format` (stylua and clang-format; CI checks both);
 - build clean with no new warnings (`/W4`);
 - the graph tests pass;
 - `fa_symbols_check` reports OK.
@@ -121,9 +122,16 @@ The GUI layer follows the graph-a11y spec, `E:\Games\modding\WH40KRTAccess\docs\
 
 - `src/graph/`, `src/navigator/`, `src/screens/` and `tests/` keep the CyberAccess style:
   PascalCase functions, Allman braces, 4-space indent.
-- The rest of `src/` (core, hooks, agui, game) uses camelCase, attached braces and a 3-space
-  indent.
-- Match the file you are in. Comments say why and what something is for, not what changed.
+- The rest of `src/` (core, hooks, agui, game) and `tools/` use camelCase, attached braces and a
+  3-space indent.
+- clang-format (20 or later; CI pins 23.1.2) holds the layout: `native/.clang-format` is the core
+  style, and the CyberAccess directories each carry the same override. Lines stop at 120 columns.
+  Naming is not formatted: match the file you are in.
+- A trailing comment must end before column 120, or clang-format re-spaces every hand-aligned
+  comment after it. Put a long one on its own line above.
+- `vendor/` is never formatted. `// clang-format off` keeps a deliberate layout, such as the
+  graph tests' builder chains; give the reason after a colon.
+- Comments say why and what something is for, not what changed.
 - Commit subjects are prefixed by area: `Native: ...`, `Character screen: ...`,
   `Machine screen: ...`.
 

@@ -1,6 +1,8 @@
 // Conformance tests: builder wiring (menu rows, raw edges, stops, contexts, groups, stitching,
 // position stamping). Ported from RTAccess tests/GraphBuilderTests.cs via CyberAccess.
 
+// clang-format off: the builder chains are laid out like the graphs they build, a row per line.
+
 #include <stdexcept>
 
 #include "graph/GraphBuilder.hpp"
