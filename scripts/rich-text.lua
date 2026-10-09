@@ -66,6 +66,14 @@ local function parse_tag(tag)
    return tag_type, name, params
 end
 
+-- Adds the text between tags, without the spaces around it, which MessageBuilder puts back
+---@param mb fa.MessageBuilder
+---@param literal string
+local function add_literal(mb, literal)
+   local trimmed = literal:match("^%s*(.-)%s*$")
+   if trimmed ~= "" then mb:fragment(trimmed) end
+end
+
 -- Verbalize a rich text string into audio-friendly text
 -- Handles known tags and leaves unknown ones as-is
 ---@param text string
@@ -82,12 +90,12 @@ function mod.verbalize_rich_text(text)
       local bracket_start = text:find("[", pos, true)
       if not bracket_start then
          -- No more tags, add remaining text
-         if pos <= #text then mb:fragment(text:sub(pos)) end
+         add_literal(mb, text:sub(pos))
          break
       end
 
       -- Add text before the bracket
-      if bracket_start > pos then mb:fragment(text:sub(pos, bracket_start - 1)) end
+      add_literal(mb, text:sub(pos, bracket_start - 1))
 
       -- Find closing bracket
       local bracket_end = text:find("]", bracket_start + 1, true)

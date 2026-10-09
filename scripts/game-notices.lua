@@ -1,7 +1,9 @@
 --Here: Game events that vanilla shows on screen and the Lua API reports, spoken as they happen.
 --
 -- The goal window (top left, set by tutorials, the campaign and scenarios) has no event, so it is
--- polled. Achievements, map tags other players add and space platform arrivals come as events.
+-- polled. Achievements and map tags other players add come as events. A space platform arriving or
+-- leaving is not here: vanilla shows no message for it, only the platform's state in the Space
+-- Platforms window and the space map.
 
 local Speech = require("scripts.speech")
 local StorageManager = require("scripts.storage-manager")
@@ -55,26 +57,6 @@ function mod.on_chart_tag_added(event)
             Speech.speak(player.index, { "fa.notice-map-tag-text", author.name, text })
          end
       end
-   end
-end
-
----A platform arriving, departing or stuck without a path. The other states follow what players
----do to it themselves.
----@param event EventData.on_space_platform_changed_state
-function mod.on_space_platform_changed_state(event)
-   local platform = event.platform
-   local states = defines.space_platform_state
-   local message
-   if platform.state == states.waiting_at_station and platform.space_location then
-      message = { "fa.notice-platform-arrived", platform.name, platform.space_location.localised_name }
-   elseif platform.state == states.on_the_path and event.old_state ~= states.paused then
-      message = { "fa.notice-platform-departed", platform.name }
-   elseif platform.state == states.no_path then
-      message = { "fa.notice-platform-no-path", platform.name }
-   end
-   if not message then return end
-   for _, player in pairs(platform.force.connected_players) do
-      Speech.speak(player.index, message)
    end
 end
 

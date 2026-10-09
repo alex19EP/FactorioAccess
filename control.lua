@@ -761,7 +761,6 @@ EventManager.on_event(
 )
 EventManager.on_event(defines.events.on_achievement_gained, GameNotices.on_achievement_gained)
 EventManager.on_event(defines.events.on_chart_tag_added, GameNotices.on_chart_tag_added)
-EventManager.on_event(defines.events.on_space_platform_changed_state, GameNotices.on_space_platform_changed_state)
 EventManager.on_event(defines.events.on_player_controller_changed, function(event)
    ViewLimit.on_controller_changed(event)
    Zoom.on_controller_changed(event)
