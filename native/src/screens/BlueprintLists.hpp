@@ -30,8 +30,9 @@ void AddSubheaderButtons(graph::GraphBuilder& builder, const std::string& key, c
 /// The slots of a BlueprintsList, laid out as the game lays them out in the player's view mode: in
 /// List view one to a row with the description read after the slot (the table's columns hold the
 /// lines between items too), in Grid and Slots view the table's rows. Keyed by their place in the
-/// list, so the cursor keeps its slot when the view changes. Adds to the current stop.
-void AddBlueprintList(graph::GraphBuilder& builder, const std::string& key, const agui::Widget* list);
+/// list, so the cursor keeps its slot when the view changes. Adds to the current stop, and returns
+/// how many slots it added.
+int AddBlueprintList(graph::GraphBuilder& builder, const std::string& key, const agui::Widget* list);
 
 /// A stop of a list's frame subheader: its labels (the hint on cycling through a book, the library's
 /// warnings), then the List, Grid and Slots buttons in a row.

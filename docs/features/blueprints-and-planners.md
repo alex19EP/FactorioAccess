@@ -99,6 +99,8 @@ The blueprint library keeps blueprints, books and planners outside your inventor
 - the window's history: the back and forward buttons, and the game's warning when the library takes a lot of memory;
 - your inventory.
 
+The records stop starts with the window's search button. `ctrl + f`, or `enter` on the button, opens the search and puts you in its field: type, and the shelves keep only the records that match. `down` goes from the field to the first of them, and a search that matches nothing says empty. Press the button again to close the search. A book opened in the library has the same search at the start of its contents.
+
 On a record, `enter` takes it into your hand, and while you hold a blueprint, `enter` on a slot puts it there. `right bracket` opens it: a blueprint's setup window, a planner's window, or a book inside the library. `shift + enter` moves it into your inventory.
 
 To keep a blueprint for other games, take it from your inventory with `enter` and put it into an empty slot of My blueprints.

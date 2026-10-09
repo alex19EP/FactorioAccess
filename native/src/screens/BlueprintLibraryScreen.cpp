@@ -5,6 +5,7 @@
 
 #include "BlueprintLists.hpp"
 #include "game.h"
+#include "vocab.h"
 
 namespace fa::screens
 {
@@ -14,6 +15,27 @@ namespace
 
 using agui::Widget;
 using game::layout;
+
+constexpr const char* kSearchKey = "search/field";
+
+// The title bar's search: its button, then its field while the search is open, named by the button
+// ("Search (Ctrl + F)"). The field filters every shelf and an open book's contents as it is typed
+// in, and the records follow it, so Down goes from the field to the first match.
+void AddSearch(graph::GraphBuilder& builder, const Widget* header, const Widget* field)
+{
+    const Widget* button = FindDescendant(header, "SearchBar");
+    AddControl(builder, "search/button", button);
+    if (field)
+        builder.AddItem(graph::ControlId::Referenced(field, kSearchKey),
+            ControlNode(field, [button]() { return button ? NameOf(button) : std::string(); }));
+}
+
+// While searching, a list the search emptied says so.
+void AddNoMatch(graph::GraphBuilder& builder, const Widget* field, int records)
+{
+    if (field && records == 0)
+        builder.AddLabel(graph::ControlId::Structural("search/none"), []() { return std::string(vocab::kEmpty); });
+}
 
 // The title bar's back and forward arrows through the window's history, and the warning that the
 // library takes a lot of memory.
@@ -31,9 +53,9 @@ void AddHistory(graph::GraphBuilder& builder, const Widget* window, const agui::
             TextNode(memory, [memory]() { return LabelText(memory); }));
 }
 
-// The tabs, then the shelves of the chosen one: the "synchronising" label until a shelf has
-// arrived, then its records.
-void AddShelves(graph::GraphBuilder& builder, const Widget* window)
+// The tabs, then the search and the shelves of the chosen one: the "synchronising" label until a
+// shelf has arrived, then its records.
+void AddShelves(graph::GraphBuilder& builder, const Widget* window, const Widget* header, const Widget* field)
 {
     const Widget* tabs = agui::member(window, layout.libraryTabs);
     builder.BeginStop("tabs");
@@ -44,7 +66,9 @@ void AddShelves(graph::GraphBuilder& builder, const Widget* window)
     builder.EndRow();
 
     builder.BeginStop("shelves");
+    AddSearch(builder, header, field);
     index = 0;
+    int records = 0;
     for (const Widget* shelf : FindAll(tabs, "BlueprintShelfWidget"))
     {
         std::string key = "shelves/" + std::to_string(index++);
@@ -52,25 +76,31 @@ void AddShelves(graph::GraphBuilder& builder, const Widget* window)
         const Widget* synchronising = agui::member(shelf, layout.shelfSynchronising);
         const Widget* list = agui::member(shelf, layout.shelfList);
         if (agui::parent(synchronising) == shelf)
+        {
             builder.AddItem(graph::ControlId::Referenced(synchronising, key + "/synchronising"),
                 TextNode(synchronising, [synchronising]() { return LabelText(synchronising); }));
+            ++records;
+        }
         else if (agui::parent(list) == shelf)
-            AddBlueprintList(builder, key, list);
+            records += AddBlueprintList(builder, key, list);
     }
+    AddNoMatch(builder, field, records);
 }
 
-// A book record opened in the library, laid out as a book's window.
-void AddOpenBook(graph::GraphBuilder& builder, const Widget* book)
+// A book record opened in the library, laid out as a book's window, with the search over its
+// contents.
+void AddOpenBook(graph::GraphBuilder& builder, const Widget* book, const Widget* header, const Widget* field)
 {
-    const Widget* header = agui::member(book, layout.bookRecordGuiNavigation);
+    const Widget* navigation = agui::member(book, layout.bookRecordGuiNavigation);
     AddBook(builder,
-        {agui::member(header, layout.bookHeaderName),
-            agui::member(header, layout.bookHeaderRename),
+        {agui::member(navigation, layout.bookHeaderName),
+            agui::member(navigation, layout.bookHeaderRename),
             agui::member(book, layout.bookRecordGuiDescription),
-            header});
+            navigation});
     AddSubheaderButtons(builder, "buttons", agui::member(book, layout.bookRecordGuiHeader));
     builder.BeginStop("contents");
-    AddBlueprintList(builder, "contents", agui::member(book, layout.bookRecordGuiList));
+    AddSearch(builder, header, field);
+    AddNoMatch(builder, field, AddBlueprintList(builder, "contents", agui::member(book, layout.bookRecordGuiList)));
     AddListView(builder, agui::member(book, layout.bookRecordGuiInside));
 }
 
@@ -84,18 +114,40 @@ bool BlueprintLibraryScreen::Handles(const Widget* window) const
 void BlueprintLibraryScreen::BuildWindow(graph::GraphBuilder& builder, const Widget* window)
 {
     agui::EntityWindowParts parts = agui::entityWindowParts(window);
+    // The search field shows only while the search is open, in a popup the game puts over the
+    // window; opening it lands on it.
+    const Widget* popup = FindDescendant(window, "SearchPopup");
+    const Widget* field = popup ? FindDescendant(popup, "agui::TextField") : nullptr;
+    if (field && !_searching)
+        _landing = kSearchKey;
+    _searching = field != nullptr;
+
     const Widget* inside = agui::member(window, layout.libraryInside);
     if (Shows(inside))
     {
-        AddShelves(builder, window);
+        AddShelves(builder, window, parts.header, field);
         AddListView(builder, inside);
     }
     else if (const Widget* book = FindDescendant(agui::member(window, layout.libraryBookHolder), "BlueprintBookRecordWidget"))
-        AddOpenBook(builder, book);
+        AddOpenBook(builder, book, parts.header, field);
     // After the panel: when a book opens or closes, the cursor finds no earlier stop that stayed
     // and starts at the top of the new panel.
     AddHistory(builder, window, parts);
     AddInventory(builder, parts);
+}
+
+const char* BlueprintLibraryScreen::TakeSuggestedLanding()
+{
+    const char* landing = _landing;
+    _landing = nullptr;
+    return landing;
+}
+
+void BlueprintLibraryScreen::OnPop()
+{
+    EntityWindowScreen::OnPop();
+    _searching = false;
+    _landing = nullptr;
 }
 
 } // namespace fa::screens

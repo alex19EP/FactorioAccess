@@ -67,15 +67,15 @@ void AddSubheaderButtons(graph::GraphBuilder& builder, const std::string& key, c
     builder.EndRow();
 }
 
-void AddBlueprintList(graph::GraphBuilder& builder, const std::string& key, const Widget* list)
+int AddBlueprintList(graph::GraphBuilder& builder, const std::string& key, const Widget* list)
 {
     if (!Shows(list))
-        return;
+        return 0;
     bool listView = agui::blueprintsListView(list);
     unsigned columns = listView ? 1 : agui::tableColumns(list);
     std::span<const Widget* const> cells = agui::children(list);
     if (columns == 0)
-        return;
+        return 0;
     int slotNumber = 0;
     for (std::size_t start = 0; start < cells.size(); start += columns)
     {
@@ -106,6 +106,7 @@ void AddBlueprintList(graph::GraphBuilder& builder, const std::string& key, cons
         if (rowStarted)
             builder.EndRow();
     }
+    return slotNumber;
 }
 
 void AddListView(graph::GraphBuilder& builder, const Widget* frame)
