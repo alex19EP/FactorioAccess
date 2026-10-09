@@ -1,104 +1,56 @@
 --Data changes: Including vanilla prototype changes, new prototypes, new sound files, new custom input events
 
---Vanilla prototype changes--
+local SettingDecls = require("scripts.settings-decls")
 
 ---New radar type: This radar scans a new sector every 5 seconds instead of 33, and it refreshes its short range every 5 seconds (precisely fast enough) instead of 1 second, but the short range is smaller and the radar costs double the power.
-local ar_tint = { r = 0.5, g = 0.5, b = 0.5, a = 0.9 }
-local access_radar = table.deepcopy(data.raw["radar"]["radar"])
-access_radar.icons = {
-   {
-      icon = access_radar.icon,
-      icon_size = access_radar.icon_size,
-      tint = ar_tint,
-   },
-}
-access_radar.name = "access-radar"
-access_radar.energy_usage = "600kW" --Default: "300kW"
-access_radar.energy_per_sector = "3MJ" --Default: "10MJ"
-access_radar.energy_per_nearby_scan = "3MJ" --Default: "250kJ"
-access_radar.max_distance_of_sector_revealed = 32 --Default: 14, now scans up to 1024 tiles away instead of 448
-access_radar.max_distance_of_nearby_sector_revealed = 2 --Default: 3
-access_radar.rotation_speed = 0.01 --Default: 0.01
-access_radar.minable.result = "access-radar"
-access_radar.pictures.layers[1].tint = ar_tint --grey
-access_radar.pictures.layers[2].tint = ar_tint --grey
-
-local access_radar_item = table.deepcopy(data.raw["item"]["radar"])
-access_radar_item.name = "access-radar"
-access_radar_item.place_result = "access-radar"
-access_radar_item.icons = {
-   {
-      icon = access_radar_item.icon,
-      icon_size = access_radar_item.icon_size,
-      tint = ar_tint,
-   },
-}
-
-local access_radar_recipe = table.deepcopy(data.raw["recipe"]["radar"])
-access_radar_recipe.enabled = true
-access_radar_recipe.name = "access-radar"
-access_radar_recipe.results = { { type = "item", name = "access-radar", amount = 1 } }
-access_radar_recipe.ingredients = {
-   { type = "item", name = "electronic-circuit", amount = 10 },
-   { type = "item", name = "iron-gear-wheel", amount = 10 },
-   { type = "item", name = "iron-plate", amount = 20 },
-}
-
-data:extend({ access_radar, access_radar_item })
-data:extend({ access_radar_item, access_radar_recipe })
-
----New presets for map generation (deprecated?)
-resource_def = { richness = 4 }
-
-data.raw["map-gen-presets"].default["faccess-compass-valley"] = {
-   order = "_A",
-   basic_settings = {
-      autoplace_controls = {
-         coal = resource_def,
-         ["copper-ore"] = resource_def,
-         ["crude-oil"] = resource_def,
-         ["iron-ore"] = resource_def,
-         stone = resource_def,
-         ["uranium-ore"] = resource_def,
+---A startup setting, since it adds a recipe to every game, the campaign included.
+local function add_access_radar()
+   local ar_tint = { r = 0.5, g = 0.5, b = 0.5, a = 0.9 }
+   local access_radar = table.deepcopy(data.raw["radar"]["radar"])
+   access_radar.icons = {
+      {
+         icon = access_radar.icon,
+         icon_size = access_radar.icon_size,
+         tint = ar_tint,
       },
-      seed = 2703463849,
-      starting_area = 4,
-      peaceful_mode = true,
-      cliff_settings = {
-         name = "cliff",
-         cliff_elevation_0 = 10,
-         cliff_elevation_interval = 240,
-         richness = 0.1666666716337204,
-      },
-   },
-   advanced_settings = {
-      enemy_evolution = {
-         enabled = true,
-         time_factor = 0,
-         destroy_factor = 0.006,
-         pollution_factor = 1e-07,
-      },
-      enemy_expansion = {
-         enabled = false,
-      },
-   },
-}
+   }
+   access_radar.name = "access-radar"
+   access_radar.energy_usage = "600kW" --Default: "300kW"
+   access_radar.energy_per_sector = "3MJ" --Default: "10MJ"
+   access_radar.energy_per_nearby_scan = "3MJ" --Default: "250kJ"
+   access_radar.max_distance_of_sector_revealed = 32 --Default: 14, now scans up to 1024 tiles away instead of 448
+   access_radar.max_distance_of_nearby_sector_revealed = 2 --Default: 3
+   access_radar.rotation_speed = 0.01 --Default: 0.01
+   access_radar.minable.result = "access-radar"
+   access_radar.pictures.layers[1].tint = ar_tint --grey
+   access_radar.pictures.layers[2].tint = ar_tint --grey
 
-data.raw["map-gen-presets"].default["faccess-enemies-off"] = {
-   order = "_B",
-   basic_settings = {
-      autoplace_controls = {
-         ["enemy-base"] = { frequency = 0 },
+   local access_radar_item = table.deepcopy(data.raw["item"]["radar"])
+   access_radar_item.name = "access-radar"
+   access_radar_item.place_result = "access-radar"
+   access_radar_item.icons = {
+      {
+         icon = access_radar_item.icon,
+         icon_size = access_radar_item.icon_size,
+         tint = ar_tint,
       },
-   },
-}
+   }
 
-data.raw["map-gen-presets"].default["faccess-peaceful"] = {
-   order = "_C",
-   basic_settings = {
-      peaceful_mode = true,
-   },
-}
+   local access_radar_recipe = table.deepcopy(data.raw["recipe"]["radar"])
+   access_radar_recipe.enabled = true
+   access_radar_recipe.name = "access-radar"
+   access_radar_recipe.results = { { type = "item", name = "access-radar", amount = 1 } }
+   access_radar_recipe.ingredients = {
+      { type = "item", name = "electronic-circuit", amount = 10 },
+      { type = "item", name = "iron-gear-wheel", amount = 10 },
+      { type = "item", name = "iron-plate", amount = 20 },
+   }
+
+   data:extend({ access_radar, access_radar_item })
+   data:extend({ access_radar_item, access_radar_recipe })
+end
+
+if settings.startup[SettingDecls.SETTING_NAMES.ACCESS_RADAR].value then add_access_radar() end
 
 --New sound files--
 data:extend({

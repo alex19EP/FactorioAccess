@@ -18,6 +18,7 @@ mod.SETTING_NAMES = {
    SONIFICATION_CRAFTING = "fa-crafting-sonification",
    SONIFICATION_COMBAT_ENEMIES = "fa-combat-enemy-sonification",
    SONIFICATION_COMBAT_SPAWNERS = "fa-combat-spawner-sonification",
+   ACCESS_RADAR = "fa-access-radar",
 }
 
 ---@type fa.SettingDecl[]
@@ -49,6 +50,13 @@ mod.declarations = {
       setting_type = "runtime-per-user",
       default_value = true,
       order = "d",
+   },
+   {
+      name = mod.SETTING_NAMES.ACCESS_RADAR,
+      type = "bool-setting",
+      setting_type = "startup",
+      default_value = true,
+      order = "a",
    },
 }
 

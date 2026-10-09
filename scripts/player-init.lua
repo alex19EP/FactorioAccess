@@ -279,9 +279,6 @@ function mod.initialize(player)
          edit_import = false,
       }
 
-   -- Force rechart on empty map
-   if table_size(faplayer.mapped) == 0 then player.force.rechart() end
-
    faplayer.localisations = faplayer.localisations or {}
    faplayer.translation_id_lookup = faplayer.translation_id_lookup or {}
 

@@ -284,11 +284,6 @@ function on_tick(event)
       end
       KruiseKontrol.read_remarks()
       GameNotices.on_tick()
-   elseif event.tick % 90 == 13 then
-      for pindex, player in pairs(players) do
-         --Fix running speed bug (toggle walk also fixes it)
-         fix_walk(pindex)
-      end
    elseif event.tick % 450 == 14 then
       --Run regular reminders every 7.5 seconds
       for pindex, player in pairs(players) do
@@ -573,9 +568,6 @@ end)
 EventManager.on_configuration_changed(ensure_storage_structures_are_up_to_date)
 
 EventManager.on_init(function()
-   ---@type any
-   local freeplay = remote.interfaces["freeplay"]
-   if freeplay and freeplay["set_skip_intro"] then remote.call("freeplay", "set_skip_intro", true) end
    ensure_storage_structures_are_up_to_date()
    TestFramework.on_init()
    AudioCues.on_init()
@@ -617,13 +609,6 @@ EventManager.on_event(
       router:close_ui()
    end
 )
-
-function fix_walk(pindex)
-   local player = game.get_player(pindex)
-   if not player.character then return end
-   -- Always use normal walking speed
-   player.character_running_speed_modifier = 0 -- 100% + 0 = 100%
-end
 
 EventManager.on_event(
    defines.events.on_gui_opened,
@@ -1720,22 +1705,6 @@ EventManager.on_event(
    ---@param event EventData.CustomInputEvent
    function(event, pindex)
       UiRouter.get_router(pindex):open_ui(UiRouter.UI_NAMES.CURSOR_COORDINATE_INPUT)
-   end
-)
-
-EventManager.on_event(
-   "fa-s-t",
-   ---@param event EventData.CustomInputEvent
-   function(event, pindex)
-      Teleport.teleport_to_cursor(pindex, false, false, false)
-   end
-)
-
-EventManager.on_event(
-   "fa-cs-t",
-   ---@param event EventData.CustomInputEvent
-   function(event, pindex)
-      Teleport.teleport_to_cursor(pindex, false, true, false)
    end
 )
 

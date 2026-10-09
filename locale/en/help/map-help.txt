@@ -12,8 +12,6 @@ To walk, use the arrow keys.
 
 To move the cursor, press w, a, s, and d.
 
-You can teleport with shift t.  This is a cheat, but many players find that it is fair because we are slower in many other aspects.
-
 When your cursor is on an entity, it is selected.
 
 Use k to get more information on the selected entity or what is in your hand.
