@@ -82,6 +82,7 @@ To uninstall the DLL, delete `winmm.dll` and `winmm.pdb` from `bin\x64`. The mod
 
 - Walking moves from W, A, S and D to the arrow keys, leaving W, A, S and D to the cursor.
 - Connect and disconnect train move from J and K to CONTROL + J and CONTROL + K.
+- Research moves from T to CONTROL + T, leaving T to the time of day.
 - Zoom in and zoom out get EQUALS and MINUS.
 - Every control on a mouse button also gets a key: left button LEFTBRACKET, right button RIGHTBRACKET, middle button BACKSLASH, with the same modifiers. The key goes in the control's free second slot, so the mouse keeps working.
 
@@ -107,8 +108,6 @@ There are a huge number of keystrokes and functions in the mod. To help keep thi
 
 Please note that the mod wiki is out of date. The above documentation is maintained by developers and is for 2.0. The wiki is by users and primarily for 1.1.
 
-To access the in-game tutorial, press control t.
-
 # Vanilla Mode
 
 Vanilla Mode is for sighted people to play using mouse controls without disabling the mod. The most likely use case for
@@ -121,7 +120,7 @@ be essentially unplayable in multiplayer, with vanilla mode or otherwise. We mai
 of users who want to play multiplayer anyway or have different use cases.
 
 When Vanilla Mode mode is toggled on, it disables sonifiers and speech, stops all of the mod's key handling, and closes
-any open mod UIs. Mod data such as fast travel points are left untouched, and so you should be able to toggle Vanilla
+any open mod UIs. Mod data such as rulers is left untouched, and so you should be able to toggle Vanilla
 Mode without any penalties. If the sighted person does not run our keys script, then their game in
 Vanilla Mode should function as if this mod is not present. If the mod's config tweaks are used and then Vanilla Mode is
 enabled, the keymapping changes of the mod are still present but inactive. In this case one can play using the arrow

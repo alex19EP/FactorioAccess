@@ -244,7 +244,7 @@ Settings allow users to configure mod behavior. They're defined in the settings 
       type = "bool-setting",  -- or "int-setting", "double-setting", "string-setting"
       setting_type = "runtime-per-user",
       default_value = false,
-      order = "b",  -- Controls display order in settings menu
+      order = "b",  -- Controls display order in the game's Mod settings window
    },
    ```
 
@@ -254,7 +254,7 @@ Settings allow users to configure mod behavior. They're defined in the settings 
    fa-my-setting=My setting label
 
    [mod-setting-description]
-   fa-my-setting=Description shown in settings menu
+   fa-my-setting=Description shown in the Mod settings window
    ```
 
 3. **Read at runtime**:
@@ -262,7 +262,7 @@ Settings allow users to configure mod behavior. They're defined in the settings 
    local enabled = settings.get_player_settings(pindex)["fa-my-setting"].value
    ```
 
-Settings automatically appear in the FA settings menu (opened via keybind). The menu is built dynamically from `settings-decls.lua`.
+Players change settings in the game's own Mod settings window (Escape, Settings, Mod settings), which the DLL reads (`native/src/screens/ModSettingsScreen.cpp`). FA has no settings menu of its own. Prefer `runtime-per-user` for preferences such as sounds: a `runtime-global` setting is map-wide and only admins can change it.
 
 ## Performance Tips
 

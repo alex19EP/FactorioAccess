@@ -14,8 +14,6 @@ Return the cursor to your character: `j`
 
 Enter cursor coordinates and jump to them: `shift + c`
 
-Open fast travel: `alt + v`
-
 Place the audio ruler: `ctrl + alt + b`
 
 Clear the audio ruler: `alt + shift + b`
@@ -60,10 +58,6 @@ Move the cursor by the size of the item in hand: `ctrl + wasd`
 
 Move larger cursors by 1 tile: `ctrl + WASD`
 
-Teleport to the cursor: `shift + t`
-
-Teleport to the cursor when enemies are present at the destination: `ctrl + shift + t`
-
 Trigger Kruise Kontrol: `ctrl + alt + right bracket`
 
 Cancel Kruise Kontrol: `enter`
@@ -92,7 +86,7 @@ Turn a belt line while holding `left bracket`: `r`, then step to the side
 
 Cycle your cursor through vehicles near your cursor: `shift + v`
 
-Open the tutorial: `control + t`
+Read the time of day: `t`. The game has no clock, only light: you hear day, dusk, night or dawn, and at dusk and dawn how much light there is.
 
 ## Description
 
@@ -102,9 +96,7 @@ The Factorio world is continuous, but all buildings in Vanilla build on a tile g
 
 Walking always remains "smoothe", e.g. your character can be at `x = 1.2323`.  Most mod users do not walk much.
 
-If you want to directly center your character on a tile, `shift + t` can be used to teleport. This works for long range teleports (a cheat) as well as short range "move me a couple tiles and line me up perfectly" teleports.
-
-For those who wish to avoid teleporting long distances, place your cursor on an empty tile and press `ctrl + alt + right bracket` to trigger Kruise Kontrol.
+To have your character walk somewhere, place your cursor on an empty tile and press `ctrl + alt + right bracket` to trigger Kruise Kontrol.
 
 The keys for the cursor are not logically arranged because of ergonomics.  By putting things on different hands, most operations are a "drum roll". For example, `d` `left bracket` over and over can build a line of stuff, and because it's both hands you can press it much, much faster.
 
@@ -114,7 +106,7 @@ You can think of brackets like the mouse buttons. They roughly match vanilla, an
 
 Your character is your body.  You always have one, unless you are dead or in other advanced situations that do not come up much in the base game.
 
-You mostly do not need to be concerned with it, especially if you teleport, but it must be in range of building unless you place ghosts (10 tiles by default)
+You mostly do not need to be concerned with it, but it must be in range of building unless you place ghosts (10 tiles by default)
 
 Your character is also what you "pick things up from". For example, putting your character on a belt and holding `f` picks up from that belt, approximately.  This is not precisely announced due to API limitations.
 
@@ -178,19 +170,15 @@ While `left bracket` is held, cursor steps are silent unless something blocks th
 
 To build a line while walking, press `i` so the cursor stays one tile in front of your character, then hold `left bracket` and run:
 
-- Move the cursor to where you want it to start
-- Press `shift + t` to teleport
+- Walk your character to where you want the line to start
 - Put a belt in hand, press `i`, and hold `left bracket`
 - Run your character in a straight line to where you want the belts to stop, then let go
 
-### The Ruler and fast travel
+### The Ruler
 
 The ruler is for alignment.  You place it with `ctrl + alt + b` and it forms an audio cross.  When your cursor or character crosses it, it plays a tone.  Clear it with `alt + shift + b`.
 
 You can use rulers to quickly place large numbers of items.  For example, to place a belt going east, find where you want it to end, arrow a few tiles north, and place your ruler.  Then, you can hold `left bracket` and run in a straight line until your character hits the ruler, like hitting a wall.  IMPORTANT: the line does not stop itself at the ruler, these are still separate features.
-
-To remember map locations, use fast travel, accessible with `alt + v`.  Fast travel is like your browser's bookmarks menu, but for map locations.
-
 
 ### Cursor Skipping
 

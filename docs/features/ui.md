@@ -114,7 +114,7 @@ Not all tabs are always present. For example personal logistic trash does not sh
 
 Used to configure things, set up the circuit network, etc., menus are standard vertical menus with occasional horizontal rows.  Rows are announced as "row of 4 items" and navigated with A and D.  To select an item click it with `left bracket`.  In rare circumstances, type a value instead with `m`.
 
-Examples of simple menus include blueprint configuration and fast travel.  Examples of very complicated menus include the logistic section editor, which uses one row per request, and circuit network configurations, which use horizontal controls for configuring conditions.
+An example of a simple menu is blueprint configuration.  Examples of very complicated menus include the logistic section editor, which uses one row per request, and circuit network configurations, which use horizontal controls for configuring conditions.
 
 
 ### Standard Widgets: inventory grids

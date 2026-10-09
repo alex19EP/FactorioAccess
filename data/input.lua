@@ -91,8 +91,8 @@ data:extend({
    },
    {
       type = "custom-input",
-      name = "fa-c-t",
-      key_sequence = "CONTROL + T",
+      name = "fa-t",
+      key_sequence = "T",
       consuming = "none",
    },
 
@@ -170,20 +170,6 @@ data:extend({
       type = "custom-input",
       name = "fa-cas-b",
       key_sequence = "CONTROL + SHIFT + ALT + B",
-      consuming = "none",
-   },
-
-   {
-      type = "custom-input",
-      name = "fa-s-t",
-      key_sequence = "SHIFT + T",
-      consuming = "none",
-   },
-
-   {
-      type = "custom-input",
-      name = "fa-cs-t",
-      key_sequence = "CONTROL + SHIFT + T",
       consuming = "none",
    },
 
@@ -595,13 +581,6 @@ data:extend({
 
    {
       type = "custom-input",
-      name = "fa-a-v",
-      key_sequence = "ALT + V",
-      consuming = "none",
-   },
-
-   {
-      type = "custom-input",
       name = "fa-s-v",
       key_sequence = "SHIFT + V",
       consuming = "none",
@@ -800,9 +779,30 @@ data:extend({
 
    {
       type = "custom-input",
-      name = "fa-cas-m",
-      key_sequence = "CONTROL + SHIFT + ALT + M",
-      consuming = "none",
+      name = "fa-cas-i",
+      key_sequence = "CONTROL + ALT + SHIFT + I",
+      consuming = "game-only",
+   },
+
+   {
+      type = "custom-input",
+      name = "fa-cas-c",
+      key_sequence = "CONTROL + ALT + SHIFT + C",
+      consuming = "game-only",
+   },
+
+   {
+      type = "custom-input",
+      name = "fa-cas-e",
+      key_sequence = "CONTROL + ALT + SHIFT + E",
+      consuming = "game-only",
+   },
+
+   {
+      type = "custom-input",
+      name = "fa-cas-s",
+      key_sequence = "CONTROL + ALT + SHIFT + S",
+      consuming = "game-only",
    },
 
    {

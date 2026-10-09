@@ -121,7 +121,6 @@ mod.UI_NAMES = {
    -- BUILDING and VEHICLE removed - migrating to capability-based UI
    -- Generic entity UI that adapts to entity capabilities
    ENTITY = "entity",
-   TRAVEL = "travel",
    GUNS = "guns", -- Keep for backward compatibility with gun_menu registration
    WARNINGS = "warnings",
    SIGNAL_SELECTOR = "signal_selector",
@@ -157,7 +156,6 @@ mod.UI_NAMES = {
    HELP = "help",
    TUTORIAL = "tutorial",
    SCHEDULE_EDITOR = "schedule_editor",
-   SETTINGS = "settings",
    PROTOTYPE_LISTER = "prototype_lister",
    -- Test UI names (used in automated tests)
    TEST_ASSEMBLING_MACHINE = "test-assembling-machine",
@@ -772,23 +770,6 @@ register_ui_event("fa-s-slash", function(event, pindex)
       else
          Speech.speak(pindex, { "fa.help-no-content" })
       end
-   end
-
-   return EventManager.FINISHED
-end)
-
--- Ctrl+T key toggles tutorial UI - can be opened from anywhere including GUIs
-register_ui_event("fa-c-t", function(event, pindex)
-   local router = mod.get_router(pindex)
-   local stack = router_state[pindex].ui_stack
-
-   -- Check if tutorial UI is on top of the stack
-   if #stack > 0 and stack[#stack].name == mod.UI_NAMES.TUTORIAL then
-      -- Close tutorial UI
-      router:_pop_ui()
-   else
-      -- Open tutorial UI
-      router:open_child_ui(mod.UI_NAMES.TUTORIAL, {})
    end
 
    return EventManager.FINISHED

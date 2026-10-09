@@ -47,7 +47,6 @@ describe("Sound System Tests", function()
          -- Play movement sounds
          sounds.play_player_walk(1)
          sounds.play_player_turn(1)
-         sounds.play_player_teleport(1)
       end)
 
       test_ctx:at_tick(5, function(ctx)
@@ -56,7 +55,7 @@ describe("Sound System Tests", function()
          sounds.play_aim_locked(1)
 
          local history = sounds.get_sound_history()
-         ctx:assert_equals(5, #history, "Should have 5 sounds total")
+         ctx:assert_equals(4, #history, "Should have 4 sounds total")
       end)
 
       test_ctx:in_ticks(10, function(ctx)

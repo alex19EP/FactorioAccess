@@ -1,11 +1,3 @@
-for name, proto in pairs(data.raw.container) do
-   proto.open_sound = proto.open_sound or { filename = "__base__/sound/metallic-chest-open.ogg", volume = 0.43 }
-   proto.close_sound = proto.close_sound or { filename = "__base__/sound/metallic-chest-close.ogg", volume = 0.43 }
-end
-
----Apply universal belt immunity
-data.raw.character.character.has_belt_immunity = true
-
 ---Make the character unlikely to be selected by the mouse pointer when overlapping with entities
 data.raw.character.character.selection_priority = 2
 
@@ -46,17 +38,3 @@ data:extend({
       linked_game_control = "confirm-gui",
    },
 })
-
----Make selected vanilla objects not collide with players
-local function remove_player_collision(ent_p)
-   --todo: this won't work for entities that don't have their collision_mask defined since the vanilla default collision mask include the player.
-   (ent_p.collision_mask or {})["player"] = nil
-end
-for _, ent_type in pairs({ "pipe", "pipe-to-ground", "constant-combinator", "inserter" }) do
-   for _, ent_p in pairs(data.raw[ent_type]) do
-      remove_player_collision(ent_p)
-   end
-end
---TODO:should probably just filter electric poles by their collision_box size...
-remove_player_collision(data.raw["electric-pole"]["small-electric-pole"])
-remove_player_collision(data.raw["electric-pole"]["medium-electric-pole"])

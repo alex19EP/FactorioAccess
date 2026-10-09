@@ -24,6 +24,7 @@ local SettingDecls = require("scripts.settings-decls")
 local SETTING_NAMES = SettingDecls.SETTING_NAMES
 local Cursor = require("scripts.cursor")
 local CursorChanges = require("scripts.cursor-changes")
+local Daytime = require("scripts.daytime")
 local Driving = require("scripts.driving")
 local HandMonitor = require("scripts.hand-monitor")
 local Electrical = require("scripts.electrical")
@@ -58,11 +59,9 @@ local ScannerLegacy = require("scripts.scanner.legacy")
 local Spidertron = require("scripts.spidertron")
 local SpidertronRemote = require("scripts.spidertron-remote")
 local TH = require("scripts.table-helpers")
-local Teleport = require("scripts.teleport")
 local TestFramework = require("scripts.test-framework")
 local TileReader = require("scripts.tile-reader")
 local TransportBelts = require("scripts.transport-belts")
-local TravelTools = require("scripts.travel-tools")
 local UpgradePlanner = require("scripts.upgrade-planner")
 local VanillaMode = require("scripts.vanilla-mode")
 local VirtualTrainDriving = require("scripts.rails.virtual-train-driving")
@@ -84,9 +83,7 @@ require("scripts.ui.pole-views")
 local EntityUI = require("scripts.ui.entity-ui")
 require("scripts.ui.menus.gun-menu")
 local WorldMenu = require("scripts.ui.menus.world-menu")
-require("scripts.ui.menus.fast-travel-menu")
 require("scripts.ui.menus.debug-menu")
-require("scripts.ui.menus.settings-menu")
 require("scripts.ui.menus.rail-builder")
 require("scripts.ui.menus.syntrax-program")
 local SpidertronRemoteSelector = require("scripts.ui.menus.spidertron-remote-selector")
@@ -262,11 +259,6 @@ function on_tick(event)
       end
       KruiseKontrol.read_remarks()
       GameNotices.on_tick()
-   elseif event.tick % 90 == 13 then
-      for pindex, player in pairs(players) do
-         --Fix running speed bug (toggle walk also fixes it)
-         fix_walk(pindex)
-      end
    elseif event.tick % 450 == 14 then
       --Run regular reminders every 7.5 seconds
       for pindex, player in pairs(players) do
@@ -311,7 +303,6 @@ EventManager.on_event(
             pindex,
             { "fa.vehicle-exited", Localising.get_localised_name_with_fallback(storage.players[pindex].last_vehicle) }
          )
-         Teleport.teleport_to_closest(pindex, storage.players[pindex].last_vehicle.position, true, true)
       else
          Speech.speak(pindex, { "fa.driving-state-changed" })
       end
@@ -538,9 +529,6 @@ end)
 EventManager.on_configuration_changed(ensure_storage_structures_are_up_to_date)
 
 EventManager.on_init(function()
-   ---@type any
-   local freeplay = remote.interfaces["freeplay"]
-   if freeplay and freeplay["set_skip_intro"] then remote.call("freeplay", "set_skip_intro", true) end
    ensure_storage_structures_are_up_to_date()
    TestFramework.on_init()
    AudioCues.on_init()
@@ -582,13 +570,6 @@ EventManager.on_event(
       router:close_ui()
    end
 )
-
-function fix_walk(pindex)
-   local player = game.get_player(pindex)
-   if not player.character then return end
-   -- Always use normal walking speed
-   player.character_running_speed_modifier = 0 -- 100% + 0 = 100%
-end
 
 EventManager.on_event(
    defines.events.on_gui_opened,
@@ -724,7 +705,6 @@ EventManager.on_event(
 )
 EventManager.on_event(defines.events.on_achievement_gained, GameNotices.on_achievement_gained)
 EventManager.on_event(defines.events.on_chart_tag_added, GameNotices.on_chart_tag_added)
-EventManager.on_event(defines.events.on_space_platform_changed_state, GameNotices.on_space_platform_changed_state)
 EventManager.on_event(defines.events.on_player_controller_changed, function(event)
    Zoom.on_controller_changed(event)
 end)
@@ -1571,22 +1551,6 @@ EventManager.on_event(
    end
 )
 
-EventManager.on_event(
-   "fa-s-t",
-   ---@param event EventData.CustomInputEvent
-   function(event, pindex)
-      Teleport.teleport_to_cursor(pindex, false, false, false)
-   end
-)
-
-EventManager.on_event(
-   "fa-cs-t",
-   ---@param event EventData.CustomInputEvent
-   function(event, pindex)
-      Teleport.teleport_to_cursor(pindex, false, true, false)
-   end
-)
-
 ---Toggles cursor mode on or off. Appropriately affects other modes such as build lock or remote view.
 ---@param pindex number
 ---@param muted boolean
@@ -1760,14 +1724,13 @@ EventManager.on_event("fa-s-slash", function(event)
    router:open_ui(UiRouter.UI_NAMES.HELP, help_params)
 end)
 
--- Tutorial (Ctrl+T)
-EventManager.on_event("fa-c-t", function(event)
-   local pindex = event.player_index
-   local router = UiRouter.get_router(pindex)
-
-   -- Open tutorial UI
-   router:open_ui(UiRouter.UI_NAMES.TUTORIAL, {})
-end)
+EventManager.on_event(
+   "fa-t",
+   ---@param event EventData.CustomInputEvent
+   function(event, pindex)
+      Speech.speak(pindex, Daytime.describe(game.get_player(pindex).surface))
+   end
+)
 
 -- Prototype lister (Alt+P)
 EventManager.on_event("fa-a-p", function(event)
@@ -2380,14 +2343,6 @@ EventManager.on_event(
    end
 )
 
-EventManager.on_event(
-   "fa-a-v",
-   ---@param event EventData.CustomInputEvent
-   function(event, pindex)
-      TravelTools.fast_travel_menu_open(pindex)
-   end
-)
-
 --Toggle whether rockets are launched automatically when they have cargo
 EventManager.on_event(
    "fa-c-space",
@@ -2441,11 +2396,23 @@ EventManager.on_event("fa-cas-d", function(event)
    router:open_ui(UiRouter.UI_NAMES.DEBUG)
 end)
 
-EventManager.on_event("fa-cas-m", function(event)
-   local pindex = event.player_index
-   local router = UiRouter.get_router(pindex)
-   router:open_ui(UiRouter.UI_NAMES.SETTINGS)
-end)
+-- Keys that toggle a per-player setting, the same one the game's Mod settings window shows
+for key, setting in pairs({
+   ["fa-cas-i"] = SETTING_NAMES.SONIFICATION_INSERTER,
+   ["fa-cas-c"] = SETTING_NAMES.SONIFICATION_CRAFTING,
+   ["fa-cas-e"] = SETTING_NAMES.SONIFICATION_COMBAT_ENEMIES,
+   ["fa-cas-s"] = SETTING_NAMES.SONIFICATION_COMBAT_SPAWNERS,
+}) do
+   EventManager.on_event(key, function(event, pindex)
+      local mod_settings = game.get_player(pindex).mod_settings
+      local enabled = not mod_settings[setting].value
+      mod_settings[setting] = { value = enabled }
+      Speech.speak(
+         pindex,
+         { enabled and "fa.setting-enabled" or "fa.setting-disabled", { "mod-setting-name." .. setting } }
+      )
+   end)
+end
 
 -- Toggle combat mode (changes sound reference point from cursor to character)
 EventManager.on_event("fa-cs-i", function(event)
