@@ -120,7 +120,7 @@ be essentially unplayable in multiplayer, with vanilla mode or otherwise. We mai
 of users who want to play multiplayer anyway or have different use cases.
 
 When Vanilla Mode mode is toggled on, it disables sonifiers and speech, stops all of the mod's key handling, and closes
-any open mod UIs. Mod data such as fast travel points are left untouched, and so you should be able to toggle Vanilla
+any open mod UIs. Mod data such as rulers is left untouched, and so you should be able to toggle Vanilla
 Mode without any penalties. If the sighted person does not run our keys script, then their game in
 Vanilla Mode should function as if this mod is not present. If the mod's config tweaks are used and then Vanilla Mode is
 enabled, the keymapping changes of the mod are still present but inactive. In this case one can play using the arrow

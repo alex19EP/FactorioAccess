@@ -121,7 +121,6 @@ mod.UI_NAMES = {
    -- BUILDING and VEHICLE removed - migrating to capability-based UI
    -- Generic entity UI that adapts to entity capabilities
    ENTITY = "entity",
-   TRAVEL = "travel",
    GUNS = "guns", -- Keep for backward compatibility with gun_menu registration
    WARNINGS = "warnings",
    SIGNAL_SELECTOR = "signal_selector",

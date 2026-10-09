@@ -59,11 +59,9 @@ local ScannerLegacy = require("scripts.scanner.legacy")
 local Spidertron = require("scripts.spidertron")
 local SpidertronRemote = require("scripts.spidertron-remote")
 local TH = require("scripts.table-helpers")
-local Teleport = require("scripts.teleport")
 local TestFramework = require("scripts.test-framework")
 local TileReader = require("scripts.tile-reader")
 local TransportBelts = require("scripts.transport-belts")
-local TravelTools = require("scripts.travel-tools")
 local UpgradePlanner = require("scripts.upgrade-planner")
 local VanillaMode = require("scripts.vanilla-mode")
 local VirtualTrainDriving = require("scripts.rails.virtual-train-driving")
@@ -85,7 +83,6 @@ require("scripts.ui.pole-views")
 local EntityUI = require("scripts.ui.entity-ui")
 require("scripts.ui.menus.gun-menu")
 local WorldMenu = require("scripts.ui.menus.world-menu")
-require("scripts.ui.menus.fast-travel-menu")
 require("scripts.ui.menus.debug-menu")
 require("scripts.ui.menus.rail-builder")
 require("scripts.ui.menus.syntrax-program")
@@ -341,7 +338,6 @@ EventManager.on_event(
             pindex,
             { "fa.vehicle-exited", Localising.get_localised_name_with_fallback(storage.players[pindex].last_vehicle) }
          )
-         Teleport.teleport_to_closest(pindex, storage.players[pindex].last_vehicle.position, true, true)
       else
          Speech.speak(pindex, { "fa.driving-state-changed" })
       end
@@ -2607,14 +2603,6 @@ EventManager.on_event(
    ---@param event EventData.CustomInputEvent
    function(event, pindex)
       FaInfo.read_nearest_damaged_ent_info(Viewpoint.get_viewpoint(pindex):get_cursor_pos(), pindex)
-   end
-)
-
-EventManager.on_event(
-   "fa-a-v",
-   ---@param event EventData.CustomInputEvent
-   function(event, pindex)
-      TravelTools.fast_travel_menu_open(pindex)
    end
 )
 

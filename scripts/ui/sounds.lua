@@ -114,10 +114,6 @@ function mod.play_player_turn(pindex)
    play_sound_internal(pindex, { path = "player-turned" })
 end
 
-function mod.play_player_teleport(pindex)
-   play_sound_internal(pindex, { path = "player-teleported" })
-end
-
 function mod.play_player_bump_alert(pindex)
    play_sound_internal(pindex, { path = "player-bump-alert" })
 end

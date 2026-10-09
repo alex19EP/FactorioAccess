@@ -609,13 +609,6 @@ data:extend({
 
    {
       type = "custom-input",
-      name = "fa-a-v",
-      key_sequence = "ALT + V",
-      consuming = "none",
-   },
-
-   {
-      type = "custom-input",
       name = "fa-s-v",
       key_sequence = "SHIFT + V",
       consuming = "none",

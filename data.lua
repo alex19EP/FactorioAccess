@@ -235,15 +235,6 @@ data:extend({
 
    {
       type = "sound",
-      name = "player-teleported",
-      category = "game-effect",
-      filename = "__FactorioAccess__/audio/player-teleported-zapsplat_science_fiction_computer_alarm_single_medium_ring_beep_fast_004_84296.wav",
-      volume = 0.5,
-      preload = true,
-   },
-
-   {
-      type = "sound",
       name = "player-turned",
       category = "gui-effect",
       filename = "__FactorioAccess__/audio/player-turned-1face_dir.ogg",
