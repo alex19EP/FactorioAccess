@@ -1,6 +1,6 @@
 --Here: Utility functions called by other files. Examples include distance and position calculations, string processing.
 local util = require("util")
-local Viewpoint = require("scripts.viewpoint")
+local Cursor = require("scripts.cursor")
 
 local Consts = require("scripts.consts")
 local EntitySelection = require("scripts.entity-selection")
@@ -419,8 +419,7 @@ local ENTITY_PART_LOOKUP = {
 ---@return LocalisedString? Location description (e.g., {"fa.entity-part-center"}) or nil if no entity
 function mod.get_entity_part_at_cursor(pindex)
    local p = game.get_player(pindex)
-   local vp = Viewpoint.get_viewpoint(pindex)
-   local cursor_pos = vp:get_cursor_pos()
+   local cursor_pos = Cursor.tile(pindex)
    local x = cursor_pos.x
    local y = cursor_pos.y
 
@@ -582,8 +581,7 @@ end
 function mod.identify_water_shores(pindex)
    local p = game.get_player(pindex)
    local water_tile_names = Consts.WATER_TILE_NAMES
-   local vp = Viewpoint.get_viewpoint(pindex)
-   local pos = vp:get_cursor_pos()
+   local pos = Cursor.tile(pindex)
    draw_circle_at_position(p.surface, { x = pos.x, y = pos.y - 1 })
    draw_circle_at_position(p.surface, { x = pos.x, y = pos.y + 1 })
    draw_circle_at_position(p.surface, { x = pos.x - 1, y = pos.y })

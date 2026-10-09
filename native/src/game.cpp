@@ -1056,6 +1056,33 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.mapForceData, "Map", "forceManager.sortedForceDataList.begin_");
    address(layout.gameOperatorDelete, "??3@YAXPEAX@Z");
 
+   address(layout.processCustomInput, "?processCustomInput@PlayerInputSource@@QEAA_NAEBVEvent@@AEBVControlContext@@@Z");
+   address(layout.controlTriggeredQuietly,
+           "?triggeredByWithoutSideEffect@ControlInput@@AEBAPEBVControlInputValue@@AEBVEvent@@PEBVControlContext@@I@Z");
+   address(layout.sendRenderStateChanges, "?sendRenderStateChanges@PlayerInputSource@@UEAAXXZ");
+   offset(layout.gameViewSurfaceIndex, "GameView", "cachedSurfaceView.surfaceIndex");
+   offset(layout.gameViewCentre, "GameView", "cachedSurfaceView.surfaceViewData.position");
+   offset(layout.gameViewZoom, "GameView", "cachedSurfaceView.surfaceViewData.zoomData.zoom");
+   address(layout.gameViewDisplaySize, "?getDisplaySize@GameView@@QEBA?AVPixelSize@@XZ");
+   offset(layout.displayDensity, "InterfaceSettings", "displayDensityValue");
+   address(layout.gameViewSurface, "?getSurface@GameView@@QEBAAEBVSurface@@XZ");
+   classSlot(layout.controllerGetType, "Controller", "getType");
+   enumerator(layout.controllerCharacter, "ControllerType", "Character");
+   enumerator(layout.controllerGod, "ControllerType", "God");
+   enumerator(layout.controllerRemote, "ControllerType", "Remote");
+   size(layout.inputActionSize, "InputAction");
+   offset(layout.inputActionType, "InputAction", "type");
+   offset(layout.inputActionPlayer, "InputAction", "playerIndex");
+   offset(layout.inputActionData, "InputAction", "buffer");
+   classSlot(layout.inputSourceProcess, "InputSource", "process");
+   enumerator(layout.actionMoveOnPan, "InputActionType", "MoveOnPan");
+   offset(layout.moveOnPanPosition, "ActionData::MoveOnPanData", "position");
+   offset(layout.moveOnPanZoom, "ActionData::MoveOnPanData", "zoom");
+   offset(layout.moveOnPanSurface, "ActionData::MoveOnPanData", "surface");
+   address(layout.openRemoteView,
+           "?openRemoteView@PlayerInputSource@@QEAAXAEBVSurface@@AEBVMapPosition@@V?$optional@V?$StrongTypedef@"
+           "NVZoomTag@@UPositiveDoubleValidator@@@@@std@@@Z");
+
    if (ok && (layout.chartSelectionSize > kChartSelectionCapacity || layout.patchInfoSize > kPatchInfoCapacity)) {
       log::error("A chart structure outgrew its buffer: ChartSelection {} bytes, ResourcePatchInfo {}",
                  layout.chartSelectionSize, layout.patchInfoSize);

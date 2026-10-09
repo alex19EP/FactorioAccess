@@ -10,8 +10,7 @@ local KeyGraph = require("scripts.ui.key-graph")
 local Controls = require("scripts.ui.controls")
 local TrainHelpers = require("scripts.rails.train-helpers")
 local EntityUi = require("scripts.ui.entity-ui")
-local Viewpoint = require("scripts.viewpoint")
-local Graphics = require("scripts.graphics")
+local Cursor = require("scripts.cursor")
 local UiSounds = require("scripts.ui.sounds")
 local Help = require("scripts.ui.help")
 
@@ -82,9 +81,7 @@ local function build_train_rows(builder, trains)
                return
             end
 
-            local vp = Viewpoint.get_viewpoint(ctx.pindex)
-            vp:set_cursor_pos(stock.position)
-            Graphics.draw_cursor_highlight(ctx.pindex, nil, "train-visualization")
+            Cursor.jump(ctx.pindex, stock.position)
             ctx.message:fragment({ "fa.trains-overview-cursor-moved", TrainHelpers.get_name(stock) })
          end,
       })

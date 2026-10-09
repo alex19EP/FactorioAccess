@@ -5,11 +5,11 @@ Maps relative position to audio parameters:
 - Pan: sine of angle off forward axis (normalized x component)
 - LPF: enabled when target is behind the listener (positive y in Factorio)
 
-Also manages the sound reference point (cursor vs character) for different contexts.
+Also manages the sound reference point for different contexts: the camera (named CURSOR: in remote
+view the camera follows the cursor) or the character.
 ]]
 
 local StorageManager = require("scripts.storage-manager")
-local Viewpoint = require("scripts.viewpoint")
 
 local mod = {}
 
@@ -59,9 +59,11 @@ function mod.get_reference_position(pindex)
       end
    end
 
-   -- Default to cursor position
-   local viewpoint = Viewpoint.get_viewpoint(pindex)
-   return viewpoint:get_cursor_pos()
+   -- Default to the camera, where the game hears its own sounds from: in remote view it follows the
+   -- cursor. The cursor itself is known only to the client with the DLL, and the sonifiers that ask
+   -- this keep state and draw random numbers that every peer must share.
+   local pos = player.position
+   return { x = pos.x, y = pos.y }
 end
 
 ---@class fa.SoundModel.DirectionalParams

@@ -4,13 +4,11 @@
 local BuildDimensions = require("scripts.build-dimensions")
 local BuildingTools = require("scripts.building-tools")
 local FaUtils = require("scripts.fa-utils")
-local Graphics = require("scripts.graphics")
 local Localising = require("scripts.localising")
 local Speech = require("scripts.speech")
 local MessageBuilder = Speech.MessageBuilder
 local PlayerMiningTools = require("scripts.player-mining-tools")
 local UiRouter = require("scripts.ui.router")
-local Viewpoint = require("scripts.viewpoint")
 
 local dirs = defines.direction
 

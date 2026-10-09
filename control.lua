@@ -22,6 +22,7 @@ local Combat = require("scripts.combat")
 local Consts = require("scripts.consts")
 local SettingDecls = require("scripts.settings-decls")
 local SETTING_NAMES = SettingDecls.SETTING_NAMES
+local Cursor = require("scripts.cursor")
 local CursorChanges = require("scripts.cursor-changes")
 local Driving = require("scripts.driving")
 local HandMonitor = require("scripts.hand-monitor")
@@ -36,7 +37,6 @@ local Hand = require("scripts.hand")
 local F = require("scripts.field-ref")
 local Filters = require("scripts.filters")
 local GameNotices = require("scripts.game-notices")
-local Graphics = require("scripts.graphics")
 local InventoryTransfers = require("scripts.inventory-transfers")
 local SelectionResults = require("scripts.selection-results")
 local InventoryUtils = require("scripts.inventory-utils")
@@ -203,40 +203,21 @@ EventManager.on_event(
       if old_pos and util.distance(old_pos, p.physical_position) > 10 then
          MovementHistory.reset_and_increment_generation(pindex)
       end
-
-      --Update cursor graphics
-      local stack = p.cursor_stack
-      if stack and stack.valid_for_read and stack.valid then Graphics.sync_build_cursor_graphics(pindex) end
    end
 )
 
---Called for every player on every tick, to keep the build preview at the cursor.
-local function move_characters(event)
-   for pindex, player in pairs(storage.players) do
-      local router = UiRouter.get_router(pindex)
-      local vp = Viewpoint.get_viewpoint(pindex)
-      local cursor_pos = vp:get_cursor_pos()
-
-      if VanillaMode.is_enabled(pindex) then
-         player.player.game_view_settings.update_entity_selection = true
-      elseif player.player.game_view_settings.update_entity_selection == false then
-         local stack = game.get_player(pindex).cursor_stack
-         if
-            stack
-            and stack.valid_for_read
-            and (
-               stack.prototype.place_result ~= nil
-               or stack.prototype.place_as_tile_result ~= nil
-               or stack.is_blueprint
-               or stack.is_deconstruction_item
-               or stack.is_upgrade_item
-               or stack.prototype.type == "selection-tool"
-               or stack.prototype.type == "copy-paste-tool"
-            )
-         then
-            --Draw the build preview and selection tool boxes at the cursor
-            Graphics.sync_build_cursor_graphics(pindex)
-         end
+--Tells the DLL what the movement keys do for each player: they move the cursor unless a mod menu
+--has them or combat mode aims with them.
+local function report_cursor_modes()
+   for _, player in pairs(game.connected_players) do
+      local pindex = player.index
+      if storage.players[pindex] then
+         Cursor.report_mode(
+            pindex,
+            VanillaMode.is_enabled(pindex),
+            not UiRouter.get_router(pindex):is_ui_open() and not Combat.is_combat_mode(pindex),
+            Viewpoint.get_viewpoint(pindex):get_cursor_anchored()
+         )
       end
    end
 end
@@ -245,8 +226,7 @@ end
 function on_tick(event)
    MessageLists.try_translate_all_players()
    NoHover.on_tick()
-   ViewLimit.on_tick()
-   NativeCursor.on_tick()
+   report_cursor_modes()
    ScannerEntrypoint.on_tick()
    MovementHistory.update_all_players()
    Rulers.update_all_players()
@@ -255,8 +235,6 @@ function on_tick(event)
    ForceGhostEnabler.on_tick()
    Zoom.on_tick()
    SelectionResults.on_tick()
-
-   move_characters(event)
 
    -- Check alerts via AudioCues
    AudioCues.check_cues(event.tick, players)
@@ -312,19 +290,6 @@ EventManager.on_event(
       HandMonitor.on_tick()
    end
 )
-
---Makes the character face the cursor, choosing the nearest of 4 cardinal directions (north or south only).
-function turn_to_cursor_direction_cardinal(pindex)
-   local p = game.get_player(pindex)
-   if not p.character then return end
-   local vp = Viewpoint.get_viewpoint(pindex)
-   local dir = FaUtils.get_direction_precise(vp:get_cursor_pos(), p.position)
-   if dir == dirs.northwest or dir == dirs.north or dir == dirs.northeast then
-      p.character.direction = dirs.north
-   elseif dir == dirs.southwest or dir == dirs.south or dir == dirs.southeast then
-      p.character.direction = dirs.south
-   end
-end
 
 --Called when a player enters or exits a vehicle
 EventManager.on_event(
@@ -704,9 +669,7 @@ EventManager.on_event(
    ---@param event EventData.on_player_respawned
    ---@param pindex integer
    function(event, pindex)
-      local vp = Viewpoint.get_viewpoint(pindex)
-      local position = game.get_player(pindex).position
-      vp:set_cursor_pos({ x = position.x, y = position.y })
+      Cursor.jump(pindex, game.get_player(pindex).position)
       MovementHistory.reset_and_increment_generation(pindex)
    end
 )
@@ -807,124 +770,49 @@ EventManager.on_event(defines.events.on_achievement_gained, GameNotices.on_achie
 EventManager.on_event(defines.events.on_chart_tag_added, GameNotices.on_chart_tag_added)
 EventManager.on_event(defines.events.on_space_platform_changed_state, GameNotices.on_space_platform_changed_state)
 EventManager.on_event(defines.events.on_player_controller_changed, function(event)
-   ViewLimit.on_controller_changed(event)
    Zoom.on_controller_changed(event)
 end)
 -- New input event definitions
 
---Moves the cursor, and conducts an area scan for larger cursors. If the player is in a slow moving vehicle, it is stopped.
----Move a large cursor by n tiles and read the area
----@param pindex number
----@param direction defines.direction
----@param tiles number Number of tiles to move
----@param prefix_text string? Optional text to prepend to the reading
-local function move_large_cursor_by(pindex, direction, tiles, prefix_text)
-   local vp = Viewpoint.get_viewpoint(pindex)
-   local cursor_pos = vp:get_cursor_pos()
-   local cursor_size = vp:get_cursor_size()
+---Plays the sound of a cursor step.
+---@param pindex integer
+---@param volume number
+local function play_cursor_step(pindex, volume)
    local p = game.get_player(pindex)
-
-   cursor_pos = FaUtils.offset_position_legacy(cursor_pos, direction, tiles)
-   if not ViewLimit.allows(pindex, cursor_pos) then
-      ViewLimit.say_edge(pindex)
-      return
-   end
-   vp:set_cursor_pos(cursor_pos)
-
-   local scan_left_top = {
-      x = math.floor(cursor_pos.x) - cursor_size,
-      y = math.floor(cursor_pos.y) - cursor_size,
-   }
-   local scan_right_bottom = {
-      x = math.floor(cursor_pos.x) + cursor_size + 1,
-      y = math.floor(cursor_pos.y) + cursor_size + 1,
-   }
-   local scan_summary = FaInfo.area_scan_summary_info(pindex, scan_left_top, scan_right_bottom)
-   if prefix_text and prefix_text ~= "" then scan_summary = prefix_text .. scan_summary end
-   Graphics.draw_large_cursor(scan_left_top, scan_right_bottom, pindex)
-   Speech.speak(pindex, scan_summary)
-
-   if storage.players[pindex].remote_view then
-      sounds.play_building_placement(p.index, cursor_pos)
+   if p.controller_type == defines.controllers.remote then
+      sounds.play_building_placement(pindex, Cursor.tile(pindex))
    else
-      p.play_sound({
-         path = "Close-Inventory-Sound",
-         position = p.position,
-         volume_modifier = 0.75,
-      })
+      p.play_sound({ path = "Close-Inventory-Sound", position = p.position, volume_modifier = volume })
    end
 end
 
-local function cursor_mode_move(direction, pindex, single_only)
-   local vp = Viewpoint.get_viewpoint(pindex)
-   local cursor_pos = vp:get_cursor_pos()
-   local cursor_size = vp:get_cursor_size()
-   local diff = cursor_size * 2 + 1
-   if single_only then diff = 1 end
-   local p = game.get_player(pindex)
+---Reads where a movement key took the cursor: the DLL moves it as the game reads the key, so the
+---key's event already carries the new tile, or on the full map the new cell.
+---@param pindex integer
+---@param event EventData.CustomInputEvent
+local function cursor_mode_move(pindex, event)
+   if Cursor.step(pindex, event) == "edge" then
+      ViewLimit.say_edge(pindex)
+      return
+   end
 
    local cell_size = Zoom.get_map_cell_size(pindex)
    if cell_size then
-      MapCells.move(pindex, direction, cell_size)
+      MapCells.read(pindex, cell_size)
       return
    end
 
-   if not ViewLimit.allows(pindex, FaUtils.offset_position_legacy(cursor_pos, direction, diff)) then
-      ViewLimit.say_edge(pindex)
-      return
-   end
-
-   if cursor_size == 0 then
-      -- Cursor size 0 ("1 by 1"): Read tile
-      cursor_pos = FaUtils.offset_position_legacy(cursor_pos, direction, diff)
-      vp:set_cursor_pos_continuous(cursor_pos, direction)
-
-      EntitySelection.reset_entity_index(pindex)
-      -- While the build key drags, the game builds here after this reading, so it would name the
-      -- ground; the game's own preview says what blocks the build instead
-      if not NativeCursor.drag_build(pindex) then read_tile_with_preview_info(pindex) end
-
-      --Update drawn cursor
-      local stack = p.cursor_stack
-      if
-         stack
-         and stack.valid_for_read
-         and stack.valid
-         and (stack.prototype.place_result ~= nil or stack.is_blueprint)
-      then
-         Graphics.sync_build_cursor_graphics(pindex)
-      end
-
-      --Update cursor highlight
-      local ent = EntitySelection.get_first_ent_at_tile(pindex)
-      if ent and ent.valid then
-         Graphics.draw_cursor_highlight(pindex, ent, nil)
-      else
-         Graphics.draw_cursor_highlight(pindex, nil, nil)
-      end
-
-      if storage.players[pindex].remote_view then
-         sounds.play_building_placement(p.index, cursor_pos)
-      else
-         p.play_sound({
-            path = "Close-Inventory-Sound",
-            position = p.position,
-            volume_modifier = 0.75,
-         })
-      end
-   else
-      -- Use continuous movement tracking for WASD movements
-      vp:set_cursor_pos_continuous(cursor_pos, direction)
-      move_large_cursor_by(pindex, direction, diff)
-   end
+   -- While the build key drags, the game builds here after this reading, so it would name the
+   -- ground; the game's own preview says what blocks the build instead
+   if not NativeCursor.drag_build(pindex) then read_tile_with_preview_info(pindex) end
+   play_cursor_step(pindex, 0.75)
 end
 
 --Chooses the function to call after a movement keypress, according to the current mode.
-local function move_key(direction, event, force_single_tile)
+---@param direction defines.direction
+---@param event EventData.CustomInputEvent
+local function move_key(direction, event)
    local pindex = event.player_index
-   local p = game.get_player(pindex)
-   local router = UiRouter.get_router(pindex)
-   local vp = Viewpoint.get_viewpoint(pindex)
 
    -- Combat mode: Set aim direction instead of moving cursor
    if Combat.is_combat_mode(pindex) then
@@ -932,8 +820,7 @@ local function move_key(direction, event, force_single_tile)
       return
    end
 
-   -- Cursor mode: Move cursor on map
-   cursor_mode_move(direction, pindex, force_single_tile)
+   cursor_mode_move(pindex, event)
 end
 
 EventManager.on_event(
@@ -976,8 +863,7 @@ local SKIP_AT_EDGE = -2
 local function cursor_skip_iteration(pindex, direction, iteration_limit)
    local p = game.get_player(pindex)
    local start = nil
-   local vp = Viewpoint.get_viewpoint(pindex)
-   local cursor_pos = vp:get_cursor_pos()
+   local cursor_pos = Cursor.tile(pindex)
    local start_tile_is_water = FaUtils.tile_is_water(p.surface, cursor_pos)
    local start_tile_is_ruler_aligned = Rulers.is_any_ruler_aligned(pindex, cursor_pos)
    local current = nil
@@ -989,7 +875,6 @@ local function cursor_skip_iteration(pindex, direction, iteration_limit)
    --
    ---@returns LuaEntity?
    local function compute_current()
-      EntitySelection.reset_entity_index(pindex)
       for ent in EntitySelection.iterate_selected_ents(pindex) do
          local bad = ent.type == "logistic-robot"
             or ent.type == "construction-robot"
@@ -1014,8 +899,7 @@ local function cursor_skip_iteration(pindex, direction, iteration_limit)
             if con.connection_type == "underground" and dir_neighbor == direction then
                local other_end = con.target.get_fluid_box_pipe_connections(1)[1].position
                if not ViewLimit.allows(pindex, other_end) then return SKIP_AT_EDGE end
-               vp:set_cursor_pos(other_end)
-               EntitySelection.reset_entity_index(pindex)
+               Cursor.jump(pindex, other_end)
                current = EntitySelection.get_first_ent_at_tile(pindex)
                return dist
             end
@@ -1030,8 +914,7 @@ local function cursor_skip_iteration(pindex, direction, iteration_limit)
          local dir_neighbor = FaUtils.get_direction_biased(other_end.position, start.position)
          if dir_neighbor == direction then
             if not ViewLimit.allows(pindex, other_end.position) then return SKIP_AT_EDGE end
-            vp:set_cursor_pos(other_end.position)
-            EntitySelection.reset_entity_index(pindex)
+            Cursor.jump(pindex, other_end.position)
             current = EntitySelection.get_first_ent_at_tile(pindex)
             return dist
          end
@@ -1042,7 +925,7 @@ local function cursor_skip_iteration(pindex, direction, iteration_limit)
       --Iterate first_tile
       cursor_pos = FaUtils.offset_position_legacy(cursor_pos, direction, 1)
       if not ViewLimit.allows(pindex, cursor_pos) then return SKIP_AT_EDGE end
-      vp:set_cursor_pos(cursor_pos)
+      Cursor.jump(pindex,cursor_pos)
       selected_tile_is_water = FaUtils.tile_is_water(p.surface, cursor_pos)
 
       --Run checks and skip when needed
@@ -1062,7 +945,7 @@ local function cursor_skip_iteration(pindex, direction, iteration_limit)
             --Iterate again
             cursor_pos = FaUtils.offset_position_legacy(cursor_pos, direction, 1)
             if not ViewLimit.allows(pindex, cursor_pos) then return SKIP_AT_EDGE end
-            vp:set_cursor_pos(cursor_pos)
+            Cursor.jump(pindex,cursor_pos)
             selected_tile_is_water = FaUtils.tile_is_water(p.surface, cursor_pos)
             moved = moved + 1
          end
@@ -1073,7 +956,7 @@ local function cursor_skip_iteration(pindex, direction, iteration_limit)
    --Iterate first tile
    cursor_pos = FaUtils.offset_position_legacy(cursor_pos, direction, 1)
    if not ViewLimit.allows(pindex, cursor_pos) then return SKIP_AT_EDGE end
-   vp:set_cursor_pos(cursor_pos)
+   Cursor.jump(pindex,cursor_pos)
 
    current = compute_current()
 
@@ -1154,7 +1037,7 @@ local function cursor_skip_iteration(pindex, direction, iteration_limit)
       --Skip case: Move 1 more tile
       cursor_pos = FaUtils.offset_position_legacy(cursor_pos, direction, 1)
       if not ViewLimit.allows(pindex, cursor_pos) then return SKIP_AT_EDGE end
-      vp:set_cursor_pos(cursor_pos)
+      Cursor.jump(pindex,cursor_pos)
       moved = moved + 1
       current = compute_current()
    end
@@ -1162,14 +1045,13 @@ local function cursor_skip_iteration(pindex, direction, iteration_limit)
    return -1
 end
 
---Shift the cursor by the size of the preview in hand or otherwise by the size of the cursor.
+--Shift the cursor by the size of the preview in hand, or by a tile.
 ---@param pindex integer
 ---@param direction defines.direction Which way to move
 ---@param build_direction defines.direction? The game's build direction, from the key's event
 local function apply_skip_by_preview_size(pindex, direction, build_direction)
    local p = game.get_player(pindex)
-   local vp = Viewpoint.get_viewpoint(pindex)
-   local cursor_pos = vp:get_cursor_pos()
+   local cursor_pos = Cursor.tile(pindex)
 
    --Check the moved count against the dimensions of the preview in hand
    local stack = p.cursor_stack
@@ -1177,8 +1059,7 @@ local function apply_skip_by_preview_size(pindex, direction, build_direction)
 
    local shift
    if not width or not height or (width + height <= 2) then
-      --Default to cursor size if not something else
-      shift = vp:get_cursor_size() * 2 + 1
+      shift = 1
    elseif direction == dirs.east or direction == dirs.west then
       --For entities/blueprints larger than 1x1, move by the appropriate dimension
       shift = width
@@ -1188,25 +1069,17 @@ local function apply_skip_by_preview_size(pindex, direction, build_direction)
 
    local target = FaUtils.offset_position_legacy(cursor_pos, direction, shift)
    if not ViewLimit.allows(pindex, target) then return SKIP_AT_EDGE end
-   vp:set_cursor_pos(target)
+   Cursor.jump(pindex,target)
    return shift
 end
 
 --Runs the cursor skip actions and reads out results
 ---@param build_direction defines.direction? With use_preview_size: the game's build direction, from the key's event
 local function cursor_skip(pindex, direction, iteration_limit, use_preview_size, build_direction)
-   local vp = Viewpoint.get_viewpoint(pindex)
-   local cursor_size = vp:get_cursor_size()
    local p = game.get_player(pindex)
    local limit = iteration_limit or 100
 
-   --Special case: larger cursors move by 1 tile with ctrl+WASD
-   if use_preview_size and cursor_size > 0 then
-      move_large_cursor_by(pindex, direction, 1)
-      return
-   end
-
-   local cursor_pos = vp:get_cursor_pos()
+   local cursor_pos
    local result = ""
    local moved_count = 0
    if use_preview_size == true then
@@ -1217,11 +1090,10 @@ local function cursor_skip(pindex, direction, iteration_limit, use_preview_size,
       result = "Skipped "
    end
 
-   cursor_pos = vp:get_cursor_pos()
+   cursor_pos = Cursor.tile(pindex)
 
    if moved_count == SKIP_AT_EDGE then
       ViewLimit.say_edge(pindex)
-      Graphics.sync_build_cursor_graphics(pindex)
       return
    elseif use_preview_size then
       --Rolling always plays the regular moving sound
@@ -1273,7 +1145,6 @@ local function cursor_skip(pindex, direction, iteration_limit, use_preview_size,
 
    --Read the tile reached
    read_tile_with_preview_info(pindex, result)
-   Graphics.sync_build_cursor_graphics(pindex)
 end
 
 ---Handle shift+direction key press
@@ -1407,17 +1278,14 @@ EventManager.on_event(
 --Read the current co-ordinates of the cursor on the map or in a menu. For crafting recipe and technology menus, it reads the ingredients / requirements instead.
 --Todo: split this function by menu.
 local function read_coords(pindex, start_phrase)
-   local vp = Viewpoint.get_viewpoint(pindex)
-
    start_phrase = start_phrase or ""
    local result = start_phrase
    local ent = storage.players[pindex].building.ent
    local offset = 0
 
    local router = UiRouter.get_router(pindex)
-   local vp = Viewpoint.get_viewpoint(pindex)
 
-   local position = vp:get_cursor_pos()
+   local position = Cursor.tile(pindex)
    local marked_pos = { x = position.x, y = position.y }
 
    if game.get_player(pindex).driving then
@@ -1508,14 +1376,6 @@ local function read_coords(pindex, start_phrase)
       -- Tiles are always 1x1, so tile case still triggers.
       if p_width and p_height and (p_width > 1 or p_height > 1) then
          message:fragment({ "fa.build-preview-dimensions", tostring(p_width), tostring(p_height) })
-      elseif stack and stack.valid_for_read and stack.valid and stack.prototype.place_as_tile_result ~= nil then
-         --Paving preview size
-         local size = vp:get_cursor_size() * 2 + 1
-         if storage.players[pindex].preferences.tiles_placed_from_northwest_corner then
-            message:fragment({ "fa.paving-preview-northwest", tostring(size), tostring(size) })
-         else
-            message:fragment({ "fa.paving-preview-centered", tostring(size), tostring(size) })
-         end
       end
       Speech.speak(pindex, message:build())
    end
@@ -1538,8 +1398,7 @@ EventManager.on_event(
 local function kb_read_cursor_distance_and_direction(event)
    local pindex = event.player_index
    local p = game.get_player(pindex)
-   local vp = Viewpoint.get_viewpoint(pindex)
-   local cursor_pos = vp:get_cursor_pos()
+   local cursor_pos = Cursor.tile(pindex)
    --Read where the cursor is with respect to the player, e.g. "at 5 west"
    local dir_dist = FaUtils.dir_dist_locale(p.position, cursor_pos)
    local cursor_location_description = { "fa.at" }
@@ -1575,8 +1434,7 @@ EventManager.on_event(
 local function kb_read_cursor_distance_vector(event)
    local pindex = event.player_index
    local p = game.get_player(pindex)
-   local vp = Viewpoint.get_viewpoint(pindex)
-   local c_pos = vp:get_cursor_pos()
+   local c_pos = Cursor.tile(pindex)
    local p_pos = p.position
    local diff_x = math.floor(c_pos.x) - math.floor(p_pos.x)
    local diff_y = math.floor(c_pos.y) - math.floor(p_pos.y)
@@ -1644,27 +1502,8 @@ EventManager.on_event(
 ---@param event EventData.CustomInputEvent
 local function kb_jump_to_player(event)
    local pindex = event.player_index
-   local first_player = game.get_player(pindex)
-   local vp = Viewpoint.get_viewpoint(pindex)
-   local cursor_pos = vp:get_cursor_pos()
-   local cursor_size = vp:get_cursor_size()
-   cursor_pos.x = math.floor(first_player.position.x)
-   cursor_pos.y = math.floor(first_player.position.y)
-   vp:set_cursor_pos(cursor_pos)
+   Cursor.jump(pindex, game.get_player(pindex).position)
    read_coords(pindex, "Cursor returned ")
-   if cursor_size < 2 then
-      Graphics.draw_cursor_highlight(pindex, nil, nil)
-   else
-      local scan_left_top = {
-         math.floor(cursor_pos.x) - cursor_size,
-         math.floor(cursor_pos.y) - cursor_size,
-      }
-      local scan_right_bottom = {
-         math.floor(cursor_pos.x) + cursor_size + 1,
-         math.floor(cursor_pos.y) + cursor_size + 1,
-      }
-      Graphics.draw_large_cursor(scan_left_top, scan_right_bottom, pindex)
-   end
 end
 
 ---@param event EventData.CustomInputEvent
@@ -1727,8 +1566,7 @@ EventManager.on_event(
 ---@param event EventData.CustomInputEvent
 local function kb_ca_b(event)
    local pindex = event.player_index
-   local vp = Viewpoint.get_viewpoint(pindex)
-   local pos = vp:get_cursor_pos()
+   local pos = Cursor.tile(pindex)
    Rulers.upsert_ruler(pindex, pos.x, pos.y)
    Speech.speak(pindex, { "fa.ruler-saved-at", tostring(math.floor(pos.x)), tostring(math.floor(pos.y)) })
    sounds.play_close_inventory(pindex)
@@ -1812,66 +1650,6 @@ EventManager.on_event(
    end
 )
 
----Valid cursor sizes
----@type integer[]
-local CURSOR_SIZES = { 0, 1, 2, 5, 10, 25, 50, 125 }
-
----Adjusts the cursor size for a given player by stepping through predefined cursor size options.
----Direction +1 increases the size to the next larger value, -1 decreases it.
----@param pindex number Player index
----@param direction number Step direction in CURSOR_SIZES (+1 to increase, -1 to decrease)
-local function adjust_cursor_size(pindex, direction)
-   local vp = Viewpoint.get_viewpoint(pindex)
-   local cursor_pos = vp:get_cursor_pos()
-   local current_size = vp:get_cursor_size()
-   local index = nil
-
-   for i, size in ipairs(CURSOR_SIZES) do
-      if size == current_size then
-         index = i
-         break
-      end
-   end
-
-   if index == nil then return end
-
-   local new_index = index + direction
-   if new_index < 1 or new_index > #CURSOR_SIZES then return end
-
-   local new_size = CURSOR_SIZES[new_index]
-   vp:set_cursor_size(new_size)
-
-   local say_size = new_size * 2 + 1
-   Speech.speak(pindex, { "fa.cursor-size", tostring(say_size), tostring(say_size) })
-   sounds.play_close_inventory(pindex)
-   Graphics.draw_large_cursor({
-      cursor_pos.x - new_size,
-      cursor_pos.y - new_size,
-   }, {
-      cursor_pos.x + new_size + 1,
-      cursor_pos.y + new_size + 1,
-   }, pindex)
-end
-
---We have cursor sizes 1,3,5,11,21,51,101,251
-EventManager.on_event(
-   "fa-s-i",
-   ---@param event EventData.CustomInputEvent
-   function(event, pindex)
-      if skip_in_combat_mode(pindex) then return end
-      adjust_cursor_size(pindex, 1)
-   end
-)
-
---We have cursor sizes 1,3,5,11,21,51,101,251
-EventManager.on_event(
-   "fa-c-i",
-   ---@param event EventData.CustomInputEvent
-   function(event, pindex)
-      if skip_in_combat_mode(pindex) then return end
-      adjust_cursor_size(pindex, -1)
-   end
-)
 
 EventManager.on_event(
    "fa-a-i",
@@ -2125,31 +1903,6 @@ end
 EventManager.on_event("fa-c-tab", next_part(1))
 EventManager.on_event("fa-cs-tab", next_part(-1))
 
---Used when a tile has multiple overlapping entities. Reads out the next entity.
----@param event EventData.CustomInputEvent
-local function kb_tile_cycle(event)
-   local pindex = event.player_index
-   local ent = EntitySelection.get_next_ent_at_tile(pindex)
-   if ent and ent.valid then
-      Speech.speak(pindex, FaInfo.ent_info(pindex, ent))
-      game.get_player(pindex).selected = ent
-   else
-      local tile_name = EntitySelection.get_player_tile(pindex)
-      Speech.speak(pindex, tile_name)
-   end
-end
-
---Reads other entities on the same tile? Note: Possibly unneeded
-EventManager.on_event(
-   "fa-s-f",
-   ---@param event EventData.CustomInputEvent
-   function(event, pindex)
-      local router = UiRouter.get_router(pindex)
-
-      kb_tile_cycle(event)
-   end
-)
-
 EventManager.on_event(
    "fa-a-w",
    ---@param event EventData.CustomInputEvent
@@ -2207,11 +1960,9 @@ local function kb_mine_tiles(event)
    local stack = p.cursor_stack
    if not (stack and stack.valid_for_read and stack.valid and stack.prototype.place_as_tile_result) then return end
 
-   local vp = Viewpoint.get_viewpoint(pindex)
-   local c_pos = vp:get_cursor_pos()
-   local c_size = vp:get_cursor_size()
-   local left_top = { x = math.floor(c_pos.x - c_size), y = math.floor(c_pos.y - c_size) }
-   local right_bottom = { x = math.floor(c_pos.x + 1 + c_size), y = math.floor(c_pos.y + 1 + c_size) }
+   local c_pos = Cursor.tile(pindex)
+   local left_top = { x = c_pos.x, y = c_pos.y }
+   local right_bottom = { x = c_pos.x + 1, y = c_pos.y + 1 }
    local tiles = p.surface.find_tiles_filtered({ area = { left_top, right_bottom } })
 
    for _, tile in ipairs(tiles) do
@@ -2588,7 +2339,7 @@ EventManager.on_event(
    "fa-s-u",
    ---@param event EventData.CustomInputEvent
    function(event, pindex)
-      FaInfo.read_pollution_level_at_position(Viewpoint.get_viewpoint(pindex):get_cursor_pos(), pindex)
+      FaInfo.read_pollution_level_at_position(Cursor.tile(pindex), pindex)
    end
 )
 
@@ -2622,28 +2373,6 @@ EventManager.on_event("fa-cas-v", function(event, pindex)
       Speech.speak(pindex, { "fa.vanilla-mode-disabled" })
    end
 end)
-
----@param event EventData.CustomInputEvent
-local function kb_toggle_cursor_hiding(event)
-   local pindex = event.player_index
-   local vp = Viewpoint.get_viewpoint(pindex)
-   local cursor_hidden = vp:get_cursor_hidden()
-   if cursor_hidden == nil or cursor_hidden == false then
-      vp:set_cursor_hidden(true)
-      Speech.speak(pindex, { "fa.cursor-hiding-enabled" })
-   else
-      vp:set_cursor_hidden(false)
-      Speech.speak(pindex, { "fa.cursor-hiding-disabled" })
-   end
-end
-
-EventManager.on_event(
-   "fa-ca-c",
-   ---@param event EventData.CustomInputEvent
-   function(event, pindex)
-      kb_toggle_cursor_hiding(event)
-   end
-)
 
 EventManager.on_event(
    "fa-mouse-button-3",
@@ -2683,7 +2412,7 @@ EventManager.on_event(
    "fa-s-p",
    ---@param event EventData.CustomInputEvent
    function(event, pindex)
-      FaInfo.read_nearest_damaged_ent_info(Viewpoint.get_viewpoint(pindex):get_cursor_pos(), pindex)
+      FaInfo.read_nearest_damaged_ent_info(Cursor.tile(pindex), pindex)
    end
 )
 

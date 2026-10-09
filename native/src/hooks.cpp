@@ -2,6 +2,7 @@
 
 #include "agui.h"
 #include "console.h"
+#include "cursor.h"
 #include "disclosure.h"
 #include "entityicons.h"
 #include "flyingtext.h"

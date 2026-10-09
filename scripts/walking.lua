@@ -19,13 +19,12 @@ Uses movement history to detect:
 local StorageManager = require("scripts.storage-manager")
 local MovementHistory = require("scripts.movement-history")
 local Viewpoint = require("scripts.viewpoint")
+local Cursor = require("scripts.cursor")
 local FaUtils = require("scripts.fa-utils")
 local EntitySelection = require("scripts.entity-selection")
-local Graphics = require("scripts.graphics")
 local Sounds = require("scripts.ui.sounds")
 local TileReader = require("scripts.tile-reader")
 local Combat = require("scripts.combat")
-local KruiseKontrol = require("scripts.kruise-kontrol-wrapper")
 local VanillaMode = require("scripts.vanilla-mode")
 
 local mod = {}
@@ -77,39 +76,24 @@ function mod.process_walking_announcements(pindex)
    if vp:get_cursor_anchored() and not Combat.is_combat_mode(pindex) then
       -- ANCHORED MODE: Update cursor ahead and announce if notable
       local direction = current and current.direction or defines.direction.north
-      vp:set_cursor_pos(FaUtils.to_neighboring_tile(player.physical_position, direction))
+      local ahead = FaUtils.to_neighboring_tile(player.physical_position, direction)
+      Cursor.jump(pindex, ahead)
 
-      -- Only announce if there's an entity or the tile is unwalkable. God mode walks through everything.
-      local ent = EntitySelection.get_first_ent_at_tile(pindex)
-      local blocked = player.character ~= nil
-         and not player.surface.can_place_entity({ name = "character", position = vp:get_cursor_pos() })
-      if (ent ~= nil and ent.valid) or blocked then
-         Graphics.draw_cursor_highlight(pindex, ent, nil)
-         if player.driving then return end
-
-         -- In combat mode or during KK, don't set selected entity
-         local skip_selection = Combat.is_combat_mode(pindex) or KruiseKontrol.is_active(pindex)
-
+      Cursor.at(pindex, ahead, function()
+         -- Only announce if there's an entity or the tile is unwalkable. God mode walks through everything.
+         local ent = EntitySelection.get_first_ent_at_tile(pindex)
+         local blocked = player.character ~= nil
+            and not player.surface.can_place_entity({ name = "character", position = Cursor.tile(pindex) })
+         if not ((ent ~= nil and ent.valid) or blocked) or player.driving then return end
          if
             ent ~= nil
             and ent.valid
-            and (
-               player.character == nil or (player.character ~= nil and player.character.unit_number ~= ent.unit_number)
-            )
+            and (player.character == nil or player.character.unit_number ~= ent.unit_number)
          then
-            Graphics.draw_cursor_highlight(pindex, ent, nil)
-            if not skip_selection then player.selected = ent end
             Sounds.play_close_inventory(pindex)
-         else
-            Graphics.draw_cursor_highlight(pindex, nil, nil)
-            if not skip_selection then player.selected = nil end
          end
-
          TileReader.read_tile(pindex)
-      else
-         Graphics.draw_cursor_highlight(pindex, nil, nil)
-         if not Combat.is_combat_mode(pindex) and not KruiseKontrol.is_active(pindex) then player.selected = nil end
-      end
+      end)
    else
       -- NON-ANCHORED MODE: Don't announce while walking
       -- Cursor stays in place, so no need to read tile on every player movement

@@ -1,13 +1,11 @@
 --[[
 Vanilla mode makes the mod behave more like standard Factorio for sighted players.
 When enabled:
-- Hides the FA cursor
-- Re-enables mouse entity selection
+- Gives the game cursor back to the mouse (the DLL hears it every tick)
 - Silences TTS output
 ]]
 
 local StorageManager = require("scripts.storage-manager")
-local Viewpoint = require("scripts.viewpoint")
 
 local mod = {}
 
@@ -29,16 +27,8 @@ end
 
 ---@param pindex integer
 function mod.toggle(pindex)
-   local vp = Viewpoint.get_viewpoint(pindex)
    local state = vanilla_state[pindex]
-
-   if not state.enabled then
-      vp:set_cursor_hidden(true)
-      state.enabled = true
-   else
-      vp:set_cursor_hidden(false)
-      state.enabled = false
-   end
+   state.enabled = not state.enabled
 end
 
 return mod

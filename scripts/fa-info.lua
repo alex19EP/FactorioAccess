@@ -31,7 +31,6 @@ local FaUtils = require("scripts.fa-utils")
 local F = require("scripts.field-ref")
 local Fluids = require("scripts.fluids")
 local Geometry = require("scripts.geometry")
-local Graphics = require("scripts.graphics")
 local Heat = require("scripts.heat")
 local InventoryUtils = require("scripts.inventory-utils")
 local ItemInfo = require("scripts.item-info")
@@ -46,7 +45,7 @@ local TH = require("scripts.table-helpers")
 -- Trains removed (Factorio 2.0 incompatibility)
 -- local Trains = require("scripts.trains")
 local TransportBelts = require("scripts.transport-belts")
-local Viewpoint = require("scripts.viewpoint")
+local Cursor = require("scripts.cursor")
 local Wires = require("scripts.wires")
 local BotLogistics = require("scripts.worker-robots")
 local RailDescriber = require("railutils.rail-describer")
@@ -1388,7 +1387,6 @@ end
 function mod.ent_info(pindex, ent, is_scanner)
    local p = game.get_player(pindex)
    assert(p)
-   local vp = Viewpoint.get_viewpoint(pindex)
 
    ---@type fa.Info.EntInfoContext
    local ctx = {
@@ -1397,7 +1395,7 @@ function mod.ent_info(pindex, ent, is_scanner)
       message = MessageBuilder.new(),
       is_scanner = is_scanner,
       player = p,
-      cursor_pos = vp:get_cursor_pos(),
+      cursor_pos = Cursor.tile(pindex),
    }
 
    -- We need to special case ghosts, so that we can fold the "x of y" in, e.g.
@@ -1669,9 +1667,8 @@ end
 --Reads out the distance and direction to the nearest damaged entity within 1000 tiles.
 function mod.read_nearest_damaged_ent_info(pos, pindex)
    local p = game.get_player(pindex)
-   local vp = Viewpoint.get_viewpoint(pindex)
    --Scan for ents of your force
-   local ents = p.surface.find_entities_filtered({ position = vp:get_cursor_pos(), radius = 1000, force = p.force })
+   local ents = p.surface.find_entities_filtered({ position = pos, radius = 1000, force = p.force })
    --Check for entities with health
    if ents == nil or #ents == 0 then
       Speech.speak(pindex, { "fa.no-damaged-structures-in-range", 1000 })
@@ -1705,8 +1702,7 @@ function mod.read_nearest_damaged_ent_info(pos, pindex)
       return
    else
       --Move cursor to closest
-      vp:set_cursor_pos(closest.position)
-      Graphics.draw_cursor_highlight(pindex, closest, nil)
+      Cursor.jump(pindex, closest.position)
 
       --Report the result
       min_dist = math.floor(min_dist)

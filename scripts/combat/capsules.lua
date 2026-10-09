@@ -12,8 +12,8 @@ with aim assist integration. Supports:
 local AimAssist = require("scripts.combat.aim-assist")
 local CombatData = require("scripts.combat.combat-data")
 local Consts = require("scripts.consts")
+local Cursor = require("scripts.cursor")
 local Speech = require("scripts.speech")
-local Viewpoint = require("scripts.viewpoint")
 
 local mod = {}
 
@@ -231,10 +231,7 @@ function mod.use_capsule_in_direction(pindex, direction, force_fire)
    -- Cliff explosives use at cursor position
    if category == mod.CapsuleCategory.CLIFF then
       local player = game.get_player(pindex)
-      if player then
-         local vp = Viewpoint.get_viewpoint(pindex)
-         player.use_from_cursor(vp:get_cursor_pos())
-      end
+      if player then player.use_from_cursor(Cursor.tile(pindex)) end
       return true
    end
 

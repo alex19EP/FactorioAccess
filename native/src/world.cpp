@@ -538,6 +538,14 @@ std::optional<CursorPosition> cursorPosition() {
    return CursorPosition{position.x, position.y};
 }
 
+void placeCursor(CursorPosition position) {
+   const std::byte* game = currentGame();
+   if (!game) return;
+   g_cursor.store(pack({position.x, position.y}));
+   g_game.store(game);
+   g_hasCursor.store(true);
+}
+
 bool mayBeLocalPlayer(int playerIndex) {
    const std::byte* game = currentGame();
    const std::byte* player = game ? localPlayer(game) : nullptr;

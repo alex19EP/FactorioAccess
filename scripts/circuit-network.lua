@@ -2,8 +2,8 @@
 --Includes wire dragging and pure functions for signal processing and aggregation.
 
 local CombinatorBoundingBoxes = require("scripts.combinator-bounding-boxes")
+local Cursor = require("scripts.cursor")
 local Geometry = require("scripts.geometry")
-local Viewpoint = require("scripts.viewpoint")
 local Speech = require("scripts.speech")
 local Sounds = require("scripts.ui.sounds")
 local WorkerRobots = require("scripts.worker-robots")
@@ -101,10 +101,9 @@ end
 function mod.drag_wire_and_read(pindex, side)
    --Start/end dragging wire
    local p = game.get_player(pindex)
-   local vp = Viewpoint.get_viewpoint(pindex)
 
    -- Determine the position to use for dragging
-   local drag_pos = vp:get_cursor_pos()
+   local drag_pos = Cursor.tile(pindex)
    local c_ent = p.selected
 
    -- Determine wire type in hand
@@ -197,7 +196,7 @@ function mod.drag_wire_and_read(pindex, side)
 
    local drag_target = p.drag_target
    local ents_at_position = p.surface.find_entities_filtered({
-      position = vp:get_cursor_pos(),
+      position = Cursor.tile(pindex),
       radius = 0.2,
       type = {
          "transport-belt",

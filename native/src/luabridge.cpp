@@ -1,6 +1,7 @@
 #include "luabridge.h"
 
 #include "audio.h"
+#include "cursor.h"
 #include "entityicons.h"
 #include "game.h"
 #include "log.h"
@@ -181,14 +182,35 @@ int speak(lua_State* L) {
    return 0;
 }
 
-int setCursor(lua_State* L) {
-   world::setCursor(static_cast<int>(checkInteger(L, 1)), checkNumber(L, 2), checkNumber(L, 3));
+// fa_native.cursor_mode(pindex, vanilla, keys, anchored), every tick: see cursor::setMode.
+int cursorMode(lua_State* L) {
+   cursor::setMode(static_cast<int>(checkInteger(L, 1)), toBoolean(L, 2), toBoolean(L, 3), toBoolean(L, 4));
    return 0;
 }
 
-int releaseCursor(lua_State* L) {
-   world::releaseCursor(static_cast<int>(checkInteger(L, 1)));
+// fa_native.cursor_jump(pindex, x, y): the mod's own cursor jumps.
+int cursorJump(lua_State* L) {
+   cursor::jump(static_cast<int>(checkInteger(L, 1)), checkNumber(L, 2), checkNumber(L, 3));
    return 0;
+}
+
+// fa_native.cursor_step(pindex, x, y): "moved" or "edge" for a movement key whose event carries the
+// position, or nil when the cursor did not take that key. Only this client knows it.
+int cursorStep(lua_State* L) {
+   const auto step = cursor::step(static_cast<int>(checkInteger(L, 1)), checkNumber(L, 2), checkNumber(L, 3));
+   if (!step) return 0;
+   pushString(L, *step == cursor::Step::Moved ? "moved" : "edge");
+   return 1;
+}
+
+// fa_native.cursor_position(pindex): the cursor's tile x and y, or nothing. Only this client knows
+// it, so the mod may speak and play sounds by it but must not change the game by it.
+int cursorPosition(lua_State* L) {
+   const auto tile = cursor::position(static_cast<int>(checkInteger(L, 1)));
+   if (!tile) return 0;
+   pushInt(L, tile->x);
+   pushInt(L, tile->y);
+   return 2;
 }
 
 // The game's build direction for the item in hand, or nil for another client's player. Only this
@@ -528,7 +550,8 @@ struct Function {
 };
 
 constexpr Function kFunctions[] = {
-   {"set_cursor", &setCursor},     {"release_cursor", &releaseCursor},   {"speak", &speak},
+   {"cursor_mode", &cursorMode},   {"cursor_jump", &cursorJump},         {"cursor_step", &cursorStep},
+   {"cursor_position", &cursorPosition}, {"speak", &speak},
    {"next_part", &nextPart},       {"build_direction", &buildDirection}, {"held_build", &heldBuild},
    {"drag_build", &dragBuild},     {"walking_step", &walkingStep},       {"open_selected_info", &openSelectedInfo},
    {"entity_icons", &entityIcons}, {"map_overlays", &mapOverlays},       {"audio", &playAudio},

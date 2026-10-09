@@ -1,7 +1,6 @@
 --Here: teleporting
+local Cursor = require("scripts.cursor")
 local FaUtils = require("scripts.fa-utils")
-local Graphics = require("scripts.graphics")
-local Viewpoint = require("scripts.viewpoint")
 local Speech = require("scripts.speech")
 local MessageBuilder = Speech.MessageBuilder
 local MovementHistory = require("scripts.movement-history")
@@ -10,12 +9,8 @@ local mod = {}
 
 --Teleports the player character to the cursor position.
 function mod.teleport_to_cursor(pindex, muted, ignore_enemies, return_cursor)
-   local vp = Viewpoint.get_viewpoint(pindex)
-   local result = mod.teleport_to_closest(pindex, vp:get_cursor_pos(), muted, ignore_enemies)
-   if return_cursor then
-      local p = game.get_player(pindex)
-      vp:set_cursor_pos({ x = p.position.x, y = p.position.y })
-   end
+   local result = mod.teleport_to_closest(pindex, Cursor.tile(pindex), muted, ignore_enemies)
+   if return_cursor then Cursor.jump(pindex, game.get_player(pindex).position) end
    return result
 end
 
@@ -56,7 +51,6 @@ function mod.teleport_to_closest(pindex, pos, muted, ignore_enemies)
    local can_port = char.surface.can_place_entity({ name = "character", position = new_pos })
    if can_port then
       local old_pos = table.deepcopy(char.position)
-      local vp = Viewpoint.get_viewpoint(pindex)
       if not muted then
          --Draw teleporting visuals at origin
          rendering.draw_circle({
@@ -157,8 +151,7 @@ function mod.teleport_to_closest(pindex, pos, muted, ignore_enemies)
             end
          end
          --Update cursor after teleport
-         vp:set_cursor_pos({ x = new_pos.x, y = new_pos.y })
-         Graphics.draw_cursor_highlight(pindex, nil, nil)
+         Cursor.jump(pindex, new_pos)
       else
          Speech.speak(pindex, { "fa.teleport-failed" })
          return false

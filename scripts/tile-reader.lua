@@ -1,10 +1,10 @@
 --Here: Reading tiles and entities at the cursor position
 
 local Consts = require("scripts.consts")
+local Cursor = require("scripts.cursor")
 local EntitySelection = require("scripts.entity-selection")
 local FaInfo = require("scripts.fa-info")
 local FaUtils = require("scripts.fa-utils")
-local Graphics = require("scripts.graphics")
 local Localising = require("scripts.localising")
 local Mouse = require("scripts.mouse")
 local PrimaryFinder = require("scripts.rails.primary-finder")
@@ -13,10 +13,7 @@ local RailDescriber = require("railutils.rail-describer")
 local RailQueries = require("railutils.queries")
 local Speech = require("scripts.speech")
 local SurfaceHelper = require("scripts.rails.surface-helper")
-local Viewpoint = require("scripts.viewpoint")
 local MessageBuilder = Speech.MessageBuilder
-local Combat = require("scripts.combat")
-local KruiseKontrol = require("scripts.kruise-kontrol-wrapper")
 
 local mod = {}
 
@@ -35,8 +32,7 @@ end
 ---@param message fa.MessageBuilder MessageBuilder to append rail information to
 function mod.read_tile_rails(pindex, message)
    local player = game.get_player(pindex)
-   local vp = Viewpoint.get_viewpoint(pindex)
-   local cursor_pos = vp:get_cursor_pos()
+   local cursor_pos = Cursor.tile(pindex)
 
    local floor_x = math.floor(cursor_pos.x)
    local floor_y = math.floor(cursor_pos.y)
@@ -116,16 +112,11 @@ function mod.read_tile_inner(pindex, message)
 
    local ent = EntitySelection.get_first_ent_at_tile(pindex)
 
-   -- In combat mode or during KK, don't set selected entity
-   local skip_selection = Combat.is_combat_mode(pindex) or KruiseKontrol.is_active(pindex)
-
    -- Special handling for rails: announce all rails at this position
    local is_rail = ent and ent.valid and Consts.RAIL_TYPES_SET[ent.type]
    local is_ghost_rail = ent and ent.valid and ent.type == "entity-ghost" and Consts.RAIL_TYPES_SET[ent.ghost_type]
    if is_rail or is_ghost_rail then
       mod.read_tile_rails(pindex, message)
-      Graphics.draw_cursor_highlight(pindex, ent, nil)
-      if not skip_selection then game.get_player(pindex).selected = ent end
    elseif not (ent and ent.valid) then
       --If there is no ent, read the tile instead
       if tile_object then message:fragment(Localising.get_localised_name_with_fallback(tile_object)) end
@@ -133,13 +124,9 @@ function mod.read_tile_inner(pindex, message)
          --Identify shores and crevices and so on for water tiles
          message:fragment(FaUtils.identify_water_shores(pindex))
       end
-      Graphics.draw_cursor_highlight(pindex, nil, nil)
-      if not skip_selection then game.get_player(pindex).selected = nil end
    else
       --Regular entity handling
       message:fragment(FaInfo.ent_info(pindex, ent))
-      Graphics.draw_cursor_highlight(pindex, ent, nil)
-      if not skip_selection then game.get_player(pindex).selected = ent end
    end
 
    --Add info on whether the tile is uncharted or blurred or distant

@@ -2,18 +2,7 @@
 local mod = {}
 
 local Consts = require("scripts.consts")
-local StorageManager = require("scripts.storage-manager")
-local Viewpoint = require("scripts.viewpoint")
-
----@class fa.EntitySelection.StorageState
----@field ent_index number Current index for cycling
-
----@type table<number, fa.EntitySelection.StorageState>
-local ent_selection_storage = StorageManager.declare_storage_module("entity_selection", {
-   ent_index = 1,
-}, {
-   ephemeral_state_version = 1,
-})
+local Cursor = require("scripts.cursor")
 
 --- Sort priorities by entity type. Higher priority entities appear first.
 --- Default priority is 0 if not listed.
@@ -176,33 +165,10 @@ end
 ---@return LuaEntity|nil The first entity at the tile, or nil if none found
 function mod.get_first_ent_at_tile(pindex)
    local player = game.get_player(pindex)
-   local vp = Viewpoint.get_viewpoint(pindex)
-   local c_pos = vp:get_cursor_pos()
+   local c_pos = Cursor.tile(pindex)
 
    local ents = mod.get_ents_on_tile(player.surface, c_pos.x, c_pos.y, pindex)
-   if #ents == 0 then return nil end
-
-   ent_selection_storage[pindex].ent_index = 1
    return ents[1]
-end
-
---- Get the next entity at this tile and note its index.
--- The tile entity list is already sorted such that primary ents are listed first.
--- Cycles through with modulus wrapping.
----@param pindex number The player index
----@return LuaEntity|nil The next entity at the tile, or nil if none found
-function mod.get_next_ent_at_tile(pindex)
-   local state = ent_selection_storage[pindex]
-   local player = game.get_player(pindex)
-   local vp = Viewpoint.get_viewpoint(pindex)
-   local c_pos = vp:get_cursor_pos()
-
-   local ents = mod.get_ents_on_tile(player.surface, c_pos.x, c_pos.y, pindex)
-   if #ents == 0 then return nil end
-
-   -- Increment and wrap with modulus
-   state.ent_index = (state.ent_index % #ents) + 1
-   return ents[state.ent_index]
 end
 
 --- Produce an iterator over all entities for a player's selected tile,
@@ -211,8 +177,7 @@ end
 ---@return function, nil, nil
 function mod.iterate_selected_ents(pindex)
    local player = game.get_player(pindex)
-   local vp = Viewpoint.get_viewpoint(pindex)
-   local c_pos = vp:get_cursor_pos()
+   local c_pos = Cursor.tile(pindex)
 
    local ents = mod.get_ents_on_tile(player.surface, c_pos.x, c_pos.y, pindex)
    local i = 0
@@ -235,11 +200,7 @@ end
 function mod.get_player_tile(pindex)
    local player = game.get_player(pindex)
    local surf = player.surface
-   local vp = Viewpoint.get_viewpoint(pindex)
-   local c_pos = vp:get_cursor_pos()
-
-   -- Reset cycling state
-   ent_selection_storage[pindex].ent_index = 1
+   local c_pos = Cursor.tile(pindex)
 
    -- Get tile info
    local tile_name, tile_object
@@ -254,12 +215,6 @@ function mod.get_player_tile(pindex)
    end
 
    return tile_name, tile_object
-end
-
---- Reset entity cycling index (for when cursor moves)
----@param pindex number The player index
-function mod.reset_entity_index(pindex)
-   ent_selection_storage[pindex].ent_index = 1
 end
 
 return mod

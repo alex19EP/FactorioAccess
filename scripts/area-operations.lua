@@ -5,20 +5,19 @@ Handles area mining for obstacles, ghosts, and with special tools.
 ]]
 
 local Consts = require("scripts.consts")
+local Cursor = require("scripts.cursor")
 local Localising = require("scripts.localising")
 local PlayerMiningTools = require("scripts.player-mining-tools")
 local FaUtils = require("scripts.fa-utils")
 local Speech = require("scripts.speech")
 local MessageBuilder = Speech.MessageBuilder
-local Viewpoint = require("scripts.viewpoint")
 
 local mod = {}
 
 ---Mine area around cursor or selected entity
 ---@param pindex number
 function mod.mine_area(pindex)
-   local vp = Viewpoint.get_viewpoint(pindex)
-   local cursor_pos = vp:get_cursor_pos()
+   local cursor_pos = Cursor.tile(pindex)
    local p = game.get_player(pindex)
    local ent = game.get_player(pindex).selected
    local cleared_count = 0

@@ -1415,6 +1415,48 @@ struct Layout {
    // Map::forceManager.sortedForceDataList.begin_, ForceData**, indexed by ForceID.
    uint32_t mapForceData = 0;
    uintptr_t gameOperatorDelete = 0; // the game's operator delete(void*), which frees what its strings hold
+
+   // The FA cursor (see cursor.h). bool PlayerInputSource::processCustomInput(Event const&,
+   // ControlContext const&) sends a CustomInput action, carrying getCursorMapPosition, for each mod
+   // control the event triggers; ControlInputValue const* ControlInput::triggeredByWithoutSideEffect(
+   // Event const&, ControlContext const*, unsigned) const tells which, without marking the keys used.
+   uintptr_t processCustomInput = 0;
+   uintptr_t controlTriggeredQuietly = 0;
+   // void PlayerInputSource::sendRenderStateChanges(): the first thing every MainLoop::processEvents
+   // does, while the update thread waits.
+   uintptr_t sendRenderStateChanges = 0;
+   // What the view shows, GameView::cachedSurfaceView: the surface (SurfaceIndex), the centre
+   // (SurfaceViewData::position, an Optional<MapPosition> empty at x = INT32_MAX) and the zoom
+   // (ZoomData::zoom, an std::optional of a double, the value first). With PixelSize
+   // GameView::getDisplaySize() const they give the tiles on the screen, as GameView::getMapPosition
+   // computes them: the centre plus or minus half the size over zoom * display density * 32.
+   uint32_t gameViewSurfaceIndex = 0;
+   uint32_t gameViewCentre = 0;
+   uint32_t gameViewZoom = 0;
+   uintptr_t gameViewDisplaySize = 0;
+   uint32_t displayDensity = 0;    // InterfaceSettings::displayDensityValue, a double
+   uintptr_t gameViewSurface = 0;  // Surface const& GameView::getSurface() const
+   uint32_t controllerGetType = 0; // slot of ControllerType Controller::getType() const
+   uint32_t controllerCharacter = 0;
+   uint32_t controllerGod = 0;
+   uint32_t controllerRemote = 0;
+   // Input actions, which every client input becomes: InputAction (the action's data inline in a
+   // union from `buffer`), sent with bool InputSource::process(InputAction&&), which checks the
+   // permission group and hands it to the server. A sighted player's map drag moves the remote view
+   // with MoveOnPan (ClientMapDragger::commit): ActionData::MoveOnPanData {position, zoom (kept when
+   // not above 0), surface (must be the player's)}.
+   uint32_t inputActionSize = 0;
+   uint32_t inputActionType = 0;
+   uint32_t inputActionPlayer = 0;
+   uint32_t inputActionData = 0;
+   uint32_t inputSourceProcess = 0;
+   uint32_t actionMoveOnPan = 0; // InputActionType::MoveOnPan
+   uint32_t moveOnPanPosition = 0;
+   uint32_t moveOnPanZoom = 0;
+   uint32_t moveOnPanSurface = 0;
+   // void PlayerInputSource::openRemoteView(Surface const&, MapPosition const&,
+   // std::optional<StrongTypedef<double, ZoomTag>>): remote view there, as an alert click opens it.
+   uintptr_t openRemoteView = 0;
 };
 
 // Bits of agui::Widget::usageBitMask, read from Widget::setVisible and Widget::isEnabled in

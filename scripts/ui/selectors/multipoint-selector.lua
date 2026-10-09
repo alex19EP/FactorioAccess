@@ -4,7 +4,7 @@ A multipoint selector for selecting one or more points on the map.
 Supports advanced cursor navigation while selecting points, and can be used for fast travel, waypoints, etc.
 ]]
 local StorageManager = require("scripts.storage-manager")
-local Viewpoint = require("scripts.viewpoint")
+local Cursor = require("scripts.cursor")
 local EntitySelection = require("scripts.entity-selection")
 local Speech = require("scripts.speech")
 local MessageBuilder = Speech.MessageBuilder
@@ -117,8 +117,7 @@ end
 
 ---@param controller fa.ui.RouterController
 function MultipointSelector:_handle_click(pindex, modifiers, kind, controller)
-   local viewpoint = Viewpoint.get_viewpoint(pindex)
-   local cursor_pos = viewpoint:get_cursor_pos()
+   local cursor_pos = Cursor.tile(pindex)
    local entity = EntitySelection.get_first_ent_at_tile(pindex)
    local state = multipoint_selector_storage[pindex][self.ui_name]
 

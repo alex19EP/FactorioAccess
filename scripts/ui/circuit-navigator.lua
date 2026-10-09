@@ -13,7 +13,7 @@ local Menu = require("scripts.ui.menu")
 local KeyGraph = require("scripts.ui.key-graph")
 local CircuitNetwork = require("scripts.circuit-network")
 local Localising = require("scripts.localising")
-local Viewpoint = require("scripts.viewpoint")
+local Cursor = require("scripts.cursor")
 local FaUtils = require("scripts.fa-utils")
 local Speech = require("scripts.speech")
 
@@ -138,11 +138,8 @@ local function render_entities_list(ctx)
          on_click = function(ctx)
             -- Jump to entity and update state to point to new entity
             local pindex = ctx.pindex
-            local player = game.get_player(pindex)
-            local vp = Viewpoint.get_viewpoint(pindex)
-
-            vp:set_cursor_pos(ent.position)
-            player.selected = ent
+            -- The game selects it there
+            Cursor.jump(pindex, ent.position)
 
             -- Update the entity in state for rerender
             ctx.state.entity = ent

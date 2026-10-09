@@ -14,7 +14,7 @@ over there with fast travel points.
 ]]
 local StorageManager = require("scripts.storage-manager")
 local uid = require("scripts.uid").uid
-local Viewpoint = require("scripts.viewpoint")
+local Cursor = require("scripts.cursor")
 local MovementHistory = require("scripts.movement-history")
 local VanillaMode = require("scripts.vanilla-mode")
 
@@ -27,7 +27,6 @@ local mod = {}
 ---@class fa.RulerStorageState
 ---@field rulers fa.Ruler[]
 ---@field handle fa.RulerHandle? temporary, see comments below on how handles work.
----@field last_cursor_tile {x: number, y: number}? Last cursor tile position checked
 
 -- How far from the ruler do we give the boundary sound?
 local RULER_SIDE_DIST = 1
@@ -39,8 +38,12 @@ local DELETED_MSG = "Attempt to use a ruler handle which was previously deleted"
 local module_state = StorageManager.declare_storage_module("rulers", {
    -- For now only ever holds one; this is future proofing.
    rulers = {},
-   last_cursor_tile = nil,
 })
+
+-- The cursor tile each player's rulers last sounded for. Only the client with the DLL knows the
+-- cursor, so this stays out of storage: it only decides when to play a sound.
+---@type table<integer, fa.Point>
+local last_cursor_tiles = {}
 
 --[[
 As promised in uid.lua, an explanation of the handle:
@@ -238,18 +241,6 @@ function mod.clear_rulers(pindex)
    end
 end
 
--- Soorta legacy: work out the cursor position of the player and use that as the
--- "viewpoint".
---
--- Sorta legacy because I (ahicks) think that we're going to havve to eventually
--- move away from the cursor and the walking player being the same thing,
--- especially with being able to walk in cursor mode on the horizon.  But it's
--- fine to use it for now.
-function mod.update_from_cursor(pindex)
-   local cur = Viewpoint.get_viewpoint(pindex):get_cursor_pos()
-   mod.on_viewpoint_moved(pindex, cur.x, cur.y)
-end
-
 --Checks the alignment of all rulers against the position
 function mod.is_at_any_ruler_definition(pindex, position)
    if module_state[pindex].handle then
@@ -308,24 +299,14 @@ local function update_player(pindex)
    end
 
    -- Check cursor movement
-   local vp = Viewpoint.get_viewpoint(pindex)
-   local cursor_pos = vp:get_cursor_pos()
-   local cursor_tile = {
-      x = math.floor(cursor_pos.x),
-      y = math.floor(cursor_pos.y),
-   }
+   local cursor_tile = Cursor.speech_tile(pindex)
+   if not cursor_tile then return end
 
    -- Trigger if no previous cursor tile OR crossed tile boundary
-   local should_trigger_cursor = false
-   if not state.last_cursor_tile then
-      should_trigger_cursor = true
-   elseif cursor_tile.x ~= state.last_cursor_tile.x or cursor_tile.y ~= state.last_cursor_tile.y then
-      should_trigger_cursor = true
-   end
-
-   if should_trigger_cursor then
+   local last = last_cursor_tiles[pindex]
+   if not last or cursor_tile.x ~= last.x or cursor_tile.y ~= last.y then
       mod.on_viewpoint_moved(pindex, cursor_tile.x, cursor_tile.y)
-      state.last_cursor_tile = cursor_tile
+      last_cursor_tiles[pindex] = cursor_tile
    end
 end
 

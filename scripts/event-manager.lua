@@ -1,6 +1,7 @@
 ---Manages multiple handlers for Factorio events
 ---Since Factorio's script.on_event is last-one-wins, this allows multiple handlers per event.
 ---Don't use that though, it's to support our tests.
+local Cursor = require("scripts.cursor")
 local PlayerInit = require("scripts.player-init")
 local VanillaMode = require("scripts.vanilla-mode")
 
@@ -182,6 +183,7 @@ function mod._dispatch_event(event_id, event)
    if not event_handlers then return end
 
    local pindex = (event --[[@as { player_index: integer? }]]).player_index
+   local cursor_event = pindex and (event --[[@as { cursor_position: MapPosition? }]]).cursor_position ~= nil
 
    -- Check if this event has a player_index and needs initialization
    if pindex then
@@ -205,6 +207,9 @@ function mod._dispatch_event(event_id, event)
       if ok and is_vanilla and not VANILLA_MODE_WHITELIST[event_id] then return end
    end
 
+   -- A key's event carries the cursor: its handlers act there.
+   if cursor_event then Cursor.begin_event(event --[[@as EventData.CustomInputEvent]], pindex) end
+
    -- Run handlers in priority order: test → ui → world
    local priority_order = { mod.EVENT_KIND.TEST, mod.EVENT_KIND.UI, mod.EVENT_KIND.WORLD }
 
@@ -214,10 +219,12 @@ function mod._dispatch_event(event_id, event)
          local result = handler(event, pindex)
          if result == mod.FINISHED then
             -- Stop processing further handlers
-            return
+            break
          end
       end
    end
+
+   if cursor_event then Cursor.end_event(pindex) end
 end
 
 ---Internal: Dispatch nth tick events

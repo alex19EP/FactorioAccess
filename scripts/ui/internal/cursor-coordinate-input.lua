@@ -2,7 +2,7 @@
 ---Opens a textbox directly and parses the result to move the cursor.
 local UiRouter = require("scripts.ui.router")
 local Speech = require("scripts.speech")
-local Viewpoint = require("scripts.viewpoint")
+local Cursor = require("scripts.cursor")
 
 local mod = {}
 
@@ -62,8 +62,7 @@ function cursor_coordinate_ui:on_child_result(pindex, result, context, controlle
    end
 
    -- Set cursor position
-   local viewpoint = Viewpoint.get_viewpoint(pindex)
-   viewpoint:set_cursor_pos({ x = x, y = y })
+   Cursor.jump(pindex, { x = x, y = y })
 
    -- Announce success
    Speech.speak(pindex, { "fa.cursor-moved" })

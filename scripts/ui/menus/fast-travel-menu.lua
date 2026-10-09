@@ -1,12 +1,11 @@
 local TravelTools = require("scripts.travel-tools")
+local Cursor = require("scripts.cursor")
 local FaUtils = require("scripts.fa-utils")
 local Functools = require("scripts.functools")
-local Graphics = require("scripts.graphics")
 local UiKeyGraph = require("scripts.ui.key-graph")
 local Menu = require("scripts.ui.menu")
 local UiRouter = require("scripts.ui.router")
 local TabList = require("scripts.ui.tab-list")
-local Viewpoint = require("scripts.viewpoint")
 
 local mod = {}
 
@@ -17,7 +16,6 @@ local function render(ctx)
 
    local controller = TravelTools.get_controller(ctx.pindex)
    local builder = Menu.MenuBuilder.new()
-   local vp = Viewpoint.get_viewpoint(ctx.pindex)
 
    local num_points = controller:get_num_travel_points()
 
@@ -46,8 +44,7 @@ local function render(ctx)
          end, {
             on_click = function(ctx)
                -- Move cursor to show location
-               vp:set_cursor_pos(FaUtils.center_of_tile(point.position))
-               Graphics.draw_cursor_highlight(ctx.pindex, nil, "train-visualization")
+               Cursor.jump(ctx.pindex, point.position)
                ctx.controller:close()
                ctx.message:fragment({ "fa.travel-cursor-moved-to", point.label })
             end,
@@ -82,7 +79,7 @@ local function render(ctx)
             ctx.message:fragment(point.label)
          end, {
             on_click = function(ctx)
-               local position = vp:get_cursor_pos()
+               local position = Cursor.tile(ctx.pindex)
                if controller:relocate_point(point_id, position) then
                   ctx.message:fragment({
                      "fa.travel-relocated-point",
@@ -90,8 +87,6 @@ local function render(ctx)
                      tostring(math.floor(position.x)),
                      tostring(math.floor(position.y)),
                   })
-                  vp:set_cursor_pos({ x = position.x, y = position.y })
-                  Graphics.draw_cursor_highlight(ctx.pindex)
                else
                   ctx.message:fragment({ "fa.travel-failed-relocate" })
                end
@@ -161,12 +156,14 @@ local function render(ctx)
    -- Create new travel point
    builder:add_clickable("create-new", { "fa.travel-menu-create-new" }, {
       on_click = function(ctx)
+         -- The name comes back from a GUI event, which knows no cursor
+         ctx.state.new_point_position = Cursor.tile(ctx.pindex)
          ctx.controller:open_textbox("", "create-new")
          ctx.message:fragment({ "fa.travel-enter-name" })
       end,
       on_child_result = function(ctx, result)
          if result and result ~= "" then
-            local position = vp:get_cursor_pos()
+            local position = ctx.state.new_point_position
             controller:create_point(result, position)
             ctx.message:fragment({ "fa.travel-point-created", result })
             -- Menu will re-render automatically

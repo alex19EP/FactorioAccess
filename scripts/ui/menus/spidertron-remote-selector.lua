@@ -6,7 +6,7 @@ local SpidertronRemote = require("scripts.spidertron-remote")
 local Speech = require("scripts.speech")
 local TabList = require("scripts.ui.tab-list")
 local UiRouter = require("scripts.ui.router")
-local Viewpoint = require("scripts.viewpoint")
+local Cursor = require("scripts.cursor")
 
 local mod = {}
 
@@ -61,8 +61,8 @@ local function build_spidertron_form(ctx)
    if #spidertrons == 0 then
       builder:add_label("no-spidertrons", { "fa.spidertron-remote-no-spidertrons" })
    else
-      local vp = Viewpoint.get_viewpoint(ctx.pindex)
-      local player_pos = vp:get_cursor_pos()
+      -- Only spoken, so the DLL's cursor will do when no key is being handled
+      local player_pos = Cursor.speech_tile(ctx.pindex) or player.position
 
       for _, spider in ipairs(spidertrons) do
          local unit_number = spider.unit_number

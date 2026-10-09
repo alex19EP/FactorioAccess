@@ -196,20 +196,6 @@ data:extend({
 
    {
       type = "custom-input",
-      name = "fa-s-i",
-      key_sequence = "SHIFT + I",
-      consuming = "none",
-   },
-
-   {
-      type = "custom-input",
-      name = "fa-c-i",
-      key_sequence = "CONTROL + I",
-      consuming = "none",
-   },
-
-   {
-      type = "custom-input",
       name = "fa-a-i",
       key_sequence = "ALT + I",
       consuming = "none",
@@ -318,13 +304,6 @@ data:extend({
       name = "fa-f",
       key_sequence = "F",
       linked_game_control = "pick-items",
-      consuming = "none",
-   },
-
-   {
-      type = "custom-input",
-      name = "fa-s-f",
-      key_sequence = "SHIFT + F",
       consuming = "none",
    },
 
@@ -533,13 +512,6 @@ data:extend({
       type = "custom-input",
       name = "fa-cas-v",
       key_sequence = "CONTROL + ALT + SHIFT + V",
-      consuming = "none",
-   },
-
-   {
-      type = "custom-input",
-      name = "fa-ca-c",
-      key_sequence = "CONTROL + ALT + C",
       consuming = "none",
    },
 

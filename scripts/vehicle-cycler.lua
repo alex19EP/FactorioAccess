@@ -1,9 +1,8 @@
 ---Vehicle cycling - find and cycle through vehicles near the player's character
+local Cursor = require("scripts.cursor")
 local FaUtils = require("scripts.fa-utils")
-local Graphics = require("scripts.graphics")
 local Localising = require("scripts.localising")
 local Speech = require("scripts.speech")
-local Viewpoint = require("scripts.viewpoint")
 
 local mod = {}
 
@@ -71,7 +70,6 @@ function mod.cycle_to_next_vehicle(pindex)
       return
    end
 
-   local vp = Viewpoint.get_viewpoint(pindex)
    local vehicles = get_sorted_vehicles(player.surface, character.position)
 
    if #vehicles == 0 then
@@ -96,15 +94,8 @@ function mod.cycle_to_next_vehicle(pindex)
    local target = vehicles[target_index]
    local target_pos = { x = math.floor(target.position.x), y = math.floor(target.position.y) }
 
-   -- Move cursor to the vehicle
-   vp:set_cursor_pos(target_pos)
-   Graphics.sync_build_cursor_graphics(pindex)
-
-   -- Update selection
-   player.selected = target
-
-   -- Update cursor highlight
-   Graphics.draw_cursor_highlight(pindex, target, nil)
+   -- Move cursor to the vehicle; the game selects it there
+   Cursor.jump(pindex, target_pos)
 
    -- Announce
    local message = Speech.MessageBuilder.new()

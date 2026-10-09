@@ -1,15 +1,15 @@
---Hands the FA cursor to the FactorioAccess native DLL when it is loaded. The game's own cursor
---then follows the FA cursor, so vanilla hover selection, building, mining and the selection tools
---act there; helper-scripts/factorio-access-keys.ps1 gives every mouse button control a key.
+--What the FactorioAccess native DLL knows of the game that the Lua API cannot read, such as the
+--build direction and the drag in progress. The DLL owns the cursor (scripts/cursor.lua); the game's
+--own cursor follows it, so vanilla hover selection, building, mining and the selection tools act
+--there; helper-scripts/factorio-access-keys.ps1 gives every mouse button control a key.
 --fa_native exists only on clients that run the DLL, and its calls change nothing in the game.
-local VanillaMode = require("scripts.vanilla-mode")
-local Viewpoint = require("scripts.viewpoint")
-
 local mod = {}
 
 ---@class fa.Native
----@field set_cursor fun(player_index: integer, x: number, y: number)
----@field release_cursor fun(player_index: integer)
+---@field cursor_mode fun(player_index: integer, vanilla: boolean, keys: boolean, anchored: boolean)
+---@field cursor_jump fun(player_index: integer, x: number, y: number)
+---@field cursor_step fun(player_index: integer, x: number, y: number): ("moved"|"edge")?
+---@field cursor_position fun(player_index: integer): integer?, integer?
 ---@field speak fun(player_index: integer, message: LocalisedString)
 ---@field next_part fun(player_index: integer, direction: integer)
 ---@field build_direction fun(player_index: integer): defines.direction?
@@ -77,30 +77,6 @@ end
 ---@return fa.NativeDragBuild?
 function mod.drag_build(pindex)
    return native and native.drag_build(pindex)
-end
-
----@param pindex integer
----@param position fa.Point
-local function report(pindex, position)
-   if not native then return end
-   if VanillaMode.is_enabled(pindex) then
-      native.release_cursor(pindex)
-   else
-      native.set_cursor(pindex, position.x + 0.5, position.y + 0.5)
-   end
-end
-
--- A key pressed right after a cursor move must reach the game with the new position, so a move is
--- reported at once instead of on the next tick.
-Viewpoint.register_listener("cursor_moved", report)
-
----Called every tick. Reports each cursor as the centre of its tile.
-function mod.on_tick()
-   if not native then return end
-   for _, p in pairs(game.connected_players) do
-      local pindex = p.index
-      report(pindex, Viewpoint.get_viewpoint(pindex):get_cursor_pos())
-   end
 end
 
 return mod

@@ -1,11 +1,11 @@
 --- Spidertron remote control functionality
 local mod = {}
 
+local Cursor = require("scripts.cursor")
 local EntitySelection = require("scripts.entity-selection")
 local FaInfo = require("scripts.fa-info")
 local Speech = require("scripts.speech")
 local MessageBuilder = Speech.MessageBuilder
-local Viewpoint = require("scripts.viewpoint")
 
 ---Check if a spidertron is in the list
 ---@param list LuaEntity[]
@@ -158,9 +158,6 @@ function mod.cycle_spidertrons(player, direction)
       return
    end
 
-   local vp = Viewpoint.get_viewpoint(pindex)
-   local cursor_pos = vp:get_cursor_pos()
-
    -- Find current spidertron at cursor position
    local current_spider = EntitySelection.get_first_ent_at_tile(pindex)
    local current_index = nil
@@ -193,7 +190,7 @@ function mod.cycle_spidertrons(player, direction)
    ---@cast next_pos fa.Point
 
    -- Update cursor position (caller should read tile)
-   vp:set_cursor_pos(next_pos)
+   Cursor.jump(pindex, next_pos)
 end
 
 return mod

@@ -6,7 +6,7 @@ local Consts = require("scripts.consts")
 local StorageManager = require("scripts.storage-manager")
 local Speech = require("scripts.speech")
 local Sounds = require("scripts.ui.sounds")
-local Viewpoint = require("scripts.viewpoint")
+local Cursor = require("scripts.cursor")
 local Traverser = require("railutils.traverser")
 local Queries = require("railutils.queries")
 local FaUtils = require("scripts.fa-utils")
@@ -573,8 +573,7 @@ function mod.lock_on_to_rail(pindex, rail_entity, build_mode)
    push_move(pindex, rail.position, chosen_end_direction, rail_type, rail.direction, nil, false)
 
    -- Set cursor position
-   local vp = Viewpoint.get_viewpoint(pindex)
-   vp:set_cursor_pos(rail.position)
+   Cursor.jump(pindex,rail.position)
 
    -- Announce lock-on with build mode and end direction
    local mb = MessageBuilder.new()
@@ -625,8 +624,7 @@ local function move_in_direction(pindex, move_func, direction_name)
    local state = vtd_storage[pindex]
    if state.speculating then
       -- In speculation mode, just update cursor position without modifying stack
-      local vp = Viewpoint.get_viewpoint(pindex)
-      vp:set_cursor_pos(new_pos)
+      Cursor.jump(pindex,new_pos)
       return true
    else
       -- Build mode: try to build rail
@@ -639,8 +637,7 @@ local function move_in_direction(pindex, move_func, direction_name)
       push_move(pindex, new_pos, new_end_dir, new_rail_type, new_placement_dir, entity, false)
 
       -- Update cursor position (caller will read tile)
-      local vp = Viewpoint.get_viewpoint(pindex)
-      vp:set_cursor_pos(new_pos)
+      Cursor.jump(pindex,new_pos)
       return true
    end
 end
@@ -693,8 +690,7 @@ function mod.flip_end(pindex)
    )
 
    -- Update cursor position
-   local vp = Viewpoint.get_viewpoint(pindex)
-   vp:set_cursor_pos(trav:get_position())
+   Cursor.jump(pindex,trav:get_position())
 
    -- Announce flip with new direction
    local mb = MessageBuilder.new()
@@ -713,8 +709,7 @@ function mod.toggle_speculation(pindex)
    if state.speculating then
       -- Exit speculation: restore cursor to current stack position
       -- (Stack was never modified during speculation)
-      local vp = Viewpoint.get_viewpoint(pindex)
-      vp:set_cursor_pos(current.position)
+      Cursor.jump(pindex,current.position)
 
       state.speculating = false
 
@@ -781,8 +776,7 @@ function mod.return_to_bookmark(pindex)
    -- Update cursor position
    local current = get_current_move(pindex)
    if current then
-      local vp = Viewpoint.get_viewpoint(pindex)
-      vp:set_cursor_pos(current.position)
+      Cursor.jump(pindex,current.position)
    end
 
    Speech.speak(pindex, { "fa.virtual-train-returned-to-bookmark", removed_count })
@@ -817,8 +811,7 @@ function mod.backspace(pindex)
    -- Update cursor position
    local current = get_current_move(pindex)
    if current then
-      local vp = Viewpoint.get_viewpoint(pindex)
-      vp:set_cursor_pos(current.position)
+      Cursor.jump(pindex,current.position)
    end
 
    Speech.speak(pindex, { "fa.virtual-train-undid" })

@@ -14,7 +14,7 @@ self-explanatory.  I recommend reading simple.lua for a good example that shows
 
 IMPORTANT: see devdocs/scanner.md for the whole picture.
 ]]
-local EntitySelection = require("scripts.entity-selection")
+local Cursor = require("scripts.cursor")
 local FaUtils = require("scripts.fa-utils")
 local Memosort = require("scripts.memosort")
 local ScannerConsts = require("scripts.scanner.scanner-consts")
@@ -22,7 +22,6 @@ local SurfaceScanner = require("scripts.scanner.surface-scanner")
 local GlobalManager = require("scripts.storage-manager")
 local TH = require("scripts.table-helpers")
 local UiRouter = require("scripts.ui.router")
-local Viewpoint = require("scripts.viewpoint")
 local WorkQueue = require("scripts.work-queue")
 local Speech = require("scripts.speech")
 
@@ -400,7 +399,6 @@ end
 ---@param ps fa.scanner.GlobalPlayerState
 local function announce_cursor_pos(pindex, ps)
    local pobj = assert(game.get_player(pindex))
-   local vp = Viewpoint.get_viewpoint(pindex)
    ---@cast pobj LuaPlayer
 
    -- The cursor is put before the beginning of the list so that it is possible
@@ -455,26 +453,15 @@ local function announce_cursor_pos(pindex, ps)
       local from = pobj.position
       if pobj.controller_type == defines.controllers.remote and ps.origin then from = ps.origin end
       -- Update the entry first so position is current
-      EntitySelection.reset_entity_index(pindex)
       announcing.backend:update_entry(pobj, announcing)
-      -- Now set cursor to the updated position
-      vp:set_cursor_pos(announcing.position)
-      -- Try to select the entity if there is one
-      local new_ent = EntitySelection.get_first_ent_at_tile(pindex)
-      if new_ent then pobj.selected = new_ent end
+      -- Now set cursor to the updated position; the game selects what is there
+      Cursor.jump(pindex, announcing.position)
       Speech.speak(pindex, {
          "fa.scanner-full-presentation",
          announcing.backend:readout_entry(pobj, announcing),
          FaUtils.dir_dist_locale(from, announcing.position),
          tostring(ps.scanner_cursor.entry_index),
          tostring(count),
-      })
-      -- See entity-selection.lua refresh_player_tile, which goes nuts if we aren't
-      -- directly on the center of a tile; this can be removed when that's
-      -- fixed.
-      vp:set_cursor_pos({
-         x = math.floor(announcing.position.x) + 0.5,
-         y = math.floor(announcing.position.y) + 0.5,
       })
    else
       Speech.speak(pindex, {

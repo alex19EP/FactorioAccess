@@ -2,8 +2,6 @@
 local mod = {}
 
 local Consts = require("scripts.consts")
-local Viewpoint = require("scripts.viewpoint")
-local Graphics = require("scripts.graphics")
 local Blueprints = require("scripts.blueprints")
 local BuildDimensions = require("scripts.build-dimensions")
 
@@ -27,8 +25,6 @@ end
 ---@param pindex integer
 ---@param read_hand function
 function mod.on_cursor_stack_changed(event, pindex, read_hand)
-   local vp = Viewpoint.get_viewpoint(pindex)
-
    local player = game.get_player(pindex)
    local stack = player.cursor_stack
    local new_item_name = ""
@@ -51,16 +47,12 @@ function mod.on_cursor_stack_changed(event, pindex, read_hand)
 
    if storage.players[pindex].previous_hand_item_name ~= new_item_name then
       storage.players[pindex].previous_hand_item_name = new_item_name
-
-      vp:set_cursor_rotation_offset(0)
-
       read_hand(pindex)
    end
 
    storage.players[pindex].bp_selecting = false
    storage.players[pindex].blueprint_reselecting = false
    storage.players[pindex].ghost_rail_planning = false
-   Graphics.sync_build_cursor_graphics(pindex)
 end
 
 return mod

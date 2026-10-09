@@ -150,6 +150,7 @@ add_library(fa_native SHARED
   src/parts.cpp
   src/ui.cpp
   src/world.cpp
+  src/cursor.cpp
   src/highlights.cpp
   src/entityicons.cpp
   src/selectedinfo.cpp

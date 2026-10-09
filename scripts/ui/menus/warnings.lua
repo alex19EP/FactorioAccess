@@ -14,7 +14,7 @@ local Speech = require("scripts.speech")
 local MessageBuilder = Speech.MessageBuilder
 local TabList = require("scripts.ui.tab-list")
 local UiRouter = require("scripts.ui.router")
-local Viewpoint = require("scripts.viewpoint")
+local Cursor = require("scripts.cursor")
 local WarningsModule = require("scripts.warnings")
 local Help = require("scripts.ui.help")
 
@@ -40,7 +40,7 @@ end
 ---@param params fa.ui.Warnings.Parameters
 ---@return fa.ui.Warnings.SharedState
 local function state_setup(pindex, params)
-   local cursor_pos = Viewpoint.get_viewpoint(pindex):get_cursor_pos()
+   local cursor_pos = Cursor.tile(pindex)
 
    -- Scan for warnings in a large area (500x500 tiles)
    local scan_result = WarningsModule.scan_for_warnings(500, 500, pindex)
@@ -129,7 +129,7 @@ local function render_warnings(ctx)
             end,
             on_click = function(item_ctx)
                if entity.valid then
-                  Viewpoint.get_viewpoint(item_ctx.pindex):set_cursor_pos(entity.position)
+                  Cursor.jump(item_ctx.pindex, entity.position)
                   item_ctx.message:fragment({ "fa.cursor-moved" })
                else
                   item_ctx.message:fragment({ "fa.warnings-entity-gone" })

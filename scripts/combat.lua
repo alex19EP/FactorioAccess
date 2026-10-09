@@ -2,7 +2,6 @@
 --Does not include event handlers, guns and equipment maanagement
 
 local util = require("util")
-local EntitySelection = require("scripts.entity-selection")
 local Equipment = require("scripts.equipment")
 local FaUtils = require("scripts.fa-utils")
 local HealthBar = require("scripts.sonifiers.health-bar")
@@ -12,7 +11,6 @@ local SoundModel = require("scripts.sound-model")
 local Speech = require("scripts.speech")
 local MessageBuilder = Speech.MessageBuilder
 local StorageManager = require("scripts.storage-manager")
-local Viewpoint = require("scripts.viewpoint")
 local AimAssist = require("scripts.combat.aim-assist")
 
 local mod = {}
@@ -405,8 +403,8 @@ local function tick_non_combat_mode(pindex, player, character)
    local shooting_state = player.shooting_state
    if shooting_state.state ~= defines.shooting.shooting_selected then return end
 
-   local vp = Viewpoint.get_viewpoint(pindex)
-   local cursor_pos = vp:get_cursor_pos()
+   -- Where the game aims: the cursor, which every peer learns from the shooting input
+   local cursor_pos = shooting_state.position
 
    -- Check safe mode constraints against cursor position first
    local aim_state = AimAssist.get_state(pindex)
@@ -425,12 +423,7 @@ local function tick_non_combat_mode(pindex, player, character)
       end
    end
 
-   -- Try to find and select an entity at cursor
-   player.selected = nil
-   local target = EntitySelection.get_first_ent_at_tile(pindex)
-   if target then player.selected = target end
-
-   -- If no entity or not selectable, shoot at cursor position
+   -- The game selects at the cursor; with nothing selected, shoot at the cursor position
    if not player.selected then shoot_at_position(player, cursor_pos) end
 end
 

@@ -1,6 +1,6 @@
 --Here: Fast travel, structure travel, etc.
+local Cursor = require("scripts.cursor")
 local FaUtils = require("scripts.fa-utils")
-local Graphics = require("scripts.graphics")
 local Teleport = require("scripts.teleport")
 local UiRouter = require("scripts.ui.router")
 local Viewpoint = require("scripts.viewpoint")
@@ -84,19 +84,9 @@ function FastTravelController:travel_to_point(id)
    local success = Teleport.teleport_to_closest(self.pindex, point.position, false, false)
 
    if success and vp:get_cursor_anchored() then
-      vp:set_cursor_pos(table.deepcopy(point.position))
+      Cursor.jump(self.pindex, point.position)
    else
-      vp:set_cursor_pos(p.position)
-   end
-
-   Graphics.sync_build_cursor_graphics(self.pindex)
-
-   -- Update cursor highlight
-   local ent = p.selected
-   if ent and ent.valid then
-      Graphics.draw_cursor_highlight(self.pindex, ent, nil)
-   else
-      Graphics.draw_cursor_highlight(self.pindex, nil, nil)
+      Cursor.jump(self.pindex, p.position)
    end
 
    return success

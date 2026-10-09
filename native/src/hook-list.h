@@ -14,6 +14,10 @@
    X(sourceCursorPosition, world::sourceCursorDetour(), world::sourceCursorOriginal(),                                 \
      "PlayerInputSource::getCursorMapPosition")                                                                        \
    X(gameViewMapPosition, world::mapPositionDetour(), world::mapPositionOriginal(), "GameView::getMapPosition")        \
+   X(processCustomInput, cursor::customInputDetour(), cursor::customInputOriginal(),                                   \
+     "PlayerInputSource::processCustomInput")                                                                          \
+   X(sendRenderStateChanges, cursor::renderStateDetour(), cursor::renderStateOriginal(),                               \
+     "PlayerInputSource::sendRenderStateChanges")                                                                      \
    X(dragBuildingUpdate, world::dragUpdateDetour(), world::dragUpdateOriginal(), "ClientDragBuildingContext::update")  \
    X(controlInputIsActive, world::isActiveDetour(), world::isActiveOriginal(), "ControlInput::isActive")               \
    X(processZoom, zoom::processZoomDetour(), zoom::processZoomOriginal(), "PlayerInputSource::processZoom")            \

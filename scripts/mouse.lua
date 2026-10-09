@@ -1,11 +1,10 @@
 --Here: Where map positions fall on the player's screen.
---Note: Does not include the mod cursor functions!
 
 -- The final pixel position depends on player screen resolution, player zoom level, this multiplier.
 local base_pixels_per_tile = 32
 
+local Cursor = require("scripts.cursor")
 local FaUtils = require("scripts.fa-utils")
-local Viewpoint = require("scripts.viewpoint")
 local mod = {}
 
 ---helper function with tripple return
@@ -38,31 +37,17 @@ function mod.is_on_screen(pos, pindex)
    return on_sceen
 end
 
---The rest of these functions should probably be moved elsewhere?
---Maybe into viewpoint? That would also remove the dependancy on viewpoint
---That way this module doens't care if we even have a cursor
---It only cares about the screen and mouse
-
---Checks if the map position of the mod cursor falls on screen when the camera is locked on the player character.
-function mod.cursor_position_is_on_screen_with_player_centered(pindex)
-   local vp = Viewpoint.get_viewpoint(pindex)
-   local cursor_pos = vp:get_cursor_pos()
-   return mod.is_on_screen(cursor_pos, pindex)
-end
-
---Reports if the cursor tile is uncharted/blurred and also if it is distant (off screen)
+--Reports if the cursor tile is uncharted or blurred
 function mod.cursor_visibility_info(pindex)
    local p = game.get_player(pindex)
    local result = ""
-   local vp = Viewpoint.get_viewpoint(pindex)
-   local pos = vp:get_cursor_pos()
+   local pos = Cursor.tile(pindex)
    local chunk_pos = { x = math.floor(pos.x / 32), y = math.floor(pos.y / 32) }
    if p.force.is_chunk_charted(p.surface, chunk_pos) == false then
       result = result .. " uncharted "
    elseif p.force.is_chunk_visible(p.surface, chunk_pos) == false then
       result = result .. " blurred "
    end
-   if mod.is_on_screen(pos, pindex) == false then result = result .. " distant " end
    return result
 end
 
