@@ -136,7 +136,8 @@ const std::byte* entityAt(const std::byte* player, const std::byte* surface, Pos
    if (!selector) return nullptr;
    if (reinterpret_cast<bool (*)(const void*, bool)>(layout.respectsFogOfWar)(player, true)) {
       const std::byte* map = at<const std::byte*>(player, layout.playerMap);
-      const std::byte* force = at<const std::byte* const*>(map, layout.mapForces)[at<uint8_t>(player, layout.playerForce)];
+      const std::byte* force =
+         at<const std::byte* const*>(map, layout.mapForces)[at<uint8_t>(player, layout.playerForce)];
       using ChartFunction = const void* (*)(const void* force, uint32_t surfaceIndex);
       const void* chart =
          reinterpret_cast<ChartFunction>(layout.forceChart)(force, at<uint32_t>(surface, layout.surfaceIndex));
@@ -147,28 +148,47 @@ const std::byte* entityAt(const std::byte* player, const std::byte* surface, Pos
    using Deduce = const std::byte* (*)(void* selector, const void* surface, const Position* position, bool myCharacter,
                                        void* latency, const void* only, uint32_t mode);
    return reinterpret_cast<Deduce>(layout.deduceSelectedEntity)(selector, surface, &position, false,
-                                                               at<void*>(player, layout.playerLatencyState), nullptr,
-                                                               layout.selectionModeNormal);
+                                                                at<void*>(player, layout.playerLatencyState), nullptr,
+                                                                layout.selectionModeNormal);
 }
 
 // The tooltip's labels of lines that read alike on every entity of a kind, as the game translates
 // them now.
 std::vector<std::string> fixedLabels() {
    static constexpr std::array kKeys{
-      "description.crafting-speed",    "description.mining-speed",      "description.mining-area",
-      "description.mining-time",       "description.mined-by",          "description.max-energy-consumption",
-      "description.min-energy-consumption", "description.maximum-temperature", "description.minimum-temperature",
-      "description.wire-reach",        "description.supply-area",       "description.rotation-speed",
-      "description.can-filter-items",  "description.belt-speed",        "description.module-slots",
-      "description.storage-size",      "description.last-user",         "description.force",
-      "airborne-pollutant-name.pollution", "airborne-pollutant-name.spores",
+      "description.crafting-speed",
+      "description.mining-speed",
+      "description.mining-area",
+      "description.mining-time",
+      "description.mined-by",
+      "description.max-energy-consumption",
+      "description.min-energy-consumption",
+      "description.maximum-temperature",
+      "description.minimum-temperature",
+      "description.wire-reach",
+      "description.supply-area",
+      "description.rotation-speed",
+      "description.can-filter-items",
+      "description.belt-speed",
+      "description.module-slots",
+      "description.storage-size",
+      "description.last-user",
+      "description.force",
+      "airborne-pollutant-name.pollution",
+      "airborne-pollutant-name.spores",
       // The energy source's buffer; a shortage is said as the status.
       "description.electricity",
       // Of the pole's network, only how well demand is met is said.
-      "gui-electric-network.production-label", "gui-electric-network.accumulator-charge",
+      "gui-electric-network.production-label",
+      "gui-electric-network.accumulator-charge",
       // Too much on every step (the user, 2026-10-09); the Y key reads them.
-      "description.products-finished", "description.energy-consumption", "description.fluid-consumption",
-      "description.fluid-output", "description.temperature", "description.pipeline-extent", "description.storage",
+      "description.products-finished",
+      "description.energy-consumption",
+      "description.fluid-consumption",
+      "description.fluid-output",
+      "description.temperature",
+      "description.pipeline-extent",
+      "description.storage",
    };
    std::vector<std::string> labels;
    for (const char* key : kKeys) labels.push_back(vocab::translate(key, {}));
@@ -329,13 +349,16 @@ std::vector<std::string> lines(const agui::Widget* panel, const std::vector<std:
 // The entity's name as the tooltip titles it, with its quality as the title shows it, and FA's
 // words for a ghost, whose tooltip is its inner entity's.
 std::string nameOf(const std::byte* entity, const std::byte* description) {
-   std::string name = text::speakable(reinterpret_cast<const MsvcString*>(description + layout.descriptionName)->view());
+   std::string name =
+      text::speakable(reinterpret_cast<const MsvcString*>(description + layout.descriptionName)->view());
    const uint8_t quality = at<uint8_t>(description, layout.descriptionQuality);
    const std::byte* qualityPrototype = quality ? prototypeAt(layout.qualityPrototypes, quality) : nullptr;
-   if (qualityPrototype && reinterpret_cast<const MsvcString*>(qualityPrototype + layout.prototypeName)->view() != "normal")
+   if (qualityPrototype &&
+       reinterpret_cast<const MsvcString*>(qualityPrototype + layout.prototypeName)->view() != "normal")
       name += " (" + localisedName(qualityPrototype) + ")";
    const std::byte* prototype = at<const std::byte*>(entity, layout.entityPrototypeOf);
-   if (typeName(prototype) == "entity-ghost") return vocab::translate("fa.ent-info-ghost", {localisedName(prototype), name});
+   if (typeName(prototype) == "entity-ghost")
+      return vocab::translate("fa.ent-info-ghost", {localisedName(prototype), name});
    return name;
 }
 
