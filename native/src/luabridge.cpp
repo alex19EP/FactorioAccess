@@ -553,10 +553,11 @@ std::vector<std::string> stringsField(lua_State* L, int table, const char* name)
    return strings;
 }
 
-// fa_native.scanner_refresh(pindex, {surface, x, y, radius, direction, water, ice}): lists for this
-// client's player what the scanner finds on that surface within `radius` of x, y, where the
-// player's force charted it, and only in `direction` (an 8-way defines.direction) when given; water
-// and ice are arrays of the tile names that make bodies of water and of ice. Returns the entities
+// fa_native.scanner_refresh(pindex, {surface, x, y, radius, direction, water, ice, extras}): lists
+// for this client's player what the scanner finds on that surface within `radius` of x, y, where
+// the player's force charted it, and only in `direction` (an 8-way defines.direction) when given;
+// water and ice are arrays of the tile names that make bodies of water and of ice; extras is an
+// array of {category, key, x, y} the mod lists itself (scanner::Extra). Returns the entities
 // whose subcategories the mod is to give, as an array of {name, x, y}, or nil when it listed
 // nothing. The list is this client's only; nothing in the game depends on it.
 int scannerRefresh(lua_State* L) {
@@ -575,6 +576,26 @@ int scannerRefresh(lua_State* L) {
    if (auto direction = numberField(L, 2, "direction")) request.direction = static_cast<int>(*direction);
    request.water = stringsField(L, 2, "water");
    request.ice = stringsField(L, 2, "ice");
+   getField(L, 2, "extras");
+   if (type(L, -1) == kTable) {
+      const int extras = getTop(L);
+      const size_t count = rawLen(L, extras);
+      for (size_t i = 1; i <= count; ++i) {
+         rawGetI(L, extras, static_cast<int>(i));
+         const int entry = getTop(L);
+         scanner::Extra extra;
+         getField(L, entry, "category");
+         extra.category = toString(L, -1);
+         getField(L, entry, "key");
+         extra.key = toString(L, -1);
+         setTop(L, entry);
+         extra.x = numberField(L, entry, "x").value_or(0);
+         extra.y = numberField(L, entry, "y").value_or(0);
+         request.extras.push_back(std::move(extra));
+         setTop(L, extras);
+      }
+   }
+   setTop(L, -2);
    const auto details = scanner::refresh(request);
    if (!details) return 0;
    createTable(L, static_cast<int>(details->size()), 0);
@@ -615,8 +636,8 @@ int scannerModUi(lua_State* L) {
 }
 
 // fa_native.scanner_entry(pindex, x, y): what the scanner key whose event carried cursor_position
-// x, y moved onto, as {category, edge, empty, index, count, kind, prototype, text, trees, width,
-// height, x, y, origin_x, origin_y} (see scanner::Entry), or nil. For speech only: other clients
+// x, y moved onto, as {category, edge, empty, index, count, kind, extra, prototype, text, trees,
+// width, height, x, y, origin_x, origin_y} (see scanner::Entry), or nil. For speech only: other clients
 // have no scanner.
 int scannerEntry(lua_State* L) {
    const auto entry = scanner::entryAt(static_cast<int>(checkInteger(L, 1)), checkNumber(L, 2), checkNumber(L, 3));
@@ -635,6 +656,8 @@ int scannerEntry(lua_State* L) {
       setField(L, -2, "count");
       pushString(L, entry->kind);
       setField(L, -2, "kind");
+      pushNumber(L, entry->extra);
+      setField(L, -2, "extra");
       pushString(L, entry->prototype);
       setField(L, -2, "prototype");
       pushString(L, entry->text);

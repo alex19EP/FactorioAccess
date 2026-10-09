@@ -12,14 +12,13 @@ every client gets that position as event.cursor_position. The handlers here land
 everywhere, and only then ask the DLL what to say, which is speech alone.
 ]]
 local EntitySelection = require("scripts.entity-selection")
+local Extras = require("scripts.scanner.extras")
 local FaUtils = require("scripts.fa-utils")
 local Localising = require("scripts.localising")
 local ScannerConsts = require("scripts.scanner.scanner-consts")
 local Subcategories = require("scripts.scanner.subcategories")
-local SurfaceScanner = require("scripts.scanner.surface-scanner")
 local UiRouter = require("scripts.ui.router")
 local Viewpoint = require("scripts.viewpoint")
-local WorkQueue = require("scripts.work-queue")
 local Speech = require("scripts.speech")
 
 local native = rawget(_G, "fa_native")
@@ -88,6 +87,9 @@ local function announce(pindex, event)
       readout = { "fa.scanner-water", entry.width, entry.height }
    elseif entry.kind == "ice" then
       readout = { "fa.scanner-iceberg", entry.width, entry.height }
+   elseif entry.kind == "extra" then
+      readout = Extras.readout(pindex, entry.extra)
+      if not readout then return end
    else
       local candidates = entities_at(player.surface, position)
       local entity = candidates[1]
@@ -131,6 +133,7 @@ function mod.do_refresh(pindex, direction_filter)
          direction = direction_filter,
          water = ScannerConsts.WATER_PROTOS,
          ice = script.feature_flags.space_travel and ScannerConsts.ICEBERG_PROTOS or nil,
+         extras = Extras.collect(player),
       })
       if details then native.scanner_subcategories(pindex, Subcategories.keys(player.surface, details)) end
    end
@@ -157,61 +160,6 @@ end
 function mod.move(pindex, event)
    land(pindex, event.cursor_position)
    announce(pindex, event)
-end
-
---[[
-There is a crash in Factorio.  If we query a surface during a created_effect in
-the case that entities are being rapidly created or destroyed, sometimes getting
-entities crashes out.  See
-https://forums.factorio.com/viewtopic.php?f=7&t=115615&p=619147#p619147
-
-To deal with this we just delay the incoming effect triggers so that the code
-that runs doesn't run while the trigger is still going.
-]]
----@param args { surface_index: number, entity: LuaEntity }
-local function on_new_entity_delayed(args)
-   SurfaceScanner.on_new_entity(args.surface_index, args.entity)
-end
-
-local new_entity_queue = WorkQueue.declare_work_queue({
-   name = "scanner_delayed_new_ents",
-   worker_function = on_new_entity_delayed,
-   per_tick = 100,
-})
-
--- Called from control.lua whenever control.lua finds out about a new entity.
----@param surface_index number
----@param entity LuaEntity
-function mod.on_new_entity(surface_index, entity)
-   new_entity_queue:enqueue({ surface_index = surface_index, entity = entity })
-end
-
--- Returns an event handler that extracts an entity from the given field and
--- passes it to the scanner.
----@param field_name string
----@param allow_nil boolean? If true, nil entity is allowed (for optional fields). Default false.
----@return fun(event: table)
-function mod.build_new_entity_handler(field_name, allow_nil)
-   return function(event)
-      local entity = event[field_name]
-      if not entity then
-         if not allow_nil then error("Expected entity in field '" .. field_name .. "' but got nil") end
-         return
-      end
-      if entity.valid then mod.on_new_entity(entity.surface.index, entity) end
-   end
-end
-
-function mod.on_entity_destroyed(event)
-   SurfaceScanner.on_entity_destroyed(event)
-end
-
-function mod.on_new_surface(surface)
-   SurfaceScanner.on_new_surface(surface.index)
-end
-
-function mod.on_surface_delete(index)
-   SurfaceScanner.on_surface_delete(index)
 end
 
 -- The mod's own UIs take the scanner keys while open; the DLL must leave those keys alone then.

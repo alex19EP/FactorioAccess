@@ -549,6 +549,7 @@ enum class Kind : uint8_t {
    Patch,  // a resource patch's resources, nearest first
    Water,  // a body of water, by its tile nearest the origin
    Ice,    // a body of ice, likewise
+   Extra,  // one the mod listed itself, by its place in Refresh::extras (Item::first)
 };
 
 constexpr std::string_view kindName(Kind kind) {
@@ -558,8 +559,15 @@ constexpr std::string_view kindName(Kind kind) {
    case Kind::Patch: return "patch";
    case Kind::Water: return "water";
    case Kind::Ice: return "ice";
+   case Kind::Extra: return "extra";
    }
    return {};
+}
+
+std::optional<Cat> categoryByKey(std::string_view key) {
+   for (size_t i = 0; i < kCategoryKeys.size(); ++i)
+      if (kCategoryKeys[i] == key) return static_cast<Cat>(i);
+   return std::nullopt;
 }
 
 struct Item {
@@ -963,6 +971,9 @@ bool validate(const World& world, uint32_t index) {
       const TileClass wanted = item.kind == Kind::Water ? WaterTile : IceTile;
       return id && *id < g_list.tileClasses.size() && g_list.tileClasses[*id] == wanted;
    }
+   case Kind::Extra:
+      // Only the mod can tell whether its pin or tag is still there; it says so when it says it.
+      return true;
    }
    return false;
 }
@@ -1095,6 +1106,9 @@ void describe(const World& world, const Item& item, Entry& entry) {
    case Kind::Ice:
       entry.width = item.box.width();
       entry.height = item.box.height();
+      break;
+   case Kind::Extra:
+      entry.extra = item.first + 1;
       break;
    }
 }
@@ -1262,6 +1276,21 @@ std::optional<std::vector<Detail>> refresh(const Refresh& request) {
          item.box = body.box;
          list.items.push_back(std::move(item));
       }
+   }
+   for (size_t i = 0; i < request.extras.size(); ++i) {
+      const Extra& extra = request.extras[i];
+      const std::optional<Cat> category = categoryByKey(extra.category);
+      if (!category) {
+         log::error("Scanner: no category {} for an entry of the mod's", extra.category);
+         continue;
+      }
+      const Position position{fixedPoint(extra.x), fixedPoint(extra.y)};
+      if (!wanted(position) ||
+          !reinterpret_cast<ChartedFunction>(layout.forceIsChunkCharted)(list.force, surfaceIndex, &position))
+         continue;
+      Item item{Kind::Extra, *category, false, nullptr, position, extra.key};
+      item.first = static_cast<uint32_t>(i);
+      list.items.push_back(std::move(item));
    }
    list.links = Links(game, entities);
    group(list);

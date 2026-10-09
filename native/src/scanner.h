@@ -19,6 +19,15 @@
 // what to say, which only this client can.
 namespace fa::scanner {
 
+// An entry the mod lists itself, for what only the Lua API reads: pins, map tags, spots to build
+// the item in hand. The mod says it, by its place in Refresh::extras.
+struct Extra {
+   std::string category; // a category's key (scanner-consts.lua CATEGORIES)
+   std::string key;      // its subcategory
+   double x = 0;         // where it is, in tiles
+   double y = 0;
+};
+
 // What the mod's refresh hands in. From Lua, inside the game's update: the world stands still.
 struct Refresh {
    int playerIndex = 0;           // LuaPlayer::index
@@ -29,6 +38,7 @@ struct Refresh {
    std::optional<int> direction;  // only entries in this direction (an 8-way defines.direction)
    std::vector<std::string> water; // tile names that are water
    std::vector<std::string> ice;   // tile names that are ice (Aquilo)
+   std::vector<Extra> extras;
 };
 
 // An entity whose subcategory the mod gives (setSubcategories): what a machine makes, what a chest
@@ -61,8 +71,9 @@ struct Entry {
    bool empty = false;         // nothing in the category: the fields below are unset
    uint32_t index = 0;         // one-based place in its subcategory
    uint32_t count = 0;         // entries in the subcategory
-   // "entity", "forest" (several trees), "patch" (a resource patch), "water" or "ice".
+   // "entity", "forest" (several trees), "patch" (a resource patch), "water", "ice" or "extra".
    std::string kind;
+   uint32_t extra = 0;         // an extra: its one-based place in Refresh::extras
    std::string prototype;      // an entity's or patch's prototype name
    std::string text;           // a patch: the map's label of it, what is left in it
    uint32_t trees = 0;         // a forest: how many trees are left
