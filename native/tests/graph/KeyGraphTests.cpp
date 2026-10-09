@@ -24,10 +24,7 @@ NodeVtable Vt(const std::string& label)
     return vt;
 }
 
-ControlId Id(const std::string& key)
-{
-    return ControlId::Structural(key);
-}
+ControlId Id(const std::string& key) { return ControlId::Structural(key); }
 
 KeyGraph Menu(GraphState& state, std::vector<std::string> items)
 {
@@ -53,8 +50,7 @@ const ControlType& RoleType(const std::string& key, std::vector<std::string> ali
     for (const auto& t : types)
         if (t->Key == key)
             return *t;
-    types.push_back(
-        std::unique_ptr<ControlType>(new ControlType{key, {}, nullptr, std::move(aliases)}));
+    types.push_back(std::unique_ptr<ControlType>(new ControlType{key, {}, nullptr, std::move(aliases)}));
     return *types.back();
 }
 
@@ -85,8 +81,8 @@ NodeVtable Radio(const std::string& label, bool selected)
     NodeVtable vt;
     vt.Announcements = {
         NodeAnnouncement::Static(label),
-        NodeAnnouncement([selected]() { return selected ? std::string("selected") : std::string(); },
-            false, AnnouncementKinds::Selected),
+        NodeAnnouncement([selected]() { return selected ? std::string("selected") : std::string(); }, false,
+            AnnouncementKinds::Selected),
     };
     return vt;
 }
@@ -206,8 +202,7 @@ TEST(ReconcileKeepsItsNodeWhenSiblingsShareAReference)
         {
             GraphBuilder b;
             for (int i = 0; i < 6; i++)
-                b.AddItem(ControlId::Referenced(shared, "line" + std::to_string(i)),
-                    Vt("Line " + std::to_string(i)));
+                b.AddItem(ControlId::Referenced(shared, "line" + std::to_string(i)), Vt("Line " + std::to_string(i)));
             return b.Build();
         },
         &state);
@@ -263,8 +258,10 @@ TEST(ComputeOrderCoversAllStops)
         {
             return GraphBuilder()
                 .AddItem(Id("a"), Vt("A"))
-                .BeginStop().AddItem(Id("b"), Vt("B"))
-                .BeginStop().AddItem(Id("c"), Vt("C"))
+                .BeginStop()
+                .AddItem(Id("b"), Vt("B"))
+                .BeginStop()
+                .AddItem(Id("c"), Vt("C"))
                 .Build();
         },
         &state);
@@ -280,9 +277,11 @@ TEST(StopCyclingRemembersPositionPerStop)
         []()
         {
             return GraphBuilder()
-                .AddItem(Id("a1"), Vt("A1")).AddItem(Id("a2"), Vt("A2"))
+                .AddItem(Id("a1"), Vt("A1"))
+                .AddItem(Id("a2"), Vt("A2"))
                 .BeginStop()
-                .AddItem(Id("b1"), Vt("B1")).AddItem(Id("b2"), Vt("B2"))
+                .AddItem(Id("b1"), Vt("B1"))
+                .AddItem(Id("b2"), Vt("B2"))
                 .Build();
         },
         &state);
@@ -311,9 +310,13 @@ TEST(RegionJumpsWithinStop)
         []()
         {
             return GraphBuilder()
-                .SetRegion("filters").AddItem(Id("f1"), Vt("F1"))
-                .SetRegion("items").AddItem(Id("i1"), Vt("I1")).AddItem(Id("i2"), Vt("I2"))
-                .SetRegion("footer").AddItem(Id("z1"), Vt("Z1"))
+                .SetRegion("filters")
+                .AddItem(Id("f1"), Vt("F1"))
+                .SetRegion("items")
+                .AddItem(Id("i1"), Vt("I1"))
+                .AddItem(Id("i2"), Vt("I2"))
+                .SetRegion("footer")
+                .AddItem(Id("z1"), Vt("Z1"))
                 .Build();
         },
         &state);
@@ -410,7 +413,8 @@ TEST(TypeJumpMatchesAnAliasAsWellAsTheKey)
         {
             GraphBuilder b;
             b.AddItem(Id("t1"), Vt("Text"));
-            b.AddItem(Id("g1"), [&]
+            b.AddItem(Id("g1"),
+                [&]
                 {
                     NodeVtable vt = Vt("Picture");
                     vt.Type = &RoleType("graphic", {"link"});
@@ -617,8 +621,8 @@ TEST(TreeOpsExpandCollapseDescendAscend)
         {
             return GraphBuilder(&state.Expanded)
                 .BeginGroup(Id("combat"), Vt("Combat"))
-                    .AddItem(Id("pause"), Vt("Auto pause"))
-                    .AddItem(Id("delay"), Vt("Delay"))
+                .AddItem(Id("pause"), Vt("Auto pause"))
+                .AddItem(Id("delay"), Vt("Delay"))
                 .EndGroup()
                 .Build();
         },
@@ -680,7 +684,7 @@ TEST(CollapseWhileInsideLandsOnNearestSurvivor)
         {
             return GraphBuilder(&state.Expanded)
                 .BeginGroup(Id("combat"), Vt("Combat"))
-                    .AddItem(Id("pause"), Vt("Auto pause"))
+                .AddItem(Id("pause"), Vt("Auto pause"))
                 .EndGroup()
                 .Build();
         },
@@ -703,9 +707,9 @@ TEST(SiblingEdgeJumpStaysAtDepth)
             return GraphBuilder(&state.Expanded)
                 .AddItem(Id("top"), Vt("Top"))
                 .BeginGroup(Id("g"), Vt("Group"))
-                    .AddItem(Id("c1"), Vt("C1"))
-                    .AddItem(Id("c2"), Vt("C2"))
-                    .AddItem(Id("c3"), Vt("C3"))
+                .AddItem(Id("c1"), Vt("C1"))
+                .AddItem(Id("c2"), Vt("C2"))
+                .AddItem(Id("c3"), Vt("C3"))
                 .EndGroup()
                 .Build();
         },
@@ -730,8 +734,10 @@ TEST(SiblingEdgeJumpStaysInsideTheStop)
         [&state]()
         {
             return GraphBuilder(&state.Expanded)
-                .BeginGroup(Id("g1"), Vt("Group 1")).EndGroup()
-                .BeginGroup(Id("g2"), Vt("Group 2")).EndGroup()
+                .BeginGroup(Id("g1"), Vt("Group 1"))
+                .EndGroup()
+                .BeginGroup(Id("g2"), Vt("Group 2"))
+                .EndGroup()
                 .BeginStop()
                 .AddItem(Id("other"), Vt("Other stop"))
                 .Build();
@@ -808,10 +814,7 @@ TEST(HasHoldActivationDistinguishesNodes)
             NodeVtable holdable;
             holdable.Announcements = {NodeAnnouncement::Static("A")};
             holdable.OnActivateHold = []() {};
-            return GraphBuilder()
-                .AddItem(Id("a"), std::move(holdable))
-                .AddItem(Id("b"), Vt("B"))
-                .Build();
+            return GraphBuilder().AddItem(Id("a"), std::move(holdable)).AddItem(Id("b"), Vt("B")).Build();
         },
         &state);
 

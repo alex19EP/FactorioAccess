@@ -277,6 +277,85 @@ struct Layout {
    uint32_t iteratorCurrentTile = 0;
    uint32_t iteratorCurrentEntity = 0;     // Entity*
    uint32_t entitySurface = 0;             // Entity::surface, Surface*
+   // The scanner lists a surface's entities chunk by chunk, with the iterator above over each
+   // chunk's 16 by 16 advanced tiles, where the player's force has charted it.
+   uint32_t mapSurfaces = 0;               // Map::surfaces, std::vector<Surface*>
+   uint32_t surfaceIndex = 0;              // Surface::index, SurfaceIndex (uint32), LuaSurface::index
+   uint32_t surfaceChunks = 0;             // Surface::chunks, std::vector<Chunk*>
+   uint32_t chunkPosition = 0;             // Chunk::position, ChunkPosition (two ints)
+   // Chunk const* Surface::getChunkSafe(ChunkPosition const&) const: the chunk there, or null.
+   // A refresh spread over ticks finds its chunks again by this, as the game may delete chunks.
+   uintptr_t surfaceChunkAt = 0;
+   // Water and ice are tiles: Chunk::tiles is Tile[32][32] by x then y, each a tileID
+   // (ID<TilePrototype>, uint16) and a variation byte. Tile const* Surface::getTileOptional(
+   // TilePosition const&) const reads one, null where no chunk is.
+   uint32_t chunkTiles = 0;                // Chunk::tiles
+   uint32_t tileSize = 0;                  // sizeof(Tile)
+   uintptr_t surfaceTileAt = 0;
+   // Resource patches as the map finds them (ResourcePatchInfo::addPatch and scanPatch): a grid of
+   // cells twice the prototype's resourcePatchSearchRadius a side (at most 32, shrunk until it
+   // divides 32; 0 makes every resource a patch of its own), joined to their 8 neighbours while one
+   // of the prototype's resources is in each, in charted chunks.
+   uint32_t resourceSearchRadius = 0;      // ResourceEntityPrototype::resourcePatchSearchRadius, uint32
+   uint32_t resourceInfinite = 0;          // ResourceEntityPrototype::infiniteType, bool
+   uint32_t prototypeGetType = 0;          // virtual slot of char const* PrototypeBase::getType() const
+   // Entries keep their entities through the game's own weak references, as its GUIs do: a
+   // TargeterBase {vfptr, target, next, previous} linked first into the Targetable's (the entity's,
+   // at its start) Targeters::firstTargeter. The game unlinks nothing itself; when the entity goes,
+   // Targeters::clear calls each targeter's clearAsReactionToNotification, which nulls target.
+   uintptr_t entityTargeterVtable = 0;     // Targeter<Entity,0,0>'s vftable: generic type, no flags
+   uint32_t targetableTargeters = 0;       // Targetable::targetingMe.firstTargeter, TargeterBase*
+   // Entity::usageBitMask (uint16). The scanner skips what LuaEntity's constructor refuses: 0x4,
+   // the entity inside a ghost, which Entity::getOuterEntity trades for its ghost, and 0x10.
+   uint32_t entityUsageBits = 0;
+   // What sets an entity apart from others of its prototype in the scanner's subcategories, read
+   // from the class each prototype type makes; each member is found through that class's bases.
+   uint32_t scanAssemblerRecipe = 0;       // AssemblingMachine::recipeID, IDWithQuality<RecipeID>
+   uint32_t scanFurnaceRecipe = 0;         // Furnace::recipeID
+   uint32_t scanFurnaceResult = 0;         // Furnace::resultInventory, an Inventory
+   // MiningDrill::resourcesToMine, std::vector<Targeter<ResourceEntity,33,0>>: what it mines
+   uint32_t scanDrillResources = 0;
+   uint32_t resourceTargeterSize = 0;      // sizeof(Targeter<ResourceEntity,33,0>)
+   uint32_t scanLocomotiveTrain = 0;       // Locomotive::train, Train*
+   uint32_t scanCargoWagonTrain = 0;       // CargoWagon::train
+   uint32_t scanFluidWagonTrain = 0;       // FluidWagon::train
+   uint32_t scanArtilleryWagonTrain = 0;   // ArtilleryWagon::train
+   uint32_t trainId = 0;                   // Train::id, uint32: LuaTrain::id
+   uint32_t scanGhostInner = 0;            // EntityGhost::innerEntity, Entity*
+   uint32_t scanSpawnerPollution = 0;      // EnemySpawner::absorbedPollution, double
+   uint32_t scanContainerInventory = 0;    // ContainerEntity::inventory, Inventory*
+   uint32_t scanLogisticInventory = 0;     // LogisticContainer::inventory
+   uint32_t scanInfinityInventory = 0;     // InfinityContainer::inventory
+   uint32_t scanRoboportName = 0;          // Roboport::backerName, std::string
+   uint32_t scanPipeFluidBox = 0;          // Pipe::fluidBox, a FluidBox
+   uint32_t scanInfinityPipeFluidBox = 0;  // InfinityPipe::fluidBox
+   uint32_t scanUndergroundFluidBox = 0;   // PipeToGround::fluidBox
+   uint32_t scanTankFluidBox = 0;          // StorageTank::fluidBox
+   // A fluid box's fluid is its FluidSegment's while it has one (Entity::getFluidAmount): the
+   // fluid's ID (ID<FluidPrototype>, uint16, 0 for none) and amount (fixed point int64).
+   uint32_t fluidBoxSegment = 0;           // FluidBox::fluidSegment, FluidSegment*
+   uint32_t fluidBoxFluid = 0;             // FluidBox::buffer.fluid.fluidID
+   uint32_t fluidBoxAmount = 0;            // FluidBox::buffer.fluid.amount
+   uint32_t segmentFluid = 0;              // FluidSegment::buffer.fluid.fluidID
+   uint32_t segmentAmount = 0;             // FluidSegment::buffer.fluid.amount
+   // FluidBox::connections, SmallVector<FluidBoxConnection,4>: one per pipe connection, its target
+   // (FluidBox*) null while nothing is connected there.
+   uint32_t fluidBoxConnectionsBegin = 0;  // FluidBox::connections.begin_
+   uint32_t fluidBoxConnectionsEnd = 0;    // FluidBox::connections.end_
+   uint32_t fluidConnectionSize = 0;       // sizeof(FluidBoxConnection)
+   uint32_t fluidConnectionTarget = 0;     // FluidBoxConnection::target
+   // bool ForceData::isChunkCharted(SurfaceIndex, MapPosition const&) const
+   uintptr_t forceIsChunkCharted = 0;
+   // Fog of war: Chart const* ForceData::getChart(SurfaceIndex) const, the force's chart of a
+   // surface or null, and bool Chart::isChunkCoveredByFogOfWar(ChunkPosition const&) const, true
+   // where the chunk is uncharted or was last charted 600 or more ticks ago (never on a platform).
+   // Both only read.
+   uintptr_t forceChart = 0;
+   uintptr_t chartChunkCovered = 0;
+   // ForceID Entity::getForceID() const, a virtual slot: neutral for entities of no force. Returned
+   // through a hidden pointer, as member functions return classes.
+   uint32_t entityGetForceId = 0;
+   uint32_t displayPanelShowInChart = 0; // DisplayPanel::showInChart, bool
    // ElectricPolePrototype const* EntityPrototype::asElectricPole() const, a virtual slot: null but
    // for poles.
    uint32_t entityPrototypeAsPole = 0;
@@ -376,10 +455,11 @@ struct Layout {
    uintptr_t luaSetTop = 0;
    uintptr_t luaPushLString = 0;
    uintptr_t luaRawSetI = 0;
-   // void lua_pushnumber<unsigned char>(lua_State*, unsigned char): the game pushes numbers through
-   // templates like this one; there is no plain lua_pushnumber to call.
+   // void lua_pushnumber<unsigned char>(lua_State*, unsigned char): the game pushes its own numbers
+   // through templates like this one. The plain lua_pushnumber is exported too.
    uintptr_t luaPushByte = 0;
    uintptr_t luaPushInt = 0;     // void lua_pushnumber<int>(lua_State*, int)
+   uintptr_t luaPushNumber = 0;  // void lua_pushnumber(lua_State*, lua_Number)
    uintptr_t luaPushBoolean = 0; // void lua_pushboolean(lua_State*, int)
    // Reading a table argument (fa_native.audio).
    uintptr_t luaGetField = 0;   // void lua_getfield(lua_State*, int index, char const*)
@@ -1438,6 +1518,7 @@ inline constexpr int32_t kMapPositionScale = 256;
 // code constants, like the widget bits above.
 inline constexpr uint32_t kEntityNotRotatable = 0x1;              // "not-rotatable"
 inline constexpr uint32_t kEntityPlaceableOffGrid = 0x10;         // "placeable-off-grid"
+inline constexpr uint32_t kEntityNotOnMap = 0x1000;               // "not-on-map"
 inline constexpr uint32_t kEntitySnapToRailSupportSpot = 0x10000000; // "snap-to-rail-support-spot"
 
 // EntityFlipping, code constants: NotAvailable 0, Simple 1, DirectionTransform 2,

@@ -25,6 +25,11 @@ struct CursorPosition {
    bool operator==(const CursorPosition&) const = default;
 };
 std::optional<CursorPosition> cursorPosition();
+// Where PlayerInputSource::getCursorMapPosition reads while the game handles the key it polled
+// last, which then carries the position to every client in its input action (custom inputs have
+// it as cursor_position); nothing for where the cursor is. The scanner sets it for each scanner
+// key and clears it at every poll. Game thread.
+void setKeyCursor(std::optional<CursorPosition> position);
 // Whether `playerIndex` may be this client's player: false only once a game with a local player
 // is up and that player is someone else.
 bool mayBeLocalPlayer(int playerIndex);

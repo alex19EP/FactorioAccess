@@ -166,6 +166,7 @@ add_library(fa_native SHARED
   src/blueprints.cpp
   src/bindings.cpp
   src/chart.cpp
+  src/scanner.cpp
   "${CMAKE_CURRENT_BINARY_DIR}/winmm_forwarders.cpp"
 )
 set_target_properties(fa_native PROPERTIES OUTPUT_NAME winmm)

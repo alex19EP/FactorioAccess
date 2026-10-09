@@ -68,6 +68,12 @@ struct KeyEvent {
    bool alt;
 };
 
+// Called at every poll that hands the game an event: with the key event when it is one, else with
+// null. The game handles each event it polls before it polls again (GlobalContext::nextEvent, then
+// MainLoop::processEvent), so what the observer sets lasts while the game handles that key. On the
+// game thread in MainLoop::processEvents, where the update thread is idle and the world stands still.
+void setKeyObserver(void (*observer)(const KeyEvent* key));
+
 // The SDL_PollEvent_REAL replacement and where MinHook stores the original.
 void* pollEventDetour();
 void** pollEventOriginal();

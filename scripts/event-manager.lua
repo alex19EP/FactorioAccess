@@ -17,14 +17,8 @@ local VANILLA_MODE_WHITELIST = {
    [defines.events.on_player_created] = true,
    [defines.events.on_player_respawned] = true,
 
-   -- Scanner and state tracking (silent)
+   -- State tracking (silent)
    [defines.events.on_object_destroyed] = true,
-   [defines.events.on_built_entity] = true,
-   [defines.events.on_robot_built_entity] = true,
-   [defines.events.script_raised_built] = true,
-   [defines.events.on_entity_cloned] = true,
-   [defines.events.on_surface_created] = true,
-   [defines.events.on_surface_deleted] = true,
    [defines.events.on_string_translated] = true,
    [defines.events.on_player_display_resolution_changed] = true,
    [defines.events.on_player_display_scale_changed] = true,

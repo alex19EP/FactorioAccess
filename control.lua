@@ -54,6 +54,7 @@ local PlayerMiningTools = require("scripts.player-mining-tools")
 require("scripts.rich-text") -- registers rich text processor with speech.lua
 local Rulers = require("scripts.rulers")
 local ScannerEntrypoint = require("scripts.scanner.entrypoint")
+local ScannerLegacy = require("scripts.scanner.legacy")
 local Spidertron = require("scripts.spidertron")
 local SpidertronRemote = require("scripts.spidertron-remote")
 local TH = require("scripts.table-helpers")
@@ -124,7 +125,6 @@ local Viewpoint = require("scripts.viewpoint")
 local Wires = require("scripts.wires")
 local Walking = require("scripts.walking")
 local Warnings = require("scripts.warnings")
-local WorkQueue = require("scripts.work-queue")
 local WorkerRobots = require("scripts.worker-robots")
 local sounds = require("scripts.ui.sounds")
 
@@ -307,7 +307,6 @@ EventManager.on_event(
    ---@param event EventData.on_tick
    function(event)
       on_tick(event)
-      WorkQueue.on_tick()
       TestFramework.on_tick(event)
       HandMonitor.on_tick()
    end
@@ -513,6 +512,7 @@ EventManager.on_event(
 )
 
 function ensure_storage_structures_are_up_to_date()
+   ScannerLegacy.drop_old_state()
    storage.forces = storage.forces or {}
    storage.players = storage.players or {}
    for pindex, player in pairs(game.players) do
@@ -639,8 +639,6 @@ EventManager.on_event(
    defines.events.on_object_destroyed,
    ---@param event EventData.on_object_destroyed
    function(event) --DOES NOT HAVE THE KEY PLAYER_INDEX
-      ScannerEntrypoint.on_entity_destroyed(event)
-
       -- Close UIs that are bound to this entity
       UiRouter.on_entity_destroyed(event.registration_number)
    end
@@ -747,48 +745,6 @@ function general_mod_menu_down(pindex, menu, upper_limit)
       --Play sound
       sounds.play_menu_move(pindex)
    end
-end
-
-EventManager.on_event(
-   defines.events.on_surface_created,
-   ---@param event EventData.on_surface_created
-   function(event)
-      ScannerEntrypoint.on_new_surface(game.get_surface(event.surface_index))
-   end
-)
-
-EventManager.on_event(
-   defines.events.on_surface_deleted,
-   ---@param event EventData.on_surface_deleted
-   function(event)
-      ScannerEntrypoint.on_surface_delete(event.surface_index)
-   end
-)
-
--- Scanner: entity creation events (most use "entity" field)
-EventManager.on_event({
-   defines.events.on_built_entity,
-   defines.events.on_robot_built_entity,
-   defines.events.script_raised_built,
-   defines.events.on_entity_spawned,
-   defines.events.on_biter_base_built,
-}, ScannerEntrypoint.build_new_entity_handler("entity"))
-
--- Scanner: entity creation events with different field names
-EventManager.on_event(defines.events.on_entity_cloned, ScannerEntrypoint.build_new_entity_handler("destination"))
-
--- Scanner: Space Age entity creation events
-if script.feature_flags.space_travel then
-   EventManager.on_event(
-      defines.events.on_space_platform_built_entity,
-      ScannerEntrypoint.build_new_entity_handler("entity")
-   )
-   EventManager.on_event(defines.events.on_segment_entity_created, ScannerEntrypoint.build_new_entity_handler("entity"))
-   EventManager.on_event(defines.events.on_tower_planted_seed, ScannerEntrypoint.build_new_entity_handler("plant"))
-   EventManager.on_event(
-      defines.events.on_cargo_pod_delivered_cargo,
-      ScannerEntrypoint.build_new_entity_handler("spawned_container", true)
-   )
 end
 
 EventManager.on_event(defines.events.on_marked_for_deconstruction, SelectionResults.on_marked_for_deconstruction)
@@ -1896,7 +1852,7 @@ EventManager.on_event(
          local result = ent.inserter_stack_size_override .. " set for hand stack size"
          Speech.speak(pindex, result)
       else
-         ScannerEntrypoint.move_subcategory(pindex, -1)
+         ScannerEntrypoint.move(pindex, event)
       end
    end
 )
@@ -1905,7 +1861,7 @@ EventManager.on_event(
    "fa-s-pageup",
    ---@param event EventData.CustomInputEvent
    function(event, pindex)
-      ScannerEntrypoint.move_within_subcategory(pindex, -1)
+      ScannerEntrypoint.move(pindex, event)
    end
 )
 
@@ -1913,7 +1869,7 @@ EventManager.on_event(
    "fa-c-pageup",
    ---@param event EventData.CustomInputEvent
    function(event, pindex)
-      ScannerEntrypoint.move_category(pindex, -1)
+      ScannerEntrypoint.move_category(pindex)
    end
 )
 
@@ -1942,7 +1898,7 @@ EventManager.on_event(
          end
          Speech.speak(pindex, result)
       else
-         ScannerEntrypoint.move_subcategory(pindex, 1)
+         ScannerEntrypoint.move(pindex, event)
       end
    end
 )
@@ -1951,7 +1907,7 @@ EventManager.on_event(
    "fa-s-pagedown",
    ---@param event EventData.CustomInputEvent
    function(event, pindex)
-      ScannerEntrypoint.move_within_subcategory(pindex, 1)
+      ScannerEntrypoint.move(pindex, event)
    end
 )
 
@@ -1959,7 +1915,7 @@ EventManager.on_event(
    "fa-c-pagedown",
    ---@param event EventData.CustomInputEvent
    function(event, pindex)
-      ScannerEntrypoint.move_category(pindex, 1)
+      ScannerEntrypoint.move_category(pindex)
    end
 )
 
@@ -1967,7 +1923,7 @@ EventManager.on_event(
    "fa-home",
    ---@param event EventData.CustomInputEvent
    function(event, pindex)
-      ScannerEntrypoint.announce_current_item(pindex)
+      ScannerEntrypoint.move(pindex, event)
    end
 )
 

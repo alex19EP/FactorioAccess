@@ -140,7 +140,7 @@ non-storage-safe things away in tables which are consulted by the metatable,
 since that never "pulls values up".  This comes with a negligible performance
 hit, but it's usually only a couple levels and for a function, which means in
 context that's not too bad (plus, anything truly performance sensitive will
-cache in a local anyway).  See e.g. ds.work_queue, scanner.backends.simple.
+cache in a local anyway).
 
 Also, this is simpler Lua inheritance: list the most derived class first.
 

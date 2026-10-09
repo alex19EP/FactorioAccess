@@ -1,19 +1,7 @@
 local TestRegistry = require("scripts.test-registry")
 local describe, it = TestRegistry.describe, TestRegistry.it
-local ChartTagsBackend = require("scripts.scanner.backends.chart-tags")
-local PinsBackend = require("scripts.scanner.backends.pins")
+local Extras = require("scripts.scanner.extras")
 local SC = require("scripts.scanner.scanner-consts")
-
----@param backend fa.scanner.ScannerBackend
----@param player LuaPlayer
----@return fa.scanner.ScanEntry[]
-local function entries_of(backend, player)
-   local entries = {}
-   backend:dump_entries_to_callback(player, function(e)
-      table.insert(entries, e)
-   end)
-   return entries
-end
 
 ---Whether a localised string holds `wanted` anywhere inside it.
 ---@param ls LocalisedString
@@ -47,18 +35,14 @@ describe("Scanner pins and map tags", function()
       end)
 
       ctx:at_tick(2, function()
-         local entries = entries_of(PinsBackend.PinsBackend.new(), player)
-         ctx:assert_equals(3, #entries, "Each pin on the surface is listed")
-
-         local readouts = {}
-         for _, e in ipairs(entries) do
-            ctx:assert_equals(SC.CATEGORIES.PINS, e.category)
-            ctx:assert(e.backend:validate_entry(player, e), "A listed pin is valid")
-            readouts[e.backend_data.index] = e.backend:readout_entry(player, e)
-         end
+         local extras = Extras.pins(player)
+         ctx:assert_equals(3, #extras, "Each pin on the surface is listed")
 
          local found_label, found_chest, found_ore = false, false, false
-         for _, readout in pairs(readouts) do
+         for _, extra in ipairs(extras) do
+            ctx:assert_equals(SC.CATEGORIES.PINS, extra.category)
+            ctx:assert(extra.valid(), "A listed pin is valid")
+            local readout = extra.readout()
             ctx:assert(contains(readout, "fa.scanner-pin"), "Every readout says it is a pin")
             if contains(readout, "Home") then found_label = true end
             if contains(readout, "entity-name.wooden-chest") then found_chest = true end
@@ -89,20 +73,44 @@ describe("Scanner pins and map tags", function()
 
       ctx:at_tick(2, function()
          ctx:assert_not_nil(tag, "The tag is placed on charted ground")
-         local entries = entries_of(ChartTagsBackend.ChartTagsBackend.new(), player)
          local found = nil
-         for _, e in ipairs(entries) do
-            if e.backend_data == tag then found = e end
+         for _, extra in ipairs(Extras.tags(player)) do
+            if extra.position.x == tag.position.x and extra.position.y == tag.position.y then found = extra end
          end
          ctx:assert_not_nil(found, "The tag is listed")
          ctx:assert_equals(SC.CATEGORIES.TAGS, found.category)
-         ctx:assert(found.backend:validate_entry(player, found), "A listed tag is valid")
-         local readout = found.backend:readout_entry(player, found)
+         ctx:assert(found.valid(), "A listed tag is valid")
+         local readout = found.readout()
          ctx:assert(contains(readout, "Smelting"), "A tag reads its text")
          ctx:assert(contains(readout, "fa.scanner-tag"), "A tag readout says it is a map tag")
 
          tag.destroy()
-         ctx:assert(not found.backend:validate_entry(player, found), "A removed tag is no longer valid")
+         ctx:assert(not found.valid(), "A removed tag is no longer valid")
+      end)
+   end)
+
+   it("keeps what a pin said once the pin is gone", function(ctx)
+      local player
+
+      ctx:init(function()
+         player = game.get_player(1)
+         player.clear_pins()
+         player.add_pin({
+            label = "Gone",
+            surface = player.surface,
+            position = { player.position.x, player.position.y },
+         })
+      end)
+
+      ctx:at_tick(2, function()
+         local listed = Extras.collect(player, 1)
+         local id = nil
+         for i, extra in ipairs(listed) do
+            if extra.category == SC.CATEGORIES.PINS then id = i end
+         end
+         ctx:assert_not_nil(id, "The pin is handed to the DLL")
+         player.clear_pins()
+         ctx:assert(contains(Extras.readout(player.index, 1, id), "Gone"), "A removed pin reads as it was")
       end)
    end)
 end)
