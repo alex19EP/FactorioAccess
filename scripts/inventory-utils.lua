@@ -39,13 +39,7 @@ end
 ---@return integer
 ---@private
 function Deductor:_get_available(name)
-   local total = 0
-
-   -- Main inventory
-   if self._player.character then
-      local main_inv = self._player.character.get_inventory(defines.inventory.character_main)
-      if main_inv then total = total + main_inv.get_item_count(name) end
-   end
+   local total = self._player.get_main_inventory().get_item_count(name)
 
    -- Cursor
    local cursor = self._player.cursor_stack
@@ -76,16 +70,11 @@ function Deductor:commit()
       local remaining = count
 
       -- First: deduct from main inventory
-      if remaining > 0 and self._player.character then
-         local main_inv = self._player.character.get_inventory(defines.inventory.character_main)
-         if main_inv then
-            local available = main_inv.get_item_count(name)
-            if available > 0 then
-               local take = math.min(available, remaining)
-               local removed = main_inv.remove({ name = name, count = take })
-               remaining = remaining - removed
-            end
-         end
+      local main_inv = self._player.get_main_inventory()
+      local available = main_inv.get_item_count(name)
+      if available > 0 then
+         local take = math.min(available, remaining)
+         remaining = remaining - main_inv.remove({ name = name, count = take })
       end
 
       -- Second: deduct from cursor

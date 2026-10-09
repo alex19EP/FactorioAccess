@@ -58,6 +58,7 @@ local test_files = {
    "pump-spots-test", -- Test the scanner's offshore pump build spots
    "pins-tags-scanner-test", -- Test the scanner's pins and map tags
    "view-limit-test", -- Test the cursor kept on the screen in the character view
+   "god-mode-test", -- Test FA without a character, as in the sandbox
    "fluid-views-test", -- Test the views read with a pipe's window
    "pole-views-test", -- Test the views read with an electric pole's window
    "map-overlays-test", -- Test what the map's overlays say over a map cell
@@ -249,15 +250,9 @@ function mod._reset_game_state()
       -- A cursor jump off the screen leaves the player in remote view, where there is no character.
       if player.controller_type == defines.controllers.remote then player.exit_remote_view() end
 
-      -- Reset player position
-      if player.character then
-         player.teleport({ 0, 0 })
-      else
-         -- Try to restore physical controller and respawn
-         player.set_controller({ type = defines.controllers.character })
-         if not player.character then player.create_character() end
-         if player.character then player.teleport({ 0, 0 }) end
-      end
+      -- A test left in god mode gets a character back
+      if not player.character then player.create_character() end
+      player.teleport({ 0, 0 })
 
       -- Clear cursor stack
       if player.cursor_stack then player.cursor_stack.clear() end

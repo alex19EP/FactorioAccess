@@ -23,8 +23,15 @@ local spoken_zoom = {}
 ---@type table<integer, number>
 local seen_zoom = {}
 -- Views each player entered and has yet to hear, with the zoom they open at.
----@type table<integer, "remote"|"character">
+---@type table<integer, "remote"|"character"|"god">
 local entered_view = {}
+
+-- The views spoken on entering them, by controller.
+local VIEW_NAMES = {
+   [defines.controllers.remote] = "remote",
+   [defines.controllers.character] = "character",
+   [defines.controllers.god] = "god",
+}
 
 ---Get the current zoom level in tiles.
 ---@param pindex integer
@@ -73,12 +80,8 @@ end
 ---has settled.
 ---@param event EventData.on_player_controller_changed
 function mod.on_controller_changed(event)
-   local controller = game.get_player(event.player_index).controller_type
-   if controller == defines.controllers.remote then
-      entered_view[event.player_index] = "remote"
-   elseif controller == defines.controllers.character then
-      entered_view[event.player_index] = "character"
-   end
+   local view = VIEW_NAMES[game.get_player(event.player_index).controller_type]
+   if view then entered_view[event.player_index] = view end
 end
 
 ---Speaks each player's zoom when it changed since they last heard it, and the view they entered. The
