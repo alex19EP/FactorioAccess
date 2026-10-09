@@ -1,6 +1,8 @@
 --[[
 Walking module - handles cursor announcements during player movement.
 
+Works for the character and for god mode (the sandbox), which walks without a body.
+
 When cursor is anchored:
 - Updates cursor to one tile ahead of player on tile border crossing
 - Announces entities and unwalkable tiles
@@ -39,7 +41,7 @@ local walking_storage = StorageManager.declare_storage_module("walking", {
 ---@param pindex number
 function mod.process_walking_announcements(pindex)
    local player = game.get_player(pindex)
-   if not player or not player.character then return end
+   if not player then return end
    if VanillaMode.is_enabled(pindex) then return end
 
    local reader = MovementHistory.get_movement_history_reader(pindex)
@@ -74,16 +76,14 @@ function mod.process_walking_announcements(pindex)
    -- In combat mode, treat cursor as unanchored (don't update cursor position while walking)
    if vp:get_cursor_anchored() and not Combat.is_combat_mode(pindex) then
       -- ANCHORED MODE: Update cursor ahead and announce if notable
-      local char_pos = player.character.position
       local direction = current and current.direction or defines.direction.north
-      vp:set_cursor_pos(FaUtils.to_neighboring_tile(char_pos, direction))
+      vp:set_cursor_pos(FaUtils.to_neighboring_tile(player.physical_position, direction))
 
-      -- Only announce if there's an entity or the tile is unwalkable
+      -- Only announce if there's an entity or the tile is unwalkable. God mode walks through everything.
       local ent = EntitySelection.get_first_ent_at_tile(pindex)
-      if
-         (ent ~= nil and ent.valid)
-         or (player.surface.can_place_entity({ name = "character", position = vp:get_cursor_pos() }) == false)
-      then
+      local blocked = player.character ~= nil
+         and not player.surface.can_place_entity({ name = "character", position = vp:get_cursor_pos() })
+      if (ent ~= nil and ent.valid) or blocked then
          Graphics.draw_cursor_highlight(pindex, ent, nil)
          if player.driving then return end
 

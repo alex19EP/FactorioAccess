@@ -201,7 +201,7 @@ EventManager.on_event(
       local reader = MovementHistory.get_movement_history_reader(pindex)
       local prev_entry = reader:get(0)
       local old_pos = prev_entry and prev_entry.position
-      if old_pos and util.distance(old_pos, p.position) > 10 then
+      if old_pos and util.distance(old_pos, p.physical_position) > 10 then
          MovementHistory.reset_and_increment_generation(pindex)
       end
 
@@ -1795,14 +1795,7 @@ EventManager.on_event(
 ---@param pindex number
 ---@param muted boolean
 local function toggle_cursor_mode(pindex, muted)
-   local p = game.get_player(pindex)
    local vp = Viewpoint.get_viewpoint(pindex)
-   if p.character == nil then
-      vp:set_cursor_anchored(false)
-      Speech.speak(pindex, { "fa.cannot-anchor-no-character" })
-      return
-   end
-
    if not vp:get_cursor_anchored() then
       --Enable
       vp:set_cursor_anchored(true)
