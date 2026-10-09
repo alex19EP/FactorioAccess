@@ -977,21 +977,36 @@ void forEachNode(const std::byte* tree, Visit visit) {
 
 constexpr std::string_view kOwnModKey = "mod-FactorioAccess";
 
+// The widget of the mod element the player has open (LuaPlayer::opened), or null when what is open
+// is anything else, as GuiTarget::current reads the controller's stack.
+const Widget* openedElementWidget(const std::byte* player) {
+   const std::byte* controller = at<const std::byte*>(player, layout.playerController);
+   if (!controller) return nullptr;
+   const std::byte* target = controller + layout.controllerGuiTarget;
+   if (at<size_t>(target, layout.guiTargetSize) == 0) return nullptr;
+   auto current = reinterpret_cast<const std::byte* (*)(const std::byte*)>(layout.guiTargetCurrent);
+   const std::byte* data = current(target);
+   if (at<uint8_t>(data, layout.guiTargetType) != layout.openGuiTypeCustomGui) return nullptr;
+   const std::byte* element = at<const std::byte*>(data, layout.guiTargetCustomGui + layout.gameTargeterTarget);
+   return element ? at<const Widget*>(element, layout.guiElementWidget) : nullptr;
+}
+
 } // namespace
 
-std::vector<const Widget*> modScreenWindows() {
-   std::vector<const Widget*> windows;
+ModScreenWindows modScreenWindows() {
+   ModScreenWindows found;
+   std::vector<const Widget*>& windows = found.windows;
    const std::byte* view = gameView();
    const std::byte* player = view ? at<const std::byte*>(view, layout.gameViewPlayer) : nullptr;
    const std::byte* customGui = player ? at<const std::byte*>(player, layout.playerCustomGui) : nullptr;
-   if (!customGui) return windows;
+   if (!customGui) return found;
 
    const std::byte* screen = nullptr;
    forEachNode(customGui + layout.customGuiRootElements, [&](const std::byte* node) {
       if (at<uint8_t>(node, layout.positionNodeKey) == layout.customGuiScreen)
          screen = at<const std::byte*>(node, layout.positionNodeElement);
    });
-   if (!screen) return windows;
+   if (!screen) return found;
 
    std::vector<uint32_t> own;
    forEachNode(customGui + layout.customGuiModOwners, [&](const std::byte* node) {
@@ -1010,10 +1025,16 @@ std::vector<const Widget*> modScreenWindows() {
    // The Gui's root holds them in drawing order, which bring_to_front changes.
    const Gui* gui = applicationGui();
    const Widget* root = gui ? baseWidget(gui) : nullptr;
-   if (!root) return windows;
+   if (!root) return found;
    for (const Widget* child : children(root))
       if (visible(child) && std::ranges::find(modWidgets, child) != modWidgets.end()) windows.push_back(child);
-   return windows;
+
+   // A mod may open the window itself or an element inside it.
+   const Widget* opened = openedElementWidget(player);
+   while (opened && parent(opened) != root)
+      opened = parent(opened);
+   if (opened && std::ranges::find(windows, opened) != windows.end()) found.opened = opened;
+   return found;
 }
 
 ResearchBox researchBox() {

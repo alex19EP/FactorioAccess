@@ -374,8 +374,13 @@ std::vector<const Widget*> relativeFlows(const Widget* wrapper);
 
 // The visible windows mods and the scenario put on the loaded game's screen (player.gui.screen of
 // the player the game shows), in drawing order, the topmost last. Elements of any type count, not
-// only frames; FactorioAccess's own are left out. Empty outside a game.
-std::vector<const Widget*> modScreenWindows();
+// only frames; FactorioAccess's own are left out. Empty outside a game. `opened` is the one among
+// them holding what the mod made the player's opened GUI (LuaPlayer::opened), or null.
+struct ModScreenWindows {
+   std::vector<const Widget*> windows;
+   const Widget* opened = nullptr;
+};
+ModScreenWindows modScreenWindows();
 
 // The quickbar along the bottom of the screen (QuickBarGui), or null outside a game or while the
 // view has none.

@@ -145,6 +145,8 @@ uint32_t scancode(uint32_t key) {
    case keys::LeftBracket: return 47;
    case keys::RightBracket: return 48;
    case keys::Backslash: return 49;
+   case keys::Grave: return 53;
+   case keys::Slash: return 56;
    case keys::LeftCtrl: return 224;
    case keys::LeftShift: return 225;
    case keys::LeftAlt: return 226;

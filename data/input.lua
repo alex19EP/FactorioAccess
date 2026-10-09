@@ -545,13 +545,6 @@ data:extend({
 
    {
       type = "custom-input",
-      name = "fa-ca-r",
-      key_sequence = "CONTROL + ALT + R",
-      consuming = "none",
-   },
-
-   {
-      type = "custom-input",
       name = "fa-c-end",
       key_sequence = "CONTROL + END",
       consuming = "none",

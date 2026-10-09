@@ -828,6 +828,13 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.guiElementWidget, "CustomGuiElement", "widget");
    offset(layout.guiElementIndex, "CustomGuiElement", "index");
    offset(layout.guiElementChildren, "CustomGuiElement", "children");
+   offset(layout.controllerGuiTarget, "Controller", "guiTarget");
+   offset(layout.guiTargetSize, "GuiTarget", "data._Mypair._Myval2._Mysize");
+   address(layout.guiTargetCurrent, "?current@GuiTarget@@AEBAAEBVGuiTargetData@@XZ");
+   offset(layout.guiTargetType, "GuiTargetItemBase", "openGuiType");
+   offset(layout.guiTargetCustomGui, "GuiTargetItemBase", "customGui");
+   offset(layout.gameTargeterTarget, "TargeterBase", "target");
+   enumerator(layout.openGuiTypeCustomGui, "OpenGuiType", "CustomGui");
 
    offset(layout.gameViewControllerView, "GameView", "controllerView");
    classSlot(layout.controllerViewQuickBar, "ControllerView", "getQuickBar");
