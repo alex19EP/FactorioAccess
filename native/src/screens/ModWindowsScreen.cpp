@@ -19,11 +19,24 @@ namespace
 using agui::Widget;
 
 // The windows, while they are on screen over a loaded game with no menu in front of them.
-std::vector<const Widget*> FindWindows()
+agui::ModScreenWindows FindWindows()
 {
     if (!agui::inGame() || agui::menuStateWindow())
         return {};
     return agui::modScreenWindows();
+}
+
+// The windows in reading order: the open one first, then the others topmost first, the one a
+// sighted player sees in front.
+std::vector<const Widget*> ReadingOrder(const agui::ModScreenWindows& found)
+{
+    std::vector<const Widget*> order;
+    if (found.opened)
+        order.push_back(found.opened);
+    for (const Widget* window : found.windows | std::views::reverse)
+        if (window != found.opened)
+            order.push_back(window);
+    return order;
 }
 
 std::string TitleOf(const Widget* window)
@@ -34,42 +47,50 @@ std::string TitleOf(const Widget* window)
 
 } // namespace
 
-std::string ModWindowsScreen::Name() const { return vocab::kModWindows; }
+std::string ModWindowsScreen::Name() const
+{
+    // An open window introduces itself by its title, as the game's own windows do.
+    return _opened ? std::string() : std::string(vocab::kModWindows);
+}
 
 bool ModWindowsScreen::IsActive()
 {
     // A menu hides the windows without closing them: nothing is announced again when it closes.
     if (agui::inGame() && agui::menuStateWindow())
         return false;
-    std::vector<const Widget*> windows = FindWindows();
-    AnnounceNew(windows);
-    parts::setAvailable(parts::Part::ModWindows, !windows.empty());
-    if (parts::current() != parts::Part::ModWindows)
-    {
-        _labels.clear();
-        return false;
-    }
-    // The last window closed, or the game is gone: back to what is open.
-    if (windows.empty())
-    {
+    agui::ModScreenWindows found = FindWindows();
+    AnnounceNew(found);
+    // While a mod has a window open, it is what is open and the part would only lead back to it.
+    parts::setAvailable(parts::Part::ModWindows, !found.windows.empty() && !found.opened);
+    bool part = parts::current() == parts::Part::ModWindows;
+    // The last window closed, the game is gone, or a mod opened one: back to what is open.
+    if (part && (found.windows.empty() || found.opened))
         parts::close();
+    if (found.opened != _opened)
+    {
+        // Opened or closed: one inactive frame pops this screen, so it lands afresh on what is open.
+        _opened = found.opened;
         _labels.clear();
         return false;
     }
-    SayChangedLabels(windows);
+    if (!_opened && !(part && !found.windows.empty()))
+    {
+        _labels.clear();
+        return false;
+    }
+    SayChangedLabels(found.windows);
     return true;
 }
 
 void ModWindowsScreen::Build(graph::GraphBuilder& builder)
 {
-    std::vector<const Widget*> windows = FindWindows();
-    // The topmost first: the one a sighted player sees in front.
-    for (std::size_t i = windows.size(); i-- > 0;)
+    std::vector<const Widget*> windows = ReadingOrder(FindWindows());
+    for (std::size_t i = 0; i < windows.size(); ++i)
     {
         const Widget* window = windows[i];
         if (!HasContent(window))
             continue;
-        std::string key = std::format("window/{}", windows.size() - 1 - i);
+        std::string key = std::format("window/{}", i);
         builder.BeginStop(key);
         std::string title = TitleOf(window);
         if (!title.empty())
@@ -90,16 +111,19 @@ void ModWindowsScreen::OnPop() { _labels.clear(); }
 
 std::string ModWindowsScreen::LeaveLine() const
 {
-    // Left with Ctrl+Tab or Escape, not covered by a menu: the part is no longer in use.
-    return parts::current() == parts::Part::None ? std::string(vocab::kMap) : std::string();
+    // Left with Ctrl+Tab or Escape, or the open window closed, not covered by a menu: back on the
+    // map. Not while another window of the mod's opens in its place.
+    return parts::current() == parts::Part::None && !_opened ? std::string(vocab::kMap) : std::string();
 }
 
-void ModWindowsScreen::AnnounceNew(const std::vector<const Widget*>& windows)
+void ModWindowsScreen::AnnounceNew(const agui::ModScreenWindows& found)
 {
+    const std::vector<const Widget*>& windows = found.windows;
     if (parts::current() != parts::Part::ModWindows)
         for (const Widget* window : windows)
         {
-            if (std::ranges::find(_seen, window) != _seen.end() || !HasContent(window))
+            // An open window is landed on instead.
+            if (window == found.opened || std::ranges::find(_seen, window) != _seen.end() || !HasContent(window))
                 continue;
             std::string title = TitleOf(window);
             speech::say(title.empty() ? std::string(vocab::kUntitledModWindowShown)

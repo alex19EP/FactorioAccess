@@ -1083,6 +1083,18 @@ struct Layout {
    uint32_t guiElementWidget = 0;            // CustomGuiElement::widget, agui::Widget*
    uint32_t guiElementIndex = 0;             // CustomGuiElement::index
    uint32_t guiElementChildren = 0;          // CustomGuiElement::children, std::vector<CustomGuiElement*>
+   // What the player has open (LuaPlayer::opened), the controller's GuiTarget: a deque of
+   // GuiTargetData, the topmost with a type being the open one (GuiTarget::current, which needs a
+   // non-empty deque). A mod's element set as opened has the type CustomGui and its element in the
+   // customGui targeter.
+   uint32_t controllerGuiTarget = 0;         // Controller::guiTarget, GuiTarget
+   uint32_t guiTargetSize = 0;               // GuiTarget::data._Mypair._Myval2._Mysize
+   uintptr_t guiTargetCurrent = 0;           // GuiTargetData const& GuiTarget::current() const
+   uint32_t guiTargetType = 0;               // GuiTargetItemBase::openGuiType, OpenGuiType (one byte)
+   uint32_t guiTargetCustomGui = 0;          // GuiTargetItemBase::customGui, Targeter<CustomGuiElement>
+   // The game's Targeter (TargeterBase, with a vtable), not agui's GenericTargeterBase.
+   uint32_t gameTargeterTarget = 0;          // TargeterBase::target, Targetable*
+   uint32_t openGuiTypeCustomGui = 0;        // OpenGuiType CustomGui
 
    // The quickbar along the bottom of the screen (QuickBarGui), reached the way the game's own
    // quickbar keys reach it: GameView::controllerView->getQuickBar().
