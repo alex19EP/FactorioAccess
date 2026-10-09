@@ -614,8 +614,6 @@ EventManager.on_event(
    function(event, pindex)
       local router = UiRouter.get_router(pindex)
       print(serpent.line(event, { nocode = true }))
-      --Other resets - now executed unconditionally
-      if event.element ~= nil then event.element.destroy() end
       router:close_ui()
    end
 )
@@ -2644,36 +2642,6 @@ EventManager.on_event(
    ---@param event EventData.CustomInputEvent
    function(event, pindex)
       kb_toggle_cursor_hiding(event)
-   end
-)
-
----nothing else uses this; perhaps merge this into kb_clear_renders
-local function clear_renders()
-   rendering.clear("FactorioAccess")
-   rendering.clear("")
-end
-
----@param event EventData.CustomInputEvent
-local function kb_clear_renders(event)
-   local pindex = event.player_index
-   game.get_player(pindex).gui.screen.clear()
-   local vp = Viewpoint.get_viewpoint(pindex)
-   vp:set_cursor_ent_highlight_box(nil)
-   vp:set_cursor_tile_highlight_box(nil)
-   storage.players[pindex].building_footprint = nil
-   storage.players[pindex].overhead_sprite = nil
-   storage.players[pindex].overhead_circle = nil
-   storage.players[pindex].custom_GUI_frame = nil
-   storage.players[pindex].custom_GUI_sprite = nil
-   clear_renders()
-   Speech.speak(pindex, { "fa.cleared-renders" })
-end
-
-EventManager.on_event(
-   "fa-ca-r",
-   ---@param event EventData.CustomInputEvent
-   function(event, pindex)
-      kb_clear_renders(event)
    end
 )
 
