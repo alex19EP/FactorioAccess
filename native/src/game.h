@@ -283,6 +283,9 @@ struct Layout {
    uint32_t surfaceIndex = 0;              // Surface::index, SurfaceIndex (uint32), LuaSurface::index
    uint32_t surfaceChunks = 0;             // Surface::chunks, std::vector<Chunk*>
    uint32_t chunkPosition = 0;             // Chunk::position, ChunkPosition (two ints)
+   // Chunk const* Surface::getChunkSafe(ChunkPosition const&) const: the chunk there, or null.
+   // A refresh spread over ticks finds its chunks again by this, as the game may delete chunks.
+   uintptr_t surfaceChunkAt = 0;
    // Water and ice are tiles: Chunk::tiles is Tile[32][32] by x then y, each a tileID
    // (ID<TilePrototype>, uint16) and a variation byte. Tile const* Surface::getTileOptional(
    // TilePosition const&) const reads one, null where no chunk is.

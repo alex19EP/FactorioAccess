@@ -552,12 +552,13 @@ std::vector<std::string> stringsField(lua_State* L, int table, const char* name)
    return strings;
 }
 
-// fa_native.scanner_refresh(pindex, {surface, x, y, radius, direction, water, ice, extras}): lists
-// for this client's player what the scanner finds on that surface within `radius` of x, y, where
-// the player's force charted it, and only in `direction` (an 8-way defines.direction) when given;
-// water and ice are arrays of the tile names that make bodies of water and of ice; extras is an
-// array of {category, key, x, y} the mod lists itself (scanner::Extra). The list is this client's
-// only; nothing in the game depends on it.
+// fa_native.scanner_refresh(pindex, {surface, x, y, direction, water, ice, extras, generation,
+// automatic, keep_origin}): lists for this client's player what the scanner finds on that surface
+// where the player's force charted it, nearest x, y first, and only in `direction` (an 8-way
+// defines.direction) when given; water and ice are arrays of the tile names that make bodies of
+// water and of ice; extras is an array of {category, key, x, y} the mod lists itself
+// (scanner::Extra), from its collection `generation`. With `automatic`, over the next ticks (see
+// scanner::Refresh). The list is this client's only; nothing in the game depends on it.
 int scannerRefresh(lua_State* L) {
    scanner::Refresh request;
    request.playerIndex = static_cast<int>(checkInteger(L, 1));
@@ -565,13 +566,17 @@ int scannerRefresh(lua_State* L) {
    auto surface = numberField(L, 2, "surface");
    auto x = numberField(L, 2, "x");
    auto y = numberField(L, 2, "y");
-   auto radius = numberField(L, 2, "radius");
-   if (!surface || !x || !y || !radius) return 0;
+   if (!surface || !x || !y) return 0;
    request.surfaceIndex = static_cast<uint32_t>(*surface);
    request.x = *x;
    request.y = *y;
-   request.radius = *radius;
    if (auto direction = numberField(L, 2, "direction")) request.direction = static_cast<int>(*direction);
+   request.generation = static_cast<uint32_t>(numberField(L, 2, "generation").value_or(0));
+   getField(L, 2, "automatic");
+   request.automatic = toBoolean(L, -1);
+   getField(L, 2, "keep_origin");
+   request.keepOrigin = toBoolean(L, -1);
+   setTop(L, -3);
    request.water = stringsField(L, 2, "water");
    request.ice = stringsField(L, 2, "ice");
    getField(L, 2, "extras");
@@ -596,6 +601,14 @@ int scannerRefresh(lua_State* L) {
    setTop(L, -2);
    scanner::refresh(request);
    return 0;
+}
+
+// fa_native.scanner_tick(pindex, surface): each tick, carries this client's automatic scanner
+// refresh along; true when the mod is to start one now with scanner_refresh. For this client only:
+// the mod must change nothing in the game by it.
+int scannerTick(lua_State* L) {
+   pushBoolean(L, scanner::tick(static_cast<int>(checkInteger(L, 1)), static_cast<uint32_t>(checkInteger(L, 2))));
+   return 1;
 }
 
 // fa_native.scanner_mod_ui(pindex, open): whether one of the mod's own UIs is open, and so has the
@@ -628,6 +641,8 @@ int scannerEntry(lua_State* L) {
       setField(L, -2, "kind");
       pushNumber(L, entry->extra);
       setField(L, -2, "extra");
+      pushNumber(L, entry->generation);
+      setField(L, -2, "generation");
       pushString(L, entry->prototype);
       setField(L, -2, "prototype");
       pushString(L, entry->text);
@@ -682,6 +697,7 @@ constexpr Function kFunctions[] = {
    {"map_overlays", &mapOverlays},
    {"audio", &playAudio},
    {"scanner_refresh", &scannerRefresh},
+   {"scanner_tick", &scannerTick},
    {"scanner_mod_ui", &scannerModUi},
    {"scanner_entry", &scannerEntry},
    {"scanner_category", &scannerCategory},

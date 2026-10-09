@@ -8,7 +8,7 @@ So first, you need to find and gather resources.  The mod offers a number of fea
 
 The simplest use of the scanner is to find rocks.  Rocks, when mined, contain stone.  Some also contain coal.
 
-To scan, press end.  This will refresh the list of things that the scanner shows you, and sort them by distance from your character.
+The scanner keeps its list of things up to date by itself, sorted by distance from your character.  To update it at once, press end.
 
 To move between things in the scanner list, press page up and page down.
 
@@ -24,7 +24,7 @@ To stop KK, you press enter while it is doing something.
 
 The mod still continues to function while KK runs, but using it can interrupt what KK is trying to do, so it is generally best to leave it alone.
 
-Now, press end, then use page up and page down to find a rock.  Once you have, press control alt right bracket.  After your character has mined a few rocks, press enter to stop KK.
+Now, use page up and page down to find a rock.  Once you have, press control alt right bracket.  After your character has mined a few rocks, press enter to stop KK.
 
 Your character has now mined stone.  If you were lucky, your character also mined coal.
 

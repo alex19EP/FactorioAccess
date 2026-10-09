@@ -4,8 +4,9 @@ player's pins, the force's map tags, and the spots near the player where the off
 can be built.
 
 They are read at refresh, on the client of the player who scans, and kept in a table of this module
-outside storage until the next refresh: only that client has a scanner list. So this must only read
-the game, never change it (see readout.lua).
+outside storage: only that client has a scanner list. So this must only read the game, never change
+it (see readout.lua). Each collection has a generation, which the DLL says back with each extra: an
+automatic refresh collects while the list made from the one before is still in use.
 ]]
 local CircuitNetwork = require("scripts.circuit-network")
 local FaInfo = require("scripts.fa-info")
@@ -256,21 +257,30 @@ function mod.pump_spots(player)
    return extras
 end
 
--- The extras of each player's latest refresh, on that player's client.
----@type table<integer, fa.scanner.Extra[]>
-local latest = {}
+-- The extras of each player's latest collections by generation, on that player's client: the one
+-- the list in use was made from, and the one an automatic refresh is making a list from, which may
+-- be two on when a refresh was dropped for another.
+---@type table<integer, table<integer, fa.scanner.Extra[]>>
+local kept = {}
 
----Everything the mod lists itself for `player`, kept for readouts, and as the DLL takes it.
+---Everything the mod lists itself for `player`, kept for readouts as collection `generation`, and
+---as the DLL takes it.
 ---@param player LuaPlayer
+---@param generation integer
 ---@return { category: string, key: string, x: number, y: number }[]
-function mod.collect(player)
+function mod.collect(player, generation)
    local extras = {}
    for _, list in ipairs({ mod.pins(player), mod.tags(player), mod.pump_spots(player) }) do
       for _, extra in ipairs(list) do
          table.insert(extras, extra)
       end
    end
-   latest[player.index] = extras
+   local generations = kept[player.index] or {}
+   kept[player.index] = {
+      [generation - 2] = generations[generation - 2],
+      [generation - 1] = generations[generation - 1],
+      [generation] = extras,
+   }
    local listed = {}
    for i, extra in ipairs(extras) do
       extra.said = extra.readout()
@@ -279,13 +289,14 @@ function mod.collect(player)
    return listed
 end
 
----What to say of extra `id` (its one-based place in the latest collect): fresh while it is there,
----else what it was.
+---What to say of extra `id` (its one-based place in collection `generation`): fresh while it is
+---there, else what it was.
 ---@param pindex integer
+---@param generation integer
 ---@param id integer
 ---@return LocalisedString?
-function mod.readout(pindex, id)
-   local extra = (latest[pindex] or {})[id]
+function mod.readout(pindex, generation, id)
+   local extra = ((kept[pindex] or {})[generation] or {})[id]
    if not extra then return nil end
    if extra.valid() then extra.said = extra.readout() end
    return extra.said

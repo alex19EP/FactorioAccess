@@ -34,15 +34,26 @@ struct Refresh {
    uint32_t surfaceIndex = 0;     // LuaSurface::index
    double x = 0;                 // where distances are measured from, in tiles
    double y = 0;
-   double radius = 0;             // how far the scanner sees, in tiles
    std::optional<int> direction;  // only entries in this direction (an 8-way defines.direction)
    std::vector<std::string> water; // tile names that are water
    std::vector<std::string> ice;   // tile names that are ice (Aquilo)
    std::vector<Extra> extras;
+   uint32_t generation = 0; // which of the mod's collections `extras` is, said back with each extra
+   // Made over the next ticks (see tick) rather than at once. It keeps the list's direction, and with
+   // `keepOrigin` its origin, while the list is of the same surface.
+   bool automatic = false;
+   bool keepOrigin = false;
 };
 
-// Rebuilds the list for this client's player; does nothing for another client's player.
+// Rebuilds the whole charted surface's list for this client's player, at once or, when automatic,
+// over the next ticks; does nothing for another client's player. A refresh replaces one under way.
+// At once, the cursor keeps only its category; an automatic one keeps the cursor on what it is on.
 void refresh(const Refresh& request);
+
+// Each tick, from Lua: carries the automatic refresh under way a slice further, and puts its list in
+// place once done. Whether the mod is to start an automatic refresh for this client's player now (a
+// second after the last, or at once on another surface); always false for another client's player.
+bool tick(int playerIndex, uint32_t surfaceIndex);
 
 // Whether the mod's own UI has the keys, so the scanner keys are not the scanner's. From Lua.
 void setModUiOpen(int playerIndex, bool open);
@@ -61,6 +72,7 @@ struct Entry {
    // "entity", "forest" (several trees), "patch" (a resource patch), "water", "ice" or "extra".
    std::string kind;
    uint32_t extra = 0;         // an extra: its one-based place in Refresh::extras
+   uint32_t generation = 0;    // an extra: its Refresh::generation
    std::string prototype;      // an entity's or patch's prototype name
    std::string text;           // a patch: the map's label of it, what is left in it
    uint32_t trees = 0;         // a forest: how many trees are left

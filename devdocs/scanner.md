@@ -4,9 +4,10 @@ Last reviewed: 2026-10-09 (update this if reviewing this doc)
 
 The scanner turns the map into a list the player moves through with `PAGE UP` and `PAGE DOWN` plus
 modifiers: categories (`CONTROL`), subcategories (no modifier) and entries (`SHIFT`). `HOME` says
-the current entry again and `END` lists the surface again (`SHIFT + END` only in the direction the
-character faces). Examples: an assembling machine is category Production, subcategory by its recipe;
-an iron ore patch is category Resources, subcategory iron ore.
+the current entry again. The list keeps itself up to date; `END` lists the surface again at once,
+sorted from where the player is (`SHIFT + END` only in the direction the character faces, which
+stays until the next `END`). Examples: an assembling machine is category Production, subcategory by
+its recipe; an iron ore patch is category Resources, subcategory iron ore.
 
 The list lives in the native DLL (`native/src/scanner.h`, `scanner.cpp`), on the client of the
 player who scans. Nothing of it is in `storage`, and other clients have none. The Lua side is
@@ -14,8 +15,8 @@ player who scans. Nothing of it is in `storage`, and other clients have none. Th
 
 # What the DLL lists
 
-A refresh (`fa_native.scanner_refresh`, from the `END` handler, only where `fa_native` exists) walks
-every chunk of the surface within `SCANNER_DISTANCE` that the player's force has charted:
+A refresh (`fa_native.scanner_refresh`, only where `fa_native` exists) walks every chunk of the
+surface that the player's force has charted, as sighted players see all of it on the map:
 
 - Entities by type (`kTypes` in `scanner.cpp`), each its own entry, grouped by prototype. Types not
   in the table are not listed. Rocks are resources, `*-remnants` are remnants.
@@ -44,6 +45,30 @@ linking the weak references, stays on the calling thread. The threads' items are
 order, and ties for the nearest go to the topmost, then the leftmost, so the list is the same however
 the chunks were shared out. Sorting the subcategories also runs on several threads.
 
+# Automatic refresh
+
+Each tick, `entrypoint.lua`'s `on_tick` calls `fa_native.scanner_tick`, which answers true when a
+refresh is due for this client's player: at once on another surface, else a second after the last
+one, or longer after a long one, so that automatic refreshes take at most 5% of the update thread
+(`kCycleShare`). On a 4M SPM base's Nauvis, one runs every 18 seconds. Lua then starts one with
+`automatic = true`.
+
+An automatic refresh walks the chunks nearest first, 2 ms each tick (`kSliceBudget`), while the
+update thread waits in the Lua call. Each slice links the entities it found before the world moves
+on: an entity found one tick may be gone the next. Once all chunks are walked, the list is put
+together (merged, clustered, grouped) on a thread of its own, as that reads nothing of the game. At
+the next tick after that, the list takes the old one's place, and the cursor stays on what it was
+on: the same entity, the forest, patch or body holding where it was, or else the same subcategory.
+The old list's links are dropped a slice at a time, and the rest of it on a thread of its own.
+
+An automatic refresh keeps the list's direction filter and, in remote view, its origin, since the
+camera follows the cursor onto the entries. A list of a surface the player has left is not used
+while the new one is made.
+
+The mod's extras are collected again for each refresh, while the list made from the last collection
+may still be in use. So each collection has a generation, which the DLL says back with each extra
+(`extras.lua` keeps the latest three).
+
 Entries keep their entities through the game's own weak references (`Targeter`, as its GUIs keep
 theirs), so moving entities stay listed where they move to, and an entry drops out once the game
 removes its entity. Forests and patches keep none: landing on one finds a live tree or resource at
@@ -56,8 +81,8 @@ must only read the game, never change it (no `storage`, no `math.random`):
 
 - `readout.lua`: what is said of an entity (fa-info's scanner readout, with a spawner's pollution).
 - `extras.lua`: pins, map tags and the spots near the player where the offshore pump in hand can be
-  built, handed to the DLL at refresh. Lua keeps these objects in a table of its own until the next
-  refresh, and says them.
+  built, handed to the DLL at each refresh. Lua keeps these objects in a table of its own (see
+  "Automatic refresh"), and says them.
 
 # Moving through the list: why it stays in sync in multiplayer
 

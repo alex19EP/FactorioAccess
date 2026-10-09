@@ -2,8 +2,8 @@
 The scanner.
 
 The list lives in the native DLL (native/src/scanner.h), on the client of the player who scans:
-nothing of it is in storage, and other clients have none. Refreshing asks the DLL to list the
-surface again.
+nothing of it is in storage, and other clients have none. The DLL keeps it up to date by itself,
+asking each tick for a refresh when one is due; the refresh key lists the surface again at once.
 
 Moving through the list must still change the game alike on every client, since it moves the cursor
 and the selection. The DLL does the move when the scanner key reaches the game, and the game's
@@ -88,7 +88,7 @@ local function announce(pindex, event)
    elseif entry.kind == "ice" then
       readout = { "fa.scanner-iceberg", entry.width, entry.height }
    elseif entry.kind == "extra" then
-      readout = Extras.readout(pindex, entry.extra)
+      readout = Extras.readout(pindex, entry.generation, entry.extra)
       if not readout then return end
    else
       local candidates = entities_at(player.surface, position)
@@ -117,25 +117,34 @@ local function announce(pindex, event)
    })
 end
 
--- Lists the player's surface again, from where the player is.
+-- Each player's latest collection of extras, on that player's client only, as the DLL's lists are.
+---@type table<integer, integer>
+local generations = {}
+
+-- What the DLL lists the player's surface from: where the player is, and the mod's own extras.
+---@param player LuaPlayer
+---@param fields table the request's other fields
+local function refresh(player, fields)
+   local generation = (generations[player.index] or 0) + 1
+   generations[player.index] = generation
+   fields.surface = player.surface.index
+   fields.x = player.position.x
+   fields.y = player.position.y
+   fields.water = ScannerConsts.WATER_PROTOS
+   fields.ice = script.feature_flags.space_travel and ScannerConsts.ICEBERG_PROTOS or nil
+   fields.extras = Extras.collect(player, generation)
+   fields.generation = generation
+   native.scanner_refresh(player.index, fields)
+end
+
+-- Lists the player's surface again at once, from where the player is.
 ---@param pindex number
 ---@param direction_filter defines.direction?
 function mod.do_refresh(pindex, direction_filter)
    local player = game.get_player(pindex)
    ---@cast player LuaPlayer
    player.play_sound({ path = "scanner-pulse" })
-   if native then
-      native.scanner_refresh(pindex, {
-         surface = player.surface.index,
-         x = player.position.x,
-         y = player.position.y,
-         radius = ScannerConsts.SCANNER_DISTANCE,
-         direction = direction_filter,
-         water = ScannerConsts.WATER_PROTOS,
-         ice = script.feature_flags.space_travel and ScannerConsts.ICEBERG_PROTOS or nil,
-         extras = Extras.collect(player),
-      })
-   end
+   if native then refresh(player, { direction = direction_filter }) end
    if direction_filter then
       Speech.speak(pindex, { "fa.scanner-refreshed-directional", FaUtils.direction_lookup(direction_filter) })
    else
@@ -162,10 +171,18 @@ function mod.move(pindex, event)
 end
 
 -- The mod's own UIs take the scanner keys while open; the DLL must leave those keys alone then.
+-- The DLL also keeps its list up to date on its own, starting a refresh when it asks for one; in
+-- remote view that keeps the list's origin, which the camera leaves as it follows the scanner.
 function mod.on_tick()
    if not native then return end
    for _, player in pairs(game.connected_players) do
       native.scanner_mod_ui(player.index, UiRouter.get_router(player.index):is_ui_open())
+      if native.scanner_tick(player.index, player.surface.index) then
+         refresh(player, {
+            automatic = true,
+            keep_origin = player.controller_type == defines.controllers.remote,
+         })
+      end
    end
 end
 

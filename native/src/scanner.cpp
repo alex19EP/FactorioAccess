@@ -12,6 +12,7 @@
 #include <bit>
 #include <chrono>
 #include <cmath>
+#include <condition_variable>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -19,6 +20,7 @@
 #include <exception>
 #include <format>
 #include <functional>
+#include <memory>
 #include <mutex>
 #include <span>
 #include <string_view>
@@ -32,6 +34,7 @@ namespace fa::scanner {
 namespace {
 
 using game::layout;
+using Clock = std::chrono::steady_clock;
 
 template <class T>
 T at(const void* object, uint32_t offset) {
@@ -396,10 +399,12 @@ void unlink(Targeter& targeter) {
 
 // The weak references of a list's entities, made and dropped while the world stands still (in a
 // refresh, or at a key). They are dropped from the game they were made in; once that game is gone
-// they are left as they are, since their entities may be gone without having told them.
+// they are left as they are, since their entities may be gone without having told them. They never
+// move while linked: a deque keeps them in place as more are added.
 class Links {
 public:
    Links() = default;
+   explicit Links(const std::byte* game) : game_(game) {}
    Links(Links&& other) noexcept : targeters_(std::move(other.targeters_)), game_(other.game_) {}
    Links& operator=(Links&& other) noexcept {
       if (this != &other) {
@@ -413,13 +418,30 @@ public:
    Links& operator=(const Links&) = delete;
    ~Links() { release(); }
 
-   // Links every entity, in order.
-   Links(const std::byte* game, const std::vector<std::byte*>& entities) : targeters_(entities.size()), game_(game) {
-      for (size_t i = 0; i < entities.size(); ++i) link(targeters_[i], entities[i]);
+   // Links `entity`, which must be there now; its index.
+   uint32_t add(std::byte* entity) {
+      link(targeters_.emplace_back(), entity);
+      return static_cast<uint32_t>(targeters_.size() - 1);
    }
 
    // Entity `index`, or null once the game dropped it.
    const std::byte* entity(size_t index) const { return targeters_[index].target; }
+
+   size_t size() const { return targeters_.size(); }
+
+   // Drops links until `deadline`, so that a big list's go over several ticks; whether all are gone.
+   bool releaseUntil(Clock::time_point deadline) {
+      if (game_ != currentGame()) {
+         release();
+         return true;
+      }
+      for (size_t dropped = 0; !targeters_.empty(); ++dropped) {
+         if (dropped % 4096 == 0 && Clock::now() >= deadline) return false;
+         unlink(targeters_.back());
+         targeters_.pop_back();
+      }
+      return true;
+   }
 
 private:
    void release() {
@@ -428,12 +450,12 @@ private:
          for (Targeter& targeter : targeters_) unlink(targeter);
       } else {
          // Still linked into a game that may not have let go of them: keep them in place for good.
-         new std::vector<Targeter>(std::move(targeters_));
+         new std::deque<Targeter>(std::move(targeters_));
       }
       targeters_.clear();
    }
 
-   std::vector<Targeter> targeters_;
+   std::deque<Targeter> targeters_;
    const std::byte* game_ = nullptr;
 };
 
@@ -730,6 +752,8 @@ struct List {
    uint32_t surfaceIndex = 0;
    const std::byte* force = nullptr;
    Position origin{};
+   std::optional<int> direction; // only entries this way from the origin
+   uint32_t generation = 0;      // the mod's extras (Refresh::generation)
    std::vector<Item> items;
    Links links;
    std::array<std::vector<Subcategory>, kCategoryCount> categories;
@@ -744,16 +768,82 @@ unsigned threadsFor(size_t count, size_t perThread) {
       std::clamp<size_t>(count / perThread, 1, std::clamp(std::thread::hardware_concurrency(), 1u, kMaxThreads)));
 }
 
-// Calls `work(thread, i)` for every `i` below `count` on `threads` threads, this one among them,
-// handing out `batch` at a time. Work that reads the game must only read it, and only while it stands
-// still.
+// The threads the scanner's work runs on, made as first needed and kept: a refresh spread over ticks
+// hands them work every tick.
+class Pool {
+public:
+   // Runs `task(thread)` on `threads` threads, this one as thread 0, and returns once all are done.
+   // `task` must not throw. One run at a time.
+   void run(unsigned threads, const std::function<void(unsigned)>& task) {
+      std::scoped_lock serial(runMutex_);
+      if (threads <= 1) {
+         task(0);
+         return;
+      }
+      {
+         std::scoped_lock lock(mutex_);
+         while (workers_.size() + 1 < threads) {
+            const auto index = static_cast<unsigned>(workers_.size() + 1);
+            workers_.emplace_back([this, index] { serve(index); });
+         }
+         task_ = &task;
+         helpers_ = threads - 1;
+         remaining_ = threads - 1;
+         ++round_;
+      }
+      wake_.notify_all();
+      task(0);
+      std::unique_lock lock(mutex_);
+      done_.wait(lock, [&] { return remaining_ == 0; });
+   }
+
+private:
+   void serve(unsigned index) {
+      uint64_t seen = 0;
+      std::unique_lock lock(mutex_);
+      for (;;) {
+         wake_.wait(lock, [&] { return round_ != seen; });
+         seen = round_;
+         if (index > helpers_) continue;
+         const auto* task = task_;
+         lock.unlock();
+         (*task)(index);
+         lock.lock();
+         if (--remaining_ == 0) done_.notify_one();
+      }
+   }
+
+   std::mutex runMutex_;
+   std::mutex mutex_;
+   std::condition_variable wake_;
+   std::condition_variable done_;
+   std::vector<std::thread> workers_;
+   const std::function<void(unsigned)>* task_ = nullptr;
+   unsigned helpers_ = 0;
+   unsigned remaining_ = 0;
+   uint64_t round_ = 0;
+};
+
+// Never destroyed: its threads wait for work until the process ends, as joining them while the DLL
+// unloads could hang.
+Pool& pool() {
+   static Pool& instance = *new Pool;
+   return instance;
+}
+
+// Calls `work(thread, i)` for `i` from `first` up to `count` on `threads` threads, this one among
+// them, handing out `batch` at a time; past `deadline`, if any, no thread takes another batch.
+// Returns where it stopped: every `i` below that is done. Work that reads the game must only read
+// it, and only while it stands still.
 template <class Work>
-void parallelFor(unsigned threads, size_t count, size_t batch, const Work& work) {
-   std::atomic<size_t> next{0};
+size_t parallelFor(unsigned threads, size_t first, size_t count, size_t batch, const Work& work,
+                   std::optional<Clock::time_point> deadline = std::nullopt) {
+   std::atomic<size_t> next{first};
    std::vector<std::exception_ptr> failures(threads);
-   auto run = [&](unsigned thread) {
+   pool().run(threads, [&](unsigned thread) {
       try {
          for (;;) {
+            if (deadline && Clock::now() >= *deadline) return;
             const size_t begin = next.fetch_add(batch, std::memory_order_relaxed);
             if (begin >= count) return;
             for (size_t i = begin; i < std::min(begin + batch, count); ++i) work(thread, i);
@@ -761,14 +851,10 @@ void parallelFor(unsigned threads, size_t count, size_t batch, const Work& work)
       } catch (...) {
          failures[thread] = std::current_exception();
       }
-   };
-   {
-      std::vector<std::jthread> helpers;
-      for (unsigned thread = 1; thread < threads; ++thread) helpers.emplace_back(run, thread);
-      run(0);
-   }
+   });
    for (const std::exception_ptr& failure : failures)
       if (failure) std::rethrow_exception(failure);
+   return std::min(next.load(), count);
 }
 
 // Groups the items into categories and subcategories, every item into All as well, nearest first:
@@ -810,7 +896,7 @@ void group(List& list) {
 
    // The biggest first, so that no thread is left with one at the end.
    std::ranges::sort(subcategories, std::greater{}, [](const Subcategory* s) { return s->items.size(); });
-   parallelFor(threadsFor(count, 1 << 16), subcategories.size(), 1, [&](unsigned, size_t index) {
+   parallelFor(threadsFor(count, 1 << 16), 0, subcategories.size(), 1, [&](unsigned, size_t index) {
       auto& items = subcategories[index]->items;
       std::vector<std::pair<double, uint32_t>> keyed;
       keyed.reserve(items.size());
@@ -1044,18 +1130,6 @@ public:
       items_.push_back(std::move(item));
    }
 
-   // The forests (trees grouped under null) and patches of `cells`.
-   void groups(std::span<const Cells* const> cells) {
-      for (const Cells::Group& group : Cells::groups(cells)) {
-         const bool forest = !group.group;
-         Item item{forest ? Kind::Forest : Kind::Patch, Resources, forest ? group.prototype : group.group,
-                   group.position, forest ? "tree" : std::string(prototypeName(group.group))};
-         item.count = group.count;
-         item.box = group.box;
-         items_.push_back(std::move(item));
-      }
-   }
-
 private:
    void add(Item item, const Found& found) {
       item.first = static_cast<uint32_t>(entities_.size());
@@ -1067,6 +1141,21 @@ private:
    std::vector<Item>& items_;
    std::vector<std::byte*>& entities_;
 };
+
+// Prototype names by prototype, for work off the game's threads, which must not read the game.
+using Names = std::unordered_map<const std::byte*, std::string>;
+
+// Adds the forests (trees grouped under null) and patches of `cells` to `items`.
+void addGroups(std::vector<Item>& items, std::span<const Cells* const> cells, const Names& names) {
+   for (const Cells::Group& group : Cells::groups(cells)) {
+      const bool forest = !group.group;
+      Item item{forest ? Kind::Forest : Kind::Patch, Resources, forest ? group.prototype : group.group, group.position,
+                forest ? "tree" : names.at(group.group)};
+      item.count = group.count;
+      item.box = group.box;
+      items.push_back(std::move(item));
+   }
+}
 
 // Bodies of water or ice: connected tiles of one class, 8 ways, chunk by chunk. Each chunk labels its
 // own components; components touching across chunk borders are then joined.
@@ -1268,6 +1357,8 @@ Cursor g_cursor;
 std::deque<Move> g_moves;
 std::optional<Category> g_category;
 bool g_modUiOpen = false;
+// The LuaSurface the player is on, as of the last tick; 0 before the first.
+uint32_t g_surface = 0;
 
 // The world the list was made in, while it is still there.
 struct World {
@@ -1275,9 +1366,11 @@ struct World {
    explicit operator bool() const { return surface; }
 };
 
+// A list of a surface the player left is not used while that of the player's is made.
 World worldOf(const List& list) {
    const std::byte* game = currentGame();
    if (!game || game != list.game) return {};
+   if (g_surface && list.surfaceIndex != g_surface) return {};
    const std::byte* player = at<const std::byte*>(game, layout.gameLocalPlayer);
    if (!player) return {};
    const std::byte* map = at<const std::byte*>(player, layout.playerMap);
@@ -1480,7 +1573,10 @@ void describe(const World& world, const Item& item, Entry& entry) {
       entry.width = item.box.width();
       entry.height = item.box.height();
       break;
-   case Kind::Extra: entry.extra = item.first + 1; break;
+   case Kind::Extra:
+      entry.extra = item.first + 1;
+      entry.generation = g_list.generation;
+      break;
    }
 }
 
@@ -1582,34 +1678,34 @@ private:
 constexpr double kTreeZoomSquared = kForestZoomDistance * kForestZoomDistance;
 constexpr double kWellZoomSquared = kInfiniteResourceZoomDistance * kInfiniteResourceZoomDistance;
 
-// What a refresh lists, read by every thread of its walk.
+// Whether an entry at `position` is listed: in `direction` from `origin`, when there is one.
+bool inDirection(Position position, Position origin, std::optional<int> direction) {
+   return !direction || directionBiased(position, origin) == *direction;
+}
+
+using ChunkAtFunction = const std::byte* (*)(const void* surface, const Position* chunkPosition);
+
+// What a refresh lists, read by every thread of its walk. Its pointers hold for one tick only, so a
+// refresh spread over ticks finds them again each tick.
 struct Scan {
-   const Refresh& request;
    const std::byte* surface;
    uint32_t surfaceIndex; // the game's SurfaceIndex, one less than the LuaSurface's
    const std::byte* force;
    Position origin;
+   std::optional<int> direction;
    const std::vector<uint8_t>& tileClasses;
 
-   bool wanted(Position position) const {
-      return distanceSquared(position, origin) < request.radius * request.radius &&
-             (!request.direction || directionBiased(position, origin) == *request.direction);
-   }
+   bool wanted(Position position) const { return inDirection(position, origin, direction); }
 
    bool charted(Position position) const {
       return reinterpret_cast<ChartedFunction>(layout.forceIsChunkCharted)(force, surfaceIndex, &position);
    }
 
-   // Whether the walk takes `chunk`: charted, and some of it within the radius.
-   bool takes(const std::byte* chunk) const {
-      const Position chunkPosition = at<Position>(chunk, layout.chunkPosition);
-      // The chunk's nearest point to the origin, in tiles.
-      const double left = chunkPosition.x * 32.0, top = chunkPosition.y * 32.0;
-      const double nearX = std::clamp(request.x, left, left + 32), nearY = std::clamp(request.y, top, top + 32);
-      if ((nearX - request.x) * (nearX - request.x) + (nearY - request.y) * (nearY - request.y) >
-          request.radius * request.radius)
-         return false;
-      return charted({fixedPoint(left + 16), fixedPoint(top + 16)});
+   // The chunk at `chunkPosition` when it is there and charted.
+   const std::byte* chunkAt(Position chunkPosition) const {
+      const std::byte* chunk = reinterpret_cast<ChunkAtFunction>(layout.surfaceChunkAt)(surface, &chunkPosition);
+      if (!chunk) return nullptr;
+      return charted({chunkPosition.x * 32 * 256 + 16 * 256, chunkPosition.y * 32 * 256 + 16 * 256}) ? chunk : nullptr;
    }
 };
 
@@ -1618,8 +1714,11 @@ struct Walk {
    explicit Walk(Position origin) : cells(origin), water(WaterTile, origin), ice(IceTile, origin) {}
 
    std::vector<Item> items;
+   // The entities of entity items not yet linked, by Item::first; linked items' `first` is their
+   // place in the refresh's Links.
    std::vector<std::byte*> entities;
-   // The items of the chunks walked, by the chunk's place in Surface::chunks: up to `end` in items.
+   size_t linkedItems = 0;
+   // The items of the chunks walked, by the chunk's place in the walk: up to `end` in items.
    struct Range {
       size_t chunk;
       size_t end;
@@ -1695,27 +1794,19 @@ void walkChunk(const Scan& scan, Walk& walk, const std::byte* chunk, size_t plac
    ++walk.chunks;
 }
 
-// Chunks a thread takes at a time: few enough that the threads finish together.
-constexpr size_t kChunksPerBatch = 64;
-
-// Walks the surface's chunks on several threads. The world stands still meanwhile (the update thread
-// waits in the Lua call), and what the walk calls in the game only reads.
-std::deque<Walk> walkSurface(const Scan& scan) {
-   const auto& chunks = at<MsvcVector<const std::byte*>>(scan.surface, layout.surfaceChunks);
-   const size_t count = static_cast<size_t>(chunks.last - chunks.first);
-   const unsigned threads = threadsFor(count, kChunksPerBatch);
-   std::deque<Walk> walks;
-   for (unsigned i = 0; i < threads; ++i) walks.emplace_back(scan.origin);
-   parallelFor(threads, count, kChunksPerBatch, [&](unsigned thread, size_t i) {
-      if (const std::byte* chunk = chunks.first[i]; chunk && scan.takes(chunk))
-         walkChunk(scan, walks[thread], chunk, i);
-   });
-   return walks;
-}
+// Chunks a thread takes at a time: few enough that the threads finish together, and that a slice
+// stops soon after its time is up.
+constexpr size_t kChunksPerBatch = 16;
+// How long each tick works for an automatic refresh, and how long after one the next starts: a
+// second, or longer where a refresh takes long, so that they take at most this share of the time the
+// game's update thread runs.
+constexpr auto kSliceBudget = std::chrono::milliseconds(2);
+constexpr auto kCycleInterval = std::chrono::seconds(1);
+constexpr double kCycleShare = 0.05;
 
 // Puts the walks' items into `items` in the order of their chunks, as one thread would have listed
-// them, and their entities into `entities`.
-void mergeItems(std::deque<Walk>& walks, std::vector<Item>& items, std::vector<std::byte*>& entities) {
+// them.
+void mergeItems(std::deque<Walk>& walks, std::vector<Item>& items) {
    struct Piece {
       size_t chunk;
       Walk* walk;
@@ -1723,7 +1814,7 @@ void mergeItems(std::deque<Walk>& walks, std::vector<Item>& items, std::vector<s
       size_t end;
    };
    std::vector<Piece> pieces;
-   size_t total = 0, linked = 0;
+   size_t total = 0;
    for (Walk& walk : walks) {
       size_t begin = 0;
       for (const Walk::Range& range : walk.ranges) {
@@ -1731,78 +1822,91 @@ void mergeItems(std::deque<Walk>& walks, std::vector<Item>& items, std::vector<s
          begin = range.end;
       }
       total += walk.items.size();
-      linked += walk.entities.size();
    }
    std::sort(pieces.begin(), pieces.end(), [](const Piece& a, const Piece& b) { return a.chunk < b.chunk; });
    items.reserve(items.size() + total);
-   entities.reserve(entities.size() + linked);
-   for (const Piece& piece : pieces) {
-      for (size_t i = piece.begin; i < piece.end; ++i) {
-         Item& item = piece.walk->items[i];
-         if (item.kind == Kind::Entity) {
-            const uint32_t first = static_cast<uint32_t>(entities.size());
-            for (uint32_t j = 0; j < item.count; ++j) entities.push_back(piece.walk->entities[item.first + j]);
-            item.first = first;
-         }
-         items.push_back(std::move(item));
-      }
-   }
+   for (const Piece& piece : pieces)
+      for (size_t i = piece.begin; i < piece.end; ++i) items.push_back(std::move(piece.walk->items[i]));
 }
 
-} // namespace
-
-void refresh(const Refresh& request) {
-   Stopwatch stopwatch;
-   const std::byte* game = currentGame();
-   const std::byte* player = localPlayer(game, request.playerIndex);
-   if (!player) return;
+// The local player's surface and force this tick, while `game` is still the one running.
+struct Place {
+   const std::byte* surface;
+   uint32_t surfaceIndex; // the game's SurfaceIndex
+   const std::byte* force;
+};
+std::optional<Place> placeOf(const std::byte* game, int playerIndex, uint32_t luaSurfaceIndex) {
+   if (currentGame() != game) return std::nullopt;
+   const std::byte* player = localPlayer(game, playerIndex);
+   if (!player) return std::nullopt;
    const std::byte* map = at<const std::byte*>(player, layout.playerMap);
-   const std::byte* surface = map ? surfaceAt(map, request.surfaceIndex) : nullptr;
-   if (!surface) {
+   const std::byte* surface = map ? surfaceAt(map, luaSurfaceIndex) : nullptr;
+   if (!surface) return std::nullopt;
+   return Place{surface, at<uint32_t>(surface, layout.surfaceIndex), forceOf(player)};
+}
+
+// A list being made: its chunks walked nearest first, a slice at a time while the world stands still,
+// each slice linking the entities it found before the world moves on; then put together on a thread
+// of its own, as that reads nothing of the game.
+struct Job {
+   Job(const std::byte* game, const Refresh& request, Position origin, std::optional<int> direction)
+      : game(game), playerIndex(request.playerIndex), surfaceIndex(request.surfaceIndex), origin(origin),
+        direction(direction), generation(request.generation), tileClasses(scanner::tileClasses(request)), links(game) {}
+   Job(const Job&) = delete;
+   Job& operator=(const Job&) = delete;
+
+   const std::byte* game;
+   int playerIndex;
+   uint32_t surfaceIndex; // LuaSurface::index
+   Position origin;
+   std::optional<int> direction;
+   uint32_t generation;
+   std::vector<uint8_t> tileClasses;
+   std::vector<Item> extras;    // the mod's, where they are listed
+   std::vector<Position> order; // the chunks' positions, nearest first
+   size_t next = 0;             // the first in `order` not walked
+   std::deque<Walk> walks;
+   Links links;
+   Names names; // of the resources walked, for putting together
+   size_t slices = 0;
+   double startMs = 0;
+   double walkMs = 0;
+   double assembleMs = 0; // off the game's threads
+   double installMs = 0;
+
+   // How long it held the game's update thread.
+   double heldMs() const { return startMs + walkMs + installMs; }
+
+   // Put together, once `assembled`; null if that failed.
+   std::optional<List> list;
+   std::atomic<bool> assembled = false;
+   std::jthread assembler; // last, so that it ends before what it reads goes
+};
+
+// Starts a list of the request's surface from `origin`, or null when there is no such surface.
+std::unique_ptr<Job> startJob(const Refresh& request, Position origin, std::optional<int> direction) {
+   const std::byte* game = currentGame();
+   const std::optional<Place> place = placeOf(game, request.playerIndex, request.surfaceIndex);
+   if (!place) {
       log::error("Scanner: no surface {} to list", request.surfaceIndex);
-      return;
+      return nullptr;
    }
-   const uint32_t surfaceIndex = at<uint32_t>(surface, layout.surfaceIndex);
-
-   List list;
-   list.game = game;
-   list.surfaceIndex = request.surfaceIndex;
-   list.force = forceOf(player);
-   list.origin = {fixedPoint(request.x), fixedPoint(request.y)};
-   list.tileClasses = tileClasses(request);
-   const Scan scan{request, surface, surfaceIndex, list.force, list.origin, list.tileClasses};
-
-   std::deque<Walk> walks = walkSurface(scan);
-   const double walkMs = stopwatch.lap();
-
-   std::vector<std::byte*> entities;
-   mergeItems(walks, list.items, entities);
-   Walk& merged = walks.front();
-   size_t trees = 0, resources = 0, chunksWalked = 0, cellCount = 0;
-   std::vector<const Cells*> cells;
-   for (Walk& walk : walks) {
-      trees += walk.trees;
-      resources += walk.resources;
-      chunksWalked += walk.chunks;
-      cellCount += walk.cells.size();
-      cells.push_back(&walk.cells);
-      if (&walk == &merged) continue;
-      merged.water.absorb(std::move(walk.water));
-      merged.ice.absorb(std::move(walk.ice));
+   auto job = std::make_unique<Job>(game, request, origin, direction);
+   const auto& chunks = at<MsvcVector<const std::byte*>>(place->surface, layout.surfaceChunks);
+   std::vector<std::pair<double, Position>> keyed;
+   keyed.reserve(static_cast<size_t>(chunks.last - chunks.first));
+   for (const std::byte* const* chunk = chunks.first; chunk < chunks.last; ++chunk) {
+      if (!*chunk) continue;
+      const Position position = at<Position>(*chunk, layout.chunkPosition);
+      keyed.emplace_back(distanceSquared(tileCentre(position.x * 32 + 15, position.y * 32 + 15), origin), position);
    }
-   const double mergeMs = stopwatch.lap();
+   std::sort(keyed.begin(), keyed.end(),
+             [](const auto& a, const auto& b) { return nearer(a.first, a.second, b.first, b.second); });
+   job->order.reserve(keyed.size());
+   for (const auto& [distance, position] : keyed) job->order.push_back(position);
+   for (unsigned i = threadsFor(job->order.size(), kChunksPerBatch); i > 0; --i) job->walks.emplace_back(origin);
 
-   Builder(list.items, entities).groups(cells);
-   for (auto [bodies, kind, category, key] : {std::tuple{&merged.water, Kind::Water, Resources, "water"},
-                                              std::tuple{&merged.ice, Kind::Ice, Terrain, "iceberg"}}) {
-      for (const TileBodies::Body& body : bodies->bodies()) {
-         const Position nearest = tileCentre(body.nearestX, body.nearestY);
-         if (!scan.wanted(nearest)) continue;
-         Item item{kind, category, nullptr, nearest, key};
-         item.box = body.box;
-         list.items.push_back(std::move(item));
-      }
-   }
+   const Scan scan{place->surface, place->surfaceIndex, place->force, origin, direction, job->tileClasses};
    for (size_t i = 0; i < request.extras.size(); ++i) {
       const Extra& extra = request.extras[i];
       const std::optional<Cat> category = categoryByKey(extra.category);
@@ -1814,24 +1918,271 @@ void refresh(const Refresh& request) {
       if (!scan.wanted(position) || !scan.charted(position)) continue;
       Item item{Kind::Extra, *category, nullptr, position, extra.key};
       item.first = static_cast<uint32_t>(i);
-      list.items.push_back(std::move(item));
+      job->extras.push_back(std::move(item));
    }
-   const double clusterMs = stopwatch.lap();
-   list.links = Links(game, entities);
-   const double linkMs = stopwatch.lap();
-   group(list);
-   const double groupMs = stopwatch.lap();
+   return job;
+}
 
-   std::scoped_lock lock(g_mutex);
-   // The category stays; the rest starts over, as the list beneath it is new.
-   Cursor cursor{g_cursor.category.value_or(All), {}, {}};
-   g_list = std::move(list);
-   g_cursor = cursor;
-   log::info("Scanner: {} entries ({} linked, {} trees, {} resources in {} cells) on surface {}", g_list.items.size(),
-             entities.size(), trees, resources, cellCount, request.surfaceIndex);
-   log::info("Scanner: {} chunks walked by {} threads in {:.1f} ms, merged in {:.1f}, clustered in {:.1f}, linked in "
-             "{:.1f}, grouped in {:.1f}, the rest {:.1f}",
-             chunksWalked, walks.size(), walkMs, mergeMs, clusterMs, linkMs, groupMs, stopwatch.lap());
+enum class Walked { Some, All, Gone };
+
+// Walks the job's next chunks, until `deadline` if there is one, and links what they hold. Only
+// while the world stands still.
+Walked walkSlice(Job& job, std::optional<Clock::time_point> deadline) {
+   const std::optional<Place> place = placeOf(job.game, job.playerIndex, job.surfaceIndex);
+   if (!place) return Walked::Gone;
+   Stopwatch stopwatch;
+   const Scan scan{place->surface, place->surfaceIndex, place->force, job.origin, job.direction, job.tileClasses};
+   job.next = parallelFor(
+      static_cast<unsigned>(job.walks.size()), job.next, job.order.size(), kChunksPerBatch,
+      [&](unsigned thread, size_t i) {
+         if (const std::byte* chunk = scan.chunkAt(job.order[i])) walkChunk(scan, job.walks[thread], chunk, i);
+      },
+      deadline);
+   // The entities found are surely there only until the world moves on.
+   for (Walk& walk : job.walks) {
+      for (size_t i = walk.linkedItems; i < walk.items.size(); ++i) {
+         Item& item = walk.items[i];
+         if (item.kind == Kind::Entity) item.first = job.links.add(walk.entities[item.first]);
+      }
+      walk.linkedItems = walk.items.size();
+      walk.entities.clear();
+   }
+   ++job.slices;
+   job.walkMs += stopwatch.lap();
+   if (job.next < job.order.size()) return Walked::Some;
+   for (const Walk& walk : job.walks)
+      for (const auto& [prototype, rule] : walk.rules)
+         if (rule.listing == Listing::Resource) job.names.try_emplace(prototype, prototypeName(prototype));
+   return Walked::All;
+}
+
+// Puts the walked job's list together. Reads nothing of the game, so it may run on any thread.
+List assemble(Job& job) {
+   List list;
+   list.game = job.game;
+   list.surfaceIndex = job.surfaceIndex;
+   list.origin = job.origin;
+   list.direction = job.direction;
+   list.generation = job.generation;
+   mergeItems(job.walks, list.items);
+   std::vector<const Cells*> cells;
+   Walk& merged = job.walks.front();
+   for (Walk& walk : job.walks) {
+      cells.push_back(&walk.cells);
+      if (&walk == &merged) continue;
+      merged.water.absorb(std::move(walk.water));
+      merged.ice.absorb(std::move(walk.ice));
+   }
+   addGroups(list.items, cells, job.names);
+   for (auto [bodies, kind, category, key] : {std::tuple{&merged.water, Kind::Water, Resources, "water"},
+                                              std::tuple{&merged.ice, Kind::Ice, Terrain, "iceberg"}}) {
+      for (const TileBodies::Body& body : bodies->bodies()) {
+         const Position nearest = tileCentre(body.nearestX, body.nearestY);
+         if (!inDirection(nearest, job.origin, job.direction)) continue;
+         Item item{kind, category, nullptr, nearest, key};
+         item.box = body.box;
+         list.items.push_back(std::move(item));
+      }
+   }
+   list.items.insert(list.items.end(), job.extras.begin(), job.extras.end());
+   group(list);
+   list.tileClasses = std::move(job.tileClasses);
+   return list;
+}
+
+// Puts the job's list together off the game's threads; Job::assembled says when it is done.
+void assembleApart(Job& job) {
+   job.assembler = std::jthread([&job] {
+      Stopwatch stopwatch;
+      try {
+         job.list = assemble(job);
+      } catch (const std::exception& error) {
+         log::error("Scanner: putting a list together failed: {}", error.what());
+      }
+      job.assembleMs = stopwatch.lap();
+      job.assembled.store(true, std::memory_order_release);
+   });
+}
+
+// Whether `a` of the list now and `b` of `fresh`, both of one subcategory, stand for the same thing:
+// the same entity; a forest, patch or body whose box holds where the other was; the same pin or tag.
+bool same(const Item& a, const List& fresh, const Item& b) {
+   if (a.kind != b.kind) return false;
+   switch (a.kind) {
+   case Kind::Entity: {
+      const std::byte* entity = g_list.links.entity(a.first);
+      return entity && entity == fresh.links.entity(b.first);
+   }
+   case Kind::Forest:
+   case Kind::Patch:
+   case Kind::Water:
+   case Kind::Ice: {
+      const int32_t x = tileOf(a.position.x), y = tileOf(a.position.y);
+      return x >= b.box.left && x <= b.box.right && y >= b.box.top && y <= b.box.bottom;
+   }
+   case Kind::Extra: return a.key == b.key && a.position == b.position;
+   }
+   return false;
+}
+
+// Where the cursor stands in `fresh` to stay on what it is on now: the same entry if `fresh` has it,
+// else the first of the same subcategory, else the same category.
+Cursor carried(const List& fresh) {
+   if (!g_cursor.category) return {};
+   const size_t category = *g_cursor.category;
+   Cursor cursor{category, {}, {}};
+   const auto& before = g_list.categories[category];
+   if (!g_cursor.subcategory || *g_cursor.subcategory >= before.size()) return cursor;
+   const Subcategory& subcategory = before[*g_cursor.subcategory];
+   const auto& after = fresh.categories[category];
+   const auto found = std::ranges::find(after, subcategory.key, &Subcategory::key);
+   if (found == after.end()) return cursor;
+   cursor.subcategory = static_cast<size_t>(found - after.begin());
+   if (!g_cursor.entry || *g_cursor.entry >= subcategory.items.size()) return cursor;
+   const Item& item = g_list.items[subcategory.items[*g_cursor.entry]];
+   for (size_t i = 0; i < found->items.size(); ++i)
+      if (same(item, fresh, fresh.items[found->items[i]])) {
+         cursor.entry = i;
+         break;
+      }
+   return cursor;
+}
+
+// The links of lists put out of use, dropped a slice at a time. Only on the game's update thread.
+std::deque<Links> g_retired;
+
+// Drops retired links until `deadline`. Only while the world stands still.
+void dropRetired(Clock::time_point deadline) {
+   while (!g_retired.empty() && g_retired.front().releaseUntil(deadline)) g_retired.pop_front();
+}
+
+// Puts the job's list in place of the scanner's. `keep`: the cursor stays on what it is on;
+// otherwise only its category stays, as the list was asked for anew. Only while the world stands
+// still. The old list's links are dropped over the next ticks, and the rest of it on a thread of its
+// own: a big list takes a while to go.
+void install(Job& job, bool keep) {
+   Stopwatch stopwatch;
+   List& list = *job.list;
+   list.links = std::move(job.links);
+   const std::byte* player = localPlayer(job.game, job.playerIndex);
+   list.force = player ? forceOf(player) : nullptr;
+   {
+      std::scoped_lock lock(g_mutex);
+      const Cursor cursor = keep ? carried(list) : Cursor{g_cursor.category.value_or(All), {}, {}};
+      List old = std::exchange(g_list, std::move(list));
+      g_cursor = cursor;
+      g_retired.push_back(std::move(old.links));
+      std::thread([old = std::move(old)] {}).detach();
+   }
+   job.installMs = stopwatch.lap();
+}
+
+// The automatic refresh under way, if any. Only on the game's update thread, from Lua.
+std::unique_ptr<Job> g_job;
+// When the next automatic refresh starts while the list is of the player's surface, and when one is
+// tried again while it is not.
+Clock::time_point g_nextCycle;
+Clock::time_point g_nextTry;
+
+// Logs what a refresh found and how long it took.
+void report(const Job& job, const char* how) {
+   size_t trees = 0, resources = 0, chunks = 0, cells = 0;
+   for (const Walk& walk : job.walks) {
+      trees += walk.trees;
+      resources += walk.resources;
+      chunks += walk.chunks;
+      cells += walk.cells.size();
+   }
+   log::info("Scanner: {} list of {} entries ({} trees, {} resources in {} cells) on surface {}: started in {:.1f} ms, "
+             "{} chunks walked by {} threads in {} slices, {:.1f} ms; put together in {:.1f} ms, put in place in "
+             "{:.1f} ms",
+             how, g_list.items.size(), trees, resources, cells, job.surfaceIndex, job.startMs, chunks, job.walks.size(),
+             job.slices, job.walkMs, job.assembleMs, job.installMs);
+}
+
+// When the next automatic refresh starts after `job`.
+Clock::time_point nextCycleAfter(const Job& job) {
+   const std::chrono::duration<double, std::milli> spacing(job.heldMs() / kCycleShare);
+   return Clock::now() +
+          std::max<Clock::duration>(kCycleInterval, std::chrono::duration_cast<Clock::duration>(spacing));
+}
+
+} // namespace
+
+void refresh(const Refresh& request) {
+   if (!localPlayer(currentGame(), request.playerIndex)) return;
+   // This one takes the place of any under way.
+   g_job.reset();
+   Position origin{fixedPoint(request.x), fixedPoint(request.y)};
+   std::optional<int> direction = request.direction;
+   if (request.automatic) {
+      // An automatic refresh keeps the list's direction, and in remote view its origin, which the
+      // camera leaves as it follows the scanner.
+      std::scoped_lock lock(g_mutex);
+      if (g_list.game == currentGame() && g_list.surfaceIndex == request.surfaceIndex) {
+         direction = g_list.direction;
+         if (request.keepOrigin) origin = g_list.origin;
+      }
+   }
+   Stopwatch stopwatch;
+   std::unique_ptr<Job> job = startJob(request, origin, direction);
+   if (!job) return;
+   job->startMs = stopwatch.lap();
+   if (request.automatic) {
+      g_job = std::move(job);
+      return;
+   }
+
+   if (walkSlice(*job, std::nullopt) != Walked::All) return;
+   stopwatch.lap();
+   job->list = assemble(*job);
+   job->assembleMs = stopwatch.lap();
+   install(*job, false);
+   g_nextCycle = nextCycleAfter(*job);
+   report(*job, "asked");
+}
+
+bool tick(int playerIndex, uint32_t surfaceIndex) {
+   const std::byte* game = currentGame();
+   if (!localPlayer(game, playerIndex)) return false;
+   const auto now = Clock::now();
+   const auto deadline = now + kSliceBudget;
+   {
+      std::scoped_lock lock(g_mutex);
+      g_surface = surfaceIndex;
+   }
+   dropRetired(deadline);
+   if (g_job && g_job->surfaceIndex != surfaceIndex) g_job.reset();
+   if (g_job) {
+      Job& job = *g_job;
+      if (!job.assembler.joinable()) {
+         switch (walkSlice(job, deadline)) {
+         case Walked::Some: break;
+         case Walked::All: assembleApart(job); break;
+         case Walked::Gone: g_job.reset(); break;
+         }
+         return false;
+      }
+      if (!job.assembled.load(std::memory_order_acquire)) return false;
+      if (job.list && placeOf(job.game, job.playerIndex, job.surfaceIndex)) {
+         install(job, true);
+         // Only slow ones, as small surfaces run one every second.
+         if (job.heldMs() + job.assembleMs >= 50) report(job, "automatic");
+      }
+      g_nextCycle = nextCycleAfter(job);
+      g_job.reset();
+      return false;
+   }
+
+   bool current;
+   {
+      std::scoped_lock lock(g_mutex);
+      current = g_list.game == game && g_list.surfaceIndex == surfaceIndex;
+   }
+   if (current ? now < g_nextCycle : now < g_nextTry) return false;
+   // One that cannot start is not tried again every tick.
+   g_nextTry = now + kCycleInterval;
+   return true;
 }
 
 void setModUiOpen(int playerIndex, bool open) {

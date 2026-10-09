@@ -221,6 +221,7 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.surfaceIndex, "Surface", "index");
    offset(layout.surfaceChunks, "Surface", "chunks");
    offset(layout.chunkPosition, "Chunk", "position");
+   address(layout.surfaceChunkAt, "?getChunkSafe@Surface@@QEBAPEBVChunk@@AEBVChunkPosition@@@Z");
    offset(layout.chunkTiles, "Chunk", "tiles");
    size(layout.tileSize, "Tile");
    address(layout.surfaceTileAt, "?getTileOptional@Surface@@QEBAPEBVTile@@AEBVTilePosition@@@Z");

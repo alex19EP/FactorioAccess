@@ -103,14 +103,14 @@ describe("Scanner pins and map tags", function()
       end)
 
       ctx:at_tick(2, function()
-         local listed = Extras.collect(player)
+         local listed = Extras.collect(player, 1)
          local id = nil
          for i, extra in ipairs(listed) do
             if extra.category == SC.CATEGORIES.PINS then id = i end
          end
          ctx:assert_not_nil(id, "The pin is handed to the DLL")
          player.clear_pins()
-         ctx:assert(contains(Extras.readout(player.index, id), "Gone"), "A removed pin reads as it was")
+         ctx:assert(contains(Extras.readout(player.index, 1, id), "Gone"), "A removed pin reads as it was")
       end)
    end)
 end)

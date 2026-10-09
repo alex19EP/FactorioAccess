@@ -30,12 +30,6 @@ mod.CATEGORIES = {
    TERRAIN = "terrain",
 }
 
--- How far can the scanner see, in tiles?
---
--- Old scanner did a 5000x5000 square. This is a radius of a circle, so 2500 is
--- a (rough) equivalent.
-mod.SCANNER_DISTANCE = 2500
-
 -- With an offshore pump in hand, shore within this many tiles of the player is checked for places to
 -- build it.
 mod.PUMP_SPOT_DISTANCE = 30
