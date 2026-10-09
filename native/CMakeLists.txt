@@ -115,7 +115,9 @@ add_library(fa_native SHARED
   src/screens/BlueprintBookScreen.cpp
   src/screens/BlueprintLibraryScreen.cpp
   src/screens/BlueprintLists.cpp
+  src/screens/AchievementCards.cpp
   src/screens/AchievementsScreen.cpp
+  src/screens/TrackedAchievementsScreen.cpp
   src/screens/PreviewCanvas.cpp
   src/screens/GameDialogScreen.cpp
   src/screens/MachineScreen.cpp

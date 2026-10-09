@@ -14,6 +14,7 @@ enum class Part {
    MapViewOptions, // in remote view only
    Status,
    CraftingQueue,
+   TrackedAchievements,
 };
 
 // The part in use, None while it is what is open.

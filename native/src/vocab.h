@@ -130,6 +130,7 @@ inline constexpr Word kShortcutBar{"fa.native-shortcut-bar"};
 inline constexpr Word kAllShortcuts{"fa.native-all-shortcuts"};
 inline constexpr Word kSideMenu{"fa.native-side-menu"};
 inline constexpr Word kCraftingQueue{"fa.native-crafting-queue"};
+inline constexpr Word kTrackedAchievements{"fa.native-tracked-achievements"};
 // Remote view's panel of map overlay toggles and the add tag and add ping buttons.
 inline constexpr Word kMapViewOptions{"fa.native-map-view-options"};
 // The HUD's status: research, the alert categories, the scenario's goal and the bars.

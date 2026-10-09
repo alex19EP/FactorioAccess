@@ -213,9 +213,9 @@ RecordSlot recordSlot(const Widget* slot);
 uint16_t bookRecordActiveIndex(const void* book, const void* player);
 
 // An achievement's card (AchievementCard) in the achievements window: the AchievementPrototype it
-// shows, its state as its frame draws it, the flow of its texts (name, description, progress), a
-// normal one's track button and a failed one's warning icon, whose tooltip says why it failed
-// (null on the others).
+// shows, its state as its frame draws it, the flow of its texts (name, description, progress; on
+// the HUD the progress alone), the track button of a normal one or one on the HUD, and the warning
+// icon of a failed one in the window, whose tooltip says why it failed (null where not shown).
 enum class AchievementState { Normal, Earned, Failed };
 struct AchievementCard {
    const void* prototype = nullptr;
@@ -394,6 +394,10 @@ std::vector<const Widget*> shortcutBarListCheckBoxes(const Widget* shortcutBar);
 const Widget* sideMenu();
 // Its master mute button, the one button of it that opens no window.
 const Widget* sideMenuMuteButton(const Widget* sideMenu);
+
+// The achievements the player tracks at the top left (an AchievementCardHolder of AchievementCards),
+// or null outside a game or while it is hidden.
+const Widget* trackedAchievements();
 
 // The crafting queue at the bottom left (CraftingQueueGui), or null outside a game or while the view
 // has none (remote view, or the queue hidden by game_view_settings).

@@ -12,6 +12,7 @@
 #include "screens/CharacterScreen.hpp"
 #include "screens/ControlSettingsScreen.hpp"
 #include "screens/CraftingQueueScreen.hpp"
+#include "screens/TrackedAchievementsScreen.hpp"
 #include "screens/DropDownScreen.hpp"
 #include "screens/FactoriopediaScreen.hpp"
 #include "screens/FilterSelectScreen.hpp"
@@ -140,6 +141,8 @@ void start() {
    manager.Register(std::make_unique<screens::StatusScreen>());
    // The crafting queue, the part after the status.
    manager.Register(std::make_unique<screens::CraftingQueueScreen>());
+   // The tracked achievements, the part of the HUD after it.
+   manager.Register(std::make_unique<screens::TrackedAchievementsScreen>());
    // The game's info panel for what the cursor points at, which the Y key opens over the map.
    manager.Register(std::make_unique<screens::SelectedInfoScreen>());
    // Remote view's map search, while its field shows.

@@ -809,6 +809,7 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.shortcutBehaviorPrototype, "ShortcutBehavior", "prototype");
    offset(layout.buttonIsToggle, "agui::Button", "isButtonToggleButton");
    offset(layout.gameViewSideMenu, "GameView", "sideMenu");
+   offset(layout.gameViewTrackedAchievements, "GameView", "trackedAchievementHolder");
    classSlot(layout.controllerViewCraftingQueue, "ControllerView", "getCraftingQueue");
    offset(layout.craftingQueueSlots, "CraftingQueueGui", "slots");
    offset(layout.characterInfoQueueLabel, "CharacterInfoGui", "craftingQueueLabel");

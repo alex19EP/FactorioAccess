@@ -1067,6 +1067,11 @@ struct Layout {
    uint32_t gameViewSideMenu = 0;        // GameView::sideMenu, std::unique_ptr<SideMenu>
    uint32_t sideMenuMuteButton = 0;      // SideMenu::masterMutedButton, IconButton*
 
+   // The achievements the player tracks, at the top left under the mods' gui (GameView::loadGui puts
+   // it in topLeftContainer): an AchievementCardHolder of sidebar cards, each the achievement's icon
+   // (its name only as the tooltip), its progress, and a track button that stops tracking it.
+   uint32_t gameViewTrackedAchievements = 0; // GameView::trackedAchievementHolder, std::unique_ptr<AchievementCardHolder>
+
    // The crafting queue at the bottom left (CraftingQueueGui, an agui::Flow), reached as the
    // quickbar is; CharacterView and GodView have one, the remote view none. Its slots are rebuilt on
    // every change to the queue (CraftingQueueGui::update).

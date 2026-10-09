@@ -580,11 +580,11 @@ AchievementCard achievementCard(const Widget* card) {
                   : state == layout.achievementFailed  ? AchievementState::Failed
                                                        : AchievementState::Normal;
    result.description = reinterpret_cast<const Widget*>(self + layout.achievementCardDescription);
-   // AchievementCard::updateRightFlow puts the track button there for a normal card, a warning
-   // icon for a failed one, and nothing for an earned one.
+   // AchievementCard::updateRightFlow puts the track button there for a normal card or any card on
+   // the HUD, a warning icon for a failed one in the window, and nothing for an earned one there.
    for (const Widget* child : children(reinterpret_cast<const Widget*>(self + layout.achievementCardRight))) {
-      if (result.state == AchievementState::Normal && kind(child) == Kind::Button) result.track = child;
-      if (result.state == AchievementState::Failed && derivesFrom(child, "agui::ImageWidget")) result.warning = child;
+      if (kind(child) == Kind::Button) result.track = child;
+      else if (derivesFrom(child, "agui::ImageWidget")) result.warning = child;
    }
    return result;
 }
@@ -923,6 +923,8 @@ const Widget* sideMenu() {
    const std::byte* view = gameView();
    return view ? at<const Widget*>(view, layout.gameViewSideMenu) : nullptr;
 }
+
+const Widget* trackedAchievements() { return shownMember(gameView(), layout.gameViewTrackedAchievements); }
 
 ResearchBox researchBox() {
    const Widget* button = shownMember(gameView(), layout.gameViewResearch);

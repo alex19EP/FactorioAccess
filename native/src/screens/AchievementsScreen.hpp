@@ -10,12 +10,10 @@
 //   - achievements: a card each, in the game's order (earned, then normal, then failed; the hidden
 //     ones only once earned), as many as the search leaves.
 //
-// A card reads its state first, which the game shows only by the card's frame: earned, failed, or
-// for a normal one tracked when the player tracks it and nothing otherwise. Then the card's texts as
-// shown: the name, the description, the progress ("12.3k/1.0M", "Remaining time: 2:41:10") or the
-// reason it failed. Enter on a normal card presses its track button, as the mouse would, and says
-// whether it is tracked now. The game refreshes a card's progress only while the card is scrolled
-// into view, which the cursor does.
+// A card reads as AchievementCards.hpp says: its state, then its name, description and progress
+// ("12.3k/1.0M", "Remaining time: 2:41:10"); Y reads why a failed one failed, which the game shows
+// only as a tooltip. Enter on a normal card presses its track button. The game refreshes a card's
+// progress only while the card is scrolled into view, which the cursor does.
 
 #include "EntityWindowScreen.hpp"
 
