@@ -988,6 +988,31 @@ struct Layout {
    uint32_t achievementCompleted = 0;  // AchievementState Completed
    uint32_t achievementFailed = 0;     // AchievementState Failed
 
+   // The tips and tricks window (TipsAndTricksGui), opened from the side menu or the "New tip"
+   // button; it pauses a single player game while open. TipsAndTricksGui::populateListbox makes a
+   // list box button per TipsAndTricks::items entry, in that order, so a button's index is its
+   // tip's: its caption indented six spaces per TipsAndTricksItem::indent, a title tip (the heading
+   // of the indented tips under it) styled apart, a Suggested tip given the notification sprite, a
+   // Locked or DependenciesNotMet one hidden. The title bar's search hides the buttons that do not
+   // match. updateSelection shows the selected tip in contentFlow: the title label, the simulation
+   // or image (nothing to read), then the description (a LabelWithHoverableRichText in a scroll
+   // pane) over the Play tutorial button (tips with a tutorial; disabled in multiplayer) and Mark
+   // as unread (enabled once read). With nothing selected nothingFoundFlow shows instead: "No tips
+   // and tricks selected" and unlockMessage (not a freeplay, cheat mode), empty when neither.
+   uint32_t tipsList = 0;              // TipsAndTricksGui::listbox, agui::ListBox
+   uint32_t tipsContent = 0;           // ::contentFlow, agui::VerticalFlow
+   uint32_t tipsTitle = 0;             // ::title, agui::Label
+   uint32_t tipsText = 0;              // ::text, LabelWithHoverableRichText
+   uint32_t tipsPlayTutorial = 0;      // ::playTutorialButton, agui::TextButton
+   uint32_t tipsUnread = 0;            // ::unreadButton, agui::TextButton
+   uint32_t tipsNothingFound = 0;      // ::nothingFoundFlow, agui::VerticalFlow
+   uint32_t globalTipsAndTricks = 0;   // GlobalContext::tipsAndTricks.value, TipsAndTricks*
+   uint32_t tipsItems = 0;             // TipsAndTricks::items, std::vector<std::unique_ptr<TipsAndTricksItem>>
+   uint32_t tipItemIndent = 0;         // TipsAndTricksItem::indent, uint8_t
+   uint32_t tipItemIsTitle = 0;        // ::isTitle, bool
+   uint32_t tipItemStatus = 0;         // ::status, TipStatus (a TipStatus::Enum)
+   uint32_t tipStatusSuggested = 0;    // TipStatus::Enum Suggested: the notification sprite
+
    // The keys of a mod's custom input: ControlSettings::customInputs, std::vector<ControlInput>,
    // each naming its CustomInputPrototype and holding the player's two keyboard bindings
    // (SimpleConfigItem<ControlInputValue>): a ControlInputValue::Type (Keyboard for a key), an
@@ -1166,6 +1191,7 @@ struct Layout {
    uint32_t richTextSectionSize = 0;     // sizeof(TextDrawSection)
    uint32_t richTextSectionType = 0;     // TextDrawSection::type, TagType
    uint32_t richTextSectionTag = 0;      // TextDrawSection::tagText, std::string_view: "item=iron-plate"
+   uint32_t richTextSectionText = 0;     // TextDrawSection::text, std::string_view: a Text section's words, line breaks included
    uint32_t hoverableLabelManager = 0;   // LabelWithHoverableRichText::hoverManger, LabelRichTextHoverManager
    uint32_t hoverManagerTooltip = 0;     // RichTextHoverManager::hoverTooltip, GenericTargeter<agui::ToolTip>
    // void RichTextHoverManager::handleHover(TextDrawSection const&, OutputConsole::Item const*, bool

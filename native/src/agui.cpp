@@ -589,6 +589,18 @@ AchievementCard achievementCard(const Widget* card) {
    return result;
 }
 
+std::vector<Tip> tips() {
+   std::vector<Tip> result;
+   auto* context = *reinterpret_cast<const std::byte* const*>(layout.globalContext);
+   const auto* all = context ? at<const std::byte*>(context, layout.globalTipsAndTricks) : nullptr;
+   if (!all) return result;
+   const auto& items = at<MsvcVector<const std::byte* const>>(all, layout.tipsItems);
+   for (const std::byte* const* item = items.first; item < items.last; ++item)
+      result.push_back({at<uint8_t>(*item, layout.tipItemIndent), at<bool>(*item, layout.tipItemIsTitle),
+                        at<uint32_t>(*item, layout.tipItemStatus) == layout.tipStatusSuggested});
+   return result;
+}
+
 bool blueprintsListView(const Widget* list) {
    return at<uint32_t>(asBaseChecked(list, ".?AVBlueprintsList@@"), layout.listViewMode) == layout.listViewList;
 }
@@ -1032,8 +1044,10 @@ Factoriopedia factoriopedia() {
 
 namespace {
 
-// TagType values: the icons RichTextHoverManager::handleHover gives a tooltip and a click, from
-// SpecialItem to SpacePlatform. Gps is left out: it needs the console line it was posted in.
+// TagType values: plain words, and the icons RichTextHoverManager::handleHover gives a tooltip and
+// a click, from SpecialItem to SpacePlatform. Gps is left out: it needs the console line it was
+// posted in.
+constexpr uint32_t kTagText = 0x0;
 constexpr uint32_t kTagSpecialItem = 0x9;
 constexpr uint32_t kTagGps = 0xb;
 constexpr uint32_t kTagSpacePlatform = 0x27;
@@ -1072,13 +1086,16 @@ std::vector<RichTextLink> richTextLinks(const Widget* label) {
    std::vector<RichTextLink> links;
    if (!hoverManager(label)) return links;
    std::span<const std::byte> sections = richTextSections(label);
+   size_t line = 0;
    for (size_t offset = 0, index = 0; offset + layout.richTextSectionSize <= sections.size();
         offset += layout.richTextSectionSize, ++index) {
       const std::byte* section = sections.data() + offset;
       uint32_t type = at<uint32_t>(section, layout.richTextSectionType);
+      // Line breaks are kept in the words of the Text sections between the tags.
+      if (type == kTagText) line += std::ranges::count(at<std::string_view>(section, layout.richTextSectionText), '\n');
       std::string_view tag = at<std::string_view>(section, layout.richTextSectionTag);
       if (type >= kTagSpecialItem && type <= kTagSpacePlatform && type != kTagGps && !tag.empty())
-         links.push_back({index, tag});
+         links.push_back({index, tag, line});
    }
    return links;
 }

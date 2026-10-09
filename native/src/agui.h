@@ -239,6 +239,16 @@ struct AchievementCard {
 };
 AchievementCard achievementCard(const Widget* card);
 
+// The game's tips (TipsAndTricks::items) in the order of the tips and tricks window's list, whose
+// buttons are made one per tip: how far each is indented under the title tip heading it, whether
+// it is such a title, and whether it is suggested (the list's notification sprite).
+struct Tip {
+   uint8_t indent = 0;
+   bool title = false;
+   bool suggested = false;
+};
+std::vector<Tip> tips();
+
 // Whether a list of blueprints (BlueprintsList, in a book's window or the library) is in List
 // view, a row per item with its name and description beside the slot, rather than Grid or Slots.
 bool blueprintsListView(const Widget* list);
@@ -515,11 +525,13 @@ struct Factoriopedia {
 Factoriopedia factoriopedia();
 
 // The icons a LabelWithHoverableRichText (a description's lines) lets the mouse hover and click,
-// by the index of their section in the label's text, with the tag each shows ("item=iron-plate").
+// by the index of their section in the label's text, with the tag each shows ("item=iron-plate")
+// and the line of the text it stands in, counted from 0 over every line break, empty lines too.
 // Empty for any other label.
 struct RichTextLink {
    size_t section = 0;
    std::string_view tag;
+   size_t line = 0;
 };
 std::vector<RichTextLink> richTextLinks(const Widget* label);
 // Mutating, so main thread inside logic() only. A click on the icon, as the label runs it for the

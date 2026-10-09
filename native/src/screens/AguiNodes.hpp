@@ -95,6 +95,11 @@ void AddChoices(graph::GraphBuilder& builder, const std::string& prefix, const a
 /// reads its tooltip. Returns false, declaring nothing, for a label without such icons.
 bool AddLinkLine(graph::GraphBuilder& builder, const std::string& key, const agui::Widget* label);
 
+/// A multi-line description (a LabelWithHoverableRichText), a node per line, each line with the
+/// icons the game makes clickable in it as links beside it, as AddLinkLine has them. Keys start
+/// with `prefix`.
+void AddLinkLines(graph::GraphBuilder& builder, const std::string& prefix, const agui::Widget* label);
+
 /// Screen::TypingIn for a game window: whether `node` is an editable text field that has the game's
 /// keyboard focus.
 bool TypingInField(const graph::GraphNode& node);

@@ -23,6 +23,7 @@
 #include "screens/BlueprintBookScreen.hpp"
 #include "screens/BlueprintLibraryScreen.hpp"
 #include "screens/AchievementsScreen.hpp"
+#include "screens/TipsAndTricksScreen.hpp"
 #include "screens/BlueprintSetupScreen.hpp"
 #include "screens/GameDialogScreen.hpp"
 #include "screens/MachineScreen.hpp"
@@ -119,6 +120,8 @@ void start() {
    manager.Register(std::make_unique<screens::BlueprintLibraryScreen>());
    // The achievements window, from the side menu.
    manager.Register(std::make_unique<screens::AchievementsScreen>());
+   // The tips and tricks window, from the side menu or the "New tip" button.
+   manager.Register(std::make_unique<screens::TipsAndTricksScreen>());
    // Any other dialog over a game: a planner's name, description and icons.
    manager.Register(std::make_unique<screens::GameDialogScreen>());
    // A transport belt's window, with the mod's views of what the belt carries.

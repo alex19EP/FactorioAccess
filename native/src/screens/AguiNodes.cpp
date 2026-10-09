@@ -1242,6 +1242,36 @@ bool AddLinkLine(graph::GraphBuilder& builder, const std::string& key, const Wid
     return true;
 }
 
+void AddLinkLines(graph::GraphBuilder& builder, const std::string& prefix, const Widget* label)
+{
+    // Lines counted over every line break, as the links' are; an empty one declares nothing.
+    auto line = [label](std::size_t index)
+    {
+        std::string_view raw = TextOf(label);
+        for (std::size_t i = 0; i < index && !raw.empty(); ++i)
+        {
+            std::size_t end = raw.find('\n');
+            raw = end == std::string_view::npos ? std::string_view() : raw.substr(end + 1);
+        }
+        return text::speakable(raw.substr(0, raw.find('\n')));
+    };
+    std::vector<agui::RichTextLink> links = agui::richTextLinks(label);
+    std::size_t count = static_cast<std::size_t>(std::ranges::count(TextOf(label), '\n')) + 1;
+    for (std::size_t index = 0; index < count; ++index)
+    {
+        if (line(index).empty())
+            continue;
+        std::string key = std::format("{}/{}", prefix, index);
+        builder.StartLine(key);
+        builder.AddItem(graph::ControlId::Referenced(label, key), TextNode(label, [line, index]() { return line(index); }));
+        for (std::size_t i = 0; i < links.size(); ++i)
+            if (links[i].line == index)
+                builder.AddItem(graph::ControlId::Referenced(label, std::format("{}/link{}", key, i)),
+                    LinkNode(label, links[i].section, LinkName(links[i].tag)));
+        builder.EndRow();
+    }
+}
+
 bool TypingInField(const graph::GraphNode& node)
 {
     // The retained render may be frames old, so the widget is compared before it is read: when it

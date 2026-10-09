@@ -759,6 +759,19 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.achievementCardDescription, "AchievementCard", "descriptionFlow");
    enumerator(layout.achievementCompleted, "AchievementState", "Completed");
    enumerator(layout.achievementFailed, "AchievementState", "Failed");
+   offset(layout.tipsList, "TipsAndTricksGui", "listbox");
+   offset(layout.tipsContent, "TipsAndTricksGui", "contentFlow");
+   offset(layout.tipsTitle, "TipsAndTricksGui", "title");
+   offset(layout.tipsText, "TipsAndTricksGui", "text");
+   offset(layout.tipsPlayTutorial, "TipsAndTricksGui", "playTutorialButton");
+   offset(layout.tipsUnread, "TipsAndTricksGui", "unreadButton");
+   offset(layout.tipsNothingFound, "TipsAndTricksGui", "nothingFoundFlow");
+   offset(layout.globalTipsAndTricks, "GlobalContext", "tipsAndTricks.value");
+   offset(layout.tipsItems, "TipsAndTricks", "items");
+   offset(layout.tipItemIndent, "TipsAndTricksItem", "indent");
+   offset(layout.tipItemIsTitle, "TipsAndTricksItem", "isTitle");
+   offset(layout.tipItemStatus, "TipsAndTricksItem", "status");
+   enumerator(layout.tipStatusSuggested, "TipStatus::Enum", "Suggested");
 
    offset(layout.customInputs, "ControlSettings", "customInputs");
    size(layout.controlInputSize, "ControlInput");
@@ -865,6 +878,7 @@ bool resolve(pdb::SymbolTable& symbols) {
    size(layout.richTextSectionSize, "TextDrawSection");
    offset(layout.richTextSectionType, "TextDrawSection", "type");
    offset(layout.richTextSectionTag, "TextDrawSection", "tagText");
+   offset(layout.richTextSectionText, "TextDrawSection", "text");
    offset(layout.hoverableLabelManager, "LabelWithHoverableRichText", "hoverManger");
    offset(layout.hoverManagerTooltip, "RichTextHoverManager", "hoverTooltip");
    address(layout.richTextHandleHover,
