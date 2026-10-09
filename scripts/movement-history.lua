@@ -13,6 +13,9 @@ This module is a ringbuffer containing the last second of movement history per c
 kind of movement (if any) it was doing.  History is represented by a tick number: 0 is "this tikck", 1 is a tick ago,
 etc.
 
+The position is the player's physical controller: the character, or in god mode (the sandbox) the god, which walks
+without a body. Remote view moves only the camera, so it never shows up here.
+
 For some idea how to use this, belt building walks the tiles between last tick and this tick, and bump detection checks
 the prediction versus where we ended up.
 ]]
@@ -41,7 +44,6 @@ mod.MOVEMENT_KINDS = {
 ---@field position MapPosition
 ---@field direction defines.direction
 ---@field kind fa.MovementHistory.Kind
----@field velocity number
 
 mod.MOVEMENT_HISTORY_LENGTH = 60
 
@@ -87,20 +89,13 @@ local function update_player_if_needed(pindex)
    local player = game.get_player(pindex)
    if not player then return end
 
-   local character = player.character
-   if not character or not character.valid then
-      state.entries:push(nil)
-      return
-   end
-
    local entry = {}
-   entry.position = character.position
+   entry.position = player.physical_position
 
    if player.driving then
       local vehicle = player.vehicle
       if vehicle and vehicle.valid then
          entry.kind = mod.MOVEMENT_KINDS.DRIVING
-         entry.velocity = vehicle.speed
 
          if vehicle.speed > 0.001 or vehicle.speed < -0.001 then
             local orientation = vehicle.orientation
@@ -111,27 +106,18 @@ local function update_player_if_needed(pindex)
       else
          entry.kind = mod.MOVEMENT_KINDS.NONE
          entry.direction = defines.direction.north
-         entry.velocity = 0
       end
    else
       local walking_state = player.walking_state
       if walking_state and walking_state.walking then
          entry.kind = mod.MOVEMENT_KINDS.WALKING
          entry.direction = walking_state.direction or defines.direction.north
-         entry.velocity = player.character_running_speed
          logger:debug(
-            string.format(
-               "WALKING: pos=(%.2f,%.2f), dir=%d, vel=%.3f",
-               entry.position.x,
-               entry.position.y,
-               entry.direction,
-               entry.velocity
-            )
+            string.format("WALKING: pos=(%.2f,%.2f), dir=%d", entry.position.x, entry.position.y, entry.direction)
          )
       else
          entry.kind = mod.MOVEMENT_KINDS.NONE
          entry.direction = defines.direction.north
-         entry.velocity = 0
       end
    end
 
