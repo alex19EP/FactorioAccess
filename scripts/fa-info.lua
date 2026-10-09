@@ -1524,6 +1524,9 @@ function mod.ent_info(pindex, ent, is_scanner, after_native)
    local function run_tooltip_handler(handler, nolist)
       if not after_native then run_handler(handler, nolist) end
    end
+   -- What the DLL's reading says itself (native/src/facts.cpp): facing, an underground belt's end
+   -- and partner, a belt's shape.
+   local run_native_fact_handler = run_tooltip_handler
    if not is_scanner and native then ctx.drawn = native.entity_icons(pindex, ent) end
    -- The status icons tell what the tooltip's status says
    if after_native and ctx.drawn then ctx.drawn.status = {} end
@@ -1550,12 +1553,13 @@ function mod.ent_info(pindex, ent, is_scanner, after_native)
       end
    end
 
-   run_handler(ent_info_facing, true)
+   -- The DLL says which way buildings face; a vehicle's heading is the mod's.
+   if not after_native or ent.type == "locomotive" or ent.type == "car" then run_handler(ent_info_facing, true) end
    run_handler(ent_info_rail, true)
    run_handler(ent_info_combinator_description)
-   run_handler(ent_info_underground_belt_type, true)
+   run_native_fact_handler(ent_info_underground_belt_type, true)
 
-   run_handler(ent_info_belt_shape, true)
+   run_native_fact_handler(ent_info_belt_shape, true)
    run_handler(ent_info_belt_contents, true)
    run_handler(ent_info_pole_neighbors, true)
 
@@ -1577,7 +1581,7 @@ function mod.ent_info(pindex, ent, is_scanner, after_native)
    run_handler(ent_info_gate_connection_point)
    run_handler(ent_info_marked_for_upgrade)
    run_tooltip_handler(ent_info_power_production)
-   run_handler(ent_info_underground_belt_connection)
+   run_native_fact_handler(ent_info_underground_belt_connection)
    run_handler(ent_info_splitter_states)
    run_drawn_handler(ent_info_cargo_wagon)
    run_handler(ent_info_radar)

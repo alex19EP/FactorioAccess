@@ -1,6 +1,7 @@
 #include "reader.h"
 
 #include "agui.h"
+#include "facts.h"
 #include "game.h"
 #include "graph/GraphAnnouncer.hpp"
 #include "graph/GraphBuilder.hpp"
@@ -229,6 +230,13 @@ bool contentsDrawn(const std::byte* entity) {
           type == "linked-container";
 }
 
+// A ghost's tooltip shows the health of the building it stands for.
+bool damaged(const std::byte* entity) {
+   if (typeName(at<const std::byte*>(entity, layout.entityPrototypeOf)) == "entity-ghost")
+      entity = at<const std::byte*>(entity, layout.scanGhostInner);
+   return entity && at<float>(entity, layout.entityHealth) < 1.0f;
+}
+
 // Drops from the description the lines the step does not say: what reads alike on every entity of
 // the kind, the status unless it is a problem, health unless the entity is damaged, what alt mode
 // draws as icons (a chest's contents, fluids), which the mod says from the icons in alt mode only,
@@ -271,7 +279,7 @@ void prune(const std::byte* entity, std::byte* description) {
             keep = isProblem(entity);
             if (keep) dropDiode(label);
          } else if (keep && name == health) {
-            keep = at<float>(entity, layout.entityHealth) < 1.0f;
+            keep = damaged(entity);
          } else if (keep && !contents.empty() && (name == contents || name.empty())) {
             // A chest's contents are its inventory's counts (Inventory::addCountsToDescription), a
             // line without a label.
@@ -376,6 +384,7 @@ std::string describe(const std::byte* player, const std::byte* entity) {
    virtualAt<void (*)(const void*, void*)>(entity, layout.entityAddToDescription)(entity, description);
 
    std::vector<std::string> parts{nameOf(entity, description)};
+   for (std::string& fact : facts::describe(entity)) parts.push_back(std::move(fact));
    std::vector<std::string> modLists;
    const auto* head = *reinterpret_cast<const StringNode* const*>(description + layout.descriptionModLists);
    collect(head->parent, modLists);

@@ -1167,6 +1167,15 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.entityHealth, "EntityWithHealth", "health");
    for (size_t i = 0; i < kProblemStatusCount; ++i)
       enumerator(layout.problemStatuses[i], "EntityStatus::Enum", kProblemStatuses[i]);
+   classSlot(layout.prototypeIsBuilding, "EntityPrototype", "isBuilding");
+   static constexpr const char* kSides[4] = {"north", "east", "south", "west"};
+   for (size_t i = 0; i < 4; ++i)
+      offset(layout.beltNeighbours[i], "TransportBeltConnectable", std::format("connections.{}", kSides[i]).c_str());
+   offset(layout.beltDirection, "TransportBeltConnectable", "direction");
+   offset(layout.beltShape, "TransportBelt", "shape");
+   enumerator(layout.beltShapeLeft, "TransportBelt::Shape", "Left");
+   enumerator(layout.beltShapeRight, "TransportBelt::Shape", "Right");
+   offset(layout.undergroundPartner, "UndergroundBelt", "connection");
 
    if (ok && (layout.chartSelectionSize > kChartSelectionCapacity || layout.patchInfoSize > kPatchInfoCapacity)) {
       log::error("A chart structure outgrew its buffer: ChartSelection {} bytes, ResourcePatchInfo {}",

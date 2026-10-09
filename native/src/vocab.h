@@ -254,6 +254,26 @@ inline constexpr Word kSelector[9] = {
 inline constexpr Word kSelectMaximum{"fa.native-select-maximum"};
 inline constexpr Word kSelectMinimum{"fa.native-select-minimum"};
 
+// The tile reader's facts (facts.cpp), in the keys the mod's Lua says them with: which way an
+// entity faces (a steam engine both ways), an underground belt's end and its partner ("Connected 4
+// tiles East"), and a belt's shape.
+inline constexpr Word kFacing{"fa.ent-info-facing"};
+inline constexpr Word kFacingSymmetric{"fa.ent-info-facing-symmetric"};
+inline constexpr Word kUndergroundEntrance{"fa.ent-info-underground-belt-entrance"};
+inline constexpr Word kUndergroundExit{"fa.ent-info-underground-belt-exit"};
+inline constexpr Word kUndergroundConnection{"fa.ent-info-underground-belt-connection"};
+inline constexpr Word kUndergroundNotConnected{"fa.ent-info-underground-belt-not-connected"};
+inline constexpr Word kBeltLeftTurn{"fa.ent-info-belt-shape-left"};
+inline constexpr Word kBeltRightTurn{"fa.ent-info-belt-shape-right"};
+inline constexpr Word kBeltLeftSideload{"fa.ent-info-belt-shape-left-sideload"};
+inline constexpr Word kBeltRightSideload{"fa.ent-info-belt-shape-right-sideload"};
+inline constexpr Word kBeltDoubleSideload{"fa.ent-info-belt-shape-double-sideload"};
+inline constexpr Word kBeltMerge{"fa.ent-info-belt-shape-merge"};
+inline constexpr Word kBeltUnit{"fa.ent-info-belt-shape-unit"};
+inline constexpr Word kBeltPouring{"fa.ent-info-belt-shape-pouring"};
+inline constexpr Word kBeltStop{"fa.ent-info-belt-shape-stop"};
+inline constexpr Word kBeltStart{"fa.ent-info-belt-shape-start"};
+
 // The Y key in the world when the cursor points at no entity and no tile.
 inline constexpr Word kNothingHere{"fa.native-nothing-here"};
 

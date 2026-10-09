@@ -1624,6 +1624,20 @@ struct Layout {
    // The statuses the reader says (scripts/consts.lua VERBOSE_STATUSES): EntityStatus::Enum values
    // by name, in kProblemStatuses order.
    uint32_t problemStatuses[kProblemStatusCount] = {};
+
+   // FA's own facts on a step (facts.cpp). bool EntityPrototype::isBuilding() const, which Lua's
+   // is_building reads.
+   uint32_t prototypeIsBuilding = 0;
+   // TransportBeltConnectable::connections, the belts on each side (north, east, south, west), and
+   // its direction. TransportBelt and UndergroundBelt start with their TransportBeltConnectable,
+   // which starts with its Entity, so one pointer serves all three.
+   uint32_t beltNeighbours[4] = {};
+   uint32_t beltDirection = 0;
+   uint32_t beltShape = 0;       // TransportBelt::shape, TransportBelt::Shape (a byte)
+   uint32_t beltShapeLeft = 0;   // TransportBelt::Shape::Left
+   uint32_t beltShapeRight = 0;  // ::Right
+   // With undergroundType and undergroundOutput above.
+   uint32_t undergroundPartner = 0; // UndergroundBelt::connection, UndergroundBelt*
 };
 
 // Bits of agui::Widget::usageBitMask, read from Widget::setVisible and Widget::isEnabled in
