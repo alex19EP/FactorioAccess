@@ -733,62 +733,6 @@ local function ent_info_heat_pipe_shape(ctx)
 end
 
 ---@param ctx fa.Info.EntInfoContext
-local function ent_info_render_heat_ports(ctx)
-   local ent = ctx.ent
-   if
-      not (
-         ent
-         and ent.valid
-         and ent.prototype.heat_buffer_prototype
-         and next(ent.prototype.heat_buffer_prototype.connections)
-      )
-   then
-      return
-   end
-
-   local connection_points = Heat.get_connection_points(ent)
-   local found_dirs = {}
-
-   for _, conn in ipairs(connection_points) do
-      -- Draw the port itself (blue)
-      rendering.draw_circle({
-         color = { 0.5, 0.5, 1.0 },
-         radius = 0.15,
-         width = 2,
-         target = conn.position,
-         surface = ent.surface,
-         time_to_live = 30,
-      })
-
-      -- Now, draw only the first connected neighbor per direction (green)
-      local neighbors = Heat.get_connected_neighbors(ent, conn, false)
-      for _, neighbor_info in ipairs(neighbors) do
-         local n_ent = neighbor_info.entity
-         local n_cp = neighbor_info.connection_point
-
-         local dir
-         if conn.direction then
-            dir = conn.direction
-         else
-            dir = FaUtils.get_direction_biased(n_cp.position, ent.position)
-         end
-
-         if not found_dirs[dir] then
-            found_dirs[dir] = true
-            rendering.draw_circle({
-               color = { 0.8, 1.0, 0.5 },
-               radius = 0.18,
-               width = 2,
-               target = n_cp.position,
-               surface = n_ent.surface,
-               time_to_live = 30,
-            })
-         end
-      end
-   end
-end
-
----@param ctx fa.Info.EntInfoContext
 local function ent_info_heat_neighbors(ctx)
    local ent = ctx.ent
    if
@@ -1518,7 +1462,7 @@ function mod.ent_info(pindex, ent, is_scanner, after_native)
    end
    -- What the DLL's reading says itself (native/src/facts.cpp): facing, an underground belt's end
    -- and partner, a belt's shape, a pipe's or heat pipe's shape, the fluid and heat connections on the
-   -- tile.
+   -- tile, a nuclear reactor's state, a power pole's wires and what it powers.
    local run_native_fact_handler = run_tooltip_handler
    if not is_scanner and native then ctx.drawn = native.entity_icons(pindex, ent) end
    -- The status icons tell what the tooltip's status says
@@ -1554,7 +1498,7 @@ function mod.ent_info(pindex, ent, is_scanner, after_native)
 
    run_native_fact_handler(ent_info_belt_shape, true)
    run_handler(ent_info_belt_contents, true)
-   run_handler(ent_info_pole_neighbors, true)
+   run_native_fact_handler(ent_info_pole_neighbors, true)
 
    run_tooltip_handler(ent_info_resource)
    run_handler(ent_info_character)
@@ -1578,7 +1522,7 @@ function mod.ent_info(pindex, ent, is_scanner, after_native)
    run_handler(ent_info_splitter_states)
    run_drawn_handler(ent_info_cargo_wagon)
    run_handler(ent_info_radar)
-   run_handler(ent_info_electric_pole)
+   run_native_fact_handler(ent_info_electric_pole)
    run_handler(ent_info_power_switch)
 
    if ent.type == "roboport" then
@@ -1686,9 +1630,8 @@ function mod.ent_info(pindex, ent, is_scanner, after_native)
    run_handler(ent_info_rocket_silo)
    run_drawn_handler(ent_info_beacon_status)
    run_tooltip_handler(ent_info_temperature)
-   run_handler(ent_info_nuclear_neighbor_bonus)
+   run_native_fact_handler(ent_info_nuclear_neighbor_bonus)
    run_handler(ent_info_item_on_ground)
-   run_handler(ent_info_render_heat_ports)
    run_native_fact_handler(ent_info_heat_pipe_shape)
    run_native_fact_handler(ent_info_heat_neighbors)
 

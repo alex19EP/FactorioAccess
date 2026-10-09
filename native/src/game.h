@@ -1699,6 +1699,37 @@ struct Layout {
    uint32_t heatDefinitionY = 0;
    uint32_t heatDefinitionDirection = 0;
    uintptr_t vectorRotate = 0;         // void Vector2<double,Vector>::rotate(Direction)
+   // A heat buffer's temperature, as LuaEntity::temperature reads it: energy / specificHeat +
+   // defaultTemperature.
+   uint32_t heatBufferEnergy = 0;      // HeatBuffer::energy, double
+   uint32_t heatSpecificHeat = 0;      // HeatBufferPrototype::specificHeat
+   uint32_t heatDefaultTemperature = 0;
+   // A reactor's: double Reactor::getTotalNeighbourBonus() const (1 for 100%), and the energy its
+   // burner holds, double Entity::getAvailableEnergy() const (a slot), as LuaEntity::energy.
+   uintptr_t reactorNeighbourBonus = 0;
+   uint32_t entityAvailableEnergy = 0;
+   // A pole's copper wires: ElectricPole::copperConnector (a WireConnector) keeps every wire in a
+   // SmallVector<WireConnection,5>, as LuaWireConnector::connection_count counts them.
+   uint32_t poleWiresBegin = 0;          // ElectricPole::copperConnector.connections.begin_
+   uint32_t poleWiresEnd = 0;
+   uint32_t wireConnectionSize = 0;
+   // What a pole powers, as ElectricPole::connectEnergySources finds it: the entities that
+   // EntitySearch<Entity>(Surface&, BoundingBox const&) finds in BoundingBox ElectricPole::
+   // getSupplyArea() const (returned through a pointer), each with an electric energy source
+   // (ElectricEnergySource* Entity::getElectricEnergySource() const). EntitySearch::content is a
+   // std::vector<Entity*>, freed by ~EntitySearch. Consumers and producers are told apart as
+   // LuaEntityPrototype::get_max_energy_usage / production do: the slots of double EntityPrototype::
+   // maximumPowerConsumption(ID<QualityPrototype>, ForceData const*) const and maximumPowerOutput(
+   // ID<QualityPrototype>) const.
+   uintptr_t poleSupplyArea = 0;
+   uintptr_t entitySearch = 0;
+   uintptr_t entitySearchDestroy = 0;
+   uint32_t entitySearchSize = 0;
+   uint32_t entitySearchContent = 0;
+   uint32_t boundingBoxSize = 0;
+   uintptr_t entityElectricSource = 0;
+   uint32_t prototypePowerConsumption = 0;
+   uint32_t prototypePowerOutput = 0;
 };
 
 // Bits of agui::Widget::usageBitMask, read from Widget::setVisible and Widget::isEnabled in
@@ -1774,6 +1805,9 @@ inline constexpr uint32_t kBuildCheckDataCapacity = 192;
 inline constexpr uint32_t kBuildCheckResultCapacity = 96;
 // Room for a HeuristicEntityIterator<Surface const>.
 inline constexpr uint32_t kEntityIteratorCapacity = 64;
+// Room for a BoundingBox and an EntitySearch<Entity>.
+inline constexpr uint32_t kBoundingBoxCapacity = 32;
+inline constexpr uint32_t kEntitySearchCapacity = 32;
 // Room for a ChartSelection, and for the ResourcePatchInfo the chart keeps (see chart.h).
 inline constexpr uint32_t kChartSelectionCapacity = 64;
 inline constexpr uint32_t kPatchInfoCapacity = 256;

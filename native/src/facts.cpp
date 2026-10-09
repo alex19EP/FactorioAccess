@@ -547,6 +547,35 @@ std::vector<HeatPort> heatPortsOf(const std::byte* entity) {
 
 bool isHeatPipe(const std::byte* entity) { return typeName(prototypeOf(entity)) == "heat-pipe"; }
 
+// A nuclear reactor's state (fa-info.lua's ent_info_nuclear_neighbor_bonus), each a list item: too
+// hot, burning a fuel cell, and its neighbour bonus.
+std::vector<std::string> reactorState(const std::byte* entity) {
+   std::vector<std::string> out;
+   struct MsvcString {
+      union {
+         char buffer[16];
+         const char* pointer;
+      };
+      size_t size;
+      size_t capacity;
+   };
+   const auto& name = *reinterpret_cast<const MsvcString*>(prototypeOf(entity) + layout.prototypeName);
+   if (std::string_view(name.capacity >= 16 ? name.pointer : name.buffer, name.size) != "nuclear-reactor") return out;
+   if (const std::byte* buffer =
+          virtualAt<const std::byte* (*)(const void*)>(entity, layout.entityGetHeatBuffer)(entity)) {
+      const std::byte* prototype = at<const std::byte*>(buffer, layout.heatBufferPrototype);
+      const double temperature =
+         at<double>(buffer, layout.heatBufferEnergy) / at<double>(prototype, layout.heatSpecificHeat) +
+         at<double>(prototype, layout.heatDefaultTemperature);
+      if (temperature > 900) out.emplace_back(vocab::kReactorDanger);
+   }
+   if (virtualAt<double (*)(const void*)>(entity, layout.entityAvailableEnergy)(entity) > 0)
+      out.emplace_back(vocab::kReactorConsuming);
+   const double bonus = reinterpret_cast<double (*)(const void*)>(layout.reactorNeighbourBonus)(entity);
+   out.push_back(vocab::kReactorBonus(static_cast<int64_t>(std::floor(bonus * 100))));
+   return out;
+}
+
 // A heat pipe's shape from the sides it joins to anything, as a pipe's.
 std::string heatPipeShape(const std::byte* entity) {
    bool joined[16] = {};
@@ -593,6 +622,55 @@ std::string heatConnections(const std::byte* entity, Position tile) {
    return joined(words);
 }
 
+// ---- power poles ----
+
+bool isPole(const std::byte* entity) { return typeName(prototypeOf(entity)) == "electric-pole"; }
+
+// How many copper wires a pole has (fa-info.lua's ent_info_pole_neighbors).
+std::string poleWires(const std::byte* pole) {
+   const size_t count = (at<uintptr_t>(pole, layout.poleWiresEnd) - at<uintptr_t>(pole, layout.poleWiresBegin)) /
+                        layout.wireConnectionSize;
+   if (count == 0) return vocab::kPoleNoWires;
+   return vocab::kPoleWires(static_cast<int64_t>(count));
+}
+
+// How many buildings a pole powers and how many feed it (fa-info.lua's ent_info_electric_pole):
+// those the game joins to its network, with an electric energy source in its supply area.
+std::string poleSupply(const std::byte* pole) {
+   using SupplyArea = void* (*)(const void* pole, std::byte* out);
+   using Search = void* (*)(std::byte* search, const void* surface, const std::byte* area);
+   using Destroy = void (*)(std::byte* search);
+   using ElectricSource = const void* (*)(const void* entity);
+   using Quality = uint8_t* (*)(const void* entity, uint8_t* out);
+   using Consumption = double (*)(const void* prototype, uint8_t quality, const void* force);
+   using Output = double (*)(const void* prototype, uint8_t quality);
+
+   alignas(8) std::byte area[game::kBoundingBoxCapacity]{};
+   reinterpret_cast<SupplyArea>(layout.poleSupplyArea)(pole, area);
+   alignas(8) std::byte search[game::kEntitySearchCapacity]{};
+   reinterpret_cast<Search>(layout.entitySearch)(search, at<const void*>(pole, layout.entitySurface), area);
+   const auto* first = at<const std::byte* const*>(search, layout.entitySearchContent);
+   const auto* last = at<const std::byte* const*>(search, layout.entitySearchContent + sizeof(void*));
+   int64_t supplied = 0;
+   int64_t producers = 0;
+   for (const std::byte* const* it = first; it != last; ++it) {
+      const std::byte* entity = *it;
+      if (!reinterpret_cast<ElectricSource>(layout.entityElectricSource)(entity)) continue;
+      uint8_t quality = 0;
+      virtualAt<Quality>(entity, layout.entityGetQuality)(entity, &quality);
+      const std::byte* prototype = prototypeOf(entity);
+      if (virtualAt<Consumption>(prototype, layout.prototypePowerConsumption)(prototype, quality, nullptr) > 0)
+         ++supplied;
+      else if (virtualAt<Output>(prototype, layout.prototypePowerOutput)(prototype, quality) > 0)
+         ++producers;
+   }
+   reinterpret_cast<Destroy>(layout.entitySearchDestroy)(search);
+
+   std::vector<std::string> words{vocab::kPoleSupplying(supplied)};
+   if (producers > 0) words.push_back(vocab::kPoleDrawingFrom(producers));
+   return joined(words);
+}
+
 } // namespace
 
 std::vector<std::string> describe(const void* object, int32_t tileX, int32_t tileY) {
@@ -609,8 +687,13 @@ std::vector<std::string> describe(const void* object, int32_t tileX, int32_t til
 
    std::vector<std::string> parts{joined(first)};
    if (belt && belt.isUnderground()) parts.push_back(undergroundConnection(belt));
+   if (isPole(entity)) {
+      parts.push_back(poleWires(entity));
+      parts.push_back(poleSupply(entity));
+   }
    if (isPipe(entity)) parts.push_back(pipeShape(entity));
    for (std::string& item : fluidConnections(entity, Position{tileX, tileY})) parts.push_back(std::move(item));
+   for (std::string& item : reactorState(entity)) parts.push_back(std::move(item));
    if (isHeatPipe(entity)) parts.push_back(heatPipeShape(entity));
    parts.push_back(heatConnections(entity, Position{tileX, tileY}));
    return parts;

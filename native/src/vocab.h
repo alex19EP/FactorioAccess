@@ -290,6 +290,17 @@ inline constexpr Word kAnyFluid{"fa.ent-info-fluid-connections-any"};
 inline constexpr Word kFluidClosed{"fa.ent-info-fluid-connections-closed"};
 inline constexpr Word kUndergroundUnconnected{"fa.ent-info-fluid-connections-via-underground-not-connected"};
 inline constexpr Word kNotConnected{"fa.ent-info-fluid-connections-not-connected"};
+// A nuclear reactor: too hot (above 900 degrees), burning a fuel cell, and its neighbour bonus in
+// percent.
+inline constexpr Word kReactorDanger{"fa.ent-info-nuclear-reactor-explodes"};
+inline constexpr Word kReactorConsuming{"fa.ent-info-nuclear-reactor-consuming"};
+inline constexpr Word kReactorBonus{"fa.ent-info-nuclear-reactor-neighbor-bonus"};
+// A power pole's copper wires ("connects to 3", "no connections") and what it powers ("supplying
+// 5 buildings", "drawing from 1 buildings").
+inline constexpr Word kPoleWires{"fa.ent-info-electrical-connections-count"};
+inline constexpr Word kPoleNoWires{"fa.ent-info-electrical-connections-nothing"};
+inline constexpr Word kPoleSupplying{"fa.ent-info-electric-pole-supplying"};
+inline constexpr Word kPoleDrawingFrom{"fa.ent-info-electric-pole-drawing-from"};
 // The heat connections on the tile: the ways they lead ("heat to the North and East"), by how many,
 // and what they join with the way to it ("connected to Heat pipe North"), up to four.
 inline constexpr Word kHeatPorts[4] = {

@@ -1220,6 +1220,23 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.heatDefinitionY, "HeatConnectionDefinition", "position.y");
    offset(layout.heatDefinitionDirection, "HeatConnectionDefinition", "direction");
    address(layout.vectorRotate, "?rotate@?$Vector2@NVVector@@@@QEAAXVDirection@@@Z");
+   offset(layout.heatBufferEnergy, "HeatBuffer", "energy");
+   offset(layout.heatSpecificHeat, "HeatBufferPrototype", "specificHeat");
+   offset(layout.heatDefaultTemperature, "HeatBufferPrototype", "defaultTemperature");
+   address(layout.reactorNeighbourBonus, "?getTotalNeighbourBonus@Reactor@@QEBANXZ");
+   classSlot(layout.entityAvailableEnergy, "Entity", "getAvailableEnergy");
+   offset(layout.poleWiresBegin, "ElectricPole", "copperConnector.connections.begin_");
+   offset(layout.poleWiresEnd, "ElectricPole", "copperConnector.connections.end_");
+   size(layout.wireConnectionSize, "WireConnection");
+   address(layout.poleSupplyArea, "?getSupplyArea@ElectricPole@@QEBA?AVBoundingBox@@XZ");
+   address(layout.entitySearch, "??$?0VSurface@@@?$EntitySearch@VEntity@@@@QEAA@AEAVSurface@@AEBVBoundingBox@@@Z");
+   address(layout.entitySearchDestroy, "??1?$EntitySearch@VEntity@@@@QEAA@XZ");
+   size(layout.entitySearchSize, "EntitySearch<Entity>");
+   offset(layout.entitySearchContent, "EntitySearch<Entity>", "content");
+   size(layout.boundingBoxSize, "BoundingBox");
+   address(layout.entityElectricSource, "?getElectricEnergySource@Entity@@QEBAPEAVElectricEnergySource@@XZ");
+   classSlot(layout.prototypePowerConsumption, "EntityPrototype", "maximumPowerConsumption");
+   classSlot(layout.prototypePowerOutput, "EntityPrototype", "maximumPowerOutput");
 
    if (ok && (layout.chartSelectionSize > kChartSelectionCapacity || layout.patchInfoSize > kPatchInfoCapacity)) {
       log::error("A chart structure outgrew its buffer: ChartSelection {} bytes, ResourcePatchInfo {}",
@@ -1235,6 +1252,11 @@ bool resolve(pdb::SymbolTable& symbols) {
                  "BuildID {}, BuildCheckData {}, BuildCheckResult {}, HeuristicEntityIterator {}",
                  layout.simpleBuildInputSize, layout.buildingModifierSize, layout.buildIdSize,
                  layout.buildCheckDataSize, layout.buildCheckResultSize, layout.iteratorSize);
+      ok = false;
+   }
+   if (ok && (layout.boundingBoxSize > kBoundingBoxCapacity || layout.entitySearchSize > kEntitySearchCapacity)) {
+      log::error("An entity search structure outgrew its stack buffer: BoundingBox {} bytes, EntitySearch {}",
+                 layout.boundingBoxSize, layout.entitySearchSize);
       ok = false;
    }
    if (ok) {
