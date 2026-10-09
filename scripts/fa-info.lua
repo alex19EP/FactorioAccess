@@ -1408,17 +1408,7 @@ function mod.ent_info(pindex, ent, is_scanner, after_native)
    -- "entity ghost of transport belt".
    -- Rail ghosts are handled by ent_info_rail, so skip the generic ghost message for them.
    if after_native then
-      -- The DLL said the name; the mod adds the names the game's title lacks.
-      if ent.type == "roboport" then
-         ctx.message:fragment(ent.backer_name)
-      elseif
-         ent.type == "cargo-wagon"
-         or ent.type == "artillery-wagon"
-         or ent.type == "locomotive"
-         or ent.type == "fluid-wagon"
-      then
-         ctx.message:fragment(TrainHelpers.get_name(ent))
-      end
+      -- The DLL said the name with its backer name, and a rolling stock's train name.
    elseif ent.type == "entity-ghost" and is_rail_type(ent.ghost_type) then
       -- Rail ghosts: skip entity name - rail classification will be announced by ent_info_rail handler
    elseif ent.type == "entity-ghost" or ent.type == "tile-ghost" then
@@ -1462,7 +1452,7 @@ function mod.ent_info(pindex, ent, is_scanner, after_native)
    -- What the game's tooltip says, which the DLL's reading gave already: the status, the amount of
    -- a resource, temperature, power made and stored, a train stop's name and limit, a radar's
    -- charting, a solar panel's output, a silo's rocket parts, a spidertron's label, the item on the
-   -- ground.
+   -- ground, the player of a character or corpse.
    local function run_tooltip_handler(handler, nolist)
       if not after_native then run_handler(handler, nolist) end
    end
@@ -1472,7 +1462,8 @@ function mod.ent_info(pindex, ent, is_scanner, after_native)
    -- a splitter's priorities, a logistic chest's network, an infinity chest's filters, an infinity
    -- pipe draining, a drill's output tile and what it outputs to, a combinator's description, a
    -- signal's state, a wall's gate contact, an upgrade mark, a power switch, a turret's priorities,
-   -- an inserter's hand, the circuit networks.
+   -- an inserter's hand, the circuit networks, a vehicle's heading, a rolling stock's train name
+   -- and state, a roboport's network and robots.
    local run_native_fact_handler = run_tooltip_handler
    if not is_scanner and native then ctx.drawn = native.entity_icons(pindex, ent) end
    -- The status icons tell what the tooltip's status says
@@ -1500,8 +1491,7 @@ function mod.ent_info(pindex, ent, is_scanner, after_native)
       end
    end
 
-   -- The DLL says which way buildings face; a vehicle's heading is the mod's.
-   if not after_native or ent.type == "locomotive" or ent.type == "car" then run_handler(ent_info_facing, true) end
+   run_native_fact_handler(ent_info_facing, true)
    run_handler(ent_info_rail, true)
    run_native_fact_handler(ent_info_combinator_description)
    run_native_fact_handler(ent_info_underground_belt_type, true)
@@ -1511,8 +1501,8 @@ function mod.ent_info(pindex, ent, is_scanner, after_native)
    run_native_fact_handler(ent_info_pole_neighbors, true)
 
    run_tooltip_handler(ent_info_resource)
-   run_handler(ent_info_character)
-   run_handler(ent_info_character_corpse)
+   run_tooltip_handler(ent_info_character)
+   run_tooltip_handler(ent_info_character_corpse)
    run_drawn_handler(ent_info_container)
    run_drawn_handler(ent_info_fluid_contents)
    run_native_fact_handler(ent_info_logistic_network)
@@ -1535,14 +1525,9 @@ function mod.ent_info(pindex, ent, is_scanner, after_native)
    run_native_fact_handler(ent_info_electric_pole)
    run_native_fact_handler(ent_info_power_switch)
 
-   if ent.type == "roboport" then
-      local cell = ent.logistic_cell
-      local network = ent.logistic_cell.logistic_network
-
-      ctx.message:fragment("of")
-      ctx.message:fragment(BotLogistics.get_network_name(ent))
-      ctx.message:fragment(",")
-      ctx.message:fragment(BotLogistics.roboport_contents_info(ent))
+   if ent.type == "roboport" and not after_native then
+      ctx.message:fragment({ "fa.ent-info-roboport-network", BotLogistics.get_network_name(ent) })
+      ctx.message:list_item(BotLogistics.roboport_contents_info(ent))
    end
    run_tooltip_handler(ent_info_spidertron)
    run_drawn_handler(ent_info_filters)
@@ -1657,7 +1642,7 @@ function mod.ent_info(pindex, ent, is_scanner, after_native)
    run_native_fact_handler(ent_info_circuit_network)
 
    -- Train state handler (lowest priority, runs last)
-   run_handler(ent_info_train_state)
+   run_native_fact_handler(ent_info_train_state)
 
    return ctx.message:build()
 end

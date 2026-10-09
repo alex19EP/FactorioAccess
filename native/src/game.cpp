@@ -1316,6 +1316,23 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.electricNetworkIndex, "ElectricSubNetwork", "index");
    offset(layout.connectorWiresBegin, "WireConnector", "connections.begin_");
    offset(layout.connectorWiresEnd, "WireConnector", "connections.end_");
+   classSlot(layout.entityOrientation, "Entity", "getOrientation");
+   classSlot(layout.entityBackerName, "Entity", "getBackerName");
+   offset(layout.rollingStockTrain, "RollingStock", "train");
+   offset(layout.trainFrontMovers, "Train", "rollingStocks.frontMovers");
+   offset(layout.trainBackMovers, "Train", "rollingStocks.backMovers");
+   offset(layout.trainController, "Train", "controller");
+   classSlot(layout.controllerIsManual, "TrainController", "isManual");
+   offset(layout.entityUnitNumber, "EntityWithOwner", "unitNumber");
+   offset(layout.roboportCell, "Roboport", "logisticCell");
+   offset(layout.roboportMaterials, "Roboport", "materialInventory");
+   offset(layout.cellNetwork, "LogisticCell", "network");
+   offset(layout.cellStationedLogistic, "LogisticCell", "stationedLogisticRobots");
+   offset(layout.cellStationedConstruction, "LogisticCell", "stationedConstructionRobots");
+   offset(layout.cellChargingSpots, "LogisticCell", "charger.chargingSpots");
+   size(layout.chargeSpotSize, "ChargeSpot");
+   offset(layout.chargeSpotRobot, "ChargeSpot", "robot");
+   offset(layout.cellWaitingToCharge, "LogisticCell", "charger.waitingToChargeQueue._size");
 
    if (ok && (layout.chartSelectionSize > kChartSelectionCapacity || layout.patchInfoSize > kPatchInfoCapacity)) {
       log::error("A chart structure outgrew its buffer: ChartSelection {} bytes, ResourcePatchInfo {}",

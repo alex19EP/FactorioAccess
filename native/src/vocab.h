@@ -381,6 +381,11 @@ inline constexpr Word kCombinatorInputBoth{"fa.combinator-input-both"};
 inline constexpr Word kCombinatorOutputRed{"fa.combinator-output-red-only"};
 inline constexpr Word kCombinatorOutputGreen{"fa.combinator-output-green-only"};
 inline constexpr Word kCombinatorOutputBoth{"fa.combinator-output-both"};
+// A roboport's network ("of 1"), and its robots charging, waiting to, stationed, and repair packs.
+inline constexpr Word kRoboportNetwork{"fa.ent-info-roboport-network"};
+inline constexpr Word kRoboportCharging{"fa.roboport-charging-info"};
+// A train driven by hand.
+inline constexpr Word kTrainManual{"fa.train-state-manual"};
 
 // The Y key in the world when the cursor points at no entity and no tile.
 inline constexpr Word kNothingHere{"fa.native-nothing-here"};

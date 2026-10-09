@@ -189,6 +189,9 @@ std::vector<std::string> fixedLabels() {
       "description.max-speed",
       "description.vehicle-enter-instruction",
       "description.stop-priority",
+      "description.construction-area",
+      "description.radar-coverage-distance",
+      "description.robot-recharge-rate",
       // Said in the mod's own shorter words (facts.cpp).
       "description.turret-priority-list",
       "description.turret-ignores-unprioritised",

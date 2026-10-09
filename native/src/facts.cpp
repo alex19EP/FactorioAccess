@@ -1288,6 +1288,95 @@ std::vector<std::string> circuitNetworks(const std::byte* entity, std::string_vi
    return items;
 }
 
+// ---- roboports ----
+
+// A roboport's network and what its cell holds (fa-info.lua's roboport part and
+// BotLogistics.roboport_contents_info).
+std::vector<std::string> roboportState(const std::byte* roboport) {
+   const std::byte* cell = roboport + layout.roboportCell;
+   std::vector<std::string> items;
+   if (const std::byte* network = at<const std::byte*>(cell, layout.cellNetwork))
+      items.push_back(vocab::kRoboportNetwork(networkName(network)));
+   const auto* spots = at<const std::byte*>(cell, layout.cellChargingSpots);
+   const auto* spotsEnd = at<const std::byte*>(cell, layout.cellChargingSpots + sizeof(void*));
+   uint32_t charging = 0;
+   for (const std::byte* spot = spots; spot < spotsEnd; spot += layout.chargeSpotSize)
+      if (at<const void*>(spot, layout.chargeSpotRobot)) ++charging;
+   const std::byte* materials = roboport + layout.roboportMaterials;
+   const auto* stacks = at<const std::byte*>(materials, layout.inventoryData);
+   uint64_t packs = 0;
+   for (uint16_t i = 0; i < at<uint16_t>(materials, layout.inventorySize); ++i)
+      packs += at<uint32_t>(stacks + size_t{i} * layout.itemStackSize, layout.itemStackCount);
+   items.push_back(vocab::kRoboportCharging(charging, at<uint32_t>(cell, layout.cellWaitingToCharge),
+                                            at<uint32_t>(cell, layout.cellStationedLogistic),
+                                            at<uint32_t>(cell, layout.cellStationedConstruction), packs));
+   return items;
+}
+
+// ---- vehicles and trains ----
+
+// An entity's backer name (a locomotive's, a train stop's), or nothing.
+std::string backerName(const std::byte* entity) {
+   struct MsvcString {
+      union {
+         char buffer[16];
+         const char* pointer;
+      };
+      size_t size;
+      size_t capacity;
+   };
+   const auto* name = virtualAt<const MsvcString* (*)(const void*)>(entity, layout.entityBackerName)(entity);
+   if (!name) return {};
+   return text::speakable({name->capacity >= sizeof(name->buffer) ? name->pointer : name->buffer, name->size});
+}
+
+// Which of the eight ways a vehicle heads, as FaUtils.get_heading_value rounds its orientation.
+uint8_t headingOf(const std::byte* vehicle) {
+   // RealOrientation is fixed point: a uint32 of the turn times 2^32.
+   uint32_t orientation = 0;
+   virtualAt<uint32_t* (*)(const void*, uint32_t*)>(vehicle, layout.entityOrientation)(vehicle, &orientation);
+   const auto eighth = static_cast<int>(std::floor(orientation / 4294967296.0 * 8 + 0.5)) % 8;
+   return static_cast<uint8_t>(eighth * 2);
+}
+
+bool isRollingStock(std::string_view type) {
+   return type == "locomotive" || type == "cargo-wagon" || type == "fluid-wagon" || type == "artillery-wagon";
+}
+
+const std::byte* trainOf(const std::byte* entity) {
+   const std::byte* stock = agui::objectAsBase(entity, ".?AVRollingStock@@");
+   return stock ? at<const std::byte*>(stock, layout.rollingStockTrain) : nullptr;
+}
+
+// A train's name: its locomotive with the lowest unit number's (TrainHelpers.get_name).
+std::string trainName(const std::byte* train) {
+   const std::byte* naming = nullptr;
+   uint64_t lowest = 0;
+   for (const uint32_t movers : {layout.trainFrontMovers, layout.trainBackMovers}) {
+      const auto* first = at<const std::byte* const*>(train, movers);
+      const auto* last = at<const std::byte* const*>(train, movers + sizeof(void*));
+      for (const std::byte* const* loco = first; loco != last; ++loco) {
+         const std::byte* owner = agui::objectAsBase(*loco, ".?AVEntityWithOwner@@");
+         if (!owner) continue;
+         const uint64_t number = at<uint64_t>(owner, layout.entityUnitNumber);
+         if (!naming || number < lowest) {
+            naming = *loco;
+            lowest = number;
+         }
+      }
+   }
+   return naming ? backerName(naming) : std::string();
+}
+
+// A train driven by hand (TrainHelpers.push_state_message). The stop it heads to is the tooltip's
+// next station.
+std::string trainState(const std::byte* train) {
+   const std::byte* controller = at<const std::byte*>(train, layout.trainController);
+   if (!controller) return {};
+   if (virtualAt<bool (*)(const void*)>(controller, layout.controllerIsManual)(controller)) return vocab::kTrainManual;
+   return {};
+}
+
 } // namespace
 
 std::vector<std::string> describe(const void* object, int32_t tileX, int32_t tileY) {
@@ -1297,7 +1386,16 @@ std::vector<std::string> describe(const void* object, int32_t tileX, int32_t til
 
    // One list item, as the mod's Lua said them: facing, an underground belt's end, a belt's shape,
    // what a belt carries.
-   std::vector<std::string> first{facing(entity)};
+   const std::string_view type = typeName(prototypeOf(entity));
+   const std::byte* train = isRollingStock(type) ? trainOf(entity) : nullptr;
+   std::vector<std::string> first;
+   // Rolling stock is named by its train, unless the title says that name already.
+   if (train) {
+      std::string name = trainName(train);
+      if (name != backerName(entity)) first.push_back(std::move(name));
+   }
+   first.push_back(facing(entity));
+   if (type == "locomotive" || type == "car") first.push_back(vocab::kFacing(directionName(headingOf(entity))));
    if (belt && belt.isUnderground())
       first.emplace_back(belt.isUndergroundExit() ? vocab::kUndergroundExit : vocab::kUndergroundEntrance);
    if (belt)
@@ -1312,7 +1410,6 @@ std::vector<std::string> describe(const void* object, int32_t tileX, int32_t til
       parts.push_back(poleWires(entity));
       parts.push_back(poleSupply(entity));
    }
-   const std::string_view type = typeName(prototypeOf(entity));
    if (type == "logistic-container") parts.push_back(logisticNetwork(entity));
    if (type == "infinity-container")
       for (std::string& item : infinityChestState(entity)) parts.push_back(std::move(item));
@@ -1330,6 +1427,8 @@ std::vector<std::string> describe(const void* object, int32_t tileX, int32_t til
       parts.emplace_back(vocab::kMarkedForUpgrade);
    if (const std::byte* powerSwitch = agui::objectAsBase(entity, ".?AVPowerSwitch@@"))
       for (std::string& item : powerSwitchState(powerSwitch)) parts.push_back(std::move(item));
+   if (const std::byte* roboport = agui::objectAsBase(entity, ".?AVRoboport@@"))
+      for (std::string& item : roboportState(roboport)) parts.push_back(std::move(item));
    if (const std::byte* turret = agui::objectAsBase(entity, ".?AVTurret@@")) parts.push_back(turretPriorities(turret));
    if (const std::byte* inserter = agui::objectAsBase(entity, ".?AVInserter@@"))
       parts.push_back(inserterState(inserter));
@@ -1339,6 +1438,7 @@ std::vector<std::string> describe(const void* object, int32_t tileX, int32_t til
    if (isHeatPipe(entity)) parts.push_back(heatPipeShape(entity));
    parts.push_back(heatConnections(entity, Position{tileX, tileY}));
    for (std::string& item : circuitNetworks(entity, type)) parts.push_back(std::move(item));
+   if (train) parts.push_back(trainState(train));
    return parts;
 }
 

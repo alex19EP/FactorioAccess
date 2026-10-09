@@ -1852,6 +1852,33 @@ struct Layout {
    uint32_t electricNetworkIndex = 0;      // ElectricSubNetwork::index, uint32
    uint32_t connectorWiresBegin = 0;       // WireConnector::connections.begin_
    uint32_t connectorWiresEnd = 0;
+   // Vehicles and trains. RealOrientation Entity::getOrientation() const (a slot, returned through
+   // a pointer; fixed point, a uint32 of the turn clockwise from north times 2^32) and std::string const* Entity::
+   // getBackerName() const (a slot, null without one). RollingStock::train is its Train;
+   // Train::rollingStocks.frontMovers / backMovers its locomotives (std::vector<Locomotive*>);
+   // Train::controller (TrainController*) says bool isManual() const. EntityWithOwner::unitNumber
+   // picks the train's naming locomotive, as the mod does.
+   uint32_t entityOrientation = 0;
+   uint32_t entityBackerName = 0;
+   uint32_t rollingStockTrain = 0;
+   uint32_t trainFrontMovers = 0;
+   uint32_t trainBackMovers = 0;
+   uint32_t trainController = 0;
+   uint32_t controllerIsManual = 0;
+   uint32_t entityUnitNumber = 0;          // EntityWithOwner::unitNumber, uint64
+   // A roboport's own LogisticCell (Roboport::logisticCell, by value): its network, the robots
+   // stationed in it, those charging (LogisticCellCharger::chargingSpots, ChargeSpot::robot set)
+   // and waiting to (the waitingToChargeQueue's size), as LuaLogisticCell reads them; and the
+   // repair packs in Roboport::materialInventory.
+   uint32_t roboportCell = 0;
+   uint32_t roboportMaterials = 0;
+   uint32_t cellNetwork = 0;               // LogisticCell::network, LogisticNetwork*
+   uint32_t cellStationedLogistic = 0;     // LogisticCell::stationedLogisticRobots, uint32
+   uint32_t cellStationedConstruction = 0;
+   uint32_t cellChargingSpots = 0;         // LogisticCell::charger.chargingSpots, std::vector
+   uint32_t chargeSpotSize = 0;
+   uint32_t chargeSpotRobot = 0;           // ChargeSpot::robot, a pointer
+   uint32_t cellWaitingToCharge = 0;       // LogisticCell::charger.waitingToChargeQueue._size, uint32
 };
 
 // Bits of agui::Widget::usageBitMask, read from Widget::setVisible and Widget::isEnabled in
