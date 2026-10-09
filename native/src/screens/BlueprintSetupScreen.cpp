@@ -154,7 +154,7 @@ void AddSnapping(graph::GraphBuilder& builder, const Widget* settings)
                 continue;
             graph::NodeVtable node = isLabel ? TextNode(leaf, [leaf]() { return LabelText(leaf); })
                 : i > 0 && agui::kind(leaves[i - 1]) == Kind::Label ? ControlNode(leaf, leaves[i - 1])
-                                                                     : ControlNode(leaf);
+                                                                    : ControlNode(leaf);
             // The line's name and each field's label already say where the cursor is.
             node.SpeaksOwnPosition = true;
             builder.AddItem(graph::ControlId::Referenced(leaf, std::format("snap/{}/{}", row, i)), std::move(node));
@@ -192,7 +192,8 @@ std::string ComponentText(const Widget* slot)
     agui::SlotButton shown = agui::slotButton(slot);
     if (shown.count != 0 || shown.name.empty())
         return SlotText(slot);
-    std::string name = shown.quality.empty() ? std::string(shown.name) : std::format("{} {}", shown.quality, shown.name);
+    std::string name =
+        shown.quality.empty() ? std::string(shown.name) : std::format("{} {}", shown.quality, shown.name);
     return std::format("{} 0, {}", name, vocab::kRemoved);
 }
 

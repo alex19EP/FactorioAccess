@@ -25,8 +25,8 @@ void AddPlanner(graph::GraphBuilder& builder, const Widget* window)
     builder.BeginStop("planner");
     builder.StartRow();
     if (Shows(name))
-        builder.AddItem(graph::ControlId::Referenced(name, "planner/name"),
-            TextNode(name, [name]() { return LabelText(name); }));
+        builder.AddItem(
+            graph::ControlId::Referenced(name, "planner/name"), TextNode(name, [name]() { return LabelText(name); }));
     int index = 0;
     for (const Widget* button : FindAll(agui::member(frame, layout.frameSubheader), "agui::Button"))
         AddControl(builder, "planner/" + std::to_string(index++), button);
@@ -72,8 +72,8 @@ void AddRules(graph::GraphBuilder& builder, const Widget* window)
             graph::NodeVtable node = headers[side] ? ControlNode(slots[side], headers[side]) : ControlNode(slots[side]);
             // The header already says which side it is; "1 of 2" would only repeat it.
             node.SpeaksOwnPosition = true;
-            builder.AddItem(
-                graph::ControlId::Referenced(slots[side], std::format("rules/{}/{}", rule, sides[side])), std::move(node));
+            builder.AddItem(graph::ControlId::Referenced(slots[side], std::format("rules/{}/{}", rule, sides[side])),
+                std::move(node));
         }
         builder.EndRow();
         builder.PopContext();

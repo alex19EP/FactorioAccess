@@ -16,22 +16,22 @@ struct NamedPrototype {
    const char* type;
 };
 inline constexpr NamedPrototype kNamedPrototypes[] = {
-    {"item", "ItemPrototype"},
-    {"entity", "EntityPrototype"},
-    {"fluid", "FluidPrototype"},
-    {"recipe", "RecipePrototype"},
-    {"technology", "TechnologyPrototype"},
-    {"tile", "TilePrototype"},
-    {"virtual-signal", "VirtualSignalPrototype"},
-    {"quality", "QualityPrototype"},
-    {"item-group", "ItemGroup"},
-    {"space-location", "SpaceLocationPrototype"},
-    {"planet", "SpaceLocationPrototype"},
-    {"achievement", "AchievementPrototype"},
-    {"asteroid-chunk", "AsteroidChunkPrototype"},
-    {"shortcut", "ShortcutPrototype"},
-    {"equipment", "EquipmentPrototype"},
-    {"airborne-pollutant", "AirbornePollutantPrototype"},
+   {"item", "ItemPrototype"},
+   {"entity", "EntityPrototype"},
+   {"fluid", "FluidPrototype"},
+   {"recipe", "RecipePrototype"},
+   {"technology", "TechnologyPrototype"},
+   {"tile", "TilePrototype"},
+   {"virtual-signal", "VirtualSignalPrototype"},
+   {"quality", "QualityPrototype"},
+   {"item-group", "ItemGroup"},
+   {"space-location", "SpaceLocationPrototype"},
+   {"planet", "SpaceLocationPrototype"},
+   {"achievement", "AchievementPrototype"},
+   {"asteroid-chunk", "AsteroidChunkPrototype"},
+   {"shortcut", "ShortcutPrototype"},
+   {"equipment", "EquipmentPrototype"},
+   {"airborne-pollutant", "AirbornePollutantPrototype"},
 };
 inline constexpr size_t kNamedPrototypeCount = sizeof(kNamedPrototypes) / sizeof(kNamedPrototypes[0]);
 

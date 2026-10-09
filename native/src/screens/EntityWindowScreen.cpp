@@ -105,8 +105,8 @@ void EntityWindowScreen::AddInventory(graph::GraphBuilder& builder, const agui::
     {
         // Titled in its subheader ("Ghost cursor selection"), read as the context of its choices.
         builder.BeginStop("inventory");
-        std::vector<const Widget*> labels
-            = FindAll(agui::member(parts.ghostChoices, game::layout.itemSelectListSubheader), "agui::Label");
+        std::vector<const Widget*> labels =
+            FindAll(agui::member(parts.ghostChoices, game::layout.itemSelectListSubheader), "agui::Label");
         std::string title = labels.empty() ? std::string() : LabelText(labels.front());
         if (!title.empty())
             builder.PushContext(title);
@@ -118,8 +118,8 @@ void EntityWindowScreen::AddInventory(graph::GraphBuilder& builder, const agui::
     if (!parts.inventory || !Shows(parts.inventory))
         return;
     builder.BeginStop("inventory");
-    std::string title = parts.inventoryTitle && Shows(parts.inventoryTitle) ? LabelText(parts.inventoryTitle)
-                                                                            : std::string();
+    std::string title =
+        parts.inventoryTitle && Shows(parts.inventoryTitle) ? LabelText(parts.inventoryTitle) : std::string();
     if (!title.empty())
         builder.PushContext(title);
     AddSubtree(builder, "inventory", parts.inventory);

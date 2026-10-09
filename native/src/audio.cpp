@@ -213,7 +213,8 @@ private:
       if (s.hasWet) {
          s.wet.gain = gain;
          s.wet.pan = pan;
-         const float filtered = s.filterGain ? static_cast<float>(std::clamp(s.filterGain->at(seconds), 0.0, 1.0)) : 1.0f;
+         const float filtered =
+            s.filterGain ? static_cast<float>(std::clamp(s.filterGain->at(seconds), 0.0, 1.0)) : 1.0f;
          ma_node_set_output_bus_volume(&s.dry.base, 0, 1.0f - filtered);
          ma_node_set_output_bus_volume(&s.wet.base, 0, filtered);
       }
@@ -242,7 +243,8 @@ private:
          // never crosses and starts where it is.
          static constexpr double kZeroPhase[] = {0.0, 0.0, 0.25, 0.5};
          const auto wave = static_cast<size_t>(source.wave);
-         ma_waveform_config config = ma_waveform_config_init(ma_format_f32, 1, rate_, kTypes[wave], 1.0, source.frequency);
+         ma_waveform_config config =
+            ma_waveform_config_init(ma_format_f32, 1, rate_, kTypes[wave], 1.0, source.frequency);
          if (!check(ma_waveform_init(&config, &s->waveform), "the tone", patch.id)) return nullptr;
          s->hasWaveform = true;
          if (kZeroPhase[wave] > 0 && source.frequency > 0)

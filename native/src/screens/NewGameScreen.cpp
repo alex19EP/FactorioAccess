@@ -104,8 +104,8 @@ void NewGameScreen::BuildWindow(graph::GraphBuilder& builder, const Widget* wind
     const Widget* replay = agui::member(window, layout.newGameReplay);
     const Widget* remove = agui::member(window, layout.newGameDelete);
     builder.StartRow();
-    builder.AddItem(graph::ControlId::Referenced(name, "details/name"),
-        TextNode(name, [name]() { return LabelText(name); }));
+    builder.AddItem(
+        graph::ControlId::Referenced(name, "details/name"), TextNode(name, [name]() { return LabelText(name); }));
     AddControl(builder, "details/replay", replay);
     AddControl(builder, "details/delete", remove);
     builder.EndRow();

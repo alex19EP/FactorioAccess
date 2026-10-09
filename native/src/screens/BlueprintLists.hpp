@@ -34,8 +34,8 @@ void AddSubheaderButtons(graph::GraphBuilder& builder, const std::string& key, c
 /// list, so the cursor keeps its slot when the view changes. Adds to the current stop, and returns
 /// how many slots it added. A library's list also puts each record's key in `recordKeys`.
 using RecordKeys = std::map<agui::RecordId, std::string>;
-int AddBlueprintList(graph::GraphBuilder& builder, const std::string& key, const agui::Widget* list,
-    RecordKeys* recordKeys = nullptr);
+int AddBlueprintList(
+    graph::GraphBuilder& builder, const std::string& key, const agui::Widget* list, RecordKeys* recordKeys = nullptr);
 
 /// A stop of a list's frame subheader: its labels (the hint on cycling through a book, the library's
 /// warnings), then the List, Grid and Slots buttons in a row.

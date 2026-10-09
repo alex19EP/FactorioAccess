@@ -32,8 +32,8 @@ using AddLocalFlyingText = void (*)(void* map, void* flyingText);
 AddLocalFlyingText g_mapOriginal = nullptr;
 
 void mapFlyingText(void* map, void* flyingText) {
-   speech::sayShown(view(*reinterpret_cast<const MsvcString*>(static_cast<const std::byte*>(flyingText) +
-                                                               layout.localMapFlyingTextText)));
+   speech::sayShown(view(
+      *reinterpret_cast<const MsvcString*>(static_cast<const std::byte*>(flyingText) + layout.localMapFlyingTextText)));
    g_mapOriginal(map, flyingText);
 }
 

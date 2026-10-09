@@ -31,7 +31,9 @@ std::atomic<bool> g_enabled = false;
 
 void PRISM_CALL onPrismLog(void*, PrismLogLevel level, const char* source, const char* message) {
    // Prism's own logging thread; fa::log is thread-safe.
-   const char* tag = level == PRISM_LOG_LEVEL_ERROR ? "prism error" : level == PRISM_LOG_LEVEL_WARN ? "prism warn" : "prism";
+   const char* tag = level == PRISM_LOG_LEVEL_ERROR  ? "prism error"
+                     : level == PRISM_LOG_LEVEL_WARN ? "prism warn"
+                                                     : "prism";
    log::write(tag, std::format("[{}] {}", source ? source : "prism", message ? message : ""));
 }
 

@@ -72,8 +72,7 @@ void Append(std::string& sb, const std::string& text)
 
 } // namespace
 
-std::string GraphAnnouncer::Compose(const GraphNode* from, const GraphNode* to,
-    const std::string& transitionLabel)
+std::string GraphAnnouncer::Compose(const GraphNode* from, const GraphNode* to, const std::string& transitionLabel)
 {
     if (!to)
         return {};
@@ -147,8 +146,7 @@ std::vector<NodeAnnouncement> GraphAnnouncer::EffectiveAnnouncements(const Graph
 
     if (type && !type->Order.empty() && result.size() > 1)
     {
-        std::stable_sort(result.begin(), result.end(),
-            [type](const NodeAnnouncement& x, const NodeAnnouncement& y)
+        std::stable_sort(result.begin(), result.end(), [type](const NodeAnnouncement& x, const NodeAnnouncement& y)
             { return OrderIndex(type->Order, x.Kind) < OrderIndex(type->Order, y.Kind); });
     }
 

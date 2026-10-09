@@ -84,17 +84,11 @@ constexpr uint16_t kInserterBlacklist = 0x2;
 constexpr size_t kConstantSignalsShown = 4;
 
 // The BlueprintWidget a picture is.
-const std::byte* self(const agui::Widget* picture) {
-   return agui::objectAsBase(picture, ".?AVBlueprintWidget@@");
-}
+const std::byte* self(const agui::Widget* picture) { return agui::objectAsBase(picture, ".?AVBlueprintWidget@@"); }
 
-const std::byte* blueprintOf(const std::byte* widget) {
-   return at<const std::byte*>(widget, layout.pictureBlueprint);
-}
+const std::byte* blueprintOf(const std::byte* widget) { return at<const std::byte*>(widget, layout.pictureBlueprint); }
 
-const std::byte* parametersOf(const std::byte* widget) {
-   return widget + layout.pictureParameters;
-}
+const std::byte* parametersOf(const std::byte* widget) { return widget + layout.pictureParameters; }
 
 // The prototype an ID indexes in a PrototypeList<T>::indexToPrototype vector, or null.
 const std::byte* prototypeAt(uintptr_t list, size_t index) {
@@ -213,28 +207,27 @@ void addAlwaysShown(std::vector<std::string>& parts, const std::byte* entity, bo
    bool signals = alt && combinatorSettingsShown();
    if (const std::byte* belt = agui::objectAsBase(entity, ".?AVUndergroundBelt@@")) {
       parts.emplace_back(at<uint8_t>(belt, layout.undergroundType) == layout.undergroundOutput ? vocab::kOutput
-                                                                                                : vocab::kInput);
+                                                                                               : vocab::kInput);
    } else if (const std::byte* loader = agui::objectAsBase(entity, ".?AVLoader@@")) {
       parts.emplace_back(at<uint8_t>(loader, layout.loaderType) == layout.loaderOutput ? vocab::kOutput
-                                                                                        : vocab::kInput);
+                                                                                       : vocab::kInput);
    } else if (const std::byte* arithmetic = agui::objectAsBase(entity, ".?AVArithmeticCombinator@@")) {
       const std::byte* parameters = arithmetic + layout.arithmeticParameters;
-      addOperation(parts,
-                   wordFor(layout.arithmeticOperations, vocab::kArithmetic,
-                           at<uint8_t>(parameters, layout.arithmeticOperation)),
-                   operandName(parameters + layout.arithmeticFirst), operandName(parameters + layout.arithmeticSecond),
-                   signalName(parameters + layout.arithmeticOutput), signals);
+      addOperation(
+         parts,
+         wordFor(layout.arithmeticOperations, vocab::kArithmetic, at<uint8_t>(parameters, layout.arithmeticOperation)),
+         operandName(parameters + layout.arithmeticFirst), operandName(parameters + layout.arithmeticSecond),
+         signalName(parameters + layout.arithmeticOutput), signals);
    } else if (const std::byte* decider = agui::objectAsBase(entity, ".?AVDeciderCombinator@@")) {
       const auto& conditions = at<MsvcVector<const std::byte>>(decider, layout.deciderConditions);
       const auto& outputs = at<MsvcVector<const std::byte>>(decider, layout.deciderOutputs);
       std::string output = outputs.first != outputs.last ? signalName(outputs.first + layout.deciderOutputSignal) : "";
       if (conditions.first != conditions.last) {
          const std::byte* condition = conditions.first;
-         addOperation(parts,
-                      wordFor(layout.comparisons, vocab::kComparisons,
-                              at<uint8_t>(condition, layout.conditionComparator)),
-                      signalName(condition + layout.conditionFirst), operandName(condition + layout.conditionSecond),
-                      output, signals);
+         addOperation(
+            parts, wordFor(layout.comparisons, vocab::kComparisons, at<uint8_t>(condition, layout.conditionComparator)),
+            signalName(condition + layout.conditionFirst), operandName(condition + layout.conditionSecond), output,
+            signals);
       } else if (signals && !output.empty()) {
          parts.push_back(vocab::kOutputSignal(output));
       }
@@ -258,7 +251,8 @@ void addAlwaysShown(std::vector<std::string>& parts, const std::byte* entity, bo
       }
    } else if (const std::byte* panel = agui::objectAsBase(entity, ".?AVDisplayPanel@@")) {
       parts.push_back(signalName(panel + layout.panelIcon));
-      if (at<bool>(panel, layout.panelAlwaysShow)) parts.push_back(text::speakable(view(at<MsvcString>(panel, layout.panelText))));
+      if (at<bool>(panel, layout.panelAlwaysShow))
+         parts.push_back(text::speakable(view(at<MsvcString>(panel, layout.panelText))));
    }
 }
 
@@ -315,8 +309,8 @@ void addAltDetails(std::vector<std::string>& parts, const std::byte* widget, con
       uint8_t mode = at<uint8_t>(loader, layout.loaderFilterMode);
       if (mode == layout.loaderWhitelist || mode == layout.loaderBlacklist) {
          const std::byte* filters = loader + layout.loaderFilters;
-         const std::byte* prototype = agui::objectAsBase(at<const std::byte*>(entity, layout.entityPrototypeOf),
-                                                         ".?AVLoaderPrototype@@");
+         const std::byte* prototype =
+            agui::objectAsBase(at<const std::byte*>(entity, layout.entityPrototypeOf), ".?AVLoaderPrototype@@");
          if (prototype && at<bool>(prototype, layout.loaderPerLane)) {
             std::string left = filterName(filters);
             std::string right = filterName(filters + layout.itemFilterSize);
@@ -400,7 +394,7 @@ bool select(const std::byte* widget, int x, int y, std::byte* out) {
    if (layout.selectionResultSize > 64) return false;
    MapPosition centre{x * 256 + 128, y * 256 + 128};
    reinterpret_cast<SelectionFunction>(layout.blueprintSelectionAt)(blueprintOf(widget), out, &centre,
-                                                                     parametersOf(widget));
+                                                                    parametersOf(widget));
    return at<const std::byte*>(out, layout.selectionEntity) || at<uint16_t>(out, layout.selectionTile);
 }
 

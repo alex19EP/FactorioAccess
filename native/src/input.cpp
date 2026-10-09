@@ -257,8 +257,9 @@ void injectText(std::string text) {
 
 void injectModifiers(bool shift, bool ctrl, bool alt, bool down) {
    std::scoped_lock lock(g_mutex);
-   for (auto [held, key, mod] : {std::tuple{shift, keys::LeftShift, kModLeftShift},
-                                 std::tuple{ctrl, keys::LeftCtrl, kModLeftCtrl}, std::tuple{alt, keys::LeftAlt, kModLeftAlt}})
+   for (auto [held, key, mod] :
+        {std::tuple{shift, keys::LeftShift, kModLeftShift}, std::tuple{ctrl, keys::LeftCtrl, kModLeftCtrl},
+         std::tuple{alt, keys::LeftAlt, kModLeftAlt}})
       if (held) g_injected.push_back({key, down ? mod : uint16_t{0}, down, {}});
 }
 

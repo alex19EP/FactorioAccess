@@ -2,8 +2,8 @@
 
 // The game's info panel for what the cursor points at (see selectedinfo.h), opened by the Y key in
 // the world: the entity's name, status, recipe, contents, power, health and the rest (in the map
-// editor a tile's too), as the game shows them beside the mouse. Up and Down read it a line at a time; the generic walker
-// reads its rows and tables as it does any window's.
+// editor a tile's too), as the game shows them beside the mouse. Up and Down read it a line at a time; the generic
+// walker reads its rows and tables as it does any window's.
 //
 // It is what the game said when Y was pressed. It closes on Escape, when the cursor points at
 // something else or what it described is gone, and when a window opens over the map or Ctrl+Tab

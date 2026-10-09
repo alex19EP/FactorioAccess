@@ -62,7 +62,8 @@ std::string StateOf(const Widget* widget)
     case Kind::Slider:
     {
         agui::SliderValue slider = agui::sliderValue(widget);
-        return std::format(" value={:g} min={:g} max={:g} step={:g}", slider.value, slider.min, slider.max, slider.step);
+        return std::format(
+            " value={:g} min={:g} max={:g} step={:g}", slider.value, slider.min, slider.max, slider.step);
     }
     case Kind::Switch:
         switch (agui::switchState(widget))

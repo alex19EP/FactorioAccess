@@ -146,9 +146,9 @@ inline constexpr Word kAlerts{"fa.native-alerts"};
 inline constexpr Word kGoal{"fa.native-goal"};
 // AlertCategory in the game's order, from attack to pipelines.
 inline constexpr Word kAlertCategories[] = {
-    {"fa.native-alert-attack"},    {"fa.native-alert-construction"}, {"fa.native-alert-platform-construction"},
-    {"fa.native-alert-custom"},    {"fa.native-alert-logistics"},    {"fa.native-alert-trains"},
-    {"fa.native-alert-pipelines"},
+   {"fa.native-alert-attack"},    {"fa.native-alert-construction"}, {"fa.native-alert-platform-construction"},
+   {"fa.native-alert-custom"},    {"fa.native-alert-logistics"},    {"fa.native-alert-trains"},
+   {"fa.native-alert-pipelines"},
 };
 inline constexpr Word kHealth{"fa.native-health"};
 inline constexpr Word kShield{"fa.native-shield"};
@@ -238,18 +238,18 @@ inline constexpr Word kLockedRecipe{"fa.native-locked-recipe"};
 // ArithmeticCombinatorParameters::Operation, Comparison and SelectorCombinatorParameters::Operation
 // in the game's order. A selector's Select is said with its maximum or minimum.
 inline constexpr Word kArithmetic[11] = {
-    {"fa.native-multiply"}, {"fa.native-divide"},     {"fa.native-plus"},        {"fa.native-minus"},
-    {"fa.native-modulo"},   {"fa.native-power"},      {"fa.native-left-shift"},  {"fa.native-right-shift"},
-    {"fa.native-and"},      {"fa.native-or"},         {"fa.native-xor"},
+   {"fa.native-multiply"}, {"fa.native-divide"}, {"fa.native-plus"},       {"fa.native-minus"},
+   {"fa.native-modulo"},   {"fa.native-power"},  {"fa.native-left-shift"}, {"fa.native-right-shift"},
+   {"fa.native-and"},      {"fa.native-or"},     {"fa.native-xor"},
 };
 inline constexpr Word kComparisons[6] = {
-    {"fa.native-greater-than"},     {"fa.native-less-than"},     {"fa.native-equals"},
-    {"fa.native-greater-or-equal"}, {"fa.native-less-or-equal"}, {"fa.native-not-equal"},
+   {"fa.native-greater-than"},     {"fa.native-less-than"},     {"fa.native-equals"},
+   {"fa.native-greater-or-equal"}, {"fa.native-less-or-equal"}, {"fa.native-not-equal"},
 };
 inline constexpr Word kSelector[9] = {
-    {"fa.native-select"},           {"fa.native-count"},          {"fa.native-random"},
-    {"fa.native-quality-transfer"}, {"fa.native-stack-size"},     {"fa.native-rocket-capacity"},
-    {"fa.native-quality-filter"},   {"fa.native-time"},           {"fa.native-quality-select"},
+   {"fa.native-select"},           {"fa.native-count"},      {"fa.native-random"},
+   {"fa.native-quality-transfer"}, {"fa.native-stack-size"}, {"fa.native-rocket-capacity"},
+   {"fa.native-quality-filter"},   {"fa.native-time"},       {"fa.native-quality-select"},
 };
 inline constexpr Word kSelectMaximum{"fa.native-select-maximum"};
 inline constexpr Word kSelectMinimum{"fa.native-select-minimum"};

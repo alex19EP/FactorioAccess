@@ -54,8 +54,7 @@ graph::NodeVtable TechnologyNode(const Widget* slot)
     vtable.Type = nullptr;
     vtable.Announcements.clear();
     vtable.Announcements.emplace_back([slot]() { return agui::technologyInfo(slot).name; }, false, Kinds::Label);
-    vtable.Announcements.emplace_back(
-        [slot]() { return StatusText(agui::technologyInfo(slot)); }, true, Kinds::Value);
+    vtable.Announcements.emplace_back([slot]() { return StatusText(agui::technologyInfo(slot)); }, true, Kinds::Value);
     vtable.Announcements.emplace_back([slot]() { return ProgressText(agui::technologyInfo(slot)); });
     return vtable;
 }
@@ -107,12 +106,13 @@ void AddQueue(graph::GraphBuilder& builder, const Widget* queue)
         std::string key = std::format("queue/{}/{}", id, seen[id]++);
         builder.StartLine(key);
         builder.AddItem(graph::ControlId::Structural(key), TechnologyNode(entry.slot));
-        builder.AddItem(graph::ControlId::Structural(key + "/cancel"), ControlNode(entry.cancel,
-            [cancel = entry.cancel]()
-            {
-                std::string name = NameOf(cancel);
-                return name.empty() ? std::string(vocab::kCancel) : name;
-            }));
+        builder.AddItem(graph::ControlId::Structural(key + "/cancel"),
+            ControlNode(entry.cancel,
+                [cancel = entry.cancel]()
+                {
+                    std::string name = NameOf(cancel);
+                    return name.empty() ? std::string(vocab::kCancel) : name;
+                }));
         builder.EndRow();
     }
     if (entries.empty())
@@ -184,13 +184,14 @@ void AddSelected(graph::GraphBuilder& builder, const agui::TechnologyWindow& win
     BeginZone(builder, "selected", std::string(vocab::kSelectedTechnology));
     const Widget* title = window.title;
     const Widget* status = window.status;
-    builder.AddItem(graph::ControlId::Structural("selected/title"), TextNode(title,
-        [title, status]()
-        {
-            std::string line = LabelText(title);
-            std::string state = agui::visible(status) ? LabelText(status) : std::string();
-            return state.empty() ? line : line + " " + state;
-        }));
+    builder.AddItem(graph::ControlId::Structural("selected/title"),
+        TextNode(title,
+            [title, status]()
+            {
+                std::string line = LabelText(title);
+                std::string state = agui::visible(status) ? LabelText(status) : std::string();
+                return state.empty() ? line : line + " " + state;
+            }));
     // The details start with the technology's own button, which the title already reads.
     AddDetails(builder, "selected", window.featured, FindDescendant(window.featured, "TechnologySlot"));
     EndZone(builder);
@@ -239,15 +240,16 @@ graph::NodeVtable VertexNode(const agui::TechnologyVertex& vertex, bool central,
     // The selected technology is where the stop is entered.
     if (central)
         vtable.Announcements.emplace_back([]() { return std::string(vocab::kSelected); }, false, Kinds::Selected);
-    vtable.Announcements.emplace_back([index, count]() { return vocab::position(index, count); }, false,
-        Kinds::Position);
+    vtable.Announcements.emplace_back(
+        [index, count]() { return vocab::position(index, count); }, false, Kinds::Position);
     vtable.SpeaksOwnPosition = true;
     return vtable;
 }
 
 // Of the technologies an edge leads to, the one in the nearest layer, and of those the nearest
 // across.
-std::optional<std::size_t> Nearest(const agui::TechnologyGraph& graph, std::size_t from, const std::vector<std::size_t>& to)
+std::optional<std::size_t> Nearest(
+    const agui::TechnologyGraph& graph, std::size_t from, const std::vector<std::size_t>& to)
 {
     const agui::TechnologyVertex& origin = graph.vertices[from];
     std::optional<std::size_t> best;
@@ -286,8 +288,8 @@ void AddGraph(graph::GraphBuilder& builder, const agui::TechnologyWindow& window
         for (std::size_t at = 0; at < members.size(); ++at)
         {
             std::size_t i = members[at];
-            graph::NodeVtable vtable =
-                VertexNode(graph.vertices[i], i == graph.central, static_cast<int>(at + 1), static_cast<int>(members.size()));
+            graph::NodeVtable vtable = VertexNode(
+                graph.vertices[i], i == graph.central, static_cast<int>(at + 1), static_cast<int>(members.size()));
             builder.AddNode(ids[i], std::move(vtable));
         }
     for (const auto& [layer, members] : layers)

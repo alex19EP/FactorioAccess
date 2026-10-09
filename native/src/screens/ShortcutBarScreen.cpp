@@ -29,8 +29,7 @@ graph::NodeVtable ShortcutNode(const agui::Shortcut& shortcut)
     graph::NodeVtable vtable = ControlNode(button, [name = text::speakable(shortcut.name)]() { return name; });
     if (!shortcut.toggle)
         return vtable;
-    auto state = [button]()
-    { return std::string(agui::buttonToggled(button) ? vocab::kPressed : vocab::kNotPressed); };
+    auto state = [button]() { return std::string(agui::buttonToggled(button) ? vocab::kPressed : vocab::kNotPressed); };
     // The value is the node's first live part.
     for (graph::NodeAnnouncement& announcement : vtable.Announcements)
         if (announcement.Live)
