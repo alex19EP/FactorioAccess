@@ -1217,7 +1217,9 @@ struct Layout {
    // IconButtonWithNumber::count. The alert button blinks by setting it to 0 every other half second.
    uint32_t iconButtonCount = 0;
    uint32_t gameViewGoal = 0;            // GameView::goalDescription, std::unique_ptr<GoalDescription>
-   uint32_t goalLabel = 0;               // GoalDescription::label, agui::Label
+   // The goal window's frame: the goal text (GoalDescription::label), then the root of the
+   // scenario's player.gui.goal, where story.lua's set_info puts hints, progress bars and tables.
+   uint32_t goalInnerFrame = 0;          // GoalDescription::innerFrame, agui::Frame
    uint32_t gameViewBottom = 0;          // GameView::bottomContainer, std::unique_ptr<BottomContainer>
    // BottomContainer's bars, each a GenericTargeter<ControllerProgressBar>.
    uint32_t bottomHealthBar = 0;

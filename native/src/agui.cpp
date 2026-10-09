@@ -1089,9 +1089,9 @@ ChartSearchResults chartSearchResults() {
 
 const Widget* mapViewOptions() { return shownMember(gameView(), layout.gameViewMapViewOptions); }
 
-const Widget* goalLabel() {
+const Widget* goalFrame() {
    const Widget* goal = shownMember(gameView(), layout.gameViewGoal);
-   return goal ? member(goal, layout.goalLabel) : nullptr;
+   return goal ? member(goal, layout.goalInnerFrame) : nullptr;
 }
 
 HudBars hudBars() {
