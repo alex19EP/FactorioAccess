@@ -35,6 +35,7 @@
 #include "screens/ModsScreen.hpp"
 #include "screens/NewGameScreen.hpp"
 #include "screens/PipeScreen.hpp"
+#include "screens/ModWindowsScreen.hpp"
 #include "screens/QuickBarScreen.hpp"
 #include "screens/ScenarioMessageScreen.hpp"
 #include "screens/SelectedInfoScreen.hpp"
@@ -132,7 +133,10 @@ void start() {
    // An electric pole's network window, with the mod's views of its wires and supply area, and the
    // surface's like it.
    manager.Register(std::make_unique<screens::ElectricNetworkScreen>());
-   // The quickbar, while Ctrl+Tab has moved to it.
+   // The windows mods and the scenario put on the screen, while Ctrl+Tab has moved to them; it
+   // also announces one that shows up.
+   manager.Register(std::make_unique<screens::ModWindowsScreen>());
+   // The quickbar, the part after them.
    manager.Register(std::make_unique<screens::QuickBarScreen>());
    // The shortcut bar, the part after it.
    manager.Register(std::make_unique<screens::ShortcutBarScreen>());

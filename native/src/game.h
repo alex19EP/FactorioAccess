@@ -1057,6 +1057,24 @@ struct Layout {
    uint32_t relativeWrapperLeft = 0;         // ::leftFlow, agui::VerticalFlow
    uint32_t relativeWrapperRight = 0;        // ::rightFlow, agui::VerticalFlow
    uint32_t relativeWrapperBottom = 0;       // ::bottomFlow, agui::HorizontalFlow
+   // A player's mod GUI (LuaPlayer::gui): a root element per position, and for player.gui.screen
+   // each child's widget is added straight to the Gui's base widget
+   // (CustomEmptyWidget::addScreenWidget), beside the game's own windows. A Lua frame there is a
+   // plain agui::Window.
+   uint32_t playerCustomGui = 0;             // Player::customGui, CustomGui*
+   uint32_t customGuiRootElements = 0;       // CustomGui::rootElements, std::map<Position, CustomGuiElement*>
+   // CustomGui::modOwnersElementMapping, std::map<std::string, std::set<unsigned>>: "mod-<name>" to
+   // the indices of every element that mod made.
+   uint32_t customGuiModOwners = 0;
+   uint32_t customGuiScreen = 0;             // CustomGui::Position Screen (a one-byte enum)
+   uint32_t positionNodeKey = 0;             // the rootElements node's _Myval.first
+   uint32_t positionNodeElement = 0;         // ::_Myval.second
+   uint32_t ownerNodeName = 0;               // the modOwnersElementMapping node's _Myval.first
+   uint32_t ownerNodeIndices = 0;            // ::_Myval.second, std::set<unsigned>
+   uint32_t indexNodeValue = 0;              // the std::set<unsigned> node's _Myval
+   uint32_t guiElementWidget = 0;            // CustomGuiElement::widget, agui::Widget*
+   uint32_t guiElementIndex = 0;             // CustomGuiElement::index
+   uint32_t guiElementChildren = 0;          // CustomGuiElement::children, std::vector<CustomGuiElement*>
 
    // The quickbar along the bottom of the screen (QuickBarGui), reached the way the game's own
    // quickbar keys reach it: GameView::controllerView->getQuickBar().

@@ -802,6 +802,25 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.relativeWrapperLeft, "CustomGuiGameGuiWrapper", "leftFlow");
    offset(layout.relativeWrapperRight, "CustomGuiGameGuiWrapper", "rightFlow");
    offset(layout.relativeWrapperBottom, "CustomGuiGameGuiWrapper", "bottomFlow");
+   offset(layout.playerCustomGui, "Player", "customGui");
+   offset(layout.customGuiRootElements, "CustomGui", "rootElements");
+   offset(layout.customGuiModOwners, "CustomGui", "modOwnersElementMapping");
+   enumerator(layout.customGuiScreen, "CustomGui::Position", "Screen");
+   {
+      constexpr const char* kPositionNode =
+         "std::_Tree_node<std::pair<enum CustomGui::Position const ,CustomGuiElement *>,void *>";
+      constexpr const char* kOwnerNode =
+         "std::_Tree_node<std::pair<std::basic_string<char,std::char_traits<char>,std::allocator<char> > const ,"
+         "std::set<unsigned int,std::less<unsigned int>,std::allocator<unsigned int> > >,void *>";
+      offset(layout.positionNodeKey, kPositionNode, "_Myval.first");
+      offset(layout.positionNodeElement, kPositionNode, "_Myval.second");
+      offset(layout.ownerNodeName, kOwnerNode, "_Myval.first");
+      offset(layout.ownerNodeIndices, kOwnerNode, "_Myval.second");
+      offset(layout.indexNodeValue, "std::_Tree_node<unsigned int,void *>", "_Myval");
+   }
+   offset(layout.guiElementWidget, "CustomGuiElement", "widget");
+   offset(layout.guiElementIndex, "CustomGuiElement", "index");
+   offset(layout.guiElementChildren, "CustomGuiElement", "children");
 
    offset(layout.gameViewControllerView, "GameView", "controllerView");
    classSlot(layout.controllerViewQuickBar, "ControllerView", "getQuickBar");
