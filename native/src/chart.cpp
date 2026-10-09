@@ -9,6 +9,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <optional>
 #include <string>
 #include <string_view>
 
@@ -162,22 +163,27 @@ std::string describe(const std::byte* player, const std::byte* selection) {
 // The selection said last; a new one is said once, however the cursor moves within it.
 const void* g_selected = nullptr;
 std::string g_said;
+// Where the cursor was when something was last selected. A selection tool in hand hides the
+// selection, and it comes back unchanged when the tool leaves the hand with the cursor still there.
+std::optional<world::CursorPosition> g_selectedAt;
 
 } // namespace
 
 void tick() {
-   const std::byte* source = world::drivesCursor() ? chartSource() : nullptr;
+   const std::optional<world::CursorPosition> cursor = world::cursorPosition();
+   const std::byte* source = cursor ? chartSource() : nullptr;
    alignas(8) std::byte selection[game::kChartSelectionCapacity]{};
    if (source) reinterpret_cast<SelectionFunction>(layout.chartSelection)(source, selection);
    const void* tag = at<const void*>(selection, layout.chartSelectionTag);
    const void* target = at<const void*>(selection, layout.chartSelectionTarget);
    const void* selected = tag ? tag : target ? target : at<const void*>(selection, layout.chartSelectionPatch);
+   if (selected)
+      g_selectedAt = cursor;
+   else if (cursor != g_selectedAt)
+      g_said.clear();
    if (selected == g_selected) return;
    g_selected = selected;
-   if (!selected) {
-      g_said.clear();
-      return;
-   }
+   if (!selected) return;
    // Another resource of the same patch reads the same.
    std::string said = describe(sourcePlayer(source), selection);
    if (said.empty() || said == g_said) return;

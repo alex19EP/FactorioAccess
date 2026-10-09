@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <optional>
 
 // The game world under the FA cursor. The mod reports where its cursor is, and the game's own
@@ -16,6 +17,14 @@ void releaseCursor(int playerIndex);
 // Whether the mod drives the game cursor in the current game. The real mouse then plays no part in
 // the world: a blind player does not know where it rests.
 bool drivesCursor();
+// Where the mod's cursor is in the current game, in the game's fixed point map units, while the
+// mod drives the game cursor.
+struct CursorPosition {
+   int32_t x;
+   int32_t y;
+   bool operator==(const CursorPosition&) const = default;
+};
+std::optional<CursorPosition> cursorPosition();
 // Whether `playerIndex` may be this client's player: false only once a game with a local player
 // is up and that player is someone else.
 bool mayBeLocalPlayer(int playerIndex);

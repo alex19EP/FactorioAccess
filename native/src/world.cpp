@@ -532,6 +532,12 @@ bool drivesCursor() {
    return cursor(currentGame(), position);
 }
 
+std::optional<CursorPosition> cursorPosition() {
+   Position position;
+   if (!cursor(currentGame(), position)) return std::nullopt;
+   return CursorPosition{position.x, position.y};
+}
+
 bool mayBeLocalPlayer(int playerIndex) {
    const std::byte* game = currentGame();
    const std::byte* player = game ? localPlayer(game) : nullptr;
