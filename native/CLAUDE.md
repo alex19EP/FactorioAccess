@@ -138,5 +138,14 @@ curl -s --data "tab down enter" localhost:8773/key   # inject keys, returns the 
 curl -s "localhost:8773/speech?since=0"         # everything said
 ```
 
+Rules for starting the game and using the dev server:
+- Don't poll the dev server while the game starts or loads a save. Watch `factorio-current.log`
+  instead: "Factorio initialised" after a start, "Checksum for script __FactorioAccess__" after a
+  load. Then wait a few more seconds and send one request. A start can take minutes.
+- Send keys in small batches and read the result before the next batch.
+- Other sessions share the one Steam game and the dev server port. Tell them before launching, and
+  again when the game is free.
+- Close the game (`just stop`) as soon as the test is done.
+
 The DLL's log is `factorio-access-native.log` beside it. The game's log is
 `factorio-current.log` in the user data directory.
