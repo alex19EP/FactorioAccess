@@ -828,13 +828,6 @@ data:extend({
 
    {
       type = "custom-input",
-      name = "fa-cas-m",
-      key_sequence = "CONTROL + SHIFT + ALT + M",
-      consuming = "none",
-   },
-
-   {
-      type = "custom-input",
       name = "fa-s-enter",
       key_sequence = "SHIFT + RETURN",
       consuming = "none",

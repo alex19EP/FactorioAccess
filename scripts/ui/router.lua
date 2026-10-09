@@ -157,7 +157,6 @@ mod.UI_NAMES = {
    HELP = "help",
    TUTORIAL = "tutorial",
    SCHEDULE_EDITOR = "schedule_editor",
-   SETTINGS = "settings",
    PROTOTYPE_LISTER = "prototype_lister",
    -- Test UI names (used in automated tests)
    TEST_ASSEMBLING_MACHINE = "test-assembling-machine",

@@ -36,13 +36,12 @@ function mod.on_tick()
       PlayerCraftingSonifier.on_tick_per_player(pindex)
 
       -- Grid-based sonification (crafting machines etc)
-      if settings.global[SETTING_NAMES.SONIFICATION_CRAFTING].value then GridSonifier.on_tick_per_player(pindex) end
+      local mod_settings = player.mod_settings
+      if mod_settings[SETTING_NAMES.SONIFICATION_CRAFTING].value then GridSonifier.on_tick_per_player(pindex) end
 
       -- Combat sonification
-      if settings.global[SETTING_NAMES.SONIFICATION_COMBAT_ENEMIES].value then EnemyRadar.on_tick_per_player(pindex) end
-      if settings.global[SETTING_NAMES.SONIFICATION_COMBAT_SPAWNERS].value then
-         SpawnerRadar.on_tick_per_player(pindex)
-      end
+      if mod_settings[SETTING_NAMES.SONIFICATION_COMBAT_ENEMIES].value then EnemyRadar.on_tick_per_player(pindex) end
+      if mod_settings[SETTING_NAMES.SONIFICATION_COMBAT_SPAWNERS].value then SpawnerRadar.on_tick_per_player(pindex) end
 
       -- Health bar sonification
       HealthBar.on_tick_per_player(pindex)

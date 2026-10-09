@@ -113,7 +113,7 @@ function mod.on_tick_per_player(pindex)
       return
    end
 
-   if not settings.global[SETTING_NAMES.SONIFICATION_INSERTER].value then
+   if not player.mod_settings[SETTING_NAMES.SONIFICATION_INSERTER].value then
       reset_state(state)
       return
    end
