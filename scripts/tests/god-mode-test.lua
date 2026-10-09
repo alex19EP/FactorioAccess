@@ -1,5 +1,6 @@
 local TestRegistry = require("scripts.test-registry")
 local describe, it = TestRegistry.describe, TestRegistry.it
+local Cursor = require("scripts.cursor")
 local InventoryUtils = require("scripts.inventory-utils")
 local MovementHistory = require("scripts.movement-history")
 local Viewpoint = require("scripts.viewpoint")
@@ -32,7 +33,7 @@ describe("God mode", function()
    end)
 
    it("walks with the anchored cursor one tile ahead", function(ctx)
-      local player, character, start
+      local player, character, start, jump, jumped
 
       ctx:init(function()
          player = game.get_player(1)
@@ -43,6 +44,13 @@ describe("God mode", function()
          player.set_controller({ type = defines.controllers.god })
          Viewpoint.get_viewpoint(1):set_cursor_anchored(true)
          start = player.physical_position
+         -- The cursor itself is the DLL's; see where walking sends it
+         jump = Cursor.jump
+         ---@diagnostic disable-next-line: duplicate-set-field
+         Cursor.jump = function(pindex, position)
+            jumped = { x = math.floor(position.x), y = math.floor(position.y) }
+            jump(pindex, position)
+         end
       end)
 
       -- The game walks a player only while its walking state says so, as a held key does
@@ -60,10 +68,11 @@ describe("God mode", function()
       end)
 
       ctx:at_tick(24, function()
+         Cursor.jump = jump
          local pos = player.physical_position
-         local cursor = Viewpoint.get_viewpoint(1):get_cursor_pos()
-         ctx:assert_equals(math.floor(pos.x) + 1, cursor.x, "The anchored cursor is a tile ahead")
-         ctx:assert_equals(math.floor(pos.y), cursor.y, "on the god's row")
+         ctx:assert_not_nil(jumped, "Walking moves the anchored cursor")
+         ctx:assert_equals(math.floor(pos.x) + 1, jumped.x, "The anchored cursor is a tile ahead")
+         ctx:assert_equals(math.floor(pos.y), jumped.y, "on the god's row")
          Viewpoint.get_viewpoint(1):set_cursor_anchored(false)
          player.set_controller({ type = defines.controllers.character, character = character })
       end)

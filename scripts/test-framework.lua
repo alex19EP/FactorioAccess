@@ -29,8 +29,7 @@ end
 local test_files = {
    -- Integration/smoke tests as per claude-prompt.md
    "simple-smoke-test", -- Very basic tests to verify framework works
-   "cursor-movement-test", -- Test mod's cursor system (not vanilla)
-   "wasd-event-test", -- Test cursor movement via WASD simulation
+   "wasd-event-test", -- Test that a movement key reads where its event says the cursor went
    -- Selected tests from feedback
    "crafting-menu-test", -- Test crafting menu navigation (test #10)
    "inventory-coordinates-test", -- Test inventory coordinate announcements (test #12)
@@ -39,7 +38,6 @@ local test_files = {
    "rich-text-test", -- Test rich text processing and shorthand parsing
    "assembler-recipe-test", -- Test assembling machine recipe management
    "assembling-machine-ui-test", -- Test assembling machine UI with recipe selection
-   "roboport-cursor-distance-test", -- Test roboport distance calculations in cursor mode
    -- "fa-info-smoke-test", -- Test entity information extraction system (temporarily disabled)
    -- "sound-tests", -- Test sound system integration (temporarily disabled)
    -- "test-rail-basic-ops", -- Test basic rail operations module (rails removed - 2.0 incompatible)

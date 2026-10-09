@@ -1125,6 +1125,7 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.inputActionData, "InputAction", "buffer");
    classSlot(layout.inputSourceProcess, "InputSource", "process");
    enumerator(layout.actionMoveOnPan, "InputActionType", "MoveOnPan");
+   enumerator(layout.actionSetZoom, "InputActionType", "SetZoom");
    offset(layout.moveOnPanPosition, "ActionData::MoveOnPanData", "position");
    offset(layout.moveOnPanZoom, "ActionData::MoveOnPanData", "zoom");
    offset(layout.moveOnPanSurface, "ActionData::MoveOnPanData", "surface");

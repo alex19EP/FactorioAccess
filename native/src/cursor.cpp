@@ -186,8 +186,8 @@ MoveInputs g_moveInputs;
 
 const MoveInputs& moveInputs() {
    const std::byte* settings = at<const std::byte*>(globalContext(), layout.globalControlSettings);
-   const auto inputs = settings ? at<MsvcVector<const std::byte>>(settings, layout.customInputs)
-                                : MsvcVector<const std::byte>{};
+   const auto inputs =
+      settings ? at<MsvcVector<const std::byte>>(settings, layout.customInputs) : MsvcVector<const std::byte>{};
    if (inputs.first == g_moveInputs.first) return g_moveInputs;
    g_moveInputs = {inputs.first, {}};
    for (const std::byte* input = inputs.first; input < inputs.last; input += layout.controlInputSize) {
@@ -283,30 +283,46 @@ constexpr size_t kMaxPans = 32;
 
 alignas(16) std::byte g_actionBuffer[256];
 
-void pan(void* source, const View& view, Position target) {
+// Sends an input action of `type` whose data `fill` writes, as the game sends a sighted player's.
+template <class Fill>
+void send(void* source, uint32_t type, Fill fill) {
    if (layout.inputActionSize > sizeof(g_actionBuffer)) return;
    std::byte* action = g_actionBuffer;
    std::memset(action, 0, layout.inputActionSize);
-   put<uint16_t>(action, layout.inputActionType, static_cast<uint16_t>(layout.actionMoveOnPan));
+   put<uint16_t>(action, layout.inputActionType, static_cast<uint16_t>(type));
    put<uint16_t>(action, layout.inputActionPlayer, 0xffff);
-   std::byte* data = action + layout.inputActionData;
-   put<Position>(data, layout.moveOnPanPosition, target);
-   put<double>(data, layout.moveOnPanZoom, 0.0); // keep the zoom
-   put<uint32_t>(data, layout.moveOnPanSurface, at<uint32_t>(view.view, layout.gameViewSurfaceIndex));
+   fill(action + layout.inputActionData);
    virtualAt<bool (*)(void*, void*)>(source, layout.inputSourceProcess)(source, action);
+}
+
+void pan(void* source, const View& view, Position target) {
+   send(source, layout.actionMoveOnPan, [&](std::byte* data) {
+      put<Position>(data, layout.moveOnPanPosition, target);
+      put<double>(data, layout.moveOnPanZoom, 0.0); // keep the zoom
+      put<uint32_t>(data, layout.moveOnPanSurface, at<uint32_t>(view.view, layout.gameViewSurfaceIndex));
+   });
    g_pans.push_back(target);
    if (g_pans.size() > kMaxPans) g_pans.pop_front();
 }
 
-// std::optional<StrongTypedef<double, ZoomTag>>, which MSVC passes by address.
-struct OptionalZoom {
+void zoomTo(void* source, double zoom) {
+   send(source, layout.actionSetZoom, [&](std::byte* data) { put<double>(data, 0, zoom); });
+}
+
+// std::optional<StrongTypedef<double, ZoomTag>>, which MSVC passes by address. The game reads it
+// with MOVAPS, which faults unless it is on a 16-byte boundary, as the compiler's own copies are.
+struct alignas(16) OptionalZoom {
    double value;
    bool hasValue;
 };
 
+// The zoom of the character or god view a jump left, for the remote view it opens.
+double g_jumpZoom = 0;
+
 void openRemoteView(void* source, const View& view, Position target) {
    const void* surface = reinterpret_cast<const void* (*)(const void*)>(layout.gameViewSurface)(view.view);
-   const OptionalZoom zoom{at<double>(view.view, layout.gameViewZoom), true};
+   g_jumpZoom = at<double>(view.view, layout.gameViewZoom);
+   const OptionalZoom zoom{g_jumpZoom, true};
    reinterpret_cast<void (*)(void*, const void*, const Position*, const OptionalZoom*)>(layout.openRemoteView)(
       source, surface, &target, &zoom);
 }
@@ -391,9 +407,12 @@ void frame(void* source) {
    if (g_settling > 0 && --g_settling == 0) {
       if (view->controller == layout.controllerRemote) {
          // Within a tile of where the character view was: the map key, which leaves the cursor.
-         const bool atCharacter = std::abs(view->centre.x - g_fixedCentre.x) < kScale &&
-                                  std::abs(view->centre.y - g_fixedCentre.y) < kScale;
+         const bool atCharacter =
+            std::abs(view->centre.x - g_fixedCentre.x) < kScale && std::abs(view->centre.y - g_fixedCentre.y) < kScale;
          if (!atCharacter && g_awaitingRemote == 0) place(tileCentre(view->centre));
+         // Remote view opens on the full map whatever zoom it is given; a jump keeps the scale it
+         // left, where the game selects and builds.
+         if (g_awaitingRemote > 0) zoomTo(source, g_jumpZoom);
          g_awaitingRemote = 0;
       } else if (fixedCamera(view->controller)) {
          // Leaving remote view brings the cursor back to the character, as the camera comes back.

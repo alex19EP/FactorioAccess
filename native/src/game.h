@@ -1531,6 +1531,8 @@ struct Layout {
    uint32_t inputActionData = 0;
    uint32_t inputSourceProcess = 0;
    uint32_t actionMoveOnPan = 0; // InputActionType::MoveOnPan
+   // InputActionType::SetZoom, the zoom a map drag commits: its data is the zoom, a double.
+   uint32_t actionSetZoom = 0;
    uint32_t moveOnPanPosition = 0;
    uint32_t moveOnPanZoom = 0;
    uint32_t moveOnPanSurface = 0;

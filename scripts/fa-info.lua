@@ -1395,7 +1395,9 @@ function mod.ent_info(pindex, ent, is_scanner)
       message = MessageBuilder.new(),
       is_scanner = is_scanner,
       player = p,
-      cursor_pos = Cursor.tile(pindex),
+      -- Only spoken: which part of the entity the cursor is on. A readout of an entity elsewhere,
+      -- such as a scanner entry's, is from the entity's own tile.
+      cursor_pos = Cursor.speech_tile(pindex) or { x = math.floor(ent.position.x), y = math.floor(ent.position.y) },
    }
 
    -- We need to special case ghosts, so that we can fold the "x of y" in, e.g.

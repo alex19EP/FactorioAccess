@@ -202,7 +202,9 @@ function mod._dispatch_event(event_id, event)
    end
 
    -- A key's event carries the cursor: its handlers act there.
-   if cursor_event then Cursor.begin_event(event --[[@as EventData.CustomInputEvent]], pindex) end
+   if cursor_event then
+      Cursor.begin_event(event --[[@as EventData.CustomInputEvent]], pindex)
+   end
 
    -- Run handlers in priority order: test → ui → world
    local priority_order = { mod.EVENT_KIND.TEST, mod.EVENT_KIND.UI, mod.EVENT_KIND.WORLD }

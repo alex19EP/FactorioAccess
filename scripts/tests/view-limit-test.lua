@@ -1,6 +1,10 @@
+-- The DLL keeps the cursor on the screen and the remote view's camera on the cursor
+-- (native/src/cursor.h); a game without graphics runs no game view, so that is checked in game.
+-- These tests cover the mod's side: the screen check for its own moves, the views it speaks, and
+-- the map cells it reads.
 local TestRegistry = require("scripts.test-registry")
 local describe, it = TestRegistry.describe, TestRegistry.it
-local Viewpoint = require("scripts.viewpoint")
+local Cursor = require("scripts.cursor")
 local ViewLimit = require("scripts.view-limit")
 local Speech = require("scripts.speech")
 local MapCells = require("scripts.map-cells")
@@ -31,39 +35,6 @@ describe("Cursor limited to the screen", function()
          local x, y = math.floor(player.position.x), math.floor(player.position.y)
          ctx:assert(ViewLimit.allows(1, { x = x + 2, y = y + 2 }), "A tile next to the character is on the screen")
          ctx:assert(not ViewLimit.allows(1, { x = x + 1000, y = y }), "A tile 1000 tiles away is off the screen")
-      end)
-   end)
-
-   it("opens remote view for a jump off the screen and comes back to the character", function(ctx)
-      local player, far
-
-      ctx:init(function()
-         player = game.get_player(1)
-         far = { x = math.floor(player.position.x) + 400, y = math.floor(player.position.y) }
-      end)
-
-      ctx:at_tick(1, function()
-         Viewpoint.get_viewpoint(1):set_cursor_pos(far)
-         ctx:assert_equals(defines.controllers.remote, player.controller_type, "The jump opens remote view")
-         ctx:assert(math.abs(player.position.x - (far.x + 0.5)) < 1, "The camera is on the cursor")
-      end)
-
-      ctx:at_tick(2, function()
-         local next = { x = far.x + 50, y = far.y }
-         Viewpoint.get_viewpoint(1):set_cursor_pos(next)
-         ctx:assert(math.abs(player.position.x - (next.x + 0.5)) < 1, "The camera follows the cursor")
-         player.exit_remote_view()
-      end)
-
-      ctx:at_tick(3, function()
-         ctx:assert_equals(defines.controllers.character, player.controller_type)
-         local cursor = Viewpoint.get_viewpoint(1):get_cursor_pos()
-         ctx:assert_equals(
-            math.floor(player.position.x),
-            cursor.x,
-            "Leaving remote view puts the cursor on the character"
-         )
-         ctx:assert_equals(math.floor(player.position.y), cursor.y)
       end)
    end)
 
@@ -133,53 +104,11 @@ describe("Cursor limited to the screen", function()
       end)
    end)
 
-   it("follows a camera the game moves, and brings remote view at the character to the cursor", function(ctx)
-      local player, vp, near, far
+   it("reads map cells on the full map", function(ctx)
+      local player, old_zoom
 
       ctx:init(function()
          player = game.get_player(1)
-         vp = Viewpoint.get_viewpoint(1)
-         local x, y = math.floor(player.position.x), math.floor(player.position.y)
-         near = { x = x + 5, y = y + 3 }
-         far = { x = x + 300, y = y - 200 }
-      end)
-
-      -- The game raises the controller change once the handler that made it returns.
-      ctx:at_tick(1, function()
-         vp:set_cursor_pos(near)
-         -- As the map key opens it
-         player.set_controller({ type = defines.controllers.remote, position = player.physical_position })
-      end)
-
-      ctx:at_tick(2, function()
-         ctx:assert_equals(near.x, math.floor(player.position.x), "Remote view at the character comes to the cursor")
-         ctx:assert_equals(near.y, math.floor(player.position.y))
-         player.exit_remote_view()
-      end)
-
-      ctx:at_tick(3, function()
-         -- As an alert opens it
-         player.set_controller({ type = defines.controllers.remote, position = far })
-      end)
-
-      ctx:at_tick(4, function()
-         ctx:assert_equals(far.x, vp:get_cursor_pos().x, "Remote view opened elsewhere brings the cursor")
-         ctx:assert_equals(far.y, vp:get_cursor_pos().y)
-         player.teleport({ far.x + 40.5, far.y + 0.5 })
-      end)
-
-      ctx:at_tick(6, function()
-         ctx:assert_equals(far.x + 40, vp:get_cursor_pos().x, "The cursor follows a camera the game moved")
-         player.exit_remote_view()
-      end)
-   end)
-
-   it("moves by map cells on the full map", function(ctx)
-      local player, vp, old_zoom
-
-      ctx:init(function()
-         player = game.get_player(1)
-         vp = Viewpoint.get_viewpoint(1)
          old_zoom = player.zoom
       end)
 
@@ -196,25 +125,22 @@ describe("Cursor limited to the screen", function()
          ctx:assert_equals(600, Zoom.get_current_zoom_tiles(1))
          local size = Zoom.map_cell_size_for(600)
          ctx:assert_equals(16, size)
-         local start = vp:get_cursor_pos()
-         MapCells.move(1, defines.direction.east, size)
-         local cursor = vp:get_cursor_pos()
-         ctx:assert_equals(size / 2, cursor.x % size, "The cursor stands at the centre of a cell")
-         ctx:assert_equals(size / 2, cursor.y % size)
-         ctx:assert_equals(math.floor(start.x / size) + 1, math.floor(cursor.x / size), "It moved one cell east")
-         ctx:assert_equals(math.floor(start.y / size), math.floor(cursor.y / size))
+         Speech.start_capture()
+         Cursor.at(1, { x = size / 2, y = size / 2 }, function()
+            MapCells.read(1, size)
+         end)
+         ctx:assert_equals(1, #Speech.stop_capture(), "The cell the cursor is in is read")
          player.zoom = old_zoom
          player.exit_remote_view()
       end)
    end)
 
    it("limits the cursor in god mode as in the character view", function(ctx)
-      local player, character, vp, far
+      local player, character
 
       ctx:init(function()
          player = game.get_player(1)
          character = player.character
-         vp = Viewpoint.get_viewpoint(1)
       end)
 
       -- As the sandbox scenario leaves the player, without a character
@@ -233,48 +159,7 @@ describe("Cursor limited to the screen", function()
          local x, y = math.floor(player.position.x), math.floor(player.position.y)
          ctx:assert(ViewLimit.allows(1, { x = x + 2, y = y + 2 }), "A tile next to the god is on the screen")
          ctx:assert(not ViewLimit.allows(1, { x = x + 1000, y = y }), "A tile 1000 tiles away is off the screen")
-         far = { x = x + 400, y = y }
-         vp:set_cursor_pos(far)
-         ctx:assert_equals(defines.controllers.remote, player.controller_type, "The jump opens remote view")
-      end)
-
-      ctx:at_tick(6, function()
-         player.exit_remote_view()
-      end)
-
-      ctx:at_tick(7, function()
-         ctx:assert_equals(defines.controllers.god, player.controller_type, "Leaving remote view goes back to god mode")
-         local cursor = vp:get_cursor_pos()
-         ctx:assert_equals(math.floor(player.position.x), cursor.x, "Leaving remote view puts the cursor on the god")
-         ctx:assert_equals(math.floor(player.position.y), cursor.y)
          player.set_controller({ type = defines.controllers.character, character = character })
-      end)
-   end)
-
-   it("pulls an unanchored cursor back onto the screen", function(ctx)
-      local player, vp, old_zoom
-
-      ctx:init(function()
-         player = game.get_player(1)
-         vp = Viewpoint.get_viewpoint(1)
-         vp:set_cursor_anchored(false)
-         old_zoom = player.zoom
-         player.zoom = 1
-      end)
-
-      ctx:at_tick(1, function()
-         -- At zoom 1 a 1920 pixel wide screen shows 60 tiles across; 20 tiles east is on it.
-         local x, y = math.floor(player.position.x), math.floor(player.position.y)
-         vp:set_cursor_pos({ x = x + 20, y = y })
-         ctx:assert_equals(defines.controllers.character, player.controller_type)
-         player.zoom = 3
-      end)
-
-      ctx:at_tick(3, function()
-         local cursor = vp:get_cursor_pos()
-         ctx:assert(ViewLimit.allows(1, cursor), "Zooming in keeps the cursor on the screen")
-         ctx:assert(cursor.x > math.floor(player.position.x), "The cursor stays on its side, at the edge")
-         player.zoom = old_zoom
       end)
    end)
 end)

@@ -881,7 +881,7 @@ local function cursor_skip_iteration(pindex, direction, iteration_limit)
       --Iterate first_tile
       cursor_pos = FaUtils.offset_position_legacy(cursor_pos, direction, 1)
       if not ViewLimit.allows(pindex, cursor_pos) then return SKIP_AT_EDGE end
-      Cursor.jump(pindex,cursor_pos)
+      Cursor.jump(pindex, cursor_pos)
       selected_tile_is_water = FaUtils.tile_is_water(p.surface, cursor_pos)
 
       --Run checks and skip when needed
@@ -901,7 +901,7 @@ local function cursor_skip_iteration(pindex, direction, iteration_limit)
             --Iterate again
             cursor_pos = FaUtils.offset_position_legacy(cursor_pos, direction, 1)
             if not ViewLimit.allows(pindex, cursor_pos) then return SKIP_AT_EDGE end
-            Cursor.jump(pindex,cursor_pos)
+            Cursor.jump(pindex, cursor_pos)
             selected_tile_is_water = FaUtils.tile_is_water(p.surface, cursor_pos)
             moved = moved + 1
          end
@@ -912,7 +912,7 @@ local function cursor_skip_iteration(pindex, direction, iteration_limit)
    --Iterate first tile
    cursor_pos = FaUtils.offset_position_legacy(cursor_pos, direction, 1)
    if not ViewLimit.allows(pindex, cursor_pos) then return SKIP_AT_EDGE end
-   Cursor.jump(pindex,cursor_pos)
+   Cursor.jump(pindex, cursor_pos)
 
    current = compute_current()
 
@@ -993,7 +993,7 @@ local function cursor_skip_iteration(pindex, direction, iteration_limit)
       --Skip case: Move 1 more tile
       cursor_pos = FaUtils.offset_position_legacy(cursor_pos, direction, 1)
       if not ViewLimit.allows(pindex, cursor_pos) then return SKIP_AT_EDGE end
-      Cursor.jump(pindex,cursor_pos)
+      Cursor.jump(pindex, cursor_pos)
       moved = moved + 1
       current = compute_current()
    end
@@ -1025,7 +1025,7 @@ local function apply_skip_by_preview_size(pindex, direction, build_direction)
 
    local target = FaUtils.offset_position_legacy(cursor_pos, direction, shift)
    if not ViewLimit.allows(pindex, target) then return SKIP_AT_EDGE end
-   Cursor.jump(pindex,target)
+   Cursor.jump(pindex, target)
    return shift
 end
 
@@ -1458,7 +1458,8 @@ EventManager.on_event(
 ---@param event EventData.CustomInputEvent
 local function kb_jump_to_player(event)
    local pindex = event.player_index
-   Cursor.jump(pindex, game.get_player(pindex).position)
+   -- The character, wherever remote view's camera is
+   Cursor.jump(pindex, game.get_player(pindex).physical_position)
    read_coords(pindex, "Cursor returned ")
 end
 
@@ -1605,7 +1606,6 @@ EventManager.on_event(
       toggle_cursor_mode(pindex, false)
    end
 )
-
 
 EventManager.on_event(
    "fa-a-i",
