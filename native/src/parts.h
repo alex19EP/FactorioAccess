@@ -8,6 +8,7 @@ namespace fa::parts {
 
 enum class Part {
    None, // back to what is open
+   ModWindows, // only while a mod or the scenario shows a window on the screen
    QuickBar,
    ShortcutBar,
    SideMenu,
@@ -20,8 +21,11 @@ enum class Part {
 // The part in use, None while it is what is open.
 Part current();
 // Moves to the next part, or with a negative `direction` the previous one; past the last part comes
-// what is open again. Safe from any thread.
+// what is open again. Parts that are not available are passed over. Safe from any thread.
 void cycle(int direction);
+// Whether a part that is not always there (ModWindows) has anything now, as its screen sees it each
+// frame. Safe from any thread.
+void setAvailable(Part part, bool available);
 // Back to what is open.
 void close();
 

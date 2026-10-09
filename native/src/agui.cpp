@@ -958,6 +958,64 @@ const Widget* sideMenu() {
 
 const Widget* trackedAchievements() { return shownMember(gameView(), layout.gameViewTrackedAchievements); }
 
+namespace {
+
+// Calls visit(node) for every node of the std::map or std::set at `tree`.
+template <class Visit>
+void forEachNode(const std::byte* tree, Visit visit) {
+   const MapNode* head = at<const MapNode*>(tree, 0);
+   std::vector<const MapNode*> pending{head->parent};
+   while (!pending.empty()) {
+      const MapNode* node = pending.back();
+      pending.pop_back();
+      if (node->isNil) continue;
+      visit(reinterpret_cast<const std::byte*>(node));
+      pending.push_back(node->left);
+      pending.push_back(node->right);
+   }
+}
+
+constexpr std::string_view kOwnModKey = "mod-FactorioAccess";
+
+} // namespace
+
+std::vector<const Widget*> modScreenWindows() {
+   std::vector<const Widget*> windows;
+   const std::byte* view = gameView();
+   const std::byte* player = view ? at<const std::byte*>(view, layout.gameViewPlayer) : nullptr;
+   const std::byte* customGui = player ? at<const std::byte*>(player, layout.playerCustomGui) : nullptr;
+   if (!customGui) return windows;
+
+   const std::byte* screen = nullptr;
+   forEachNode(customGui + layout.customGuiRootElements, [&](const std::byte* node) {
+      if (at<uint8_t>(node, layout.positionNodeKey) == layout.customGuiScreen)
+         screen = at<const std::byte*>(node, layout.positionNodeElement);
+   });
+   if (!screen) return windows;
+
+   std::vector<uint32_t> own;
+   forEachNode(customGui + layout.customGuiModOwners, [&](const std::byte* node) {
+      if (readString(node, layout.ownerNodeName) != kOwnModKey) return;
+      forEachNode(node + layout.ownerNodeIndices,
+                  [&](const std::byte* index) { own.push_back(at<uint32_t>(index, layout.indexNodeValue)); });
+   });
+
+   std::vector<const Widget*> modWidgets;
+   const auto& elements = at<MsvcVector<const std::byte* const>>(screen, layout.guiElementChildren);
+   for (const std::byte* const* it = elements.first; it != elements.last; ++it) {
+      const Widget* widget = at<const Widget*>(*it, layout.guiElementWidget);
+      if (widget && std::ranges::find(own, at<uint32_t>(*it, layout.guiElementIndex)) == own.end())
+         modWidgets.push_back(widget);
+   }
+   // The Gui's root holds them in drawing order, which bring_to_front changes.
+   const Gui* gui = applicationGui();
+   const Widget* root = gui ? baseWidget(gui) : nullptr;
+   if (!root) return windows;
+   for (const Widget* child : children(root))
+      if (visible(child) && std::ranges::find(modWidgets, child) != modWidgets.end()) windows.push_back(child);
+   return windows;
+}
+
 ResearchBox researchBox() {
    const Widget* button = shownMember(gameView(), layout.gameViewResearch);
    if (!button) return {};

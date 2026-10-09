@@ -372,6 +372,11 @@ const Widget* wrappedWindow(const Widget* widget);
 // left of it, right of it, below it.
 std::vector<const Widget*> relativeFlows(const Widget* wrapper);
 
+// The visible windows mods and the scenario put on the loaded game's screen (player.gui.screen of
+// the player the game shows), in drawing order, the topmost last. Elements of any type count, not
+// only frames; FactorioAccess's own are left out. Empty outside a game.
+std::vector<const Widget*> modScreenWindows();
+
 // The quickbar along the bottom of the screen (QuickBarGui), or null outside a game or while the
 // view has none.
 const Widget* quickBar();

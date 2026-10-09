@@ -133,6 +133,11 @@ inline constexpr Word kAllShortcuts{"fa.native-all-shortcuts"};
 inline constexpr Word kSideMenu{"fa.native-side-menu"};
 inline constexpr Word kCraftingQueue{"fa.native-crafting-queue"};
 inline constexpr Word kTrackedAchievements{"fa.native-tracked-achievements"};
+// The windows mods and the scenario put on the screen, and the line said when one shows up, by
+// its title or without one.
+inline constexpr Word kModWindows{"fa.native-mod-windows"};
+inline constexpr Word kModWindowShown{"fa.native-mod-window-shown"};
+inline constexpr Word kUntitledModWindowShown{"fa.native-untitled-mod-window-shown"};
 // Remote view's panel of map overlay toggles and the add tag and add ping buttons.
 inline constexpr Word kMapViewOptions{"fa.native-map-view-options"};
 // The HUD's status: research, the alert categories, the scenario's goal and the bars.
