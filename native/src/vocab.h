@@ -273,6 +273,23 @@ inline constexpr Word kBeltUnit{"fa.ent-info-belt-shape-unit"};
 inline constexpr Word kBeltPouring{"fa.ent-info-belt-shape-pouring"};
 inline constexpr Word kBeltStop{"fa.ent-info-belt-shape-stop"};
 inline constexpr Word kBeltStart{"fa.ent-info-belt-shape-start"};
+// A pipe's shape from the pipes it joins, and the fluid connections on the tile ("Water in from
+// the North", "any fluid out to 3 East", "closed to the West", "South not connected").
+inline constexpr Word kPipeAlone{"fa.ent-info-pipe-alone"};
+inline constexpr Word kPipeCorner{"fa.ent-info-pipe-corner"};
+inline constexpr Word kPipeEnd{"fa.ent-info-pipe-end"};
+inline constexpr Word kPipeHorizontal{"fa.ent-info-pipe-horizontal"};
+inline constexpr Word kPipeVertical{"fa.ent-info-pipe-vertical"};
+inline constexpr Word kPipeCross{"fa.ent-info-pipe-cross"};
+inline constexpr Word kPipeTVertical{"fa.ent-info-pipe-t-vertical"};
+inline constexpr Word kPipeTHorizontal{"fa.ent-info-pipe-t-horizontal"};
+inline constexpr Word kFluidIn{"fa.ent-info-fluid-connections-in"};
+inline constexpr Word kFluidOut{"fa.ent-info-fluid-connections-out"};
+inline constexpr Word kFluidBoth{"fa.ent-info-fluid-connections-bidirectional"};
+inline constexpr Word kAnyFluid{"fa.ent-info-fluid-connections-any"};
+inline constexpr Word kFluidClosed{"fa.ent-info-fluid-connections-closed"};
+inline constexpr Word kUndergroundUnconnected{"fa.ent-info-fluid-connections-via-underground-not-connected"};
+inline constexpr Word kNotConnected{"fa.ent-info-fluid-connections-not-connected"};
 
 // The Y key in the world when the cursor points at no entity and no tile.
 inline constexpr Word kNothingHere{"fa.native-nothing-here"};

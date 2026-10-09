@@ -1176,6 +1176,30 @@ bool resolve(pdb::SymbolTable& symbols) {
    enumerator(layout.beltShapeLeft, "TransportBelt::Shape", "Left");
    enumerator(layout.beltShapeRight, "TransportBelt::Shape", "Right");
    offset(layout.undergroundPartner, "UndergroundBelt", "connection");
+   address(layout.entityGetFluidBoxes, "?getFluidBoxes@Entity@@QEAA?AVFluidBoxSet@@XZ");
+   address(layout.fluidBoxSetDestroy, "??1?$SmallVector@PEAVFluidBox@@$00$0A@@@QEAA@XZ");
+   size(layout.fluidBoxSetSize, "FluidBoxSet");
+   offset(layout.fluidBoxSetBegin, "FluidBoxSet", "begin_");
+   offset(layout.fluidBoxSetEnd, "FluidBoxSet", "end_");
+   offset(layout.fluidBoxOwner, "FluidBox", "owner");
+   offset(layout.fluidBoxPrototype, "FluidBox", "prototype");
+   offset(layout.fluidBoxFilter, "FluidBox", "buffer.filter.fluidID");
+   offset(layout.segmentFilter, "FluidSegment", "buffer.filter.fluidID");
+   offset(layout.fluidConnectionOpposite, "FluidBoxConnection", "oppositeIndex");
+   offset(layout.pipeDefinitionsBegin, "FluidBoxPrototype", "connectionDefinitions.begin_");
+   size(layout.pipeDefinitionSize, "PipeConnectionDefinition");
+   offset(layout.pipeDefinitionType, "PipeConnectionDefinition", "connectionType");
+   offset(layout.pipeDefinitionFlow, "PipeConnectionDefinition", "flowDirection");
+   enumerator(layout.pipeTypeNormal, "PipeConnectionType::Enum", "Normal");
+   enumerator(layout.pipeTypeUnderground, "PipeConnectionType::Enum", "Underground");
+   enumerator(layout.flowInput, "FluidFlowDirection::Enum", "Input");
+   enumerator(layout.flowOutput, "FluidFlowDirection::Enum", "Output");
+   address(layout.pipeLocation, "?getConnectionLocation@PipeConnectionDefinition@@QEBA?AVPipeConnectionLocation@@"
+                                "VMapPosition@@VDirection@@V?$NamedBool@VMirroringTag@@@@@Z");
+   offset(layout.pipeLocationPosition, "PipeConnectionLocation", "position");
+   offset(layout.pipeLocationDirection, "PipeConnectionLocation", "direction");
+   size(layout.pipeLocationSize, "PipeConnectionLocation");
+   classSlot(layout.entityIsMirrored, "Entity", "isMirrored");
 
    if (ok && (layout.chartSelectionSize > kChartSelectionCapacity || layout.patchInfoSize > kPatchInfoCapacity)) {
       log::error("A chart structure outgrew its buffer: ChartSelection {} bytes, ResourcePatchInfo {}",

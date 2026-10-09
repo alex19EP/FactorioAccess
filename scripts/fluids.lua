@@ -179,7 +179,8 @@ function mod.get_connection_points(ent)
 end
 
 --[[
-Given a pipe entity, determine to which pipes it is connected and pass back information on the shape.  This comes back
+Given a pipe entity, determine on which sides it is connected (to a pipe, a machine, a tank or anything else with a
+fluidbox) and pass back information on the shape.  This comes back
 as two values, a kind and a direction. Shape interpretations are as follows:
 
 - straight: a line of 3 segments and this pipe is the middle. Direction is either north or east, specifying if it is
@@ -196,7 +197,7 @@ This mismatches fa-info.  The trouble is that the above directions make sense fo
 would be the least verbose option, but that relies on blind people knowing what a T is, and figuring out what "northwest
 corner" means--we'd have to teach it.  We probably do at some point, but that's not now, so fa-info simplifies.
 
-This function considers only pipe entities, and ignores undergrounds. Undergrounds need to be announced separately.
+This function considers only pipe entities, and counts only what is connected now.
 ]]
 ---@param ent LuaEntity
 ---@return { shape: fa.NetworkShape.Shape, direction: defines.direction }
@@ -208,7 +209,7 @@ function mod.get_pipe_shape(ent)
    local conns = ent.get_fluid_box_pipe_connections(1)
 
    for _, conn in pairs(conns) do
-      if conn.target and (conn.target.type == "pipe" or conn.target.type == "infinity-pipe") then
+      if conn.target then
          local dx = conn.target_position.x - conn.position.x
          local dy = conn.target_position.y - conn.position.y
          local dir = FaUtils.direction_of_vector({ x = dx, y = dy })

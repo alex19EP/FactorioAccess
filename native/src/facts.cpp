@@ -1,13 +1,18 @@
 #include "facts.h"
 
+#include "agui.h"
 #include "game.h"
+#include "text.h"
 #include "vocab.h"
 
+#include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
 #include <string_view>
+#include <utility>
 
 namespace fa::facts {
 
@@ -220,19 +225,277 @@ std::string undergroundConnection(Belt belt) {
    return vocab::kUndergroundConnection(directionName(direction), tiles);
 }
 
-std::string joined(const std::vector<std::string>& words) {
+std::string joined(const std::vector<std::string>& words, std::string_view separator = " ") {
    std::string out;
    for (const std::string& word : words) {
       if (word.empty()) continue;
-      if (!out.empty()) out += ' ';
+      if (!out.empty()) out += separator;
       out += word;
    }
    return out;
 }
 
+// ---- pipes ----
+
+constexpr int32_t kScale = game::kMapPositionScale;
+
+int32_t tileOf(int32_t coordinate) {
+   return coordinate >= 0 ? coordinate / kScale : -((-coordinate + kScale - 1) / kScale);
+}
+
+// The entity's fluid boxes, in the order LuaEntity numbers them.
+std::vector<const std::byte*> fluidBoxesOf(const std::byte* entity) {
+   alignas(16) std::byte set[64];
+   if (layout.fluidBoxSetSize > sizeof(set)) return {};
+   reinterpret_cast<void* (*)(const void*, void*)>(layout.entityGetFluidBoxes)(entity, set);
+   const auto* first = at<const std::byte* const*>(set, layout.fluidBoxSetBegin);
+   const auto* last = at<const std::byte* const*>(set, layout.fluidBoxSetEnd);
+   std::vector<const std::byte*> boxes(first, last);
+   reinterpret_cast<void (*)(void*)>(layout.fluidBoxSetDestroy)(set);
+   return boxes;
+}
+
+const std::byte* ownerOf(const std::byte* box) { return at<const std::byte*>(box, layout.fluidBoxOwner); }
+
+// Where a fluid box's pipe connection is, and which way it leads out of the entity.
+struct Location {
+   Position position{};
+   uint8_t direction = kNorth;
+};
+
+Location locate(const std::byte* box, size_t index) {
+   const std::byte* owner = ownerOf(box);
+   const std::byte* definition =
+      at<const std::byte*>(at<const std::byte*>(box, layout.fluidBoxPrototype), layout.pipeDefinitionsBegin) +
+      index * layout.pipeDefinitionSize;
+   uint8_t direction = 0;
+   virtualAt<void* (*)(const void*, uint8_t*)>(owner, layout.entityGetDirection)(owner, &direction);
+   uint8_t mirrored = 0;
+   virtualAt<void* (*)(const void*, uint8_t*)>(owner, layout.entityIsMirrored)(owner, &mirrored);
+   alignas(8) std::byte out[32]{};
+   if (layout.pipeLocationSize > sizeof(out)) return {};
+   using LocationFunction =
+      void* (*)(const void* definition, void* out, Position position, uint8_t direction, uint8_t mirrored);
+   reinterpret_cast<LocationFunction>(layout.pipeLocation)(definition, out, at<Position>(owner, layout.entityPosition),
+                                                           direction, mirrored);
+   return {at<Position>(out, layout.pipeLocationPosition), at<uint8_t>(out, layout.pipeLocationDirection)};
+}
+
+// One pipe connection, as get_fluid_box_pipe_connections gives it.
+struct PipeConnection {
+   Location location;
+   uint8_t flow = 0;                 // FluidFlowDirection
+   uint8_t type = 0;                 // PipeConnectionType
+   const std::byte* target = nullptr; // the FluidBox it joins
+   uint16_t opposite = 0;            // its index among the target's connections
+};
+
+std::vector<PipeConnection> connectionsOf(const std::byte* box) {
+   const auto* first = at<const std::byte*>(box, layout.fluidBoxConnectionsBegin);
+   const auto* last = at<const std::byte*>(box, layout.fluidBoxConnectionsEnd);
+   const std::byte* definitions =
+      at<const std::byte*>(at<const std::byte*>(box, layout.fluidBoxPrototype), layout.pipeDefinitionsBegin);
+   std::vector<PipeConnection> out;
+   for (size_t i = 0; first + i * layout.fluidConnectionSize < last; ++i) {
+      const std::byte* connection = first + i * layout.fluidConnectionSize;
+      const std::byte* definition = definitions + i * layout.pipeDefinitionSize;
+      out.push_back({locate(box, i), at<uint8_t>(definition, layout.pipeDefinitionFlow),
+                     at<uint8_t>(definition, layout.pipeDefinitionType),
+                     at<const std::byte*>(connection, layout.fluidConnectionTarget),
+                     at<uint16_t>(connection, layout.fluidConnectionOpposite)});
+   }
+   return out;
+}
+
+bool isPipe(const std::byte* entity) {
+   const std::string_view type = typeName(prototypeOf(entity));
+   return type == "pipe" || type == "infinity-pipe";
+}
+
+// A pipe's shape (fa-info.lua's pipe_shape) from the sides it joins to anything, a pipe, a
+// machine or a tank, so a pipe that leads into an engine is no lonely pipe.
+std::string pipeShape(const std::byte* entity) {
+   const std::vector<const std::byte*> boxes = fluidBoxesOf(entity);
+   if (boxes.size() != 1) return {};
+   bool joined[16] = {};
+   int count = 0;
+   for (const PipeConnection& connection : connectionsOf(boxes[0])) {
+      if (!connection.target) continue;
+      const uint8_t side = connection.location.direction % 16;
+      if (!joined[side]) ++count;
+      joined[side] = true;
+   }
+   const bool north = joined[kNorth], east = joined[kEast], south = joined[kSouth], west = joined[kWest];
+   if (north + east + south + west != count) return {};
+   switch (count) {
+   case 0: return vocab::kPipeAlone;
+   case 1: {
+      const uint8_t side = north ? kNorth : east ? kEast : south ? kSouth : kWest;
+      // Named by the way it points, away from its one connection.
+      return vocab::kPipeEnd(directionName(opposite(side)));
+   }
+   case 2:
+      if (north && south) return vocab::kPipeVertical;
+      if (east && west) return vocab::kPipeHorizontal;
+      return vocab::kPipeCorner(directionName(north ? kNorth : kSouth), directionName(east ? kEast : kWest));
+   case 3: {
+      const uint8_t missing = !north ? kNorth : !east ? kEast : !south ? kSouth : kWest;
+      const vocab::Word key = missing == kNorth || missing == kSouth ? vocab::kPipeTHorizontal : vocab::kPipeTVertical;
+      return key(directionName(opposite(missing)));
+   }
+   default: return vocab::kPipeCross;
+   }
+}
+
+// What a fluid box must hold (fluids.lua's get_local_fluidbox_constraint): its filter, else its
+// segment's fluid; 0 for none.
+uint16_t localFluid(const std::byte* box) {
+   const std::byte* segment = at<const std::byte*>(box, layout.fluidBoxSegment);
+   if (segment && at<uint16_t>(segment, layout.segmentFilter)) return at<uint16_t>(segment, layout.segmentFilter);
+   if (const uint16_t filter = at<uint16_t>(box, layout.fluidBoxFilter)) return filter;
+   return segment ? at<uint16_t>(segment, layout.segmentFluid) : uint16_t{0};
+}
+
+// Its own, else the first a box it joins must hold.
+uint16_t requiredFluid(const std::byte* box, const std::vector<PipeConnection>& connections) {
+   if (const uint16_t fluid = localFluid(box)) return fluid;
+   for (const PipeConnection& connection : connections)
+      if (connection.target)
+         if (const uint16_t fluid = localFluid(connection.target)) return fluid;
+   return 0;
+}
+
+const std::byte* prototypeAt(uintptr_t list, uint32_t id) {
+   struct Vector {
+      const std::byte* const* first;
+      const std::byte* const* last;
+      const std::byte* const* end;
+   };
+   const auto& prototypes = *reinterpret_cast<const Vector*>(list);
+   return id < static_cast<size_t>(prototypes.last - prototypes.first) ? prototypes.first[id] : nullptr;
+}
+
+std::string localisedName(const std::byte* prototype) {
+   struct MsvcString {
+      union {
+         char buffer[16];
+         const char* pointer;
+      };
+      size_t size;
+      size_t capacity;
+   };
+   using Str = const MsvcString* (*)(const void* localisedString, const void* localeProvider);
+   const MsvcString* name =
+      reinterpret_cast<Str>(layout.localisedStringStr)(prototype + layout.prototypeLocalisedName, nullptr);
+   return text::speakable({name->capacity >= 16 ? name->pointer : name->buffer, name->size});
+}
+
+// A connection point on the tile, rolled up as fa-info.lua's ent_info_fluid_connections does.
+struct Point {
+   uint8_t outward = kNorth;
+   bool input = false;
+   bool output = false;
+   uint8_t type = 0;
+   bool connected = false;
+   bool open = true;
+   uint16_t fluid = 0;
+   int32_t tiles = 1;
+};
+
+// What a fluid point carries, as said: a fluid, any fluid, or closed.
+std::string fluidWords(const Point& point) {
+   if (!point.open) return vocab::kFluidClosed;
+   if (!point.fluid) return vocab::kAnyFluid;
+   const std::byte* prototype = prototypeAt(layout.fluidPrototypes, point.fluid);
+   return prototype ? localisedName(prototype) : std::string(vocab::kAnyFluid);
+}
+
+std::vector<Point> pointsOn(const std::byte* entity, Position tile) {
+   std::vector<Point> points;
+   if (typeName(prototypeOf(entity)) == "fluid-wagon") return points;
+   const bool pipe = isPipe(entity);
+   const std::byte* machine = agui::objectAsBase(entity, ".?AVCraftingMachine@@");
+   const bool noRecipe = machine && !at<uint16_t>(machine + layout.craftingRecipe, layout.idWithQualityBase);
+   for (const std::byte* box : fluidBoxesOf(entity)) {
+      const std::vector<PipeConnection> connections = connectionsOf(box);
+      const uint16_t fluid = requiredFluid(box, connections);
+      for (const PipeConnection& connection : connections) {
+         const Position where = connection.location.position;
+         if (tileOf(where.x) != tile.x || tileOf(where.y) != tile.y) continue;
+         // A pipe's shape says where it joins; a line of its own is left for what it joins that is
+         // no pipe, to name the fluid.
+         if (pipe && (!connection.target || isPipe(ownerOf(connection.target)))) continue;
+         Point point;
+         point.outward = connection.location.direction % 16;
+         point.input = connection.flow != layout.flowOutput;
+         point.output = connection.flow != layout.flowInput;
+         point.type = connection.type;
+         point.connected = connection.target != nullptr;
+         point.open = !noRecipe || at<uint16_t>(box, layout.fluidBoxFilter) != 0;
+         point.fluid = fluid;
+         if (connection.type != layout.pipeTypeNormal && connection.target) {
+            const Position other = locate(connection.target, connection.opposite).position;
+            const double dx = static_cast<double>(other.x - where.x) / kScale;
+            const double dy = static_cast<double>(other.y - where.y) / kScale;
+            point.tiles = static_cast<int32_t>(std::ceil(std::sqrt(dx * dx + dy * dy)));
+         }
+         points.push_back(point);
+      }
+   }
+   return points;
+}
+
+// The tile's fluid connections, a list item per fluid, distance and way: in, out, then both ways.
+std::vector<std::string> fluidConnections(const std::byte* entity, Position tile) {
+   // By the way each leads out: what comes in, what goes out, and what does both.
+   const Point* in[16] = {};
+   const Point* out[16] = {};
+   const Point* both[16] = {};
+   const std::vector<Point> points = pointsOn(entity, tile);
+   for (const Point& point : points) {
+      if (point.input) in[point.outward] = &point;
+      if (point.output) out[point.outward] = &point;
+   }
+   for (size_t way = 0; way < 16; ++way)
+      if (in[way] && out[way]) {
+         both[way] = in[way];
+         in[way] = out[way] = nullptr;
+      }
+
+   std::vector<std::string> items;
+   auto present = [&](vocab::Word key, const Point* const(&set)[16]) {
+      // Grouped by what they carry and how far they reach, in the order first met.
+      std::vector<std::pair<std::string, int32_t>> groups;
+      for (const Point* point : set)
+         if (point) {
+            std::pair<std::string, int32_t> group{fluidWords(*point), point->tiles};
+            if (std::find(groups.begin(), groups.end(), group) == groups.end()) groups.push_back(std::move(group));
+         }
+      for (const auto& [fluid, tiles] : groups) {
+         std::vector<std::string> ways;
+         for (size_t way = 0; way < 16; ++way) {
+            const Point* point = set[way];
+            if (!point || fluidWords(*point) != fluid || point->tiles != tiles) continue;
+            const std::string name = directionName(static_cast<uint8_t>(way));
+            if (point->connected)
+               ways.push_back(name);
+            else if (point->type == layout.pipeTypeUnderground)
+               ways.push_back(vocab::kUndergroundUnconnected(name));
+            else if (point->type == layout.pipeTypeNormal)
+               ways.push_back(vocab::kNotConnected(name));
+         }
+         items.push_back(key(fluid, joined(ways, ", "), tiles));
+      }
+   };
+   present(vocab::kFluidIn, in);
+   present(vocab::kFluidOut, out);
+   present(vocab::kFluidBoth, both);
+   return items;
+}
+
 } // namespace
 
-std::vector<std::string> describe(const void* object) {
+std::vector<std::string> describe(const void* object, int32_t tileX, int32_t tileY) {
    const auto* entity = static_cast<const std::byte*>(object);
    const Belt candidate{entity};
    const Belt belt = candidate.isTransportBelt() || candidate.isUnderground() ? candidate : Belt{};
@@ -246,6 +509,8 @@ std::vector<std::string> describe(const void* object) {
 
    std::vector<std::string> parts{joined(first)};
    if (belt && belt.isUnderground()) parts.push_back(undergroundConnection(belt));
+   if (isPipe(entity)) parts.push_back(pipeShape(entity));
+   for (std::string& item : fluidConnections(entity, Position{tileX, tileY})) parts.push_back(std::move(item));
    return parts;
 }
 

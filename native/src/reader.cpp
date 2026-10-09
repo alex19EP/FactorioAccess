@@ -173,6 +173,7 @@ std::vector<std::string> fixedLabels() {
       "description.belt-speed",
       "description.module-slots",
       "description.storage-size",
+      "description.fluid-capacity",
       "description.last-user",
       "description.force",
       "airborne-pollutant-name.pollution",
@@ -370,7 +371,7 @@ std::string nameOf(const std::byte* entity, const std::byte* description) {
    return name;
 }
 
-std::string describe(const std::byte* player, const std::byte* entity) {
+std::string describe(const std::byte* player, const std::byte* entity, Position tile) {
    const void* object = entity;
    auto* panel = static_cast<std::byte*>(::operator new(layout.entityInfoSize, kAlignment));
    OptionalContext panelContext{player, true};
@@ -384,7 +385,7 @@ std::string describe(const std::byte* player, const std::byte* entity) {
    virtualAt<void (*)(const void*, void*)>(entity, layout.entityAddToDescription)(entity, description);
 
    std::vector<std::string> parts{nameOf(entity, description)};
-   for (std::string& fact : facts::describe(entity)) parts.push_back(std::move(fact));
+   for (std::string& fact : facts::describe(entity, tile.x, tile.y)) parts.push_back(std::move(fact));
    std::vector<std::string> modLists;
    const auto* head = *reinterpret_cast<const StringNode* const*>(description + layout.descriptionModLists);
    collect(head->parent, modLists);
@@ -433,7 +434,7 @@ std::optional<std::string> read(Position tile, std::optional<Entity>& described)
    const Position position = at<Position>(entity, layout.entityPosition);
    described = Entity{std::string(reinterpret_cast<const MsvcString*>(prototype + layout.prototypeName)->view()),
                       static_cast<double>(position.x) / kScale, static_cast<double>(position.y) / kScale};
-   return describe(player, entity);
+   return describe(player, entity, tile);
 }
 
 } // namespace

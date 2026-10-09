@@ -1638,6 +1638,40 @@ struct Layout {
    uint32_t beltShapeRight = 0;  // ::Right
    // With undergroundType and undergroundOutput above.
    uint32_t undergroundPartner = 0; // UndergroundBelt::connection, UndergroundBelt*
+
+   // An entity's fluid boxes, as LuaEntity's fluid functions find them: FluidBoxSet
+   // Entity::getFluidBoxes(), a SmallVector<FluidBox*,1> returned through a pointer, and its
+   // destructor, which frees what outgrew the one inline place.
+   uintptr_t entityGetFluidBoxes = 0;
+   uintptr_t fluidBoxSetDestroy = 0;
+   uint32_t fluidBoxSetSize = 0;
+   uint32_t fluidBoxSetBegin = 0; // FluidBoxSet begin_, FluidBox**
+   uint32_t fluidBoxSetEnd = 0;
+   uint32_t fluidBoxOwner = 0;     // FluidBox::owner, Entity*
+   uint32_t fluidBoxPrototype = 0; // FluidBox::prototype, FluidBoxPrototype*
+   // The filter get_fluid_filter reads: the segment's when it has one, else the box's.
+   uint32_t fluidBoxFilter = 0;  // FluidBox::buffer.filter.fluidID, ID<FluidPrototype>
+   uint32_t segmentFilter = 0;   // FluidSegment::buffer.filter.fluidID
+   uint32_t fluidConnectionOpposite = 0; // FluidBoxConnection::oppositeIndex, uint16: its index on the target
+   // FluidBoxPrototype::connectionDefinitions, a SmallVector<PipeConnectionDefinition,5>, one per
+   // FluidBox::connections entry in the same order.
+   uint32_t pipeDefinitionsBegin = 0;
+   uint32_t pipeDefinitionSize = 0;
+   uint32_t pipeDefinitionType = 0;     // PipeConnectionDefinition::connectionType, PipeConnectionType::Enum
+   uint32_t pipeDefinitionFlow = 0;     // ::flowDirection, FluidFlowDirection::Enum
+   uint32_t pipeTypeNormal = 0;         // PipeConnectionType::Normal (Underground, Linked)
+   uint32_t pipeTypeUnderground = 0;
+   uint32_t flowInput = 0;              // FluidFlowDirection::Input (InputOutput, Output)
+   uint32_t flowOutput = 0;
+   // PipeConnectionLocation PipeConnectionDefinition::getConnectionLocation(MapPosition, Direction,
+   // NamedBool<MirroringTag>) const: where the connection is for the owner's position, direction
+   // (Entity::getDirection) and mirroring (Entity::isMirrored, a NamedBool returned through a
+   // pointer), and which way it leads out.
+   uintptr_t pipeLocation = 0;
+   uint32_t pipeLocationPosition = 0; // PipeConnectionLocation::position, MapPosition
+   uint32_t pipeLocationDirection = 0; // ::direction
+   uint32_t pipeLocationSize = 0;
+   uint32_t entityIsMirrored = 0;
 };
 
 // Bits of agui::Widget::usageBitMask, read from Widget::setVisible and Widget::isEnabled in

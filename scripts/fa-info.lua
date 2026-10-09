@@ -575,8 +575,8 @@ local function ent_info_belt_shape(ctx)
    end
 end
 
--- The shape the pipes joined to a pipe make ("corner north and east"), or nil when other kinds of
--- connection leave no simple shape to name.
+-- The shape the connections of a pipe make ("corner north and east"), counting whatever it joins:
+-- pipes, machines, tanks.
 ---@param ent LuaEntity a pipe or an infinity pipe
 ---@return LocalisedString?
 function mod.pipe_shape(ent)
@@ -585,13 +585,8 @@ function mod.pipe_shape(ent)
    local conns = ent.get_fluid_box_pipe_connections(1)
    local pipe_conn_count = 0
    for _, c in pairs(conns) do
-      if c.target and (c.target.type == "pipe" or c.target.type == "infinity-pipe") then
-         pipe_conn_count = pipe_conn_count + 1
-      end
+      if c.target then pipe_conn_count = pipe_conn_count + 1 end
    end
-
-   -- We must be careful.  Pipe shapes do not account for other kinds of connection, so we must compare with the
-   -- expected count as well. Otherwise we will say that a pipe is both connected and not connected at the same time.
 
    -- This is just a boring if table.  no special logic here.
    if s == NetworkShape.SHAPE.END and pipe_conn_count == 1 then
@@ -1525,7 +1520,7 @@ function mod.ent_info(pindex, ent, is_scanner, after_native)
       if not after_native then run_handler(handler, nolist) end
    end
    -- What the DLL's reading says itself (native/src/facts.cpp): facing, an underground belt's end
-   -- and partner, a belt's shape.
+   -- and partner, a belt's shape, a pipe's shape and the fluid connections on the tile.
    local run_native_fact_handler = run_tooltip_handler
    if not is_scanner and native then ctx.drawn = native.entity_icons(pindex, ent) end
    -- The status icons tell what the tooltip's status says
@@ -1571,8 +1566,8 @@ function mod.ent_info(pindex, ent, is_scanner, after_native)
    run_handler(ent_info_logistic_network)
    run_handler(ent_info_infinity_chest)
    run_handler(ent_info_infinity_pipe)
-   run_handler(ent_info_pipe_shape)
-   run_handler(ent_info_fluid_connections)
+   run_native_fact_handler(ent_info_pipe_shape)
+   run_native_fact_handler(ent_info_fluid_connections)
 
    run_handler(ent_info_train_stop)
    run_handler(ent_info_mining_drill_output_chute)
