@@ -220,9 +220,10 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.surfaceIndex, "Surface", "index");
    offset(layout.surfaceChunks, "Surface", "chunks");
    offset(layout.chunkPosition, "Chunk", "position");
-   offset(layout.mapUnitNumbers, "Map", "unitNumberToEntity");
    classSlot(layout.prototypeGetType, "PrototypeBase", "getType");
-   address(layout.entityUnitNumber, "?getEntityUnitNumber@EntityWithOwner@@SA_KPEBVEntity@@@Z");
+   address(layout.entityTargeterVtable, "??_7?$Targeter@VEntity@@$0A@$0A@@@6B@");
+   offset(layout.targetableTargeters, "Targetable", "targetingMe.firstTargeter");
+   offset(layout.entityUsageBits, "Entity", "usageBitMask");
    address(layout.forceIsChunkCharted, "?isChunkCharted@ForceData@@QEBA_NVSurfaceIndex@@AEBVMapPosition@@@Z");
    classSlot(layout.entityPrototypeAsPole, "EntityPrototype", "asElectricPole");
    address(layout.findMatchingNetwork,

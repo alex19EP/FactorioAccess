@@ -284,9 +284,16 @@ struct Layout {
    uint32_t surfaceIndex = 0;              // Surface::index, SurfaceIndex (uint32), LuaSurface::index
    uint32_t surfaceChunks = 0;             // Surface::chunks, std::vector<Chunk*>
    uint32_t chunkPosition = 0;             // Chunk::position, ChunkPosition (two ints)
-   uint32_t mapUnitNumbers = 0;            // Map::unitNumberToEntity, std::map<uint64, Entity*>
    uint32_t prototypeGetType = 0;          // virtual slot of char const* PrototypeBase::getType() const
-   uintptr_t entityUnitNumber = 0;         // static uint64 EntityWithOwner::getEntityUnitNumber(Entity const*), 0 for none
+   // Entries keep their entities through the game's own weak references, as its GUIs do: a
+   // TargeterBase {vfptr, target, next, previous} linked first into the Targetable's (the entity's,
+   // at its start) Targeters::firstTargeter. The game unlinks nothing itself; when the entity goes,
+   // Targeters::clear calls each targeter's clearAsReactionToNotification, which nulls target.
+   uintptr_t entityTargeterVtable = 0;     // Targeter<Entity,0,0>'s vftable: generic type, no flags
+   uint32_t targetableTargeters = 0;       // Targetable::targetingMe.firstTargeter, TargeterBase*
+   // Entity::usageBitMask (uint16). The scanner skips what LuaEntity's constructor refuses: 0x4,
+   // the entity inside a ghost, which Entity::getOuterEntity trades for its ghost, and 0x10.
+   uint32_t entityUsageBits = 0;
    uintptr_t forceIsChunkCharted = 0;      // bool ForceData::isChunkCharted(SurfaceIndex, MapPosition const&) const
    // ElectricPolePrototype const* EntityPrototype::asElectricPole() const, a virtual slot: null but
    // for poles.

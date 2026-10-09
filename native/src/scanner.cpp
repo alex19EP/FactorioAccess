@@ -207,16 +207,28 @@ constexpr std::string_view kRocks[] = {
 };
 static_assert(!kCategoryKeys.back().empty(), "a category has no key");
 
+// Types whose subcategory says more than the prototype: what a machine makes, what a chest or pipe
+// holds, which train a wagon is in, which network a roboport names. The Lua API reads all of it, so
+// the mod's Lua gives these entities their subcategories (scripts/scanner/subcategories.lua).
+constexpr std::string_view kDetailedTypes[] = {
+   "artillery-wagon",    "assembling-machine", "cargo-wagon",   "container",  "entity-ghost",
+   "fluid-wagon",        "furnace",            "infinity-container", "infinity-pipe", "locomotive",
+   "logistic-container", "mining-drill",       "pipe",          "pipe-to-ground", "roboport",
+   "storage-tank",       "tile-ghost",         "unit-spawner",
+};
+
 struct Rule {
    bool listed = false;
    Cat category = Other;
+   bool detailed = false;
 };
 
 Rule ruleFor(std::string_view type, std::string_view name) {
    if (std::find(std::begin(kRocks), std::end(kRocks), name) != std::end(kRocks)) return {true, Resources};
    if (name.ends_with("-remnants")) return {true, Remnants};
+   const bool detailed = std::find(std::begin(kDetailedTypes), std::end(kDetailedTypes), type) != std::end(kDetailedTypes);
    for (const TypeRule& rule : kTypes)
-      if (rule.type == type) return {true, rule.category};
+      if (rule.type == type) return {true, rule.category, detailed};
    return {};
 }
 
@@ -250,30 +262,84 @@ std::string_view prototypeType(const std::byte* prototype) {
    return virtualAt<const char* (*)(const void*)>(prototype, layout.prototypeGetType)(prototype);
 }
 
-uint64_t unitNumber(const std::byte* entity) {
-   return reinterpret_cast<uint64_t (*)(const void*)>(layout.entityUnitNumber)(entity);
-}
-
-struct TreeNode {
-   TreeNode* left;
-   TreeNode* parent;
-   TreeNode* right;
-   char colour;
-   char isNil;
+// The game's TargeterBase: a weak reference to an entity, which the game nulls when the entity goes.
+// Moving it would break the list it is linked into, so it never moves while linked.
+struct Targeter {
+   const void* vfptr;
+   std::byte* target;
+   Targeter* next;
+   Targeter* previous;
 };
-constexpr uint32_t kTreeKey = 0x20;
-constexpr uint32_t kTreeValue = 0x28;
+static_assert(sizeof(Targeter) == 32);
 
-// Map::unitNumberToEntity[number], or null.
-const std::byte* entityByUnitNumber(const std::byte* map, uint64_t number) {
-   auto* head = at<TreeNode*>(map, layout.mapUnitNumbers);
-   for (TreeNode* node = head->parent; !node->isNil;) {
-      uint64_t key = at<uint64_t>(node, kTreeKey);
-      if (key == number) return at<const std::byte*>(node, kTreeValue);
-      node = key < number ? node->right : node->left;
-   }
-   return nullptr;
+Targeter*& firstTargeter(std::byte* targetable) {
+   return *reinterpret_cast<Targeter**>(targetable + layout.targetableTargeters);
 }
+
+// As TargeterBase's constructor links one.
+void link(Targeter& targeter, std::byte* entity) {
+   targeter.vfptr = reinterpret_cast<const void*>(layout.entityTargeterVtable);
+   targeter.target = entity;
+   targeter.previous = nullptr;
+   Targeter*& first = firstTargeter(entity);
+   targeter.next = first;
+   if (first) first->previous = &targeter;
+   first = &targeter;
+}
+
+// As TargeterBase's destructor unlinks one.
+void unlink(Targeter& targeter) {
+   if (!targeter.target) return;
+   if (targeter.previous)
+      targeter.previous->next = targeter.next;
+   else
+      firstTargeter(targeter.target) = targeter.next;
+   if (targeter.next) targeter.next->previous = targeter.previous;
+   targeter.target = nullptr;
+}
+
+// One weak reference per entry, made and dropped while the world stands still (in a refresh, or
+// at a key). They are dropped from the game they were made in; once that game is gone they are
+// left as they are, since their entities may be gone without having told them.
+class Links {
+public:
+   Links() = default;
+   Links(Links&& other) noexcept : targeters_(std::move(other.targeters_)), game_(other.game_) {}
+   Links& operator=(Links&& other) noexcept {
+      if (this != &other) {
+         release();
+         targeters_ = std::move(other.targeters_);
+         game_ = other.game_;
+      }
+      return *this;
+   }
+   Links(const Links&) = delete;
+   Links& operator=(const Links&) = delete;
+   ~Links() { release(); }
+
+   // Links every entity, in order: entry i is entities[i].
+   Links(const std::byte* game, const std::vector<std::byte*>& entities) : targeters_(entities.size()), game_(game) {
+      for (size_t i = 0; i < entities.size(); ++i) link(targeters_[i], entities[i]);
+   }
+
+   // The entity of entry `index`, or null once the game dropped it.
+   const std::byte* entity(size_t index) const { return targeters_[index].target; }
+
+private:
+   void release() {
+      if (targeters_.empty()) return;
+      if (game_ == currentGame()) {
+         for (Targeter& targeter : targeters_) unlink(targeter);
+      } else {
+         // Still linked into a game that may not have let go of them: keep them in place for good.
+         new std::vector<Targeter>(std::move(targeters_));
+      }
+      targeters_.clear();
+   }
+
+   std::vector<Targeter> targeters_;
+   const std::byte* game_ = nullptr;
+};
 
 using IteratorFunction = void (*)(std::byte* iterator);
 
@@ -294,6 +360,9 @@ void forEachEntity(const std::byte* surface, Position first, Position last, Visi
       visit(entity);
    }
 }
+
+// Entity::usageBitMask bits of entities the Lua API never hands out (see game.h).
+constexpr uint16_t kNotListedBits = 0x4 | 0x10;
 
 using ChartedFunction = bool (*)(const void* force, uint32_t surfaceIndex, const Position* position);
 
@@ -319,12 +388,13 @@ double distanceSquared(Position a, Position b) {
    return dx * dx + dy * dy;
 }
 
-// An entry: one entity.
+// An entry: one entity, in Links at the same index.
 struct Item {
-   const std::byte* entity;  // compared only, never read, until found alive again
    const std::byte* prototype;
-   uint64_t unitNumber;      // 0 for entities without one
-   Position position;
+   Position position;   // where it was when last seen
+   Cat category;
+   std::string key;     // its subcategory
+   bool detailed;       // the mod is to give it a subcategory of its own
 };
 
 struct Subcategory {
@@ -337,8 +407,42 @@ struct List {
    uint32_t surfaceIndex = 0;
    Position origin{};
    std::vector<Item> items;
+   Links links;
    std::array<std::vector<Subcategory>, kCategoryCount> categories;
+   std::vector<uint32_t> detailed; // the items handed to the mod for subcategories, in order
 };
+
+// Groups the items into categories and subcategories, every item into All as well, nearest first:
+// the entries of each subcategory, then the subcategories by their nearest.
+void group(List& list) {
+   std::array<std::unordered_map<std::string_view, size_t>, kCategoryCount> index;
+   for (auto& subcategories : list.categories) subcategories.clear();
+   auto add = [&](Cat category, const std::string& key, uint32_t item) {
+      auto [found, added] = index[category].try_emplace(key, list.categories[category].size());
+      if (added) list.categories[category].push_back({key, {}});
+      list.categories[category][found->second].items.push_back(item);
+   };
+   for (uint32_t i = 0; i < list.items.size(); ++i) {
+      const Item& item = list.items[i];
+      add(All, item.key, i);
+      if (item.category != All) add(item.category, item.key, i);
+   }
+
+   for (auto& subcategories : list.categories) {
+      for (Subcategory& subcategory : subcategories) {
+         std::vector<std::pair<double, uint32_t>> keyed;
+         keyed.reserve(subcategory.items.size());
+         for (uint32_t item : subcategory.items)
+            keyed.emplace_back(distanceSquared(list.items[item].position, list.origin), item);
+         std::sort(keyed.begin(), keyed.end());
+         for (size_t i = 0; i < keyed.size(); ++i) subcategory.items[i] = keyed[i].second;
+      }
+      std::stable_sort(subcategories.begin(), subcategories.end(), [&](const Subcategory& a, const Subcategory& b) {
+         return distanceSquared(list.items[a.items.front()].position, list.origin) <
+                distanceSquared(list.items[b.items.front()].position, list.origin);
+      });
+   }
+}
 
 // Where the scanner keys stand, as entrypoint.lua's scanner_cursor: unset parts start at the first.
 struct Cursor {
@@ -374,27 +478,8 @@ std::deque<Move> g_moves;
 std::optional<Category> g_category;
 bool g_modUiOpen = false;
 
-// The live entity an item stands for, or null when it is gone. Reads the world, so only while it
-// stands still.
-const std::byte* liveEntity(const std::byte* map, const std::byte* surface, const Item& item) {
-   // Moving entities (units, vehicles, robots) have unit numbers; the map keeps an index of them.
-   if (item.unitNumber) {
-      if (const std::byte* entity = entityByUnitNumber(map, item.unitNumber))
-         return entity == item.entity && at<const std::byte*>(entity, layout.entitySurface) == surface ? entity
-                                                                                                       : nullptr;
-   }
-   const Position tile{item.position.x >> 9, item.position.y >> 9};
-   const std::byte* found = nullptr;
-   forEachEntity(surface, tile, tile, [&](const std::byte* entity) {
-      if (!found && entity == item.entity && at<const std::byte*>(entity, layout.entityPrototypeOf) == item.prototype)
-         found = entity;
-   });
-   return found;
-}
-
 // The world the list was made in, while it is still there.
 struct World {
-   const std::byte* map = nullptr;
    const std::byte* surface = nullptr;
    explicit operator bool() const { return surface; }
 };
@@ -406,15 +491,15 @@ World worldOf(const List& list) {
    if (!player) return {};
    const std::byte* map = at<const std::byte*>(player, layout.playerMap);
    if (!map) return {};
-   return {map, surfaceAt(map, list.surfaceIndex)};
+   return {surfaceAt(map, list.surfaceIndex)};
 }
 
-// The entity of entry `index` of `items` when it is still there, with its position brought up to
-// date.
+// The entity of entry `index` when it is still there on the list's surface, with its position
+// brought up to date. Reads the world, so only while it stands still.
 const std::byte* validate(const World& world, uint32_t index) {
-   Item& item = g_list.items[index];
-   const std::byte* entity = liveEntity(world.map, world.surface, item);
-   if (entity) item.position = at<Position>(entity, layout.entityPosition);
+   const std::byte* entity = g_list.links.entity(index);
+   if (!entity || at<const std::byte*>(entity, layout.entitySurface) != world.surface) return nullptr;
+   g_list.items[index].position = at<Position>(entity, layout.entityPosition);
    return entity;
 }
 
@@ -576,15 +661,15 @@ std::optional<Position> act(Action action) {
 
 } // namespace
 
-bool refresh(const Refresh& request) {
+std::optional<std::vector<Detail>> refresh(const Refresh& request) {
    const std::byte* game = currentGame();
    const std::byte* player = localPlayer(game, request.playerIndex);
-   if (!player) return false;
+   if (!player) return std::nullopt;
    const std::byte* map = at<const std::byte*>(player, layout.playerMap);
    const std::byte* surface = map ? surfaceAt(map, request.surfaceIndex) : nullptr;
    if (!surface) {
       log::error("Scanner: no surface {} to list", request.surfaceIndex);
-      return false;
+      return std::nullopt;
    }
    const std::byte* force = at<const std::byte* const*>(map, layout.mapForces)[at<uint8_t>(player, layout.playerForce)];
    const uint32_t surfaceIndex = at<uint32_t>(surface, layout.surfaceIndex);
@@ -596,12 +681,7 @@ bool refresh(const Refresh& request) {
    const double radiusSquared = request.radius * request.radius;
 
    std::unordered_map<const std::byte*, Rule> rules;
-   std::array<std::unordered_map<std::string, size_t>, kCategoryCount> subcategoryIndex;
-   auto add = [&](Cat category, const std::string& key, uint32_t item) {
-      auto [found, added] = subcategoryIndex[category].try_emplace(key, list.categories[category].size());
-      if (added) list.categories[category].push_back({key, {}});
-      list.categories[category][found->second].items.push_back(item);
-   };
+   std::vector<std::byte*> entities;
 
    const auto& chunks = at<MsvcVector<const std::byte*>>(surface, layout.surfaceChunks);
    for (const std::byte* const* chunkSlot = chunks.first; chunkSlot < chunks.last; ++chunkSlot) {
@@ -619,6 +699,7 @@ bool refresh(const Refresh& request) {
       const Position first{chunkPosition.x * 16, chunkPosition.y * 16};
       const Position last{first.x + 15, first.y + 15};
       forEachEntity(surface, first, last, [&](const std::byte* entity) {
+         if (at<uint16_t>(entity, layout.entityUsageBits) & kNotListedBits) return;
          const std::byte* prototype = at<const std::byte*>(entity, layout.entityPrototypeOf);
          auto [rule, added] = rules.try_emplace(prototype);
          if (added) rule->second = ruleFor(prototypeType(prototype), prototypeName(prototype));
@@ -626,37 +707,42 @@ bool refresh(const Refresh& request) {
          const Position position = at<Position>(entity, layout.entityPosition);
          if (distanceSquared(position, list.origin) >= radiusSquared) return;
          if (request.direction && directionBiased(position, list.origin) != *request.direction) return;
-         const auto item = static_cast<uint32_t>(list.items.size());
-         list.items.push_back({entity, prototype, unitNumber(entity), position});
-         const std::string key(prototypeName(prototype));
-         add(All, key, item);
-         if (rule->second.category != All) add(rule->second.category, key, item);
+         const Rule& found = rule->second;
+         if (found.detailed) list.detailed.push_back(static_cast<uint32_t>(list.items.size()));
+         list.items.push_back({prototype, position, found.category, std::string(prototypeName(prototype)), found.detailed});
+         entities.push_back(const_cast<std::byte*>(entity));
       });
    }
+   list.links = Links(game, entities);
+   group(list);
 
-   // Nearest first: the entries of each subcategory, then the subcategories by their nearest.
-   for (auto& subcategories : list.categories) {
-      for (Subcategory& subcategory : subcategories) {
-         std::vector<std::pair<double, uint32_t>> keyed;
-         keyed.reserve(subcategory.items.size());
-         for (uint32_t item : subcategory.items)
-            keyed.emplace_back(distanceSquared(list.items[item].position, list.origin), item);
-         std::sort(keyed.begin(), keyed.end());
-         for (size_t i = 0; i < keyed.size(); ++i) subcategory.items[i] = keyed[i].second;
-      }
-      std::stable_sort(subcategories.begin(), subcategories.end(), [&](const Subcategory& a, const Subcategory& b) {
-         return distanceSquared(list.items[a.items.front()].position, list.origin) <
-                distanceSquared(list.items[b.items.front()].position, list.origin);
-      });
-   }
+   std::vector<Detail> details;
+   details.reserve(list.detailed.size());
+   for (uint32_t item : list.detailed)
+      details.push_back({list.items[item].key, tiles(list.items[item].position.x), tiles(list.items[item].position.y)});
 
    std::scoped_lock lock(g_mutex);
    // The category stays; the rest starts over, as the list beneath it is new.
    Cursor cursor{g_cursor.category.value_or(All), {}, {}};
    g_list = std::move(list);
    g_cursor = cursor;
-   log::info("Scanner: {} entries on surface {}", g_list.items.size(), request.surfaceIndex);
-   return true;
+   log::info("Scanner: {} entries on surface {}, {} for the mod to detail", g_list.items.size(), request.surfaceIndex,
+             details.size());
+   return details;
+}
+
+void setSubcategories(int playerIndex, const std::vector<std::optional<std::string>>& keys) {
+   if (!localPlayer(currentGame(), playerIndex)) return;
+   std::scoped_lock lock(g_mutex);
+   if (keys.size() != g_list.detailed.size()) {
+      log::error("Scanner: {} subcategories for {} entries", keys.size(), g_list.detailed.size());
+      return;
+   }
+   for (size_t i = 0; i < keys.size(); ++i)
+      if (keys[i]) g_list.items[g_list.detailed[i]].key = *keys[i];
+   g_list.detailed.clear();
+   group(g_list);
+   g_cursor = {g_cursor.category.value_or(All), {}, {}};
 }
 
 void setModUiOpen(int playerIndex, bool open) {

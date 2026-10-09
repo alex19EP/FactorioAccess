@@ -29,8 +29,21 @@ struct Refresh {
    std::optional<int> direction;  // only entries in this direction (an 8-way defines.direction)
 };
 
-// Rebuilds the list for this client's player. Returns whether it did: false for another client's.
-bool refresh(const Refresh& request);
+// An entity whose subcategory the mod gives (setSubcategories): what a machine makes, what a chest
+// holds, which train a wagon is in. The Lua API reads all of that.
+struct Detail {
+   std::string prototype;
+   double x = 0; // its position, in tiles
+   double y = 0;
+};
+
+// Rebuilds the list for this client's player, each entity under its prototype for now. Returns the
+// entities to detail, in order; nothing for another client's player.
+std::optional<std::vector<Detail>> refresh(const Refresh& request);
+
+// The subcategories of the entities refresh() returned, in its order; nothing keeps an entity under
+// its prototype. From Lua, right after the refresh.
+void setSubcategories(int playerIndex, const std::vector<std::optional<std::string>>& keys);
 
 // Whether the mod's own UI has the keys, so the scanner keys are not the scanner's. From Lua.
 void setModUiOpen(int playerIndex, bool open);

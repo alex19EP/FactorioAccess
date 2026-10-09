@@ -12,10 +12,10 @@ every client gets that position as event.cursor_position. The handlers here land
 everywhere, and only then ask the DLL what to say, which is speech alone.
 ]]
 local EntitySelection = require("scripts.entity-selection")
-local FaInfo = require("scripts.fa-info")
 local FaUtils = require("scripts.fa-utils")
 local Localising = require("scripts.localising")
 local ScannerConsts = require("scripts.scanner.scanner-consts")
+local Subcategories = require("scripts.scanner.subcategories")
 local SurfaceScanner = require("scripts.scanner.surface-scanner")
 local UiRouter = require("scripts.ui.router")
 local Viewpoint = require("scripts.viewpoint")
@@ -87,7 +87,7 @@ local function announce(pindex, event)
          break
       end
    end
-   local readout = entity and FaInfo.ent_info(pindex, entity, true)
+   local readout = entity and Subcategories.readout(pindex, entity)
       or Localising.get_localised_name_with_fallback(prototypes.entity[entry.prototype])
 
    -- In remote view the camera follows the cursor onto each entry, so distances are from where
@@ -112,13 +112,14 @@ function mod.do_refresh(pindex, direction_filter)
    ---@cast player LuaPlayer
    player.play_sound({ path = "scanner-pulse" })
    if native then
-      native.scanner_refresh(pindex, {
+      local details = native.scanner_refresh(pindex, {
          surface = player.surface.index,
          x = player.position.x,
          y = player.position.y,
          radius = ScannerConsts.SCANNER_DISTANCE,
          direction = direction_filter,
       })
+      if details then native.scanner_subcategories(pindex, Subcategories.keys(player.surface, details)) end
    end
    if direction_filter then
       Speech.speak(pindex, { "fa.scanner-refreshed-directional", FaUtils.direction_lookup(direction_filter) })
