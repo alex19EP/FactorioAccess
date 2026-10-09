@@ -346,6 +346,16 @@ struct Layout {
    uint32_t fluidConnectionTarget = 0;     // FluidBoxConnection::target
    // bool ForceData::isChunkCharted(SurfaceIndex, MapPosition const&) const
    uintptr_t forceIsChunkCharted = 0;
+   // Fog of war: Chart const* ForceData::getChart(SurfaceIndex) const, the force's chart of a
+   // surface or null, and bool Chart::isChunkCoveredByFogOfWar(ChunkPosition const&) const, true
+   // where the chunk is uncharted or was last charted 600 or more ticks ago (never on a platform).
+   // Both only read.
+   uintptr_t forceChart = 0;
+   uintptr_t chartChunkCovered = 0;
+   // ForceID Entity::getForceID() const, a virtual slot: neutral for entities of no force. Returned
+   // through a hidden pointer, as member functions return classes.
+   uint32_t entityGetForceId = 0;
+   uint32_t displayPanelShowInChart = 0; // DisplayPanel::showInChart, bool
    // ElectricPolePrototype const* EntityPrototype::asElectricPole() const, a virtual slot: null but
    // for poles.
    uint32_t entityPrototypeAsPole = 0;
@@ -1508,6 +1518,7 @@ inline constexpr int32_t kMapPositionScale = 256;
 // code constants, like the widget bits above.
 inline constexpr uint32_t kEntityNotRotatable = 0x1;              // "not-rotatable"
 inline constexpr uint32_t kEntityPlaceableOffGrid = 0x10;         // "placeable-off-grid"
+inline constexpr uint32_t kEntityNotOnMap = 0x1000;               // "not-on-map"
 inline constexpr uint32_t kEntitySnapToRailSupportSpot = 0x10000000; // "snap-to-rail-support-spot"
 
 // EntityFlipping, code constants: NotAvailable 0, Simple 1, DirectionTransform 2,

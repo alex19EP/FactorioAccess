@@ -150,6 +150,7 @@ constexpr TypeRule kTypes[] = {
    {"curved-rail-a", Trains},
    {"curved-rail-b", Trains},
    {"decider-combinator", Logistics},
+   {"display-panel", Logistics},
    {"electric-energy-interface", Logistics},
    {"electric-pole", Logistics},
    {"electric-turret", Military},
@@ -274,6 +275,26 @@ constexpr DetailRule kDetails[] = {
    {"unit-spawner", Detail::Spawner, &game::Layout::scanSpawnerPollution},
 };
 
+// Entities that move about. The map draws another force's only where the player's force sees now:
+// vehicles live where the chunk was charted in the last 600 ticks (VehiclesChartRenderer), units in
+// the chunk's chart, which is as old as its last charting. So the scanner leaves another force's out
+// of chunks under fog of war (Chart::isChunkCoveredByFogOfWar), as there they are not where the map
+// shows them. The force's own are drawn wherever they are.
+constexpr std::string_view kMovingTypes[] = {
+   "artillery-wagon", "car",        "cargo-wagon",    "character",      "combat-robot", "construction-robot",
+   "fluid-wagon",     "locomotive", "logistic-robot", "spider-vehicle", "unit",
+};
+
+// What the full map names, rather than drawing as a pixel of a building's colour: what its own
+// pointing selects (Chart::getSelection: vehicles, display panels shown on the map, resource
+// patches; tags and pins come from Lua), stations by name, players, and enemies in their own colour.
+// Forests, water and ice show as the colour of the ground they cover. Entities whose prototype is
+// "not-on-map" are left out, as the map leaves them out.
+constexpr std::string_view kMapTypes[] = {
+   "artillery-wagon", "car",        "cargo-wagon", "character", "display-panel", "fluid-wagon", "locomotive",
+   "spider-vehicle",  "train-stop", "turret",      "unit",      "unit-spawner",
+};
+
 // How an entity is listed.
 enum class Listing : uint8_t { No, Alone, Tree, Resource };
 
@@ -284,6 +305,9 @@ struct Rule {
    uint32_t member = 0;   // the detail's offset in the entity
    bool infinite = false; // a resource that never runs out, such as crude oil
    int8_t cellShift = -1; // a resource's patch cells, log2 of their side in tiles; -1 when each is a patch
+   bool moves = false;    // in kMovingTypes
+   bool onMap = false;    // listed in the map's list
+   bool panel = false;    // a display panel, on the map only where it is shown there
 };
 
 // The side of a resource's patch cells as the map has it (see game.h): log2 of it, or -1 when every
@@ -295,15 +319,25 @@ int8_t patchCellShift(const std::byte* prototype) {
    return static_cast<int8_t>(std::countr_zero(side));
 }
 
+template <size_t N>
+bool listed(const std::string_view (&types)[N], std::string_view type) {
+   return std::find(std::begin(types), std::end(types), type) != std::end(types);
+}
+
 Rule ruleFor(const std::byte* prototype, std::string_view type, std::string_view name) {
-   if (type == "tree") return {Listing::Tree, Resources};
+   if (type == "tree") {
+      Rule rule{Listing::Tree, Resources};
+      rule.onMap = true;
+      return rule;
+   }
    if (type == "resource") {
       Rule rule{Listing::Resource, Resources};
       rule.infinite = at<bool>(prototype, layout.resourceInfinite);
       rule.cellShift = patchCellShift(prototype);
+      rule.onMap = true;
       return rule;
    }
-   if (std::find(std::begin(kRocks), std::end(kRocks), name) != std::end(kRocks)) return {Listing::Alone, Resources};
+   if (listed(kRocks, name)) return {Listing::Alone, Resources};
    if (name.ends_with("-remnants")) return {Listing::Alone, Remnants};
    for (const TypeRule& typeRule : kTypes) {
       if (typeRule.type != type) continue;
@@ -313,6 +347,10 @@ Rule ruleFor(const std::byte* prototype, std::string_view type, std::string_view
             rule.detail = detail.detail;
             rule.member = detail.member ? layout.*detail.member : 0;
          }
+      rule.moves = listed(kMovingTypes, type);
+      rule.onMap =
+         listed(kMapTypes, type) && !(at<uint32_t>(prototype, layout.entityPrototypeFlags) & game::kEntityNotOnMap);
+      rule.panel = type == "display-panel";
       return rule;
    }
    return {};
@@ -754,6 +792,7 @@ struct List {
    Position origin{};
    std::optional<int> direction; // only entries this way from the origin
    uint32_t generation = 0;      // the mod's extras (Refresh::generation)
+   bool map = false;             // what the full map names (kMapTypes), made while it was open
    std::vector<Item> items;
    Links links;
    std::array<std::vector<Subcategory>, kCategoryCount> categories;
@@ -1684,6 +1723,15 @@ bool inDirection(Position position, Position origin, std::optional<int> directio
 }
 
 using ChunkAtFunction = const std::byte* (*)(const void* surface, const Position* chunkPosition);
+using ChartFunction = const std::byte* (*)(const void* force, uint32_t surfaceIndex);
+using CoveredFunction = bool (*)(const void* chart, const Position* chunkPosition);
+using ForceIdFunction = uint8_t* (*)(const void* entity, uint8_t* forceId);
+
+// The ID of the force an entity is of.
+uint8_t forceIdOf(const std::byte* entity) {
+   uint8_t forceId = 0;
+   return *virtualAt<ForceIdFunction>(entity, layout.entityGetForceId)(entity, &forceId);
+}
 
 // What a refresh lists, read by every thread of its walk. Its pointers hold for one tick only, so a
 // refresh spread over ticks finds them again each tick.
@@ -1691,14 +1739,22 @@ struct Scan {
    const std::byte* surface;
    uint32_t surfaceIndex; // the game's SurfaceIndex, one less than the LuaSurface's
    const std::byte* force;
+   uint8_t forceId;
+   const std::byte* chart; // the force's chart of the surface, or null
    Position origin;
    std::optional<int> direction;
+   bool map;
    const std::vector<uint8_t>& tileClasses;
 
    bool wanted(Position position) const { return inDirection(position, origin, direction); }
 
    bool charted(Position position) const {
       return reinterpret_cast<ChartedFunction>(layout.forceIsChunkCharted)(force, surfaceIndex, &position);
+   }
+
+   // Whether the force does not see into the chunk at `chunkPosition` now.
+   bool covered(Position chunkPosition) const {
+      return !chart || reinterpret_cast<CoveredFunction>(layout.chartChunkCovered)(chart, &chunkPosition);
    }
 
    // The chunk at `chunkPosition` when it is there and charted.
@@ -1751,6 +1807,7 @@ void walkChunk(const Scan& scan, Walk& walk, const std::byte* chunk, size_t plac
    const Position last{first.x + 15, first.y + 15};
    Builder builder(walk.items, walk.entities);
    walk.cells.beginChunk(chunkPosition.x, chunkPosition.y);
+   std::optional<bool> covered; // asked once a moving entity of another force is found
    forEachEntity(scan.surface, first, last, [&](const std::byte* entity) {
       // The iterator also gives entities standing just past the chunk's edge, which their own
       // chunk gives again: each chunk keeps those standing in it.
@@ -1759,15 +1816,24 @@ void walkChunk(const Scan& scan, Walk& walk, const std::byte* chunk, size_t plac
       if (at<uint16_t>(entity, layout.entityUsageBits) & kNotListedBits) return;
       const std::byte* prototype = at<const std::byte*>(entity, layout.entityPrototypeOf);
       const Rule& rule = walk.ruleOf(prototype);
-      if (rule.listing == Listing::No) return;
+      if (rule.listing == Listing::No || (scan.map && !rule.onMap)) return;
       if (!scan.wanted(position)) return;
+      if (rule.moves || (scan.map && rule.panel)) {
+         const bool own = forceIdOf(entity) == scan.forceId;
+         if (rule.panel && !(own && at<bool>(entity, layout.displayPanelShowInChart))) return;
+         if (rule.moves && !own) {
+            if (!covered) covered = scan.covered(chunkPosition);
+            if (*covered) return;
+         }
+      }
       const Found found{const_cast<std::byte*>(entity), prototype, position};
       switch (rule.listing) {
       case Listing::Alone: builder.alone(found, rule); break;
       case Listing::Tree: {
          ++walk.trees;
-         // Trees near the origin are listed alone, but still join the forest around them.
-         const bool near = distanceSquared(position, scan.origin) < kTreeZoomSquared;
+         // Trees near the origin are listed alone, but still join the forest around them. The map
+         // shows only forests.
+         const bool near = !scan.map && distanceSquared(position, scan.origin) < kTreeZoomSquared;
          if (near) builder.near(found, "tree");
          walk.cells.add(nullptr, kForestCellShift, found, !near);
          break;
@@ -1779,7 +1845,7 @@ void walkChunk(const Scan& scan, Walk& walk, const std::byte* chunk, size_t plac
             break;
          }
          // So are the wells of an infinite resource.
-         const bool near = rule.infinite && distanceSquared(position, scan.origin) < kWellZoomSquared;
+         const bool near = !scan.map && rule.infinite && distanceSquared(position, scan.origin) < kWellZoomSquared;
          if (near) builder.near(found, std::string(prototypeName(prototype)));
          walk.cells.add(prototype, rule.cellShift, found, !near);
          break;
@@ -1834,6 +1900,8 @@ struct Place {
    const std::byte* surface;
    uint32_t surfaceIndex; // the game's SurfaceIndex
    const std::byte* force;
+   uint8_t forceId;
+   const std::byte* chart; // the force's of the surface, or null
 };
 std::optional<Place> placeOf(const std::byte* game, int playerIndex, uint32_t luaSurfaceIndex) {
    if (currentGame() != game) return std::nullopt;
@@ -1842,16 +1910,23 @@ std::optional<Place> placeOf(const std::byte* game, int playerIndex, uint32_t lu
    const std::byte* map = at<const std::byte*>(player, layout.playerMap);
    const std::byte* surface = map ? surfaceAt(map, luaSurfaceIndex) : nullptr;
    if (!surface) return std::nullopt;
-   return Place{surface, at<uint32_t>(surface, layout.surfaceIndex), forceOf(player)};
+   const uint32_t surfaceIndex = at<uint32_t>(surface, layout.surfaceIndex);
+   const std::byte* force = forceOf(player);
+   return Place{surface, surfaceIndex, force, at<uint8_t>(player, layout.playerForce),
+                reinterpret_cast<ChartFunction>(layout.forceChart)(force, surfaceIndex)};
 }
+
+// Whether this client's player has the full map open.
+bool onMap(const std::byte* player) { return at<uint8_t>(player, layout.playerRenderMode) == game::kRenderModeChart; }
 
 // A list being made: its chunks walked nearest first, a slice at a time while the world stands still,
 // each slice linking the entities it found before the world moves on; then put together on a thread
 // of its own, as that reads nothing of the game.
 struct Job {
-   Job(const std::byte* game, const Refresh& request, Position origin, std::optional<int> direction)
+   Job(const std::byte* game, const Refresh& request, Position origin, std::optional<int> direction, bool map)
       : game(game), playerIndex(request.playerIndex), surfaceIndex(request.surfaceIndex), origin(origin),
-        direction(direction), generation(request.generation), tileClasses(scanner::tileClasses(request)), links(game) {}
+        direction(direction), generation(request.generation), map(map), tileClasses(scanner::tileClasses(request)),
+        links(game) {}
    Job(const Job&) = delete;
    Job& operator=(const Job&) = delete;
 
@@ -1861,7 +1936,13 @@ struct Job {
    Position origin;
    std::optional<int> direction;
    uint32_t generation;
+   bool map; // List::map
    std::vector<uint8_t> tileClasses;
+
+   Scan scan(const Place& place) const {
+      return {place.surface, place.surfaceIndex, place.force, place.forceId, place.chart,
+              origin,        direction,          map,         tileClasses};
+   }
    std::vector<Item> extras;    // the mod's, where they are listed
    std::vector<Position> order; // the chunks' positions, nearest first
    size_t next = 0;             // the first in `order` not walked
@@ -1883,15 +1964,16 @@ struct Job {
    std::jthread assembler; // last, so that it ends before what it reads goes
 };
 
-// Starts a list of the request's surface from `origin`, or null when there is no such surface.
-std::unique_ptr<Job> startJob(const Refresh& request, Position origin, std::optional<int> direction) {
+// Starts a list of the request's surface from `origin`, or null when there is no such surface. `map`:
+// of what the full map names.
+std::unique_ptr<Job> startJob(const Refresh& request, Position origin, std::optional<int> direction, bool map) {
    const std::byte* game = currentGame();
    const std::optional<Place> place = placeOf(game, request.playerIndex, request.surfaceIndex);
    if (!place) {
       log::error("Scanner: no surface {} to list", request.surfaceIndex);
       return nullptr;
    }
-   auto job = std::make_unique<Job>(game, request, origin, direction);
+   auto job = std::make_unique<Job>(game, request, origin, direction, map);
    const auto& chunks = at<MsvcVector<const std::byte*>>(place->surface, layout.surfaceChunks);
    std::vector<std::pair<double, Position>> keyed;
    keyed.reserve(static_cast<size_t>(chunks.last - chunks.first));
@@ -1906,7 +1988,7 @@ std::unique_ptr<Job> startJob(const Refresh& request, Position origin, std::opti
    for (const auto& [distance, position] : keyed) job->order.push_back(position);
    for (unsigned i = threadsFor(job->order.size(), kChunksPerBatch); i > 0; --i) job->walks.emplace_back(origin);
 
-   const Scan scan{place->surface, place->surfaceIndex, place->force, origin, direction, job->tileClasses};
+   const Scan scan = job->scan(*place);
    for (size_t i = 0; i < request.extras.size(); ++i) {
       const Extra& extra = request.extras[i];
       const std::optional<Cat> category = categoryByKey(extra.category);
@@ -1914,6 +1996,8 @@ std::unique_ptr<Job> startJob(const Refresh& request, Position origin, std::opti
          log::error("Scanner: no category {} for an entry of the mod's", extra.category);
          continue;
       }
+      // Nothing is built on the map but blueprints and rails.
+      if (map && *category == BuildSpots) continue;
       const Position position{fixedPoint(extra.x), fixedPoint(extra.y)};
       if (!scan.wanted(position) || !scan.charted(position)) continue;
       Item item{Kind::Extra, *category, nullptr, position, extra.key};
@@ -1931,7 +2015,7 @@ Walked walkSlice(Job& job, std::optional<Clock::time_point> deadline) {
    const std::optional<Place> place = placeOf(job.game, job.playerIndex, job.surfaceIndex);
    if (!place) return Walked::Gone;
    Stopwatch stopwatch;
-   const Scan scan{place->surface, place->surfaceIndex, place->force, job.origin, job.direction, job.tileClasses};
+   const Scan scan = job.scan(*place);
    job.next = parallelFor(
       static_cast<unsigned>(job.walks.size()), job.next, job.order.size(), kChunksPerBatch,
       [&](unsigned thread, size_t i) {
@@ -1964,6 +2048,7 @@ List assemble(Job& job) {
    list.origin = job.origin;
    list.direction = job.direction;
    list.generation = job.generation;
+   list.map = job.map;
    mergeItems(job.walks, list.items);
    std::vector<const Cells*> cells;
    Walk& merged = job.walks.front();
@@ -2093,11 +2178,11 @@ void report(const Job& job, const char* how) {
       chunks += walk.chunks;
       cells += walk.cells.size();
    }
-   log::info("Scanner: {} list of {} entries ({} trees, {} resources in {} cells) on surface {}: started in {:.1f} ms, "
-             "{} chunks walked by {} threads in {} slices, {:.1f} ms; put together in {:.1f} ms, put in place in "
+   log::info("Scanner: {} {}list of {} entries ({} trees, {} resources in {} cells) on surface {}: started in {:.1f} "
+             "ms, {} chunks walked by {} threads in {} slices, {:.1f} ms; put together in {:.1f} ms, put in place in "
              "{:.1f} ms",
-             how, g_list.items.size(), trees, resources, cells, job.surfaceIndex, job.startMs, chunks, job.walks.size(),
-             job.slices, job.walkMs, job.assembleMs, job.installMs);
+             how, job.map ? "map " : "", g_list.items.size(), trees, resources, cells, job.surfaceIndex, job.startMs,
+             chunks, job.walks.size(), job.slices, job.walkMs, job.assembleMs, job.installMs);
 }
 
 // When the next automatic refresh starts after `job`.
@@ -2110,22 +2195,24 @@ Clock::time_point nextCycleAfter(const Job& job) {
 } // namespace
 
 void refresh(const Refresh& request) {
-   if (!localPlayer(currentGame(), request.playerIndex)) return;
+   const std::byte* player = localPlayer(currentGame(), request.playerIndex);
+   if (!player) return;
    // This one takes the place of any under way.
    g_job.reset();
    Position origin{fixedPoint(request.x), fixedPoint(request.y)};
    std::optional<int> direction = request.direction;
+   const bool map = onMap(player);
    if (request.automatic) {
       // An automatic refresh keeps the list's direction, and in remote view its origin, which the
-      // camera leaves as it follows the scanner.
+      // camera leaves as it follows the scanner. Opening or closing the map starts from the camera.
       std::scoped_lock lock(g_mutex);
       if (g_list.game == currentGame() && g_list.surfaceIndex == request.surfaceIndex) {
          direction = g_list.direction;
-         if (request.keepOrigin) origin = g_list.origin;
+         if (request.keepOrigin && g_list.map == map) origin = g_list.origin;
       }
    }
    Stopwatch stopwatch;
-   std::unique_ptr<Job> job = startJob(request, origin, direction);
+   std::unique_ptr<Job> job = startJob(request, origin, direction, map);
    if (!job) return;
    job->startMs = stopwatch.lap();
    if (request.automatic) {
@@ -2144,7 +2231,8 @@ void refresh(const Refresh& request) {
 
 bool tick(int playerIndex, uint32_t surfaceIndex) {
    const std::byte* game = currentGame();
-   if (!localPlayer(game, playerIndex)) return false;
+   const std::byte* player = localPlayer(game, playerIndex);
+   if (!player) return false;
    const auto now = Clock::now();
    const auto deadline = now + kSliceBudget;
    {
@@ -2152,7 +2240,12 @@ bool tick(int playerIndex, uint32_t surfaceIndex) {
       g_surface = surfaceIndex;
    }
    dropRetired(deadline);
-   if (g_job && g_job->surfaceIndex != surfaceIndex) g_job.reset();
+   const bool map = onMap(player);
+   if (g_job && (g_job->surfaceIndex != surfaceIndex || g_job->map != map)) {
+      g_job.reset();
+      // The list of the other view starts at once.
+      g_nextTry = now;
+   }
    if (g_job) {
       Job& job = *g_job;
       if (!job.assembler.joinable()) {
@@ -2177,7 +2270,7 @@ bool tick(int playerIndex, uint32_t surfaceIndex) {
    bool current;
    {
       std::scoped_lock lock(g_mutex);
-      current = g_list.game == game && g_list.surfaceIndex == surfaceIndex;
+      current = g_list.game == game && g_list.surfaceIndex == surfaceIndex && g_list.map == map;
    }
    if (current ? now < g_nextCycle : now < g_nextTry) return false;
    // One that cannot start is not tried again every tick.

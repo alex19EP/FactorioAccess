@@ -261,6 +261,10 @@ bool resolve(pdb::SymbolTable& symbols) {
    size(layout.fluidConnectionSize, "FluidBoxConnection");
    offset(layout.fluidConnectionTarget, "FluidBoxConnection", "target");
    address(layout.forceIsChunkCharted, "?isChunkCharted@ForceData@@QEBA_NVSurfaceIndex@@AEBVMapPosition@@@Z");
+   address(layout.forceChart, "?getChart@ForceData@@QEBAPEBVChart@@VSurfaceIndex@@@Z");
+   address(layout.chartChunkCovered, "?isChunkCoveredByFogOfWar@Chart@@QEBA_NAEBVChunkPosition@@@Z");
+   classSlot(layout.entityGetForceId, "Entity", "getForceID");
+   offset(layout.displayPanelShowInChart, "DisplayPanel", "showInChart");
    classSlot(layout.entityPrototypeAsPole, "EntityPrototype", "asElectricPole");
    address(layout.findMatchingNetwork,
            "?findMatchingNetworkByPosition@LogisticManager@@QEAAPEAVLogisticNetwork@@AEBVMapPosition@@@Z");

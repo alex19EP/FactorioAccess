@@ -32,6 +32,24 @@ surface that the player's force has charted, as sighted players see all of it on
   by one.
 - Water and ice as bodies of 8-way connected tiles, landing on the tile nearest the player.
 
+Things that move (units, vehicles, characters, robots: `kMovingTypes`) of another force are left out
+of chunks under fog of war, which the player's force has not charted in the last 600 ticks
+(`Chart::isChunkCoveredByFogOfWar`). The map shows them there where they were when last charted, or
+not at all. The force's own are listed wherever they are, as the map draws them live.
+
+# The map's list
+
+While the full map is open (`Player::renderMode` chart, remote view zoomed out past 200 tiles), the
+list holds only what the map names rather than drawing as a pixel of a building's colour (`kMapTypes`,
+`Rule::onMap`): vehicles and trains, stations, players, enemies, display panels shown on the map,
+resource patches, forests, water, ice, pins and tags. These are what the map's own pointing selects
+(`Chart::getSelection`) or labels. Prototypes flagged `not-on-map` are left out, single trees and
+wells are not listed apart from their forest or field, and build spots are left out, as nothing but
+blueprints and rails is built on the map.
+
+Opening or closing the map starts a new list at once, from where the camera is, and the cursor stays
+on what it was on when the new list has it. Until the new list is put in place, the old one is used.
+
 Trees and resources are counted by cell while the chunks are walked, not kept one by one: a big
 base charts millions of them. The chunk iterator also gives entities standing just past the
 chunk's edge, which the next chunk gives again, so each chunk keeps only the entities standing in

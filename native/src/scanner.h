@@ -48,11 +48,13 @@ struct Refresh {
 // Rebuilds the whole charted surface's list for this client's player, at once or, when automatic,
 // over the next ticks; does nothing for another client's player. A refresh replaces one under way.
 // At once, the cursor keeps only its category; an automatic one keeps the cursor on what it is on.
+// While the player has the full map open, the list holds only what the map names.
 void refresh(const Refresh& request);
 
 // Each tick, from Lua: carries the automatic refresh under way a slice further, and puts its list in
 // place once done. Whether the mod is to start an automatic refresh for this client's player now (a
-// second after the last, or at once on another surface); always false for another client's player.
+// second after the last, or at once on another surface or once the map opens or closes); always
+// false for another client's player.
 bool tick(int playerIndex, uint32_t surfaceIndex);
 
 // Whether the mod's own UI has the keys, so the scanner keys are not the scanner's. From Lua.
