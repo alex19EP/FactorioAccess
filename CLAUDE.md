@@ -147,12 +147,10 @@ We are writing for a screen reader.  This means two core principles:
 ## Key Systems
 
 ### Scanner System
-Used to find and categorize entities.  Effectively a streaming database which picks up new entities and tiles, grouping them and running fixed queries.
+Lists what is on the surface in categories and subcategories. The list lives in the native DLL, on the scanning client only; moves reach every client through the scanner keys' own `cursor_position`. See `devdocs/scanner.md`.
 
-- **Entry**: `scripts/scanner/entrypoint.lua`
-- **Engine**: `scripts/scanner/surface-scanner.lua`
-- **Backends**: `scripts/scanner/backends/`
-- Uses spatial clustering and incremental processing
+- **List and moves**: `native/src/scanner.cpp`
+- **Lua side**: `scripts/scanner/entrypoint.lua` (keys, landing, speech), `readout.lua`, `extras.lua` (pins, tags, pump spots)
 
 ### UI System
 Modern graph-based architecture:

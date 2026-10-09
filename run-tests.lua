@@ -29,8 +29,7 @@ local syntrax_tests = {
 }
 
 local ds_tests = {
-   { "deque", require("ds.tests.deque") },
-   { "sparse-bitset", require("ds.tests.sparse-bitset") },
+   { "fixed-ringbuffer", require("ds.tests.fixed-ringbuffer") },
 }
 
 -- Parse command line arguments

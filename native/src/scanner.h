@@ -1,0 +1,100 @@
+#pragma once
+
+#include "input.h"
+
+#include <cstdint>
+#include <optional>
+#include <string>
+#include <vector>
+
+// The scanner: lists what is on the player's surface by category (production, logistics,
+// resources ...), subcategory (assemblers making gears, iron chests holding coal ...) and entry, and
+// moves through the list with PageUp, PageDown, Home and their modifiers.
+//
+// Only this client has the list. A move must still reach every client alike, because the mod moves
+// its cursor (storage) and the player's selection there. So the move rides on the key's own custom
+// input: when a scanner key reaches the game, the game's cursor reads as the entry's position while
+// the game turns the key into its input action, which carries that position to every client as the
+// event's cursor_position. The mod's Lua moves to it, the same on every client, and asks entryAt()
+// what to say, which only this client can.
+namespace fa::scanner {
+
+// An entry the mod lists itself, for what only the Lua API reads: pins, map tags, spots to build
+// the item in hand. The mod says it, by its place in Refresh::extras.
+struct Extra {
+   std::string category; // a category's key (scanner-consts.lua CATEGORIES)
+   std::string key;      // its subcategory
+   double x = 0;         // where it is, in tiles
+   double y = 0;
+};
+
+// What the mod's refresh hands in. From Lua, inside the game's update: the world stands still.
+struct Refresh {
+   int playerIndex = 0;           // LuaPlayer::index
+   uint32_t surfaceIndex = 0;     // LuaSurface::index
+   double x = 0;                 // where distances are measured from, in tiles
+   double y = 0;
+   std::optional<int> direction;  // only entries in this direction (an 8-way defines.direction)
+   std::vector<std::string> water; // tile names that are water
+   std::vector<std::string> ice;   // tile names that are ice (Aquilo)
+   std::vector<Extra> extras;
+   uint32_t generation = 0; // which of the mod's collections `extras` is, said back with each extra
+   // Made over the next ticks (see tick) rather than at once. It keeps the list's direction, and with
+   // `keepOrigin` its origin, while the list is of the same surface.
+   bool automatic = false;
+   bool keepOrigin = false;
+};
+
+// Rebuilds the whole charted surface's list for this client's player, at once or, when automatic,
+// over the next ticks; does nothing for another client's player. A refresh replaces one under way.
+// At once, the cursor keeps only its category; an automatic one keeps the cursor on what it is on.
+// While the player has the full map open, the list holds only what the map names.
+void refresh(const Refresh& request);
+
+// Each tick, from Lua: carries the automatic refresh under way a slice further, and puts its list in
+// place once done. Whether the mod is to start an automatic refresh for this client's player now (a
+// second after the last, or at once on another surface or once the map opens or closes); always
+// false for another client's player.
+bool tick(int playerIndex, uint32_t surfaceIndex);
+
+// Whether the mod's own UI has the keys, so the scanner keys are not the scanner's. From Lua.
+void setModUiOpen(int playerIndex, bool open);
+
+// A key the game is about to handle, or null for any other poll. On the game thread, while the
+// world stands still (see input::setKeyObserver).
+void observeKey(const input::KeyEvent* key);
+
+// What a scanner key moved onto, for the mod to say.
+struct Entry {
+   std::string category;       // the category's key (scanner-consts.lua CATEGORIES)
+   bool edge = false;          // the move found nothing further that way and stayed
+   bool empty = false;         // nothing in the category: the fields below are unset
+   uint32_t index = 0;         // one-based place in its subcategory
+   uint32_t count = 0;         // entries in the subcategory
+   // "entity", "forest" (several trees), "patch" (a resource patch), "water", "ice" or "extra".
+   std::string kind;
+   uint32_t extra = 0;         // an extra: its one-based place in Refresh::extras
+   uint32_t generation = 0;    // an extra: its Refresh::generation
+   std::string prototype;      // an entity's or patch's prototype name
+   std::string text;           // a patch: the map's label of it, what is left in it
+   uint32_t trees = 0;         // a forest: how many trees are left
+   int32_t width = 0;          // water and ice: the size of the body, in tiles
+   int32_t height = 0;
+   double x = 0;               // where it is, in tiles
+   double y = 0;
+   double originX = 0;         // where the list was sorted from
+   double originY = 0;
+};
+
+// The move whose key carried `x`, `y` (event.cursor_position) for this client's player, if it is
+// one of the latest.
+std::optional<Entry> entryAt(int playerIndex, double x, double y);
+
+// The category the cursor is in after a category key, and whether that key found nothing further.
+struct Category {
+   std::string category;
+   bool edge = false;
+};
+std::optional<Category> category(int playerIndex);
+
+} // namespace fa::scanner

@@ -110,8 +110,15 @@ Position* playerDetour(const void* player, Position* out) {
    return g_playerOriginal(player, out);
 }
 
+// Set while the game handles a scanner key: see setKeyCursor. Game thread only.
+std::optional<Position> g_keyCursor;
+
 // There is one PlayerInputSource, this client's.
 Position* sourceDetour(const void* source, Position* out) {
+   if (g_keyCursor && currentGame()) {
+      *out = *g_keyCursor;
+      return out;
+   }
    Position position;
    if (cursor(currentGame(), position)) {
       *out = position;
@@ -544,6 +551,16 @@ void placeCursor(CursorPosition position) {
    g_cursor.store(pack({position.x, position.y}));
    g_game.store(game);
    g_hasCursor.store(true);
+}
+
+void setKeyCursor(std::optional<CursorPosition> position) {
+   if (position) {
+      g_keyCursor = Position{position->x, position->y};
+      // The cursor stays there: the next movement key steps on from the entry at once.
+      placeCursor(*position);
+   } else {
+      g_keyCursor.reset();
+   }
 }
 
 bool mayBeLocalPlayer(int playerIndex) {

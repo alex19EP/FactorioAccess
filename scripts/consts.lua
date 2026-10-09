@@ -10,8 +10,6 @@ local mod = {}
 mod.INT32_MAX = 2147483647
 mod.INT32_MIN = -2147483648
 
-mod.RESOURCE_SEARCH_RADIUSES_MAP_NAME = "resource-search-radiuses"
-
 mod.ENT_NAMES_CLEARED_AS_OBSTACLES = {
    "tree-01-stump",
    "tree-02-stump",

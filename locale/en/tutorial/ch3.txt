@@ -58,7 +58,7 @@ When you found the coal patch, your cursor was moved to the middle of it.  The m
 
 The number is called the richness.  Resource patches are the richest near their centers, and become less rich as you move toward the edge.
 
-The scanner also tracks overall use of patches, so that you can remotely monitor how much is left.  Please note that this is known to break after some mod updates or when the mod is added to an existing save.  This is because it is a heuristic which relies on seeing the patches before any mining happened.
+The scanner also says how much is left in each patch, as the map shows it, so that you can remotely monitor your patches.
 
 in any case, use Kruise Kontrol to walk to the coal.
 
