@@ -101,6 +101,20 @@ void EntityWindowScreen::AddTitledWindow(graph::GraphBuilder& builder, const std
 
 void EntityWindowScreen::AddInventory(graph::GraphBuilder& builder, const agui::EntityWindowParts& parts)
 {
+    if (parts.ghostChoices && Shows(parts.ghostChoices))
+    {
+        // Titled in its subheader ("Ghost cursor selection"), read as the context of its choices.
+        builder.BeginStop("inventory");
+        std::vector<const Widget*> labels
+            = FindAll(agui::member(parts.ghostChoices, game::layout.itemSelectListSubheader), "agui::Label");
+        std::string title = labels.empty() ? std::string() : LabelText(labels.front());
+        if (!title.empty())
+            builder.PushContext(title);
+        AddChoices(builder, "inventory/", parts.ghostChoices);
+        if (!title.empty())
+            builder.PopContext();
+        return;
+    }
     if (!parts.inventory || !Shows(parts.inventory))
         return;
     builder.BeginStop("inventory");

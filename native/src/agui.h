@@ -182,6 +182,18 @@ struct SlotItem {
 };
 SlotItem slotItem(const Widget* slot);
 
+// What robots are to do with an entity's slot (an InventoryGuiSlot), as the slot draws it: the
+// item requested there (`name`, its `quality` unless normal, and `count`; an empty name for none),
+// which a ghost in hand puts there in remote view, and whether its stack is to be taken out
+// (`removal`). Main thread only.
+struct SlotRequest {
+   std::string_view name;
+   std::string_view quality;
+   uint32_t count = 0;
+   bool removal = false;
+};
+SlotRequest slotRequest(const Widget* slot);
+
 // A blueprint library slot (BlueprintRecordSlotButton), as it draws itself: its `record` (a
 // BlueprintRecord, null for an empty slot), whether only the record's `preview` has arrived (drawn
 // grey), the player holds it (a hand over it), it is the `active` one of its book, and how far its
@@ -261,7 +273,9 @@ double progress(const Widget* bar);
 // assembler, ...), or all null for any other window. `entity` is the window titled with the entity's
 // name; it holds the player's inventory beside the entity's own part. `inventory` is the player's
 // InventoryGui, `inventoryPanel` the panel holding it under `inventoryTitle` ("Character"), and
-// `header` the title bar's search and close buttons. A crafting machine or drill has a
+// `header` the title bar's search and close buttons. In remote view the window may hold
+// `ghostChoices` (a SelectListGui, "Ghost cursor selection") there instead of the inventory; then
+// `inventoryPanel` is that list. A crafting machine or drill has a
 // `progressBar` and the productivity `bonusBar` under it, and may take `modules`; a crafting
 // machine shows its `recipe` (a RecipeInfoWidget) and the tables of its `inputs` and `outputs`,
 // and an assembler the `changeRecipe` button, which is in the window only when the recipe can
@@ -272,6 +286,7 @@ struct EntityWindowParts {
    const Widget* inventoryPanel = nullptr;
    const Widget* inventoryTitle = nullptr;
    const Widget* inventory = nullptr;
+   const Widget* ghostChoices = nullptr;
    const Widget* progressBar = nullptr;
    const Widget* bonusBar = nullptr;
    const Widget* recipe = nullptr;

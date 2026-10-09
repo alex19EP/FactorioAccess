@@ -29,8 +29,12 @@ end
 function mod.on_cursor_stack_changed(event, pindex, read_hand)
    local vp = Viewpoint.get_viewpoint(pindex)
 
-   local stack = game.get_player(pindex).cursor_stack
+   local player = game.get_player(pindex)
+   local stack = player.cursor_stack
    local new_item_name = ""
+   -- A ghost in hand, as remote view's ghost cursor selection puts there, is told apart from the item.
+   local ghost = player.cursor_ghost
+   if ghost then new_item_name = "ghost " .. ghost.name.name end
    if stack and stack.valid_for_read then
       new_item_name = stack.name
       if stack.is_blueprint and storage.players[pindex].blueprint_hand_direction ~= dirs.north then

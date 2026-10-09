@@ -8,7 +8,9 @@
 //
 // Two stops, or more. The entity's part, in its name's context, read by the generic walker: its status,
 // progress bars, fuel, input, output and module slots, recipe, filters and settings. Then the
-// player's inventory as the game lays it out, a row of the grid per table row. A window with
+// player's inventory as the game lays it out, a row of the grid per table row; opened from remote
+// view, the game's "Ghost cursor selection" in its place, read as a filter chooser is, where a
+// choice puts its item's ghost in hand. A window with
 // network buttons in its title bar (a pump's, a boiler's) adds the panel a button opened. Then the
 // views the mod attached to the window (a pump's: scripts/ui/fluid-views.lua).
 //

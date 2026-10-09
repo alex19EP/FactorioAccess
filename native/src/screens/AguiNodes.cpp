@@ -803,10 +803,11 @@ std::string RecordSlotText(const Widget* slot)
 
 } // namespace
 
-std::string SlotText(const Widget* slot)
+namespace
 {
-    if (agui::isRecordSlot(slot))
-        return RecordSlotText(slot);
+
+std::string StackText(const Widget* slot)
+{
     std::string_view name;
     std::string_view quality;
     double count = 0;
@@ -849,6 +850,30 @@ std::string SlotText(const Widget* slot)
     if (count >= 100 || count == std::floor(count))
         return std::format("{} {:.0f}", spoken, count);
     return std::format("{} {:.1f}", spoken, count);
+}
+
+} // namespace
+
+std::string SlotText(const Widget* slot)
+{
+    if (agui::isRecordSlot(slot))
+        return RecordSlotText(slot);
+    std::string text = StackText(slot);
+    if (!agui::derivesFrom(slot, "InventoryGuiSlot"))
+        return text;
+    // What robots are to bring or take out, which remote view's ghost in hand plans.
+    agui::SlotRequest request = agui::slotRequest(slot);
+    if (!request.name.empty())
+    {
+        std::string item = request.quality.empty() ? std::string(request.name)
+                                                    : std::format("{} {}", request.quality, request.name);
+        std::string requested = vocab::kSlotRequested(item, request.count);
+        // An empty slot shows the request alone, the ghost of its item in place of a stack.
+        text = agui::slotItem(slot).count == 0 ? requested : std::format("{}, {}", text, requested);
+    }
+    if (request.removal)
+        text = std::format("{}, {}", text, std::string(vocab::kToBeRemoved));
+    return text;
 }
 
 namespace
@@ -1120,6 +1145,57 @@ void AddGrid(graph::GraphBuilder& builder, const std::string& prefix, const Widg
         for (std::size_t i : row)
             builder.AddItem(graph::ControlId::Referenced(cells[i], prefix + "/" + std::to_string(i)), node(cells[i]));
         builder.EndRow();
+    }
+}
+
+namespace
+{
+
+// A choice by its name alone ("rare iron plate"): what it would pick, not a count.
+graph::NodeVtable ChoiceNode(const Widget* choice)
+{
+    graph::NodeVtable vtable = ControlNode(choice);
+    if (!agui::isSlotButton(choice))
+        return vtable;
+    vtable.Announcements.clear();
+    vtable.Announcements.emplace_back(
+        [choice]()
+        {
+            agui::SlotButton button = agui::slotButton(choice);
+            return button.quality.empty() ? std::string(button.name)
+                                          : std::format("{} {}", button.quality, button.name);
+        },
+        false, graph::AnnouncementKinds::Label);
+    return vtable;
+}
+
+} // namespace
+
+void AddChoices(graph::GraphBuilder& builder, const std::string& prefix, const Widget* list)
+{
+    std::vector<const Widget*> groups = FindAll(list, "ItemGroupTab");
+    const Widget* searchButton = FindDescendant(list, "SearchBar");
+    if (!groups.empty() || searchButton)
+    {
+        builder.StartRow(prefix + "groups");
+        for (std::size_t i = 0; i < groups.size(); ++i)
+            builder.AddItem(graph::ControlId::Referenced(groups[i], prefix + "groups/" + std::to_string(i)),
+                ControlNode(groups[i]));
+        if (searchButton)
+            builder.AddItem(graph::ControlId::Referenced(searchButton, prefix + "groups/search"), ControlNode(searchButton));
+        builder.EndRow();
+    }
+    // The selected group's choices: the table of slot buttons, with fillers ending each subgroup.
+    for (const Widget* table : FindAll(list, "agui::Table"))
+    {
+        bool choices = false;
+        for (const Widget* cell : agui::children(table))
+            choices |= agui::isSlotButton(cell);
+        if (!choices)
+            continue;
+        AddGrid(
+            builder, prefix + "choices", table, [](const Widget* cell) { return agui::isSlotButton(cell); },
+            [](const Widget* cell) { return ChoiceNode(cell); });
     }
 }
 

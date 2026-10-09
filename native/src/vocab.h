@@ -101,6 +101,11 @@ inline constexpr Word kRemoved{"fa.native-removed"};
 inline constexpr Word kInHand{"fa.native-in-hand"};
 // A book's slot it builds from while held, highlighted in the book's window.
 inline constexpr Word kActive{"fa.native-active"};
+// What robots are to bring to an entity's slot: the item's ghost and its count drawn on the slot
+// ("iron plate 10 requested").
+inline constexpr Word kSlotRequested{"fa.native-slot-requested"};
+// An entity's slot whose stack robots are to take out: the game draws a deconstruction mark on it.
+inline constexpr Word kToBeRemoved{"fa.native-to-be-removed"};
 // A library record whose content has not arrived yet (drawn grey), or is arriving ("transferring 40
 // percent").
 inline constexpr Word kNotAvailable{"fa.native-not-available"};

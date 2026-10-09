@@ -84,6 +84,12 @@ void AddGrid(graph::GraphBuilder& builder, const std::string& prefix, const agui
     const std::function<bool(const agui::Widget*)>& accept,
     const std::function<graph::NodeVtable(const agui::Widget*)>& node);
 
+/// The choices of a SelectListGui<T> (a filter chooser, remote view's ghost cursor selection): a
+/// row of its item group tabs, ended by its search button, then a grid of the selected group's
+/// choices, one row per subgroup line as the game lays them out. A choice reads its name only.
+/// Keys start with `prefix`.
+void AddChoices(graph::GraphBuilder& builder, const std::string& prefix, const agui::Widget* list);
+
 /// A line of a description (a LabelWithHoverableRichText) with the icons the game makes clickable in
 /// it as links beside it: Right reaches them, Enter clicks one as the mouse would, the tooltip key
 /// reads its tooltip. Returns false, declaring nothing, for a label without such icons.

@@ -439,6 +439,10 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.slotInventory, "InventoryGuiSlot", "inventory");
    offset(layout.slotIndex, "InventoryGuiSlot", "targetSpecification.slotIndex");
    offset(layout.slotItemStack, "InventoryGuiSlot", "itemStack");
+   offset(layout.slotGhostItem, "InventoryGuiSlot", "ghostItem.id.baseID");
+   offset(layout.slotGhostQuality, "InventoryGuiSlot", "ghostItem.id.qualityID");
+   offset(layout.slotGhostCount, "InventoryGuiSlot", "ghostItem.count");
+   offset(layout.slotGhostRemoval, "InventoryGuiSlot", "ghostRemoval");
    offset(layout.inventoryData, "Inventory", "data");
    offset(layout.inventorySize, "Inventory", "dataSize");
    offset(layout.inventoryBar, "Inventory", "bar");
@@ -482,6 +486,8 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.entityInventoryHolder, "GameGuiWithControllerInventory", "controllerInventory");
    offset(layout.holderInventory, "GameControllerInventoryHolder", "inventoryGui");
    offset(layout.holderTitle, "GameControllerInventoryHolder", "titleLabel");
+   offset(layout.remoteHolderSelect, "RemoteControllerInventoryHolder", "selectGui");
+   offset(layout.itemSelectListSubheader, "SelectListGui<ID<ItemPrototype,unsigned short> >", "subheader");
    offset(layout.frameHeader, "agui::Frame", "headerFlow");
    offset(layout.assemblerProgressBar, "AssemblingMachineGui", "productionProgressBar");
    offset(layout.assemblerBonusBar, "AssemblingMachineGui", "bonusProgressBar");

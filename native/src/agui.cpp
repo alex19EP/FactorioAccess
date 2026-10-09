@@ -557,6 +557,20 @@ SlotItem slotItem(const Widget* slot) {
    return item;
 }
 
+SlotRequest slotRequest(const Widget* slot) {
+   const std::byte* self = asBaseChecked(slot, ".?AVInventoryGuiSlot@@");
+   SlotRequest request;
+   request.removal = at<bool>(self, layout.slotGhostRemoval);
+   if (const std::byte* prototype = prototypeAt(layout.itemPrototypes, at<uint16_t>(self, layout.slotGhostItem))) {
+      request.name = localisedName(prototype);
+      request.count = at<uint32_t>(self, layout.slotGhostCount);
+      if (const std::byte* quality = prototypeAt(layout.qualityPrototypes, at<uint8_t>(self, layout.slotGhostQuality));
+          quality && readString(quality, layout.prototypeName) != "normal")
+         request.quality = localisedName(quality);
+   }
+   return request;
+}
+
 AchievementCard achievementCard(const Widget* card) {
    const std::byte* self = asBaseChecked(card, ".?AVAchievementCard@@");
    AchievementCard result;
@@ -699,6 +713,9 @@ EntityWindowParts entityWindowParts(const Widget* window) {
       parts.inventory = member(holder, layout.holderInventory);
       parts.inventoryTitle = member(holder, layout.holderTitle);
       parts.inventoryPanel = parent(parts.inventory);
+   } else if (holder && derivesFrom(holder, "RemoteControllerInventoryHolder")) {
+      parts.ghostChoices = member(holder, layout.remoteHolderSelect);
+      parts.inventoryPanel = parts.ghostChoices;
    }
    struct Machine {
       std::string_view type;

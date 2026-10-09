@@ -575,6 +575,13 @@ struct Layout {
    uint32_t slotInventory = 0;        // InventoryGuiSlot::inventory, Inventory*
    uint32_t slotIndex = 0;            // InventoryGuiSlot::targetSpecification.slotIndex
    uint32_t slotItemStack = 0;        // InventoryGuiSlot::itemStack, ItemStack*
+   // What robots are to bring to an entity's slot or take from it (its insert and removal plans),
+   // as InventoryGuiSlot::paintComponent draws them: the requested item's ghost and count, and a
+   // deconstruction mark.
+   uint32_t slotGhostItem = 0;        // InventoryGuiSlot::ghostItem.id.baseID, 0 for none
+   uint32_t slotGhostQuality = 0;     // InventoryGuiSlot::ghostItem.id.qualityID
+   uint32_t slotGhostCount = 0;       // InventoryGuiSlot::ghostItem.count
+   uint32_t slotGhostRemoval = 0;     // InventoryGuiSlot::ghostRemoval, bool
    uint32_t inventoryData = 0;        // Inventory::data, ItemStack[]
    uint32_t inventorySize = 0;        // Inventory::dataSize
    // A chest's slot limit: the slots from `bar` on take nothing from machines. Its window part
@@ -615,6 +622,13 @@ struct Layout {
    uint32_t entityInventoryHolder = 0; // GameGuiWithControllerInventory::controllerInventory, ControllerInventoryHolder*
    uint32_t holderInventory = 0;      // GameControllerInventoryHolder::inventoryGui, InventoryGui
    uint32_t holderTitle = 0;          // GameControllerInventoryHolder::titleLabel ("Character")
+   // RemoteControllerInventoryHolder::selectGui, IDWithQualityIDSelectListGui<IDWithQuality<ID<ItemPrototype>>>:
+   // remote view's "Ghost cursor selection" in an entity's window, where the player's inventory
+   // would be. A choice puts its item's ghost in hand.
+   uint32_t remoteHolderSelect = 0;
+   // SelectListGui<ID<ItemPrototype>>::subheader, agui::Frame, the base at offset 0 of that list:
+   // holds its title label ("Ghost cursor selection").
+   uint32_t itemSelectListSubheader = 0;
    uint32_t frameHeader = 0;          // agui::Frame::headerFlow: the title bar's search and close buttons
    // The progress bars of crafting machines and drills, with the productivity bar beside each.
    uint32_t assemblerProgressBar = 0; // AssemblingMachineGui::productionProgressBar

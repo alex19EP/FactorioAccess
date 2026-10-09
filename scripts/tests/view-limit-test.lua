@@ -105,6 +105,34 @@ describe("Cursor limited to the screen", function()
       end)
    end)
 
+   it("reads the hand when a ghost is put in it", function(ctx)
+      local player
+
+      ctx:init(function()
+         player = game.get_player(1)
+      end)
+
+      ctx:at_tick(1, function()
+         player.clear_cursor()
+         player.set_controller({ type = defines.controllers.remote, position = player.position })
+      end)
+
+      ctx:at_tick(5, function()
+         Speech.start_capture()
+         player.cursor_ghost = "wooden-chest"
+      end)
+
+      ctx:at_tick(8, function()
+         local found = false
+         for _, m in ipairs(Speech.stop_capture()) do
+            if contains(m.message, "fa.cursor-ghost-description") then found = true end
+         end
+         ctx:assert(found, "The ghost put in an empty hand is said")
+         player.clear_cursor()
+         player.exit_remote_view()
+      end)
+   end)
+
    it("follows a camera the game moves, and brings remote view at the character to the cursor", function(ctx)
       local player, vp, near, far
 
