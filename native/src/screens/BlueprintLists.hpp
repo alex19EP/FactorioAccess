@@ -4,6 +4,7 @@
 // library (BlueprintBookRecordWidget), and the lists of blueprints both and the library's shelves
 // show (BlueprintsList).
 
+#include <map>
 #include <string>
 
 #include "AguiNodes.hpp"
@@ -31,8 +32,10 @@ void AddSubheaderButtons(graph::GraphBuilder& builder, const std::string& key, c
 /// List view one to a row with the description read after the slot (the table's columns hold the
 /// lines between items too), in Grid and Slots view the table's rows. Keyed by their place in the
 /// list, so the cursor keeps its slot when the view changes. Adds to the current stop, and returns
-/// how many slots it added.
-int AddBlueprintList(graph::GraphBuilder& builder, const std::string& key, const agui::Widget* list);
+/// how many slots it added. A library's list also puts each record's key in `recordKeys`.
+using RecordKeys = std::map<agui::RecordId, std::string>;
+int AddBlueprintList(graph::GraphBuilder& builder, const std::string& key, const agui::Widget* list,
+    RecordKeys* recordKeys = nullptr);
 
 /// A stop of a list's frame subheader: its labels (the hint on cycling through a book, the library's
 /// warnings), then the List, Grid and Slots buttons in a row.

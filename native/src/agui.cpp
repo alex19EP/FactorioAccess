@@ -670,12 +670,34 @@ uint16_t bookRecordActiveIndex(const void* book, const void* player) {
    return reinterpret_cast<ActiveIndexFunction>(layout.bookRecordActiveIndex)(book, player, latency);
 }
 
-RecordSlot recordSlot(const Widget* slot) {
+namespace {
+
+RecordId recordIdAt(const std::byte* id) {
+   return {at<uint16_t>(id, layout.recordIdPlayer), at<uint32_t>(id, layout.recordIdIndex)};
+}
+
+const void* slotRecord(const std::byte* button) {
    using GetRecordFunction = const void* (*)(const void* button);
+   return reinterpret_cast<GetRecordFunction>(layout.recordSlotRecord)(button);
+}
+
+} // namespace
+
+std::optional<RecordId> slotRecordId(const Widget* slot) {
+   const void* record = slotRecord(asBaseChecked(slot, ".?AVBlueprintRecordSlotButton@@"));
+   if (!record) return std::nullopt;
+   return recordIdAt(asBase(static_cast<const Widget*>(record), ".?AVBlueprintRecord@@") + layout.recordId);
+}
+
+RecordId openBookRecordId(const Widget* book) {
+   return recordIdAt(asBaseChecked(book, ".?AVBlueprintBookRecordWidget@@") + layout.bookRecordGuiRecord);
+}
+
+RecordSlot recordSlot(const Widget* slot) {
    using CursorRecordFunction = void* (*)(const void* adapter, std::byte* out);
    const std::byte* button = asBaseChecked(slot, ".?AVBlueprintRecordSlotButton@@");
    RecordSlot result;
-   result.record = reinterpret_cast<GetRecordFunction>(layout.recordSlotRecord)(button);
+   result.record = slotRecord(button);
    if (!result.record) return result;
    const std::byte* record = asBase(static_cast<const Widget*>(result.record), ".?AVBlueprintRecord@@");
    result.preview = callVirtualAt<bool>(record, layout.recordIsPreview);
@@ -693,9 +715,7 @@ RecordSlot recordSlot(const Widget* slot) {
       if (!adapter) adapter = player + layout.playerGameStateAdapter;
       auto vtable = *reinterpret_cast<VirtualTable const*>(adapter);
       reinterpret_cast<CursorRecordFunction>(vtable[layout.adapterCursorRecord])(adapter, held.data());
-      const std::byte* id = record + layout.recordId;
-      result.inHand = at<uint16_t>(held.data(), layout.recordIdPlayer) == at<uint16_t>(id, layout.recordIdPlayer) &&
-                      at<uint32_t>(held.data(), layout.recordIdIndex) == at<uint32_t>(id, layout.recordIdIndex);
+      result.inHand = recordIdAt(held.data()) == recordIdAt(record + layout.recordId);
    }
    return result;
 }

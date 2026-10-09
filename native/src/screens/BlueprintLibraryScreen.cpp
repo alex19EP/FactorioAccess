@@ -1,9 +1,9 @@
 #include "BlueprintLibraryScreen.hpp"
 
 #include <string>
+#include <utility>
 #include <vector>
 
-#include "BlueprintLists.hpp"
 #include "game.h"
 #include "vocab.h"
 
@@ -55,7 +55,8 @@ void AddHistory(graph::GraphBuilder& builder, const Widget* window, const agui::
 
 // The tabs, then the search and the shelves of the chosen one: the "synchronising" label until a
 // shelf has arrived, then its records.
-void AddShelves(graph::GraphBuilder& builder, const Widget* window, const Widget* header, const Widget* field)
+void AddShelves(graph::GraphBuilder& builder, const Widget* window, const Widget* header, const Widget* field,
+    RecordKeys& shown)
 {
     const Widget* tabs = agui::member(window, layout.libraryTabs);
     builder.BeginStop("tabs");
@@ -82,14 +83,15 @@ void AddShelves(graph::GraphBuilder& builder, const Widget* window, const Widget
             ++records;
         }
         else if (agui::parent(list) == shelf)
-            records += AddBlueprintList(builder, key, list);
+            records += AddBlueprintList(builder, key, list, &shown);
     }
     AddNoMatch(builder, field, records);
 }
 
 // A book record opened in the library, laid out as a book's window, with the search over its
 // contents.
-void AddOpenBook(graph::GraphBuilder& builder, const Widget* book, const Widget* header, const Widget* field)
+void AddOpenBook(graph::GraphBuilder& builder, const Widget* book, const Widget* header, const Widget* field,
+    RecordKeys& shown)
 {
     const Widget* navigation = agui::member(book, layout.bookRecordGuiNavigation);
     AddBook(builder,
@@ -100,7 +102,7 @@ void AddOpenBook(graph::GraphBuilder& builder, const Widget* book, const Widget*
     AddSubheaderButtons(builder, "buttons", agui::member(book, layout.bookRecordGuiHeader));
     builder.BeginStop("contents");
     AddSearch(builder, header, field);
-    AddNoMatch(builder, field, AddBlueprintList(builder, "contents", agui::member(book, layout.bookRecordGuiList)));
+    AddNoMatch(builder, field, AddBlueprintList(builder, "contents", agui::member(book, layout.bookRecordGuiList), &shown));
     AddListView(builder, agui::member(book, layout.bookRecordGuiInside));
 }
 
@@ -120,34 +122,72 @@ void BlueprintLibraryScreen::BuildWindow(graph::GraphBuilder& builder, const Wid
     const Widget* field = popup ? FindDescendant(popup, "agui::TextField") : nullptr;
     if (field && !_searching)
         _landing = kSearchKey;
+    bool searchClosed = !field && _searching;
     _searching = field != nullptr;
 
+    RecordKeys shown;
+    std::optional<agui::RecordId> openBook;
     const Widget* inside = agui::member(window, layout.libraryInside);
     if (Shows(inside))
     {
-        AddShelves(builder, window, parts.header, field);
+        AddShelves(builder, window, parts.header, field, shown);
         AddListView(builder, inside);
     }
     else if (const Widget* book = FindDescendant(agui::member(window, layout.libraryBookHolder), "BlueprintBookRecordWidget"))
-        AddOpenBook(builder, book, parts.header, field);
-    // After the panel: when a book opens or closes, the cursor finds no earlier stop that stayed
-    // and starts at the top of the new panel.
+    {
+        openBook = agui::openBookRecordId(book);
+        AddOpenBook(builder, book, parts.header, field, shown);
+    }
     AddHistory(builder, window, parts);
     AddInventory(builder, parts);
+    // The records the search hid come back, and the cursor's record moves to its own slot.
+    if (searchClosed)
+        for (const auto& [id, key] : _shown)
+            if (key == _cursorKey && shown.contains(id))
+                _landing = shown.at(id);
+    FollowOpenBook(openBook, shown);
+    _shown = std::move(shown);
+}
+
+void BlueprintLibraryScreen::OnCursorMoved(const graph::GraphNode& node)
+{
+    EntityWindowScreen::OnCursorMoved(node);
+    _cursorKey = node.Id.StructuralKey;
+}
+
+// The panel changed when the open book did. Leaving a book, for the shelf or the book it is inside,
+// lands on its slot there; a deleted book's slot is where it was last shown. Opening one lands on
+// its name.
+void BlueprintLibraryScreen::FollowOpenBook(std::optional<agui::RecordId> book, const RecordKeys& shown)
+{
+    if (book != _openBook)
+    {
+        if (_openBook && shown.contains(*_openBook))
+            _landing = shown.at(*_openBook);
+        else if (book)
+            _landing = "book/name";
+        else if (_openBook && _recordKeys.contains(*_openBook))
+            _landing = _recordKeys.at(*_openBook);
+        _openBook = book;
+    }
+    for (const auto& [id, key] : shown)
+        _recordKeys[id] = key;
 }
 
 const char* BlueprintLibraryScreen::TakeSuggestedLanding()
 {
-    const char* landing = _landing;
-    _landing = nullptr;
-    return landing;
+    _landed = std::move(_landing);
+    _landing.clear();
+    return _landed.empty() ? nullptr : _landed.c_str();
 }
 
 void BlueprintLibraryScreen::OnPop()
 {
     EntityWindowScreen::OnPop();
+    // The open book stays known: deleting it pops the library for the confirmation box, and the
+    // library comes back without it.
     _searching = false;
-    _landing = nullptr;
+    _landing.clear();
 }
 
 } // namespace fa::screens

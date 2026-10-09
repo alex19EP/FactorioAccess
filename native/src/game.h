@@ -963,6 +963,7 @@ struct Layout {
    uint32_t bookRecordGuiNavigation = 0; // ::windowHeader, BlueprintBookHeader
    uint32_t bookRecordGuiDescription = 0; // ::descriptionLabel, agui::Label
    uint32_t bookRecordGuiList = 0;     // ::blueprintsList, BlueprintsList
+   uint32_t bookRecordGuiRecord = 0;   // ::recordID, BlueprintRecordID
    uint32_t bookHeaderName = 0;        // BlueprintBookHeader::nameLabel, agui::Label
    uint32_t bookHeaderRename = 0;      // ::editButton, IconButton
 

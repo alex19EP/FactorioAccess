@@ -67,7 +67,7 @@ void AddSubheaderButtons(graph::GraphBuilder& builder, const std::string& key, c
     builder.EndRow();
 }
 
-int AddBlueprintList(graph::GraphBuilder& builder, const std::string& key, const Widget* list)
+int AddBlueprintList(graph::GraphBuilder& builder, const std::string& key, const Widget* list, RecordKeys* recordKeys)
 {
     if (!Shows(list))
         return 0;
@@ -101,7 +101,11 @@ int AddBlueprintList(graph::GraphBuilder& builder, const std::string& key, const
                 builder.StartRow(key);
                 rowStarted = true;
             }
-            builder.AddItem(graph::ControlId::Referenced(slot, key + "/" + std::to_string(slotNumber++)), std::move(node));
+            std::string slotKey = key + "/" + std::to_string(slotNumber++);
+            if (recordKeys && agui::isRecordSlot(slot))
+                if (std::optional<agui::RecordId> id = agui::slotRecordId(slot))
+                    (*recordKeys)[*id] = slotKey;
+            builder.AddItem(graph::ControlId::Referenced(slot, slotKey), std::move(node));
         }
         if (rowStarted)
             builder.EndRow();

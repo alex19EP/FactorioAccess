@@ -1,7 +1,9 @@
 #pragma once
 
+#include <compare>
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <span>
 #include <string>
 #include <string_view>
@@ -211,6 +213,17 @@ RecordSlot recordSlot(const Widget* slot);
 // The record of a BlueprintBookRecord that `player` builds from: the book's own for the owner, the
 // player's choice for a book on the game's shelf or another player's.
 uint16_t bookRecordActiveIndex(const void* book, const void* player);
+// A library record's BlueprintRecordID: the player whose library made it and its number there. It
+// names the record while the record moves between shelves and books.
+struct RecordId {
+   uint16_t player = 0;
+   uint32_t index = 0;
+   auto operator<=>(const RecordId&) const = default;
+};
+// The record a library slot shows, none for an empty slot.
+std::optional<RecordId> slotRecordId(const Widget* slot);
+// The book record a book opened in the library shows (BlueprintBookRecordWidget).
+RecordId openBookRecordId(const Widget* book);
 
 // An achievement's card (AchievementCard) in the achievements window: the AchievementPrototype it
 // shows, its state as its frame draws it, the flow of its texts (name, description, progress; on

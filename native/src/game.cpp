@@ -745,6 +745,7 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.bookRecordGuiNavigation, "BlueprintBookRecordWidget", "windowHeader");
    offset(layout.bookRecordGuiDescription, "BlueprintBookRecordWidget", "descriptionLabel");
    offset(layout.bookRecordGuiList, "BlueprintBookRecordWidget", "blueprintsList");
+   offset(layout.bookRecordGuiRecord, "BlueprintBookRecordWidget", "recordID");
    offset(layout.bookHeaderName, "BlueprintBookHeader", "nameLabel");
    offset(layout.bookHeaderRename, "BlueprintBookHeader", "editButton");
    offset(layout.achievementsHolder, "AchievementGui", "achievementHolder");
