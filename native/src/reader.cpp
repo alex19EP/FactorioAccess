@@ -288,12 +288,13 @@ bool damaged(const std::byte* entity) {
 // Drops from the description the lines the step does not say: what reads alike on every entity of
 // the kind, the status unless it is a problem, health unless the entity is damaged, what alt mode
 // draws as icons (a chest's contents, fluids), which the mod says from the icons in alt mode only,
-// the contents and an ore's amount, which only the hover panel shows elsewhere, the surface
-// conditions and debug lines, and the categories' headings.
+// the contents, the fuel and an ore's amount, which only the hover panel shows elsewhere (a missing
+// fuel is the status), the surface conditions and debug lines, and the categories' headings.
 void prune(const std::byte* entity, std::byte* description) {
    static const std::vector<std::string> fixed = fixedLabels();
    const std::string health = vocab::translate("description.health", {});
    const std::string contents = vocab::translate("description.contents", {});
+   const std::string fuel = vocab::translate("description.fuel-inventory-contents", {});
    const bool chest = contentsDrawn(entity);
    const std::string amount = amountDrawn(entity) ? vocab::translate("description.amount", {}) : "";
    // A fluid's own temperature line ("Temperature: Steam").
@@ -309,13 +310,13 @@ void prune(const std::byte* entity, std::byte* description) {
       auto& items = *reinterpret_cast<MsvcVector<std::byte*>*>(*category + layout.categoryProperties);
       std::byte** kept = items.first;
       bool droppedLast = false;
-      // The unlabelled lines after "Contents" are its items.
+      // The unlabelled lines after "Contents" or "Fuel" are its items.
       bool inContents = false;
       for (std::byte** item = items.first; item < items.last; ++item) {
          auto& label = *reinterpret_cast<MsvcString*>(*item + layout.propertyLabel);
          std::string_view name = label.view();
          if (!name.empty() && name.back() == ':') name.remove_suffix(1);
-         if (!name.empty()) inContents = name == contents;
+         if (!name.empty()) inContents = name == contents || name == fuel;
          const auto vtable = *reinterpret_cast<const uintptr_t*>(*item);
          bool keep = !dropAll;
          if (keep && vtable == layout.recipeItemVtable) {
