@@ -113,7 +113,8 @@ struct Target {
 // entity `target` on it.
 struct Pending {
    Position tile;
-   Position point;
+   std::optional<Position> point; // where the cursor rests, without one
+
    std::string prefix;
    std::string suffix;
    std::optional<Target> target;
@@ -561,9 +562,9 @@ std::string pictureOf(const Local& here, const void* chart, Position tile) {
    return {};
 }
 
-// What the tile `tile` holds where the mouse at `point` selects, as the player's view shows it, or
-// nothing outside a game with a view.
-std::optional<std::string> readTile(Position tile, Position point) {
+// What the tile `tile` holds where the cursor rests in it (landingIn), or with `where` what the
+// mouse at that point selects, as the player's view shows it, or nothing outside a game with a view.
+std::optional<std::string> readTile(Position tile, std::optional<Position> where) {
    const std::optional<Local> here = local();
    if (!here) return std::nullopt;
    const Seen seen = sightOf(*here, tile);
@@ -574,6 +575,8 @@ std::optional<std::string> readTile(Position tile, Position point) {
       const std::string blurred = vocab::kBlurred;
       return picture.empty() ? blurred : picture + ", " + blurred;
    }
+   const Point landing = where ? Point{where->x, where->y} : landingIn(tile.x, tile.y);
+   const Position point{landing.x, landing.y};
    const std::byte* entity = entityAt(here->player, here->surface, point);
    // A tile the map has not generated says so, and no more.
    if (!entity && !reinterpret_cast<TileAtFunction>(layout.surfaceTileAt)(here->surface, &tile))
@@ -614,7 +617,7 @@ std::optional<std::string> readTarget(const Target& target) {
 void read(int32_t tileX, int32_t tileY, std::string prefix) {
    const Position tile{tileX, tileY};
    std::scoped_lock lock(g_mutex);
-   g_pending = Pending{tile, centreOf(tile), std::move(prefix), {}};
+   g_pending = Pending{tile, std::nullopt, std::move(prefix), {}};
 }
 
 void readPoint(int32_t x, int32_t y, std::string suffix) {
@@ -704,6 +707,22 @@ std::vector<Stop> stopsIn(int32_t tileX, int32_t tileY) {
       tileX, tileY, boxes, [&](int32_t x, int32_t y) { return entityAt(here->player, here->surface, Position{x, y}); },
       // The game's "loses to": the one that takes the mouse comes first.
       [&](const void* a, const void* b) { return ordered && less(b, a, context); });
+}
+
+Point landingIn(int32_t tileX, int32_t tileY) {
+   const Position centre = centreOf(Position{tileX, tileY});
+   for (const Stop& stop : stopsIn(tileX, tileY)) {
+      const auto* entity = static_cast<const std::byte*>(stop.entity);
+      if (!entity || facts::skipsOver(entity) ||
+          typeName(at<const std::byte*>(entity, layout.entityPrototypeOf)) == "resource")
+         continue;
+      // Away from the centre, only what lies on this tile: a small box reaches over its edges.
+      const Position position = at<Position>(entity, layout.entityPosition);
+      const bool centred = stop.x == centre.x && stop.y == centre.y;
+      if (!centred && (position.x >> 8 != tileX || position.y >> 8 != tileY)) continue;
+      return Point{stop.x, stop.y};
+   }
+   return Point{centre.x, centre.y};
 }
 
 } // namespace fa::reader

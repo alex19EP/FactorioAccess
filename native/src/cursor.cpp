@@ -389,6 +389,8 @@ void openRemoteView(void* source, const View& view, Position target) {
 
 // What the frames before saw.
 std::optional<uint8_t> g_lastController;
+// The tile the cursor last arrived on.
+std::optional<std::pair<int32_t, int32_t>> g_landedTile;
 Position g_lastCentre{};
 // The centre of the character or god view before remote view opened: remote view opened there (the
 // map key) comes to the cursor, opened elsewhere (an alert, a pin, the scanner) brings the cursor.
@@ -402,6 +404,7 @@ constexpr int kRemoteWaitFrames = 300;
 
 void reset() {
    g_lastController.reset();
+   g_landedTile.reset();
    g_pans.clear();
    g_settling = 0;
    g_awaitingRemote = 0;
@@ -454,10 +457,24 @@ void frame(void* source) {
       return;
    }
    if (!world::drivesCursor()) place(tileCentre(view->centre));
+   const int playerIndex = at<uint16_t>(view->player, layout.playerIndex) + 1;
    // A building in hand builds from the tile's centre, wherever the cycle key left the cursor in it.
    if (const std::optional<Position> cursor = currentCursor();
-       cursor && *cursor != tileCentre(*cursor) && world::heldBuild(at<uint16_t>(view->player, layout.playerIndex) + 1))
+       cursor && *cursor != tileCentre(*cursor) && world::heldBuild(playerIndex))
       place(tileCentre(*cursor));
+   // Arriving on a tile at its centre, the cursor rests on what lies there away from the centre
+   // (reader::landingIn), as a sighted player puts the mouse on it. A building in hand and a drag
+   // build stay at the centre, where they build.
+   if (const std::optional<Position> cursor = currentCursor(); cursor && world::drivesCursor()) {
+      const std::pair tile{tileOf(cursor->x), tileOf(cursor->y)};
+      if (tile != g_landedTile) {
+         g_landedTile = tile;
+         if (*cursor == tileCentre(*cursor) && !world::heldBuild(playerIndex) && !world::dragBuild(playerIndex)) {
+            const reader::Point landing = reader::landingIn(tile.first, tile.second);
+            if (landing.x != cursor->x || landing.y != cursor->y) place(Position{landing.x, landing.y});
+         }
+      }
+   }
 
    if (view->controller != g_lastController) {
       if (view->controller == layout.controllerRemote && g_lastController && fixedCamera(*g_lastController))

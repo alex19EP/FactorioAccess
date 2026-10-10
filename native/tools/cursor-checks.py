@@ -4,8 +4,8 @@
 The mod's Lua tests run without graphics, so no view is shown there and the DLL's cursor cannot run.
 These checks drive a game that shows one: movement keys and the screen's edge, the pull back onto the
 screen when zooming in, a far jump opening remote view, the camera following the cursor, a camera the
-game moves bringing the cursor, leaving remote view, the full map's cells, the skip and cycle keys, and
-reading the fog of war's picture.
+game moves bringing the cursor, leaving remote view, the full map's cells, the skip and cycle keys, an
+item lying away from its tile's centre, and reading the fog of war's picture.
 
 Before running:
 - a game with the DLL and the dev server on (FA_DEV=1, FA_DEV_PORT for another port than 8773), in a
@@ -342,6 +342,28 @@ def cycle_goes_through_the_tile_and_wraps(game):
     if state["cursor"] != (x + 11, row):
         return False, f"the cycle left the tile: {state['cursor']}"
     return True, f"{[s.strip() for s in said]}"
+
+
+@check
+def an_item_away_from_the_centre_is_read_and_selected(game):
+    x, row = build_strip(game)
+    # Near the tile's west edge, so its box reaches into the tile before it.
+    game.console(
+        f"game.player.surface.create_entity{{name='item-on-ground',position={{{x + 4.1},{row + 0.85}}},"
+        f"stack={{name='stone',count=1}}}}"
+    )
+    game.jump(x + 3, row)
+    game.until(lambda s: s["cursor"] == (x + 3, row), 60)
+    game.wait(10)
+    before = game.value("game.player.selected and game.player.selected.name")
+    said = game.keys("d")
+    game.wait(10)
+    selected = game.value("game.player.selected and game.player.selected.name")
+    if before != "nil":
+        return False, f"the tile before the stone selected {before}: only what lies on a tile counts away from its centre"
+    if "Stone" not in said or selected != "item-on-ground":
+        return False, f"the stone's tile said {said!r} and selected {selected}"
+    return True, f"said {said.strip()!r}, the game selects the stone"
 
 
 @check

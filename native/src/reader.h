@@ -69,4 +69,15 @@ std::optional<Shown> shownAt(int32_t tileX, int32_t tileY);
 using Stop = cyclestops::Stop<const void*>;
 std::vector<Stop> stopsIn(int32_t tileX, int32_t tileY);
 
+// Where in the tile `tileX`, `tileY` the cursor rests (fixed point), in the game's input handling:
+// at the first stop that is neither a resource nor something the skip keys pass over (robots,
+// corpses), and away from the centre lies on this tile, as a sighted player puts the mouse on an
+// item lying near the tile's edge or on the ore; else at the centre.
+struct Point {
+   int32_t x;
+   int32_t y;
+   bool operator==(const Point&) const = default;
+};
+Point landingIn(int32_t tileX, int32_t tileY);
+
 } // namespace fa::reader
