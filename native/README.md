@@ -84,6 +84,9 @@ Ninja. The build uses the Ninja Multi-Config generator, which calls the compiler
 configure and every build from an x64 developer environment: the "x64 Native Tools Command Prompt
 for VS", or a shell after `vcvars64.bat`. The output goes to `build/RelWithDebInfo`.
 
+The repo-root `justfile` does all of this for you (`just build`, `just test`, `just deploy`); see
+`devdocs/dev-setup.md`. By hand:
+
 ```
 git submodule update --init native/vendor
 "C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools\VC\Auxiliary\Build\vcvars64.bat"

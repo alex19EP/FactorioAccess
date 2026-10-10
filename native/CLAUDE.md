@@ -8,8 +8,8 @@ Lua fallbacks.
 
 ## Commands
 
-From the repo root. `justfile` and `.env` are the developer's local tooling and may not exist. The
-raw commands are given as well.
+From the repo root, through the `justfile`; `.env` holds the paths (see `devdocs/dev-setup.md`).
+The raw commands are given as well.
 
 ```
 just build      # cmake --build native/build --config RelWithDebInfo
@@ -22,7 +22,7 @@ just dev-on     # enable the loopback dev server on the next start (see below)
 ```
 
 Before committing native work:
-- `python launch_factorio.py --format` (stylua and clang-format; CI checks both);
+- `just format` (stylua and clang-format; CI checks both);
 - build clean with no new warnings (`/W4`);
 - the native tests pass (`just test`);
 - `fa_symbols_check` reports OK.
@@ -92,7 +92,7 @@ mod's locale, which the game translates into the player's language:
   lambdas), so the text follows the game's language.
 - Translation runs where the game translates (GUI logic and game hooks), never on a thread of our
   own.
-- `python lint_localisation.py lint` checks the keys `native/src` uses against the locale files.
+- `just lint-locale` checks the keys `native/src` uses against the locale files.
 - Two exceptions stay English:
   - a failure message said when the game's locale may be out of reach: the version and hook
     failures in `dllmain.cpp`, and the navigator's crash in `ui.cpp`;

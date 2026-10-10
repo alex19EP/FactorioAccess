@@ -25,11 +25,12 @@ end)
 
 ### How to Run Tests
 
-Use the launcher script with the `--run-tests` flag:
-
 ```bash
-python launch_factorio.py --run-tests --timeout 30
+just test-mod 30
 ```
+
+The argument is the timeout in seconds. The recipe runs `launch_factorio.py --run-tests`, in
+`FACTORIO_SANDBOX_DIR` when `.env` sets it (see `dev-setup.md`).
 
 This will:
 1. Load the `lab_tiles.zip` save file

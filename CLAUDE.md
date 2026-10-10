@@ -14,9 +14,9 @@ This guide helps LLMs (particularly Claude) work effectively on the FactorioAcce
 
 2. **Always format, test, and lint localisation before committing**
    ```bash
-   python launch_factorio.py --format
-   python launch_factorio.py --run-tests --timeout 60
-   python lint_localisation.py lint
+   just format
+   just test-mod
+   just lint-locale
    ```
 
 3. **Debug output: Use print(), not game.print()**
@@ -36,26 +36,29 @@ This guide helps LLMs (particularly Claude) work effectively on the FactorioAcce
 
 ### Your Environment
 
-You are running in the mods/FactorioAccess directory of a Factorio install. `launch_factorio.py` is in your current working directory.
-
-The full factorio install is available at `../..`. You almost never need to consult it.
+You are running in the repo root. The `justfile` here is the entry point for every task; its paths come from `.env` (see `devdocs/dev-setup.md`). The recipes call the Python helpers (`launch_factorio.py`, `lint_localisation.py`, `build_message_lists.py`), which hold the logic; run those directly only for options no recipe passes.
 
 Commands should always be relative to the current working directory.
 
 ### Key Commands
 ```bash
 # Format code (REQUIRED before committing)
-python launch_factorio.py --format
+just format
 
-# Run tests
-python launch_factorio.py --run-tests --timeout 60
+# Run the mod's tests (headless, in FACTORIO_SANDBOX_DIR or the install around the checkout)
+just test-mod
 
 # Run linter
-python launch_factorio.py --lint
+just lint
 
 # Run localisation linter (checks for unused/missing locale keys)
-python lint_localisation.py lint
+just lint-locale
+
+# Everything CI checks, plus the native and mod tests
+just check
 ```
+
+`just` with no arguments lists every recipe.
 
 ### Architecture Overview
 
@@ -277,7 +280,7 @@ Syntrax is active. The compiler lives in the top-level `syntrax/` module (lexer/
 
 ## Important Notes
 
-- **Everything** goes through `launch_factorio.py`
+- **Everything** goes through `just`
 - Requires only work at file top-level
 - No global state beyond current file
 - Check `player and player.valid` always
@@ -308,11 +311,11 @@ The mod includes a message list system for providing help and documentation that
 
    This is the second message.
    ```
-3. Run `python build_message_lists.py` to generate locale files
+3. Run `just message-lists` to generate locale files
 4. The message list name is the basename of the file (without `.txt`)
 5. Message list names must be globally unique across all directories
 
-**Windows gotcha**: `build_message_lists.py` writes `scripts/message-list-index.lua` with CRLF line endings, which fails `--format-check` (stylua wants LF). git's `autocrlf` hides this in `git diff`, so always run `python launch_factorio.py --format` after regenerating.
+**Windows gotcha**: `build_message_lists.py` writes `scripts/message-list-index.lua` with CRLF line endings, which fails `--format-check` (stylua wants LF). git's `autocrlf` hides this in `git diff`. `just message-lists` formats after regenerating; if you run the script directly, run `just format` after it.
 
 ## Using Message Lists in UIs
 
