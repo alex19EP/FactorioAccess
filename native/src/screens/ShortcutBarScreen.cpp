@@ -86,9 +86,10 @@ std::string ShortcutBarScreen::Name() const { return vocab::kShortcutBar; }
 
 bool ShortcutBarScreen::IsActive()
 {
+    _bar = FindBar();
+    parts::setAvailable(parts::Part::ShortcutBar, _bar != nullptr);
     if (parts::current() != parts::Part::ShortcutBar)
         return false;
-    _bar = FindBar();
     // Nothing to go back to once the game is gone.
     if (!agui::inGame())
         parts::close();

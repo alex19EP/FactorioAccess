@@ -29,9 +29,10 @@ std::string TrackedAchievementsScreen::Name() const { return vocab::kTrackedAchi
 
 bool TrackedAchievementsScreen::IsActive()
 {
+    _holder = FindHolder();
+    parts::setAvailable(parts::Part::TrackedAchievements, _holder != nullptr);
     if (parts::current() != parts::Part::TrackedAchievements)
         return false;
-    _holder = FindHolder();
     // Nothing to go back to once the game is gone.
     if (!agui::inGame())
         parts::close();

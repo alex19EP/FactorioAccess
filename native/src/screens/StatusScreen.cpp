@@ -37,6 +37,7 @@ std::string StatusScreen::Name() const { return vocab::kStatus; }
 
 bool StatusScreen::IsActive()
 {
+    parts::setAvailable(parts::Part::Status, Shown());
     if (parts::current() != parts::Part::Status)
         return false;
     // Nothing to go back to once the game is gone.

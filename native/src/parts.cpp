@@ -16,10 +16,11 @@ constexpr int kCount = static_cast<int>(std::size(kOrder));
 // Set from Lua on the game's update and from the navigator on the Gui's logic.
 std::atomic<Part> g_current{Part::None};
 
-// The only part that is not always there; it waits for its screen to see a window.
-std::atomic<bool> g_modWindows{false};
+// Each part's screen says whether it is on the screen. The mod windows wait for theirs to see a
+// window; None is always there, so a search for the next part ends.
+std::atomic<bool> g_available[kCount] = {{true}, {false}, {true}, {true}, {true}, {true}, {true}, {true}, {true}};
 
-bool available(Part part) { return part != Part::ModWindows || g_modWindows.load(); }
+bool available(Part part) { return part == Part::None || g_available[static_cast<int>(part)].load(); }
 
 int indexOf(Part part) {
    for (int i = 0; i < kCount; ++i)
@@ -47,9 +48,7 @@ void cycle(int direction) {
    }
 }
 
-void setAvailable(Part part, bool available) {
-   if (part == Part::ModWindows) g_modWindows = available;
-}
+void setAvailable(Part part, bool available) { g_available[static_cast<int>(part)] = available; }
 
 void close() { g_current.store(Part::None); }
 

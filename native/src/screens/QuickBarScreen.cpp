@@ -121,9 +121,10 @@ std::string QuickBarScreen::Name() const { return vocab::kQuickBar; }
 
 bool QuickBarScreen::IsActive()
 {
+    _bar = FindBar();
+    parts::setAvailable(parts::Part::QuickBar, _bar != nullptr);
     if (parts::current() != parts::Part::QuickBar)
         return false;
-    _bar = FindBar();
     // Nothing to go back to once the game is gone.
     if (!agui::inGame())
         parts::close();

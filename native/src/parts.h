@@ -23,8 +23,9 @@ Part current();
 // Moves to the next part, or with a negative `direction` the previous one; past the last part comes
 // what is open again. Parts that are not available are passed over. Safe from any thread.
 void cycle(int direction);
-// Whether a part that is not always there (ModWindows) has anything now, as its screen sees it each
-// frame. Safe from any thread.
+// Whether a part is on the screen now, as its screen sees it each frame: a scenario can hide the
+// bars, the map view options are in remote view only, and the crafting queue, the tracked
+// achievements and the mod windows are there only while they have anything. Safe from any thread.
 void setAvailable(Part part, bool available);
 // Back to what is open.
 void close();

@@ -31,9 +31,10 @@ std::string CraftingQueueScreen::Name() const { return vocab::kCraftingQueue; }
 
 bool CraftingQueueScreen::IsActive()
 {
+    _queue = FindQueue();
+    parts::setAvailable(parts::Part::CraftingQueue, _queue != nullptr);
     if (parts::current() != parts::Part::CraftingQueue)
         return false;
-    _queue = FindQueue();
     // Nothing to go back to once the game is gone.
     if (!agui::inGame())
         parts::close();

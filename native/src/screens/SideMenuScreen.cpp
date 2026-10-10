@@ -30,9 +30,10 @@ std::string SideMenuScreen::Name() const { return vocab::kSideMenu; }
 
 bool SideMenuScreen::IsActive()
 {
+    _menu = FindMenu();
+    parts::setAvailable(parts::Part::SideMenu, _menu != nullptr);
     if (parts::current() != parts::Part::SideMenu)
         return false;
-    _menu = FindMenu();
     // Nothing to go back to once the game is gone.
     if (!agui::inGame())
         parts::close();

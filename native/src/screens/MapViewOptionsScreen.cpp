@@ -28,9 +28,10 @@ std::string MapViewOptionsScreen::Name() const { return vocab::kMapViewOptions; 
 
 bool MapViewOptionsScreen::IsActive()
 {
+    _options = FindOptions();
+    parts::setAvailable(parts::Part::MapViewOptions, _options != nullptr);
     if (parts::current() != parts::Part::MapViewOptions)
         return false;
-    _options = FindOptions();
     // Nothing to go back to once the game is gone.
     if (!agui::inGame())
         parts::close();
