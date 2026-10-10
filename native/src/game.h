@@ -141,6 +141,9 @@ struct Layout {
    // ControlInput::triggeredBy(Event const&, ControlContext const*, unsigned) const tells whether
    // the event triggers a control.
    uintptr_t processSelectionToolCommon = 0;
+   // bool PlayerInputSource::processDeselection(): the deselect control, a spidertron remote's own,
+   // starts a ReverseSelect selection without processSelectionToolCommon and has no second press.
+   uintptr_t processDeselection = 0;
    uintptr_t expectedSelectionMode = 0;
    uintptr_t finishSelection = 0;
    uintptr_t processActions = 0;
@@ -1902,6 +1905,19 @@ struct Layout {
    uint32_t trainController = 0;
    uint32_t controllerIsManual = 0;
    uint32_t entityUnitNumber = 0;          // EntityWithOwner::unitNumber, uint64
+   // Spidertrons. SpiderVehicle::autopilot (SpiderAutopilot): destinations, a deque<MapPosition>
+   // (two to a block) of waypoints still to walk; followTarget, a Targeter of the entity it
+   // follows; patrolSize, how many of the last waypoints loop (0: none). The local player's remote
+   // selection is Player::spidertronRemoteSelectionState.current, asked with bool
+   // SpidertronRemoteSelection::isSelected(SpiderVehicle const*) const.
+   uint32_t spiderDestinationsMap = 0;
+   uint32_t spiderDestinationsMapSize = 0;
+   uint32_t spiderDestinationsOffset = 0;
+   uint32_t spiderDestinationsSize = 0;
+   uint32_t spiderFollowTarget = 0;
+   uint32_t spiderPatrolSize = 0;
+   uint32_t playerSpidertronSelection = 0;
+   uintptr_t spidertronIsSelected = 0;
    // A roboport's own LogisticCell (Roboport::logisticCell, by value): its network, the robots
    // stationed in it, those charging (LogisticCellCharger::chargingSpots, ChargeSpot::robot set)
    // and waiting to (the waitingToChargeQueue's size), as LuaLogisticCell reads them; and the

@@ -15,12 +15,15 @@
 namespace fa::selection {
 
 // MinHook detours for PlayerInputSource::expectedSelectionModeFromInputs,
-// PlayerInputSource::processSelectionToolCommon, PlayerInputSource::processActions and
-// SelectionToolRenderer::drawSelectionCounts, and where MinHook keeps the originals.
+// PlayerInputSource::processSelectionToolCommon, PlayerInputSource::processDeselection,
+// PlayerInputSource::processActions and SelectionToolRenderer::drawSelectionCounts, and where
+// MinHook keeps the originals.
 void* expectedModeDetour();
 void** expectedModeOriginal();
 void* selectionToolDetour();
 void** selectionToolOriginal();
+void* deselectionDetour();
+void** deselectionOriginal();
 void* processActionsDetour();
 void** processActionsOriginal();
 void* drawCountsDetour();

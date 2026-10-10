@@ -55,7 +55,6 @@ require("scripts.rich-text") -- registers rich text processor with speech.lua
 local Rulers = require("scripts.rulers")
 local ScannerEntrypoint = require("scripts.scanner.entrypoint")
 local ScannerLegacy = require("scripts.scanner.legacy")
-local Spidertron = require("scripts.spidertron")
 local SpidertronRemote = require("scripts.spidertron-remote")
 local TH = require("scripts.table-helpers")
 local TestFramework = require("scripts.test-framework")
@@ -84,7 +83,6 @@ local WorldMenu = require("scripts.ui.menus.world-menu")
 require("scripts.ui.menus.debug-menu")
 require("scripts.ui.menus.rail-builder")
 require("scripts.ui.menus.syntrax-program")
-local SpidertronRemoteSelector = require("scripts.ui.menus.spidertron-remote-selector")
 require("scripts.ui.tabs.item-chooser")
 require("scripts.ui.tabs.signal-chooser")
 require("scripts.ui.tabs.fluid-chooser")
@@ -104,8 +102,6 @@ require("scripts.ui.power-switch")
 require("scripts.ui.schedule-editor")
 require("scripts.ui.programmable-speaker")
 require("scripts.ui.circuit-navigator")
-require("scripts.ui.selectors.spidertron-autopilot-selector")
-require("scripts.ui.selectors.spidertron-follow-selector")
 require("scripts.ui.menus.warnings")
 require("scripts.ui.generic-inventory")
 require("scripts.ui.simple-textbox")
@@ -681,6 +677,10 @@ EventManager.on_event(defines.events.on_marked_for_deconstruction, SelectionResu
 EventManager.on_event(defines.events.on_cancelled_deconstruction, SelectionResults.on_cancelled_deconstruction)
 EventManager.on_event(defines.events.on_marked_for_upgrade, SelectionResults.on_marked_for_upgrade)
 EventManager.on_event(defines.events.on_cancelled_upgrade, SelectionResults.on_cancelled_upgrade)
+EventManager.on_event(defines.events.on_player_selected_area, SpidertronRemote.on_selected_area)
+EventManager.on_event(defines.events.on_player_alt_selected_area, SpidertronRemote.on_selected_area)
+EventManager.on_event(defines.events.on_player_reverse_selected_area, SpidertronRemote.on_selected_area)
+EventManager.on_event(defines.events.on_player_used_spidertron_remote, SpidertronRemote.on_used_remote)
 EventManager.on_event(
    defines.events.on_player_toggled_alt_mode,
    ---@param event EventData.on_player_toggled_alt_mode
@@ -2198,10 +2198,6 @@ EventManager.on_event("fa-m", function(event)
          -- Wire in hand - select input/left side
          CircuitNetworks.drag_wire_and_read(pindex, "input")
          return
-      elseif stack.prototype.type == "spidertron-remote" then
-         SpidertronRemote.cycle_spidertrons(player, -1)
-         Cursor.read(pindex)
-         return
       end
    end
 
@@ -2226,10 +2222,6 @@ EventManager.on_event("fa-dot", function(event)
       if wire_type == "red-wire" or wire_type == "green-wire" or wire_type == "copper-wire" then
          -- Wire in hand - select output/right side
          CircuitNetworks.drag_wire_and_read(pindex, "output")
-         return
-      elseif stack.prototype.type == "spidertron-remote" then
-         SpidertronRemote.cycle_spidertrons(player, 1)
-         Cursor.read(pindex)
          return
       end
    end
@@ -2282,7 +2274,7 @@ EventManager.on_event("fa-s-dot", function(event)
    end
 end, EventManager.EVENT_KIND.WORLD)
 
--- Dangerous delete: Delete blueprint/decon/upgrade planner from hand, or clear spidertron remote list
+-- Dangerous delete: Delete blueprint/decon/upgrade planner from hand
 EventManager.on_event("fa-c-backspace", function(event)
    local pindex = event.player_index
    local player = game.get_player(pindex)
@@ -2291,12 +2283,6 @@ EventManager.on_event("fa-c-backspace", function(event)
    local cursor_stack = player.cursor_stack
    if not cursor_stack or not cursor_stack.valid_for_read then
       Speech.speak(pindex, { "fa.dangerous-delete-nothing-to-delete" })
-      return
-   end
-
-   -- Check for spidertron remote
-   if cursor_stack.prototype.type == "spidertron-remote" then
-      SpidertronRemote.clear_remote(player)
       return
    end
 
@@ -2322,22 +2308,12 @@ EventManager.on_event("fa-c-backspace", function(event)
    end
 end, EventManager.EVENT_KIND.WORLD)
 
--- Clear autopilot for spidertron remote
 EventManager.on_event("fa-backspace", function(event)
    -- Check for virtual train driving
    local handled, should_read = VirtualTrainDriving.on_kb_descriptive_action_name(event)
    if handled then
       if should_read then Cursor.read(event.player_index) end
       return
-   end
-
-   local pindex = event.player_index
-   local player = game.get_player(pindex)
-   if not player then return end
-
-   local cursor_stack = player.cursor_stack
-   if cursor_stack and cursor_stack.valid_for_read and cursor_stack.prototype.type == "spidertron-remote" then
-      SpidertronRemote.clear_autopilot(player)
    end
 end, EventManager.EVENT_KIND.WORLD)
 

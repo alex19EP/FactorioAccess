@@ -28,7 +28,6 @@ local locomotive_config_tab = require("scripts.ui.tabs.locomotive-config")
 local roboport_config_tab = require("scripts.ui.tabs.roboport-config")
 local rocket_silo_config_tab = require("scripts.ui.tabs.rocket-silo-config")
 local selector_combinator_tab = require("scripts.ui.tabs.selector-combinator")
-local spidertron_config_tab = require("scripts.ui.tabs.spidertron-config")
 local splitter_config_tab = require("scripts.ui.tabs.splitter-config")
 local train_stop_tab = require("scripts.ui.tabs.train-stop")
 local turret_config_tab = require("scripts.ui.tabs.turret-config")
@@ -177,11 +176,6 @@ local function build_configuration_tabs(entity)
    -- Add infinity pipe configuration
    if prototype.type == "infinity-pipe" and infinity_pipe_config_tab.is_available(entity) then
       table.insert(tabs, infinity_pipe_config_tab.infinity_pipe_config_tab)
-   end
-
-   -- Add spidertron configuration
-   if prototype.type == "spider-vehicle" and spidertron_config_tab.is_available(entity) then
-      table.insert(tabs, spidertron_config_tab.spidertron_config_tab)
    end
 
    -- Add selector combinator configuration

@@ -1,206 +1,48 @@
---- Spidertron remote control functionality
-local mod = {}
+--Here: what the game's spidertron remote just did, said to the player who used it.
+--
+-- The remote is the game's own selection tool: select, add to or remove from the selection, send,
+-- queue. The game changes the selection and the spidertrons before it raises these events, so they
+-- only read the result. Speech only.
 
-local Cursor = require("scripts.cursor")
-local EntitySelection = require("scripts.entity-selection")
 local Localising = require("scripts.localising")
 local Speech = require("scripts.speech")
-local MessageBuilder = Speech.MessageBuilder
 
----A spidertron's name, and the label the player gave it.
----@param spidertron LuaEntity
----@return LocalisedString
-function mod.name_of(spidertron)
-   local mb = MessageBuilder.new()
-   mb:fragment(Localising.get_localised_name_with_fallback(spidertron))
-   if spidertron.entity_label then mb:fragment(spidertron.entity_label) end
-   return mb:build()
-end
+local mod = {}
 
----Check if a spidertron is in the list
----@param list LuaEntity[]
----@param unit_number integer
+---@param item string?
 ---@return boolean
-local function is_spidertron_in_list(list, unit_number)
-   for _, spider in ipairs(list) do
-      if spider.unit_number == unit_number then return true end
-   end
-   return false
+local function is_remote(item)
+   return item ~= nil and prototypes.item[item].type == "spidertron-remote"
 end
 
----Check if a spidertron is in the player's remote (public API)
----@param player LuaPlayer
----@param unit_number integer
----@return boolean
-function mod.is_spidertron_in_remote(player, unit_number)
-   local current_list = player.spidertron_remote_selection or {}
-   return is_spidertron_in_list(current_list, unit_number)
+---How many spidertrons the remote has selected, after a select, add or remove.
+---@param event EventData.on_player_selected_area|EventData.on_player_alt_selected_area|EventData.on_player_reverse_selected_area
+function mod.on_selected_area(event)
+   if not is_remote(event.item) then return end
+   local player = game.get_player(event.player_index)
+   local selection = player.spidertron_remote_selection or {}
+   Speech.speak(event.player_index, { "fa.spidertron-remote-selected", #selection })
 end
 
----Toggle a spidertron on the remote (add if not present, remove if present)
----@param player LuaPlayer
----@param spidertron LuaEntity
-function mod.toggle_spidertron(player, spidertron)
-   local current_list = player.spidertron_remote_selection or {}
-
-   if is_spidertron_in_list(current_list, spidertron.unit_number) then
-      mod.remove_spider(player, spidertron.unit_number)
+---Where the selected spidertrons went: to follow an entity, to a point, or around a patrol.
+---@param event EventData.on_player_used_spidertron_remote
+function mod.on_used_remote(event)
+   local player = game.get_player(event.player_index)
+   local selection = player.spidertron_remote_selection or {}
+   local spider = selection[1]
+   if not spider then return end
+   if spider.follow_target then
+      Speech.speak(
+         event.player_index,
+         { "fa.spidertron-remote-following", Localising.get_localised_name_with_fallback(spider.follow_target) }
+      )
+   elseif spider.autopilot_patrol_size > 0 then
+      Speech.speak(event.player_index, { "fa.spidertron-remote-patrol", spider.autopilot_patrol_size })
+   elseif #spider.autopilot_destinations > 1 then
+      Speech.speak(event.player_index, { "fa.spidertron-remote-waypoint", #spider.autopilot_destinations })
    else
-      mod.add_to_remote(player, spidertron)
+      Speech.speak(event.player_index, { "fa.spidertron-remote-sent", #selection })
    end
-end
-
----Add a spidertron to the remote
----@param player LuaPlayer
----@param spidertron LuaEntity
-function mod.add_to_remote(player, spidertron)
-   local current_list = player.spidertron_remote_selection or {}
-
-   -- Check surface compatibility
-   if #current_list > 0 and current_list[1].surface_index ~= spidertron.surface_index then
-      Speech.speak(player.index, { "fa.spidertron-remote-different-surface" })
-      return
-   end
-
-   -- Check if already added
-   if is_spidertron_in_list(current_list, spidertron.unit_number) then
-      Speech.speak(player.index, { "fa.spidertron-already-linked" })
-      return
-   end
-
-   -- Add to list
-   table.insert(current_list, spidertron)
-   player.spidertron_remote_selection = current_list
-
-   local mb = MessageBuilder.new()
-   mb:fragment({ "fa.spidertron-remote-added" })
-   mb:fragment(mod.name_of(spidertron))
-   Speech.speak(player.index, mb:build())
-end
-
----Clear all spidertrons from the remote
----@param player LuaPlayer
-function mod.clear_remote(player)
-   local current_list = player.spidertron_remote_selection or {}
-   if #current_list == 0 then
-      Speech.speak(player.index, { "fa.spidertron-remote-already-empty" })
-      return
-   end
-
-   player.spidertron_remote_selection = {}
-   Speech.speak(player.index, { "fa.spidertron-remote-cleared" })
-end
-
----Remove a specific spidertron from the remote
----@param player LuaPlayer
----@param unit_number integer
-function mod.remove_spider(player, unit_number)
-   local current_list = player.spidertron_remote_selection or {}
-
-   if not is_spidertron_in_list(current_list, unit_number) then
-      Speech.speak(player.index, { "fa.spidertron-remote-not-in-list" })
-      return
-   end
-
-   -- Remove the spidertron
-   for i = #current_list, 1, -1 do
-      if current_list[i].unit_number == unit_number then
-         table.remove(current_list, i)
-         break
-      end
-   end
-
-   player.spidertron_remote_selection = current_list
-   Speech.speak(player.index, { "fa.spidertron-remote-removed" })
-end
-
----Add a position to the autopilot queue for all spidertrons on the remote
----@param player LuaPlayer
----@param position MapPosition
----@param clear_first boolean
-function mod.add_to_autopilot(player, position, clear_first)
-   local current_list = player.spidertron_remote_selection or {}
-   if #current_list == 0 then
-      Speech.speak(player.index, { "fa.spidertron-remote-empty" })
-      return
-   end
-
-   for _, spider in ipairs(current_list) do
-      if clear_first then spider.autopilot_destination = nil end
-      spider.add_autopilot_destination(position)
-   end
-
-   if #current_list == 1 then
-      local key = clear_first and "fa.spidertron-remote-autopilot-replaced-singular"
-         or "fa.spidertron-remote-autopilot-set-singular"
-      Speech.speak(player.index, { key })
-   else
-      local key = clear_first and "fa.spidertron-remote-autopilot-replaced-plural"
-         or "fa.spidertron-remote-autopilot-set-plural"
-      Speech.speak(player.index, { key, #current_list })
-   end
-end
-
----Clear autopilot for all spidertrons on the remote
----@param player LuaPlayer
-function mod.clear_autopilot(player)
-   local current_list = player.spidertron_remote_selection or {}
-   if #current_list == 0 then
-      Speech.speak(player.index, { "fa.spidertron-remote-empty" })
-      return
-   end
-
-   for _, spider in ipairs(current_list) do
-      spider.autopilot_destination = nil
-   end
-
-   Speech.speak(player.index, { "fa.spidertron-remote-autopilot-cleared" })
-end
-
----Cycle through spidertrons on the remote
----@param player LuaPlayer
----@param direction integer 1 for forward, -1 for backward
-function mod.cycle_spidertrons(player, direction)
-   local pindex = player.index
-   local current_list = player.spidertron_remote_selection or {}
-   if #current_list == 0 then
-      Speech.speak(pindex, { "fa.spidertron-remote-empty" })
-      return
-   end
-
-   -- Find current spidertron at cursor position
-   local current_spider = EntitySelection.get_first_ent_at_tile(pindex)
-   local current_index = nil
-
-   if current_spider and current_spider.type == "spider-vehicle" then
-      local current_unit = current_spider.unit_number
-      for i, spider in ipairs(current_list) do
-         if spider.unit_number == current_unit then
-            current_index = i
-            break
-         end
-      end
-   end
-
-   -- Calculate next index
-   local next_index
-   if current_index then
-      next_index = current_index + direction
-      if next_index > #current_list then
-         next_index = 1
-      elseif next_index < 1 then
-         next_index = #current_list
-      end
-   else
-      next_index = 1
-   end
-
-   local next_spider = current_list[next_index]
-   local next_pos = next_spider.position
-   ---@cast next_pos fa.Point
-
-   -- Update cursor position (caller should read tile)
-   Cursor.jump(pindex, next_pos)
 end
 
 return mod

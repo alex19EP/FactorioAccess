@@ -76,6 +76,7 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.zoomerRate, "Zoomer", "config.zoomRate");
    address(layout.processSelectionToolCommon,
            "?processSelectionToolCommon@PlayerInputSource@@QEAA_NW4SelectionMode@@0@Z");
+   address(layout.processDeselection, "?processDeselection@PlayerInputSource@@QEAA_NXZ");
    address(layout.expectedSelectionMode,
            "?expectedSelectionModeFromInputs@PlayerInputSource@@AEBA?AW4SelectionMode@@_N@Z");
    address(layout.finishSelection, "?finishSelection@PlayerInputSource@@QEAAXXZ");
@@ -1345,6 +1346,14 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.trainController, "Train", "controller");
    classSlot(layout.controllerIsManual, "TrainController", "isManual");
    offset(layout.entityUnitNumber, "EntityWithOwner", "unitNumber");
+   offset(layout.spiderDestinationsMap, "SpiderVehicle", "autopilot.destinations._Mypair._Myval2._Map");
+   offset(layout.spiderDestinationsMapSize, "SpiderVehicle", "autopilot.destinations._Mypair._Myval2._Mapsize");
+   offset(layout.spiderDestinationsOffset, "SpiderVehicle", "autopilot.destinations._Mypair._Myval2._Myoff");
+   offset(layout.spiderDestinationsSize, "SpiderVehicle", "autopilot.destinations._Mypair._Myval2._Mysize");
+   offset(layout.spiderFollowTarget, "SpiderVehicle", "autopilot.followTarget");
+   offset(layout.spiderPatrolSize, "SpiderVehicle", "autopilot.patrolSize");
+   offset(layout.playerSpidertronSelection, "Player", "spidertronRemoteSelectionState.current");
+   address(layout.spidertronIsSelected, "?isSelected@SpidertronRemoteSelection@@QEBA_NPEBVSpiderVehicle@@@Z");
    offset(layout.roboportCell, "Roboport", "logisticCell");
    offset(layout.roboportMaterials, "Roboport", "materialInventory");
    offset(layout.cellNetwork, "LogisticCell", "network");

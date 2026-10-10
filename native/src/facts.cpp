@@ -1381,6 +1381,46 @@ std::string trainState(const std::byte* train) {
    return {};
 }
 
+// What a sighted player holding the remote sees of a spidertron: its highlight when the remote has it
+// selected, and the path to the entity it follows or the waypoints it walks to.
+std::vector<std::string> spiderState(const std::byte* spider) {
+   std::vector<std::string> items;
+   auto* context = *reinterpret_cast<const std::byte* const*>(layout.globalContext);
+   const std::byte* game = context ? at<const std::byte*>(context, layout.globalGame) : nullptr;
+   const std::byte* player = game ? at<const std::byte*>(game, layout.gameLocalPlayer) : nullptr;
+   using IsSelected = bool (*)(const void* selection, const void* spider);
+   if (player &&
+       reinterpret_cast<IsSelected>(layout.spidertronIsSelected)(player + layout.playerSpidertronSelection, spider))
+      items.emplace_back(vocab::kSpiderSelected);
+
+   const std::byte* follower = spider + layout.spiderFollowTarget;
+   if (const std::byte* target = at<const std::byte*>(follower, layout.gameTargeterTarget)) {
+      if (const std::byte* followed = agui::objectAsBase(target, ".?AVEntity@@"))
+         items.push_back(vocab::kSpiderFollowing(localisedName(prototypeOf(followed))));
+      return items;
+   }
+   const size_t count = at<size_t>(spider, layout.spiderDestinationsSize);
+   if (count == 0) return items;
+   auto* const* map = at<const Position* const*>(spider, layout.spiderDestinationsMap);
+   const size_t mapSize = at<size_t>(spider, layout.spiderDestinationsMapSize);
+   const size_t first = at<size_t>(spider, layout.spiderDestinationsOffset);
+   constexpr size_t kBlock = 2; // MSVC's deque block for 8-byte elements
+   const Position next = map[(first / kBlock) & (mapSize - 1)][first % kBlock];
+   const Position position = at<Position>(spider, layout.entityPosition);
+   const double dx = static_cast<double>(next.x - position.x) / kScale;
+   const double dy = static_cast<double>(next.y - position.y) / kScale;
+   const auto tiles = static_cast<int64_t>(std::round(std::sqrt(dx * dx + dy * dy)));
+   const std::string where = vocab::kDistanceTilesDirection(tiles, directionName(directionBiased(next, position)));
+   if (const uint32_t patrol = at<uint32_t>(spider, layout.spiderPatrolSize)) {
+      items.push_back(vocab::kSpiderPatrolling(patrol));
+      items.push_back(vocab::kSpiderWalking(where));
+      return items;
+   }
+   items.push_back(vocab::kSpiderWalking(where));
+   if (count > 1) items.push_back(vocab::kSpiderWaypoints(count));
+   return items;
+}
+
 // ---- drawn icons ----
 
 // The prototypes an entity filters for, as LuaEntity::get_filter reads them.
@@ -1890,6 +1930,8 @@ std::vector<std::string> describe(const void* object, int32_t tileX, int32_t til
    first.push_back(combinatorDescription(entity));
 
    std::vector<std::string> parts{joined(first)};
+   if (const std::byte* spider = agui::objectAsBase(entity, ".?AVSpiderVehicle@@"))
+      for (std::string& item : spiderState(spider)) parts.push_back(std::move(item));
    if (isRailOrRailGhost(entity))
       parts.push_back(railsOnTile(at<const std::byte*>(entity, layout.entitySurface), entity, Position{tileX, tileY}));
    if (belt && belt.isUnderground()) parts.push_back(undergroundConnection(belt));

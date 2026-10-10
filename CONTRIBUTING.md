@@ -85,7 +85,7 @@ Here are the basic guidelines:
 
 - We have very few free keys that don't cause an issue of some sort.  If your feature needs to use more keys then it
   needs a very good reason.  The exception is m, comma, and dot, which are reserved for context sensitive uses (e.g.
-  blueprint books and spidertron remotes)
+  blueprint books)
 - If your feature changes current mod mechanics the bar is higher. Many people rely on current behaviors.
 - If your feature adds a new UI tab we need enough info that someone can decide whether or not to put other UI tabs
   before or after it.  For example it would be incredibly inconvenient if we suddenly moved the equipment tab before

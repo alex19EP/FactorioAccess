@@ -7,6 +7,7 @@
 - The DLL plays the mod's own sounds (radars, health bar, inserters, crafting machines, vehicles), from the mod's audio folder, zipped or not.
 - The prototype lister no longer copies names to the clipboard.
 - Building, mining and selection tools act where the FA cursor is. Selection tools work with two presses, as on a gamepad.
+- The spidertron remote is the game's own: select spidertrons with two presses of left bracket (shift adds, control removes), send them with right bracket, queue a waypoint with shift right bracket. FA says how many are selected and what each order did, and the cursor says whether a spidertron is selected, what it follows and where it walks. FA's spidertron menus, its remote cycling on m and dot, and its clear keys are gone.
 
 # 0.16.57 (2026-03-04))
 

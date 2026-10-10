@@ -440,6 +440,12 @@ inline constexpr Word kStopGapAfterCar{"fa.stop-preview-gap-after-car"};
 inline constexpr Word kStopCarPosition{"fa.stop-preview-car-position"};
 // A train driven by hand.
 inline constexpr Word kTrainManual{"fa.train-state-manual"};
+// A spidertron in the local player's remote selection, and where its autopilot takes it.
+inline constexpr Word kSpiderSelected{"fa.native-spidertron-selected"};
+inline constexpr Word kSpiderFollowing{"fa.native-spidertron-following"};
+inline constexpr Word kSpiderWalking{"fa.native-spidertron-walking"};
+inline constexpr Word kSpiderWaypoints{"fa.native-spidertron-waypoints"};
+inline constexpr Word kSpiderPatrolling{"fa.native-spidertron-patrolling"};
 
 // The Y key in the world when the cursor points at no entity and no tile.
 inline constexpr Word kNothingHere{"fa.native-nothing-here"};

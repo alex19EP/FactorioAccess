@@ -86,6 +86,18 @@ bool detourSelectionTool(void* source, int32_t mode, int32_t customMode) {
    return g_selectionToolOriginal(source, mode, customMode);
 }
 
+using DeselectionFunction = bool (*)(void* source);
+DeselectionFunction g_deselectionOriginal = nullptr;
+
+// The deselect control's second press finishes its selection too.
+bool detourDeselection(void* source) {
+   if (openSelection()) {
+      reinterpret_cast<FinishSelectionFunction>(layout.finishSelection)(source);
+      return true;
+   }
+   return g_deselectionOriginal(source);
+}
+
 using TriggeredByFunction = const void* (*)(const void* control, const void* event, const void* context, uint32_t);
 
 bool triggersToggleMenu(const void* event) {
@@ -272,6 +284,8 @@ void* expectedModeDetour() { return reinterpret_cast<void*>(&detourExpectedMode)
 void** expectedModeOriginal() { return reinterpret_cast<void**>(&g_expectedModeOriginal); }
 void* selectionToolDetour() { return reinterpret_cast<void*>(&detourSelectionTool); }
 void** selectionToolOriginal() { return reinterpret_cast<void**>(&g_selectionToolOriginal); }
+void* deselectionDetour() { return reinterpret_cast<void*>(&detourDeselection); }
+void** deselectionOriginal() { return reinterpret_cast<void**>(&g_deselectionOriginal); }
 void* processActionsDetour() { return reinterpret_cast<void*>(&detourProcessActions); }
 void** processActionsOriginal() { return reinterpret_cast<void**>(&g_processActionsOriginal); }
 void* drawCountsDetour() { return reinterpret_cast<void*>(&detourDrawCounts); }

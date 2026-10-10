@@ -25,6 +25,8 @@
      "PlayerInputSource::expectedSelectionModeFromInputs")                                                             \
    X(processSelectionToolCommon, selection::selectionToolDetour(), selection::selectionToolOriginal(),                 \
      "PlayerInputSource::processSelectionToolCommon")                                                                  \
+   X(processDeselection, selection::deselectionDetour(), selection::deselectionOriginal(),                             \
+     "PlayerInputSource::processDeselection")                                                                          \
    X(processActions, selection::processActionsDetour(), selection::processActionsOriginal(),                           \
      "PlayerInputSource::processActions")                                                                              \
    X(drawSelectionCounts, selection::drawCountsDetour(), selection::drawCountsOriginal(),                              \
