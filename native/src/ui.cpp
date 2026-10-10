@@ -134,7 +134,7 @@ void start() {
    }
    // Whatever window no recipe reads.
    manager.Register(std::make_unique<screens::GenericWindowScreen>(std::move(claimed)));
-   // Under them, the scenario's message dialog over a loaded game.
+   // The scenario's message dialog over a loaded game, above its windows.
    manager.Register(std::make_unique<screens::ScenarioMessageScreen>());
    // The game's character screen (E) over a loaded game; the game menu takes over while it is open.
    manager.Register(std::make_unique<screens::CharacterScreen>());

@@ -18,7 +18,8 @@ bool ScenarioMessageScreen::IsActive()
         return false;
     }
     const agui::Widget* message = agui::scenarioMessage();
-    if (!message || !agui::visible(message))
+    // Over a window the message is on top; the game menu is over the message.
+    if (!message || !agui::visible(message) || agui::menuStateWindow())
     {
         _message = nullptr;
         return false;
