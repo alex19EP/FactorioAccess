@@ -1,5 +1,7 @@
 #pragma once
 
+#include "mapcolours.h"
+
 #include <cstdint>
 #include <optional>
 
@@ -10,15 +12,8 @@
 // told back from the colour, as a sighted player tells iron ore from a belt on the map: the tile,
 // resource or kind of building whose map colour it is. A colour the game gives a whole type (every
 // belt tier) names the type's first prototype by order; the default building colour, enemies and
-// ghosts have words of their own (Kind).
+// ghosts have words of their own (Kind). The matching itself is in mapcolours.h.
 namespace fa::mappicture {
-
-struct Picture {
-   enum class Kind { Tile, Entity, Building, Enemy, Ghost, TileGhost };
-   Kind kind;
-   const void* prototype; // the tile or entity prototype, for Tile and Entity
-   bool operator==(const Picture&) const = default;
-};
 
 // What the chart `chart` (ForceData::getChart) shows on the tile `tileX`, `tileY`: nothing when
 // its chunk is not charted; a picture of nothing when the colour is none the game draws with (two
