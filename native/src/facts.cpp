@@ -1,7 +1,9 @@
 #include "facts.h"
 
 #include "agui.h"
+#include "entityicons.h"
 #include "game.h"
+#include "prototypes.h"
 #include "text.h"
 #include "vocab.h"
 
@@ -1377,6 +1379,93 @@ std::string trainState(const std::byte* train) {
    return {};
 }
 
+// ---- drawn icons ----
+
+// The prototypes an entity filters for, as LuaEntity::get_filter reads them (Filters.get_all_filters).
+std::vector<const std::byte*> filtersOf(const std::byte* entity) {
+   std::vector<const std::byte*> out;
+   const std::byte* prototype = prototypeOf(entity);
+   auto add = [&](uintptr_t list, uint16_t id) {
+      if (const std::byte* filtered = id ? prototypeAt(list, id) : nullptr) out.push_back(filtered);
+   };
+   auto items = [&](const std::byte* owner, uint32_t filters, uint32_t count) {
+      for (uint8_t i = 0; i < at<uint8_t>(prototype, count); ++i)
+         add(layout.itemPrototypes,
+             at<uint16_t>(owner + filters + size_t{i} * layout.itemFilterSize, layout.itemFilterId));
+   };
+   if (const std::byte* inserter = agui::objectAsBase(entity, ".?AVInserter@@")) {
+      items(inserter, layout.inserterFilters, layout.inserterFilterCount);
+   } else if (const std::byte* loader = agui::objectAsBase(entity, ".?AVLoader@@")) {
+      items(loader, layout.loaderFilters, layout.loaderFilterCount);
+   } else if (const std::byte* drill = agui::objectAsBase(entity, ".?AVMiningDrill@@")) {
+      for (uint8_t i = 0; i < at<uint8_t>(prototype, layout.drillFilterCount); ++i)
+         add(layout.entityPrototypes, at<uint16_t>(drill, layout.drillFilters + i * uint32_t{sizeof(uint16_t)}));
+   } else if (const std::byte* collector = agui::objectAsBase(entity, ".?AVAsteroidCollector@@")) {
+      const auto* first = at<const uint16_t*>(collector, layout.collectorFilters);
+      const auto* last = at<const uint16_t*>(collector, layout.collectorFilters + sizeof(void*));
+      for (const uint16_t* id = first; id != last; ++id) add(layout.asteroidChunkPrototypes, *id);
+   } else if (const std::byte* container = agui::objectAsBase(entity, ".?AVLogisticContainer@@")) {
+      if (at<uint8_t>(prototype, layout.containerMode) != layout.containerModeStorage) return out;
+      const std::byte* point = at<const std::byte*>(container, layout.containerLogisticPoint);
+      if (!point) return out;
+      const auto* section = at<const std::byte*>(point, layout.pointSections);
+      if (section == at<const std::byte*>(point, layout.pointSections + sizeof(void*))) return out;
+      const auto* filter = at<const std::byte*>(section, layout.sectionFilters);
+      if (filter == at<const std::byte*>(section, layout.sectionFilters + sizeof(void*))) return out;
+      using SignalPrototype = const std::byte* (*)(const void* signal);
+      if (const std::byte* filtered =
+             reinterpret_cast<SignalPrototype>(layout.signalPrototype)(filter + layout.logisticFilterSignal))
+         out.push_back(filtered);
+   }
+   return out;
+}
+
+// The internal names of what a recipe makes.
+std::vector<std::string_view> productsOf(const std::byte* recipe) {
+   std::vector<std::string_view> names;
+   auto each = [&](uint32_t products, uint32_t size, uint32_t id, uintptr_t list) {
+      const auto* first = at<const std::byte*>(recipe, products);
+      const auto* last = at<const std::byte*>(recipe, products + sizeof(void*));
+      for (const std::byte* product = first; product < last; product += size)
+         if (const std::byte* made = prototypeAt(list, at<uint16_t>(product, id))) names.push_back(internalName(made));
+   };
+   each(layout.recipeItemProducts, layout.itemProductSize, layout.itemProductId, layout.itemPrototypes);
+   each(layout.recipeFluidProducts, layout.fluidProductSize, layout.fluidProductId, layout.fluidPrototypes);
+   return names;
+}
+
+uint32_t qualityLevel(std::string_view name) {
+   const auto& list = *reinterpret_cast<const std::vector<const std::byte*>*>(layout.qualityPrototypes);
+   for (const std::byte* quality : list)
+      if (quality && internalName(quality) == name) return at<uint32_t>(quality, layout.qualityLevel);
+   return 0;
+}
+
+// An item or other prototype as ItemInfo.item_or_fluid_info says it: its name, its quality unless
+// normal, and a count above one.
+std::string itemWords(std::string_view kind, std::string_view name, std::string_view quality, int64_t count) {
+   const std::string localised = prototypes::localisedName(kind, name).value_or(std::string(name));
+   const bool hasQuality = !quality.empty() && quality != "normal";
+   const std::string qualityName =
+      quality.empty() ? std::string() : prototypes::localisedName("quality", quality).value_or(std::string(quality));
+   return vocab::kItemQuantityQuality(localised, hasQuality ? 1 : 0, qualityName, count > 1 ? 1 : 0, count);
+}
+
+// A utility sprite by the mod's words for it ("no_path_icon"), else by its name.
+std::string utilityWords(const std::string& name) {
+   std::string key = "fa.ent-status-icon-" + name;
+   std::ranges::replace(key, '_', '-');
+   const std::string said = vocab::translate(key.c_str(), {});
+   if (!said.empty() && said.find(key) == std::string::npos) return said;
+   std::string plain = name.ends_with("_icon") ? name.substr(0, name.size() - 5) : name;
+   std::ranges::replace(plain, '_', ' ');
+   return plain;
+}
+
+bool isCraftingMachine(std::string_view type) {
+   return type == "assembling-machine" || type == "furnace" || type == "rocket-silo";
+}
+
 } // namespace
 
 std::vector<std::string> describe(const void* object, int32_t tileX, int32_t tileY) {
@@ -1440,6 +1529,123 @@ std::vector<std::string> describe(const void* object, int32_t tileX, int32_t til
    for (std::string& item : circuitNetworks(entity, type)) parts.push_back(std::move(item));
    if (train) parts.push_back(trainState(train));
    return parts;
+}
+
+std::vector<std::string> drawnIcons(const void* object) {
+   const auto* entity = static_cast<const std::byte*>(object);
+   const std::optional<entityicons::Drawn> drawn = entityicons::read(entity);
+   if (!drawn || drawn->icons.empty()) return {};
+   const std::vector<entityicons::Icon>& icons = drawn->icons;
+   const std::string_view type = typeName(prototypeOf(entity));
+   std::vector<std::string> items;
+
+   struct Group {
+      const entityicons::Icon* icon;
+      int64_t count;
+   };
+   auto sameIcon = [](const entityicons::Icon& a, const entityicons::Icon& b) {
+      return a.kind == b.kind && a.name == b.name && a.quality == b.quality && a.comparison == b.comparison &&
+             a.anyQuality == b.anyQuality && a.denied == b.denied;
+   };
+   auto grouped = [&](const std::vector<const entityicons::Icon*>& from) {
+      std::vector<Group> groups;
+      for (const entityicons::Icon* icon : from) {
+         auto found = std::ranges::find_if(groups, [&](const Group& group) { return sameIcon(*group.icon, *icon); });
+         if (found != groups.end())
+            ++found->count;
+         else
+            groups.push_back({icon, 1});
+      }
+      return groups;
+   };
+
+   // A beacon's modules, with counts, most first (InventoryUtils.present_list).
+   if (type == "beacon") {
+      std::vector<const entityicons::Icon*> modules;
+      for (const entityicons::Icon& icon : icons)
+         if (icon.kind == "item") modules.push_back(&icon);
+      std::vector<Group> groups = grouped(modules);
+      std::ranges::sort(groups, [](const Group& a, const Group& b) {
+         if (a.count != b.count) return a.count > b.count;
+         if (a.icon->name != b.icon->name) return a.icon->name > b.icon->name;
+         return qualityLevel(a.icon->quality) > qualityLevel(b.icon->quality);
+      });
+      std::vector<std::string> words;
+      for (const Group& group : groups)
+         words.push_back(itemWords("item", group.icon->name, group.icon->quality, group.count));
+      if (!words.empty()) items.push_back(vocab::kInventoryPresentation(joined(words, ", ")));
+      return items;
+   }
+
+   std::vector<const std::byte*> filters;
+   if (type != "infinity-container") filters = filtersOf(entity);
+   auto isFilter = [&](const entityicons::Icon& icon) {
+      return !icon.kind.empty() &&
+             std::ranges::any_of(filters, [&](const std::byte* filter) { return internalName(filter) == icon.name; });
+   };
+
+   // A crafting machine draws its recipe as the recipe's own icon or, without one, its main product's.
+   const std::byte* recipe = nullptr;
+   if (isCraftingMachine(type))
+      if (const std::byte* machine = agui::objectAsBase(entity, ".?AVCraftingMachine@@"))
+         if (const uint16_t id = at<uint16_t>(machine + layout.craftingRecipe, layout.idWithQualityBase))
+            recipe = prototypeAt(layout.recipePrototypes, id);
+   const std::vector<std::string_view> products = recipe ? productsOf(recipe) : std::vector<std::string_view>{};
+   auto showsRecipe = [&](const entityicons::Icon& icon) {
+      return recipe && (icon.kind == "recipe" || std::ranges::find(products, icon.name) != products.end());
+   };
+
+   // The fluids drawn, once each; the first icon that shows the recipe is the recipe's.
+   std::vector<std::string> fluids;
+   bool recipeIcon = false;
+   for (const entityicons::Icon& icon : icons) {
+      if (!recipeIcon && showsRecipe(icon)) {
+         recipeIcon = true;
+      } else if (icon.kind == "fluid") {
+         std::string name = prototypes::localisedName("fluid", icon.name).value_or(icon.name);
+         if (std::ranges::find(fluids, name) == fluids.end()) fluids.push_back(std::move(name));
+      }
+   }
+
+   bool saidRecipe = false;
+   bool saidFluids = false;
+   bool saidFilters = false;
+   std::vector<const entityicons::Icon*> others;
+   for (const entityicons::Icon& icon : icons) {
+      if (!saidRecipe && showsRecipe(icon)) {
+         saidRecipe = true;
+         items.push_back(joined({vocab::kProducing, localisedName(recipe)}));
+      } else if (icon.kind == "fluid") {
+         if (!saidFluids && !fluids.empty()) items.push_back(vocab::kInventoryPresentation(joined(fluids, ", ")));
+         saidFluids = true;
+      } else if (isFilter(icon)) {
+         if (!saidFilters) {
+            // A filter that denies is drawn crossed out.
+            const bool denies = std::ranges::any_of(
+               icons, [&](const entityicons::Icon& drawnIcon) { return drawnIcon.denied && isFilter(drawnIcon); });
+            for (size_t i = 0; i < filters.size(); ++i) {
+               const std::string name = localisedName(filters[i]);
+               items.push_back(i == 0 ? joined({denies ? vocab::kFilterDenies : vocab::kFilterAllows, name}) : name);
+            }
+         }
+         saidFilters = true;
+      } else {
+         others.push_back(&icon);
+      }
+   }
+
+   for (const Group& group : grouped(others)) {
+      const entityicons::Icon& icon = *group.icon;
+      std::vector<std::string> words{icon.comparison};
+      if (!icon.kind.empty())
+         words.push_back(itemWords(icon.kind, icon.name, icon.quality, icon.kind == "item" ? group.count : 0));
+      else
+         words.push_back(utilityWords(icon.name));
+      if (icon.anyQuality) words.emplace_back(vocab::kAnyQuality);
+      if (icon.denied) words.emplace_back(vocab::kIconDenied);
+      items.push_back(joined(words));
+   }
+   return items;
 }
 
 } // namespace fa::facts

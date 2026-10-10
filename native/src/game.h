@@ -1879,6 +1879,35 @@ struct Layout {
    uint32_t chargeSpotSize = 0;
    uint32_t chargeSpotRobot = 0;           // ChargeSpot::robot, a pointer
    uint32_t cellWaitingToCharge = 0;       // LogisticCell::charger.waitingToChargeQueue._size, uint32
+   // An entity's filters, as LuaEntity::get_filter reads them: an inserter's or loader's
+   // ::filter (inserterFilters, loaderFilters above; as many used as its prototype's
+   // itemFilterCount), a mining drill's MiningDrill::filter.filters (ID<EntityPrototype>,
+   // uint16, MiningDrillPrototype::filterCount), an asteroid collector's chunkFilters (above), and a
+   // storage chest's (LogisticContainerPrototype::logisticMode Storage) first filter: its
+   // LogisticContainer::logisticPoint's LogisticPoint::sections (a LogisticSections, which is a
+   // std::vector<LogisticSection>), the first section's LogisticSection::filters
+   // (std::vector<LogisticFilter>), LogisticFilter::signalFilter.baseID (a SignalIDBase).
+   uint32_t inserterFilterCount = 0;       // InserterPrototype::itemFilterCount, uint8
+   uint32_t loaderFilterCount = 0;         // LoaderPrototype::itemFilterCount, uint8
+   uint32_t drillFilters = 0;
+   uint32_t drillFilterCount = 0;          // MiningDrillPrototype::filterCount, uint8
+   uint32_t containerLogisticPoint = 0;
+   uint32_t containerMode = 0;             // LogisticContainerPrototype::logisticMode.value, uint8
+   uint32_t containerModeStorage = 0;      // LogisticMode::Enum::Storage
+   uint32_t pointSections = 0;             // the std::vector<LogisticSection> of LogisticPoint::sections
+   uint32_t sectionSize = 0;
+   uint32_t sectionFilters = 0;            // LogisticSection::filters, std::vector<LogisticFilter>
+   uint32_t logisticFilterSize = 0;
+   uint32_t logisticFilterSignal = 0;      // LogisticFilter::signalFilter.baseID, SignalIDBase
+   // A recipe's products, which a machine draws as its recipe when the recipe has no icon of its
+   // own: RecipePrototype::itemProducts and fluidProducts (std::vectors of ItemProductPrototype and
+   // FluidProductPrototype), each ::result.id an item or fluid ID (uint16).
+   uint32_t recipeItemProducts = 0;
+   uint32_t recipeFluidProducts = 0;
+   uint32_t itemProductSize = 0;
+   uint32_t itemProductId = 0;
+   uint32_t fluidProductSize = 0;
+   uint32_t fluidProductId = 0;
 };
 
 // Bits of agui::Widget::usageBitMask, read from Widget::setVisible and Widget::isEnabled in

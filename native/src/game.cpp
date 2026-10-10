@@ -1333,6 +1333,27 @@ bool resolve(pdb::SymbolTable& symbols) {
    size(layout.chargeSpotSize, "ChargeSpot");
    offset(layout.chargeSpotRobot, "ChargeSpot", "robot");
    offset(layout.cellWaitingToCharge, "LogisticCell", "charger.waitingToChargeQueue._size");
+   {
+      offset(layout.inserterFilterCount, "InserterPrototype", "itemFilterCount");
+      offset(layout.loaderFilterCount, "LoaderPrototype", "itemFilterCount");
+      offset(layout.drillFilters, "MiningDrill", "filter.filters");
+      offset(layout.drillFilterCount, "MiningDrillPrototype", "filterCount");
+      offset(layout.containerLogisticPoint, "LogisticContainer", "logisticPoint");
+      offset(layout.containerMode, "LogisticContainerPrototype", "logisticMode.value");
+      enumerator(layout.containerModeStorage, "LogisticMode::Enum", "Storage");
+      offset(layout.pointSections, "LogisticPoint",
+             "sections.std::vector<LogisticSection,std::allocator<LogisticSection> >");
+      size(layout.sectionSize, "LogisticSection");
+      offset(layout.sectionFilters, "LogisticSection", "filters");
+      size(layout.logisticFilterSize, "LogisticFilter");
+      offset(layout.logisticFilterSignal, "LogisticFilter", "signalFilter.baseID");
+      offset(layout.recipeItemProducts, "RecipePrototype", "itemProducts");
+      offset(layout.recipeFluidProducts, "RecipePrototype", "fluidProducts");
+      size(layout.itemProductSize, "ItemProductPrototype");
+      offset(layout.itemProductId, "ItemProductPrototype", "result.id");
+      size(layout.fluidProductSize, "FluidProductPrototype");
+      offset(layout.fluidProductId, "FluidProductPrototype", "result.id");
+   }
 
    if (ok && (layout.chartSelectionSize > kChartSelectionCapacity || layout.patchInfoSize > kPatchInfoCapacity)) {
       log::error("A chart structure outgrew its buffer: ChartSelection {} bytes, ResourcePatchInfo {}",

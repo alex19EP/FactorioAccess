@@ -101,7 +101,8 @@ function mod.read_tile_rails(pindex, message)
 end
 
 ---What the mod says of the cursor's tile after the DLL's reading of it (native/src/reader.h), which
----said the entity's name, status and tooltip, or the tile's name: what only the mod tells.
+---said the entity's name, status, tooltip and the mod's facts, or the tile's name and a water tile's
+---shape: what only the mod tells.
 ---@param pindex integer
 ---@return LocalisedString
 function mod.read_tile_more(pindex)
@@ -114,11 +115,6 @@ function mod.read_tile_more(pindex)
          mod.read_tile_rails(pindex, message)
       else
          message:fragment(FaInfo.ent_info(pindex, ent, false, true))
-      end
-   else
-      local tile_name = EntitySelection.get_player_tile(pindex)
-      if tile_name and Consts.WATER_TILE_NAMES_SET[tile_name] then
-         message:fragment(FaUtils.identify_water_shores(pindex))
       end
    end
    message:fragment(Mouse.cursor_visibility_info(pindex))

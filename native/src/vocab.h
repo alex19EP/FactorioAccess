@@ -384,6 +384,22 @@ inline constexpr Word kCombinatorOutputBoth{"fa.combinator-output-both"};
 // A roboport's network ("of 1"), and its robots charging, waiting to, stationed, and repair packs.
 inline constexpr Word kRoboportNetwork{"fa.ent-info-roboport-network"};
 inline constexpr Word kRoboportCharging{"fa.roboport-charging-info"};
+// A water tile's shape, by how many of its four sides are water.
+inline constexpr Word kWaterCrevicePit{"fa.water-crevice-pit"};
+inline constexpr Word kWaterCreviceEnd{"fa.water-crevice-end"};
+inline constexpr Word kWaterCrevice{"fa.water-crevice"};
+inline constexpr Word kWaterShoreCorner{"fa.water-shore-corner"};
+inline constexpr Word kWaterShore{"fa.water-shore"};
+inline constexpr Word kWaterOpen{"fa.water-open"};
+// The info icons alt mode draws: a machine's recipe ("producing"), the filters it allows or denies,
+// what it has ("Has steam"), an item with its quality and count, and a badge's any quality or deny.
+inline constexpr Word kProducing{"fa.ent-info-producing"};
+inline constexpr Word kFilterAllows{"fa.filter-allows"};
+inline constexpr Word kFilterDenies{"fa.filter-denies"};
+inline constexpr Word kInventoryPresentation{"fa.ent-info-inventory-presentation"};
+inline constexpr Word kItemQuantityQuality{"fa.item-quantity-quality"};
+inline constexpr Word kAnyQuality{"fa.ent-icon-any-quality"};
+inline constexpr Word kIconDenied{"fa.ent-icon-denied"};
 // A train driven by hand.
 inline constexpr Word kTrainManual{"fa.train-state-manual"};
 

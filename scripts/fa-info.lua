@@ -1463,13 +1463,11 @@ function mod.ent_info(pindex, ent, is_scanner, after_native)
    -- pipe draining, a drill's output tile and what it outputs to, a combinator's description, a
    -- signal's state, a wall's gate contact, an upgrade mark, a power switch, a turret's priorities,
    -- an inserter's hand, the circuit networks, a vehicle's heading, a rolling stock's train name
-   -- and state, a roboport's network and robots.
+   -- and state, a roboport's network and robots, what alt mode's icons show.
    local run_native_fact_handler = run_tooltip_handler
-   if not is_scanner and native then ctx.drawn = native.entity_icons(pindex, ent) end
-   -- The status icons tell what the tooltip's status says
-   if after_native and ctx.drawn then ctx.drawn.status = {} end
+   if not is_scanner and not after_native and native then ctx.drawn = native.entity_icons(pindex, ent) end
 
-   run_handler(ent_info_drawn_icons, true)
+   run_native_fact_handler(ent_info_drawn_icons, true)
 
    --Explain the recipe of a machine without pause and before the direction
    run_drawn_handler(function()

@@ -10,6 +10,7 @@
 #include "text.h"
 #include "vocab.h"
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstring>
@@ -417,6 +418,7 @@ std::string describe(const std::byte* player, const std::byte* entity, Position 
    reinterpret_cast<void (*)(const void*, void*, bool)>(layout.descriptionFill)(description, panel, false);
    for (std::string& line : lines(reinterpret_cast<const agui::Widget*>(panel), modLists))
       parts.push_back(std::move(line));
+   for (std::string& icon : facts::drawnIcons(entity)) parts.push_back(std::move(icon));
 
    reinterpret_cast<void* (*)(void*, unsigned)>(layout.entityInfoDestroy)(panel, 0);
    ::operator delete(panel, kAlignment);
@@ -434,11 +436,42 @@ std::string describe(const std::byte* player, const std::byte* entity, Position 
 
 using TileAtFunction = const std::byte* (*)(const void* surface, const Position* position);
 
+const std::byte* tilePrototypeAt(const std::byte* surface, Position tile) {
+   const std::byte* found = reinterpret_cast<TileAtFunction>(layout.surfaceTileAt)(surface, &tile);
+   return found ? prototypeAt(layout.tilePrototypes, at<uint16_t>(found, 0)) : nullptr;
+}
+
+// The mod's water tiles (Consts.WATER_TILE_NAMES).
+bool isWater(const std::byte* prototype) {
+   static constexpr std::array<std::string_view, 7> kWater{
+      "water", "deepwater", "water-green", "deepwater-green", "water-shallow", "water-mud", "water-wube"};
+   if (!prototype) return false;
+   const std::string_view name = reinterpret_cast<const MsvcString*>(prototype + layout.prototypeName)->view();
+   return std::ranges::find(kWater, name) != kWater.end();
+}
+
+// A water tile's shape, by which of its four sides are water (FaUtils.identify_water_shores).
+std::string waterShape(const std::byte* surface, Position tile) {
+   auto water = [&](int32_t dx, int32_t dy) {
+      return isWater(tilePrototypeAt(surface, Position{tile.x + dx, tile.y + dy}));
+   };
+   const bool north = water(0, -1), south = water(0, 1), east = water(1, 0), west = water(-1, 0);
+   switch (north + south + east + west) {
+   case 0: return vocab::kWaterCrevicePit;
+   case 1: return vocab::kWaterCreviceEnd;
+   case 2: return (north && south) || (east && west) ? vocab::kWaterCrevice : vocab::kWaterShoreCorner;
+   case 3: return vocab::kWaterShore;
+   default: return vocab::kWaterOpen;
+   }
+}
+
 std::string tileName(const std::byte* surface, Position tile) {
    const std::byte* found = reinterpret_cast<TileAtFunction>(layout.surfaceTileAt)(surface, &tile);
    if (!found) return vocab::translate("fa.tile-uncharted-out-of-range", {});
    const std::byte* prototype = prototypeAt(layout.tilePrototypes, at<uint16_t>(found, 0));
-   return prototype ? localisedName(prototype) : std::string();
+   if (!prototype) return {};
+   if (isWater(prototype)) return localisedName(prototype) + " " + waterShape(surface, tile);
+   return localisedName(prototype);
 }
 
 // What the tile `tile` holds, for the local player, or nothing outside a game with a view.

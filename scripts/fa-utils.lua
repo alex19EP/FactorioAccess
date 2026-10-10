@@ -7,18 +7,6 @@ local EntitySelection = require("scripts.entity-selection")
 
 local mod = {}
 
--- Helper function to draw a circle at the given position
-local function draw_circle_at_position(surface, pos, color, radius, width, time_to_live)
-   rendering.draw_circle({
-      color = color or { 1, 0.0, 0.5 },
-      radius = radius or 0.1,
-      width = width or 2,
-      target = pos,
-      surface = surface,
-      time_to_live = time_to_live or 30,
-   })
-end
-
 -- Helper function to check if a preferred entity is at a given position
 -- Normalizes coordinates to tile center to handle both fractional (1.5, 2.5) and whole (1, 2) coordinates
 local function check_entity_at_position(surface, pos, preferred_unit_number, excluded_names)
@@ -582,10 +570,6 @@ function mod.identify_water_shores(pindex)
    local p = game.get_player(pindex)
    local water_tile_names = Consts.WATER_TILE_NAMES
    local pos = Cursor.tile(pindex)
-   draw_circle_at_position(p.surface, { x = pos.x, y = pos.y - 1 })
-   draw_circle_at_position(p.surface, { x = pos.x, y = pos.y + 1 })
-   draw_circle_at_position(p.surface, { x = pos.x - 1, y = pos.y })
-   draw_circle_at_position(p.surface, { x = pos.x + 1, y = pos.y })
 
    local tile_north = #p.surface.find_tiles_filtered({
       position = { x = pos.x + 0, y = pos.y - 1 },
@@ -614,21 +598,18 @@ function mod.identify_water_shores(pindex)
    if tile_west > 0 then tile_west = 1 end
 
    local sum = tile_north + tile_south + tile_east + tile_west
-   local result = " "
    if sum == 0 then
-      result = " crevice pit "
+      return { "fa.water-crevice-pit" }
    elseif sum == 1 then
-      result = " crevice end "
+      return { "fa.water-crevice-end" }
    elseif sum == 2 and ((tile_north + tile_south == 2) or (tile_east + tile_west == 2)) then
-      result = " crevice "
+      return { "fa.water-crevice" }
    elseif sum == 2 then
-      result = " shore corner"
+      return { "fa.water-shore-corner" }
    elseif sum == 3 then
-      result = " shore "
-   elseif sum == 4 then
-      result = " open "
+      return { "fa.water-shore" }
    end
-   return result
+   return { "fa.water-open" }
 end
 
 -- Concatenate a bunch of stuff together, efficiently, and return this as a
