@@ -259,7 +259,7 @@ void dropDiode(MsvcString& label) {
 }
 
 // Whether alt mode draws the entity's contents as icons: a chest's. A machine draws its recipe
-// there, so its contents stay in the reading.
+// there, and its contents are in the hover panel only (the Y key).
 bool contentsDrawn(const std::byte* entity) {
    const std::string_view type = typeName(at<const std::byte*>(entity, layout.entityPrototypeOf));
    return type == "container" || type == "logistic-container" || type == "infinity-container" ||
@@ -276,11 +276,13 @@ bool damaged(const std::byte* entity) {
 // Drops from the description the lines the step does not say: what reads alike on every entity of
 // the kind, the status unless it is a problem, health unless the entity is damaged, what alt mode
 // draws as icons (a chest's contents, fluids), which the mod says from the icons in alt mode only,
-// the surface conditions and debug lines, and the categories' headings.
+// the contents, which only the hover panel shows elsewhere, the surface conditions and debug lines,
+// and the categories' headings.
 void prune(const std::byte* entity, std::byte* description) {
    static const std::vector<std::string> fixed = fixedLabels();
    const std::string health = vocab::translate("description.health", {});
-   const std::string contents = contentsDrawn(entity) ? vocab::translate("description.contents", {}) : "";
+   const std::string contents = vocab::translate("description.contents", {});
+   const bool chest = contentsDrawn(entity);
    // A fluid's own temperature line ("Temperature: Steam").
    const std::string fluidTemperature = vocab::translate("description.fluid-temperature", {""});
    auto& categories = *reinterpret_cast<MsvcVector<std::byte*>*>(description + layout.descriptionCategories);
@@ -294,10 +296,13 @@ void prune(const std::byte* entity, std::byte* description) {
       auto& items = *reinterpret_cast<MsvcVector<std::byte*>*>(*category + layout.categoryProperties);
       std::byte** kept = items.first;
       bool droppedLast = false;
+      // The unlabelled lines after "Contents" are its items.
+      bool inContents = false;
       for (std::byte** item = items.first; item < items.last; ++item) {
          auto& label = *reinterpret_cast<MsvcString*>(*item + layout.propertyLabel);
          std::string_view name = label.view();
          if (!name.empty() && name.back() == ':') name.remove_suffix(1);
+         if (!name.empty()) inContents = name == contents;
          const auto vtable = *reinterpret_cast<const uintptr_t*>(*item);
          bool keep = !dropAll;
          if (keep && vtable == layout.recipeItemVtable) {
@@ -316,7 +321,7 @@ void prune(const std::byte* entity, std::byte* description) {
             if (keep) dropDiode(label);
          } else if (keep && name == health) {
             keep = damaged(entity);
-         } else if (keep && !contents.empty() && (name == contents || name.empty())) {
+         } else if (keep && (inContents || (chest && name.empty()))) {
             // A chest's contents are its inventory's counts (Inventory::addCountsToDescription), a
             // line without a label.
             keep = false;
