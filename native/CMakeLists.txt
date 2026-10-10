@@ -219,6 +219,7 @@ add_executable(fa_logic_tests
   tests/rails/RailKindTests.cpp
   tests/cursor/CursorMovesTests.cpp
   tests/cursor/SkipRulesTests.cpp
+  tests/cursor/CycleStopsTests.cpp
 )
 target_include_directories(fa_logic_tests PRIVATE src tests/graph)
 target_compile_options(fa_logic_tests PRIVATE /W4 /permissive- /utf-8 /EHsc)

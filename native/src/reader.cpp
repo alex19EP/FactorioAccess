@@ -87,6 +87,7 @@ struct Position {
 };
 
 constexpr int32_t kScale = game::kMapPositionScale;
+static_assert(cyclestops::kScale == kScale);
 constexpr int32_t kChunkScale = kScale * 32;
 
 // std::optional<GuiContext>: GuiContext is a Player*. Passed by value, which MSVC does through a
@@ -662,58 +663,29 @@ bool waterAt(int32_t tileX, int32_t tileY) {
 std::vector<Stop> stopsIn(int32_t tileX, int32_t tileY) {
    const std::optional<Local> here = local();
    if (!here) return {};
-   const int32_t left = tileX * kScale, top = tileY * kScale, right = left + kScale, bottom = top + kScale;
+   const int32_t left = tileX * kScale, top = tileY * kScale;
    const Position centre = centreOf(Position{tileX, tileY});
 
-   // The selection boxes reaching into the tile cut it into cells, and the same boxes hold every
-   // point of a cell, so a point in each cell meets everything the mouse can select here. A box
-   // may reach past its entity's own (a tree's crown): the search looks a tile around.
-   std::vector<int32_t> xs{left, right}, ys{top, bottom};
+   // A box may reach past its entity's own (a tree's crown): the search looks a tile around.
+   std::vector<cyclestops::Box> boxes;
    for (const void* entity :
-        facts::entitiesIn(here->surface, left - kScale, top - kScale, right + kScale, bottom + kScale)) {
+        facts::entitiesIn(here->surface, left - kScale, top - kScale, left + 2 * kScale, top + 2 * kScale)) {
       const facts::SelectionBox box = facts::selectionBox(entity);
-      if (box.right <= left || box.left >= right || box.bottom <= top || box.top >= bottom) continue;
-      xs.push_back(std::clamp(box.left, left, right));
-      xs.push_back(std::clamp(box.right, left, right));
-      ys.push_back(std::clamp(box.top, top, bottom));
-      ys.push_back(std::clamp(box.bottom, top, bottom));
-   }
-   for (std::vector<int32_t>* edges : {&xs, &ys}) {
-      std::ranges::sort(*edges);
-      edges->erase(std::ranges::unique(*edges).begin(), edges->end());
-   }
-   std::vector<Position> points{centre};
-   for (size_t i = 0; i + 1 < xs.size(); ++i)
-      for (size_t j = 0; j + 1 < ys.size(); ++j) points.push_back({(xs[i] + xs[i + 1]) / 2, (ys[j] + ys[j + 1]) / 2});
-   const auto distance = [&](Position point) {
-      const int64_t dx = point.x - centre.x, dy = point.y - centre.y;
-      return dx * dx + dy * dy;
-   };
-   std::ranges::stable_sort(points, {}, distance);
-
-   std::vector<Stop> stops;
-   std::optional<Stop> ground;
-   for (const Position point : points) {
-      const void* entity = entityAt(here->player, here->surface, point);
-      if (!entity) {
-         if (!ground) ground = Stop{nullptr, point.x, point.y};
-      } else if (std::ranges::find(stops, entity, &Stop::entity) == stops.end()) {
-         stops.push_back(Stop{entity, point.x, point.y});
-      }
+      boxes.push_back({box.left, box.top, box.right, box.bottom});
    }
 
    alignas(8) std::byte context[32]{};
-   if (stops.size() > 2 && layout.selectionContextSize <= sizeof(context)) {
+   const bool ordered = layout.selectionContextSize <= sizeof(context);
+   if (ordered) {
       std::memcpy(context + layout.selectionContextPosition, &centre, sizeof(centre));
       context[layout.selectionContextMode] = static_cast<std::byte>(layout.selectionModeNormal);
-      using Less = bool (*)(const void* a, const void* b, const void* context);
-      const auto less = reinterpret_cast<Less>(layout.selectPriorityLess);
-      // The game's "loses to": the one that takes the mouse comes first.
-      std::stable_sort(stops.begin() + 1, stops.end(),
-                       [&](const Stop& a, const Stop& b) { return less(b.entity, a.entity, context); });
    }
-   if (ground) stops.push_back(*ground);
-   return stops;
+   using Less = bool (*)(const void* a, const void* b, const void* context);
+   const auto less = reinterpret_cast<Less>(layout.selectPriorityLess);
+   return cyclestops::stopsIn<const void*>(
+      tileX, tileY, boxes, [&](int32_t x, int32_t y) { return entityAt(here->player, here->surface, Position{x, y}); },
+      // The game's "loses to": the one that takes the mouse comes first.
+      [&](const void* a, const void* b) { return ordered && less(b, a, context); });
 }
 
 } // namespace fa::reader

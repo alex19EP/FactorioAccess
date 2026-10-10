@@ -1,5 +1,6 @@
 #pragma once
 
+#include "cyclestops.h"
 #include "mappicture.h"
 
 #include <cstdint>
@@ -65,11 +66,7 @@ std::optional<Shown> shownAt(int32_t tileX, int32_t tileY);
 // does, nearest the tile's centre; first what the centre selects, the rest in the game's own order
 // of what takes the mouse (EntitySelector::selectPriorityLess, from the centre); last the bare
 // ground (a null entity), where some point selects nothing. Empty outside a game with a view.
-struct Stop {
-   const void* entity;
-   int32_t x;
-   int32_t y;
-};
+using Stop = cyclestops::Stop<const void*>;
 std::vector<Stop> stopsIn(int32_t tileX, int32_t tileY);
 
 } // namespace fa::reader

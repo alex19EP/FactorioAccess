@@ -63,39 +63,15 @@ class World
 public:
     using Entity = const Thing*;
 
-    void Put(int32_t x, int32_t y, const Thing& thing)
-    {
-        tiles_[{x, y}].Entity = &thing;
-    }
-    void Water(int32_t x, int32_t y)
-    {
-        tiles_[{x, y}].Water = true;
-    }
-    void Fog(int32_t x, int32_t y, int picture)
-    {
-        tiles_[{x, y}].Shown = picture;
-    }
+    void Put(int32_t x, int32_t y, const Thing& thing) { tiles_[{x, y}].Entity = &thing; }
+    void Water(int32_t x, int32_t y) { tiles_[{x, y}].Water = true; }
+    void Fog(int32_t x, int32_t y, int picture) { tiles_[{x, y}].Shown = picture; }
 
-    Entity selectedAt(int32_t x, int32_t y) const
-    {
-        return At(x, y).Entity;
-    }
-    bool waterAt(int32_t x, int32_t y) const
-    {
-        return At(x, y).Water;
-    }
-    std::optional<int> shownAt(int32_t x, int32_t y) const
-    {
-        return At(x, y).Shown;
-    }
-    bool skipsOver(Entity entity) const
-    {
-        return entity->PassedOver;
-    }
-    std::pair<int, int> likenessOf(Entity entity) const
-    {
-        return {entity->Kind, entity->Direction};
-    }
+    Entity selectedAt(int32_t x, int32_t y) const { return At(x, y).Entity; }
+    bool waterAt(int32_t x, int32_t y) const { return At(x, y).Water; }
+    std::optional<int> shownAt(int32_t x, int32_t y) const { return At(x, y).Shown; }
+    bool skipsOver(Entity entity) const { return entity->PassedOver; }
+    std::pair<int, int> likenessOf(Entity entity) const { return {entity->Kind, entity->Direction}; }
     std::optional<UndergroundEnd> undergroundEnd(Entity entity, uint8_t direction) const
     {
         if (entity->Underground && entity->UndergroundDirection == direction)
@@ -120,10 +96,7 @@ static_assert(fa::skip::SkipWorld<World>);
 constexpr int kLimit = 100;
 const auto kAnywhere = [](int32_t, int32_t) { return true; };
 
-Result Found(int32_t x, int32_t y, int tiles)
-{
-    return {Result::Kind::Found, x, y, tiles};
-}
+Result Found(int32_t x, int32_t y, int tiles) { return {Result::Kind::Found, x, y, tiles}; }
 
 Result SkipEast(const World& world, std::optional<Ruler> ruler = std::nullopt)
 {

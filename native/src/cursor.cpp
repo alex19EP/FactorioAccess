@@ -292,8 +292,7 @@ void cycleForKey(const View& view, Position cursor) {
    const std::vector<reader::Stop> stops = reader::stopsIn(tileOf(cursor.x), tileOf(cursor.y));
    if (stops.empty()) return;
    const void* current = reader::selectedAtPoint(cursor.x, cursor.y);
-   const auto shown = std::ranges::find(stops, current, &reader::Stop::entity);
-   const size_t next = shown == stops.end() ? 0 : (static_cast<size_t>(shown - stops.begin()) + 1) % stops.size();
+   const size_t next = cyclestops::nextStop(stops, current);
    const reader::Stop& stop = stops[next];
    place(Position{stop.x, stop.y});
    reader::readPoint(stop.x, stop.y, vocab::kPosition(next + 1, stops.size()));
