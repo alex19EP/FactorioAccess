@@ -97,7 +97,7 @@ class Game:
 
     def jump(self, x, y):
         """Jumps the cursor as the mod's own jumps do (Cursor.jump)."""
-        self.console(f"{CURSOR}.jump(1,{{x={mid(x)},y={mid(y)}}})", mod=True)
+        self.console(f"{CURSOR}.jump(game.player.index,{{x={mid(x)},y={mid(y)}}})", mod=True)
 
     def home(self):
         """The character view at zoom 1, with the cursor on the character."""
@@ -105,7 +105,7 @@ class Game:
             self.console("game.player.exit_remote_view()")
             self.until(lambda s: s["controller"] in ("character", "god"))
         self.console("game.player.zoom=1")
-        self.console(f"{CURSOR}.jump(1,game.player.physical_position)", mod=True)
+        self.console(f"{CURSOR}.jump(game.player.index,game.player.physical_position)", mod=True)
         self.wait(20)
         return self.state()
 
