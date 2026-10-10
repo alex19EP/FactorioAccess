@@ -269,6 +269,15 @@ bool contentsDrawn(const std::byte* entity) {
           type == "linked-container";
 }
 
+// Whether the entity is an ore drawn by how much it holds, which the reader says as how rich it looks
+// (facts.cpp) rather than the amount only the hover panel shows.
+bool amountDrawn(const std::byte* entity) {
+   const std::byte* prototype = at<const std::byte*>(entity, layout.entityPrototypeOf);
+   if (typeName(prototype) != "resource") return false;
+   const auto& counts = *reinterpret_cast<const MsvcVector<uint32_t>*>(prototype + layout.resourceStageCounts);
+   return counts.last - counts.first >= 2;
+}
+
 // A ghost's tooltip shows the health of the building it stands for.
 bool damaged(const std::byte* entity) {
    if (typeName(at<const std::byte*>(entity, layout.entityPrototypeOf)) == "entity-ghost")
@@ -279,13 +288,14 @@ bool damaged(const std::byte* entity) {
 // Drops from the description the lines the step does not say: what reads alike on every entity of
 // the kind, the status unless it is a problem, health unless the entity is damaged, what alt mode
 // draws as icons (a chest's contents, fluids), which the mod says from the icons in alt mode only,
-// the contents, which only the hover panel shows elsewhere, the surface conditions and debug lines,
-// and the categories' headings.
+// the contents and an ore's amount, which only the hover panel shows elsewhere, the surface
+// conditions and debug lines, and the categories' headings.
 void prune(const std::byte* entity, std::byte* description) {
    static const std::vector<std::string> fixed = fixedLabels();
    const std::string health = vocab::translate("description.health", {});
    const std::string contents = vocab::translate("description.contents", {});
    const bool chest = contentsDrawn(entity);
+   const std::string amount = amountDrawn(entity) ? vocab::translate("description.amount", {}) : "";
    // A fluid's own temperature line ("Temperature: Steam").
    const std::string fluidTemperature = vocab::translate("description.fluid-temperature", {""});
    auto& categories = *reinterpret_cast<MsvcVector<std::byte*>*>(description + layout.descriptionCategories);
@@ -324,6 +334,8 @@ void prune(const std::byte* entity, std::byte* description) {
             if (keep) dropDiode(label);
          } else if (keep && name == health) {
             keep = damaged(entity);
+         } else if (keep && !amount.empty() && name == amount) {
+            keep = false;
          } else if (keep && (inContents || (chest && name.empty()))) {
             // A chest's contents are its inventory's counts (Inventory::addCountsToDescription), a
             // line without a label.

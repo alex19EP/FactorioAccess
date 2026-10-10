@@ -348,6 +348,10 @@ inline constexpr Word kInserterHoldingCount{"fa.ent-info-inserter-holding-count"
 inline constexpr Word kInserterPicksUp{"fa.ent-info-inserter-picks-up-from"};
 inline constexpr Word kInserterDrops{"fa.ent-info-inserter-drops-to"};
 inline constexpr Word kGround{"fa.ent-info-ground"};
+// How rich an ore tile looks, by the picture the game draws it with, from the poorest to the richest.
+inline constexpr Word kOreLook[8] = {{"fa.native-ore-look-1"}, {"fa.native-ore-look-2"}, {"fa.native-ore-look-3"},
+                                     {"fa.native-ore-look-4"}, {"fa.native-ore-look-5"}, {"fa.native-ore-look-6"},
+                                     {"fa.native-ore-look-7"}, {"fa.native-ore-look-8"}};
 // What a drill mines ("mining Iron ore, Coal") and puts its output into.
 inline constexpr Word kDrillMining{"fa.ent-info-mining-drill-mining"};
 inline constexpr Word kDrillOutputsTo{"fa.ent-info-mining-drill-outputs-to"};

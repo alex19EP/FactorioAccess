@@ -237,6 +237,8 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.scanFurnaceResult, "Furnace", "resultInventory");
    offset(layout.scanDrillResources, "MiningDrill", "resourcesToMine");
    size(layout.resourceTargeterSize, "Targeter<ResourceEntity,33,0>");
+   offset(layout.resourceAmount, "ResourceEntity", "resourceAmount");
+   offset(layout.resourceStageCounts, "ResourceEntityPrototype", "stageCounts");
    offset(layout.scanLocomotiveTrain, "Locomotive", "train");
    offset(layout.scanCargoWagonTrain, "CargoWagon", "train");
    offset(layout.scanFluidWagonTrain, "FluidWagon", "train");

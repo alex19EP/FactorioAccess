@@ -353,6 +353,11 @@ struct Layout {
    // MiningDrill::resourcesToMine, std::vector<Targeter<ResourceEntity,33,0>>: what it mines
    uint32_t scanDrillResources = 0;
    uint32_t resourceTargeterSize = 0;      // sizeof(Targeter<ResourceEntity,33,0>)
+   // Which picture an ore tile is drawn with (ResourceEntityPrototype::animationForAmount): the
+   // first of the prototype's stageCounts, std::vector<uint32_t> from rich to poor, that the tile's
+   // ResourceEntity::resourceAmount (uint32_t) reaches, else the last.
+   uint32_t resourceAmount = 0;
+   uint32_t resourceStageCounts = 0;
    uint32_t scanLocomotiveTrain = 0;       // Locomotive::train, Train*
    uint32_t scanCargoWagonTrain = 0;       // CargoWagon::train
    uint32_t scanFluidWagonTrain = 0;       // FluidWagon::train

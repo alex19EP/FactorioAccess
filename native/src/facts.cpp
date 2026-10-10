@@ -1021,6 +1021,29 @@ bool isDrillOutput(const std::byte* drill, Position tile) {
           tileOf(std::clamp(centreY, box.leftTop.y, box.rightBottom.y - 1)) == tile.y;
 }
 
+// ---- resources ----
+
+// The picture an ore tile is drawn with, by how much it holds, as one of eight words from nearly
+// depleted to the richest: what a sighted player sees of its amount. An ore with another number of
+// pictures takes the words in proportion. Empty for a resource drawn alike whatever its amount
+// (crude oil).
+std::string oreLook(const std::byte* resource) {
+   struct Counts {
+      const uint32_t* first;
+      const uint32_t* last;
+      const uint32_t* end;
+   };
+   const auto& counts = at<Counts>(prototypeOf(resource), layout.resourceStageCounts);
+   const size_t stages = static_cast<size_t>(counts.last - counts.first);
+   if (stages < 2) return {};
+   const uint32_t amount = at<uint32_t>(resource, layout.resourceAmount);
+   size_t stage = 0; // from the richest
+   while (stage + 1 < stages && counts.first[stage] > amount) ++stage;
+   const size_t richness = stages - 1 - stage;
+   constexpr size_t kWords = std::size(vocab::kOreLook);
+   return vocab::kOreLook[(richness * (kWords - 1) + (stages - 1) / 2) / (stages - 1)];
+}
+
 // ---- infinity chests and pipes ----
 
 // The first three filters, each an item and how many it keeps, the rest counted, and whether
@@ -1981,6 +2004,8 @@ std::vector<std::string> describe(const void* object, int32_t tileX, int32_t til
    if (const std::byte* turret = agui::objectAsBase(entity, ".?AVTurret@@")) parts.push_back(turretPriorities(turret));
    if (const std::byte* inserter = agui::objectAsBase(entity, ".?AVInserter@@"))
       parts.push_back(inserterState(inserter));
+   if (type == "resource")
+      if (std::string look = oreLook(entity); !look.empty()) parts.push_back(std::move(look));
    if (type == "mining-drill") {
       // The ground around the drill shows what it mines.
       std::vector<std::string> resources;
