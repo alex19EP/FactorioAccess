@@ -23,10 +23,7 @@ std::ostream& operator<<(std::ostream& os, const Position& position)
 namespace
 {
 
-Position Tile(int32_t x, int32_t y)
-{
-    return tileCentre(x, y);
-}
+Position Tile(int32_t x, int32_t y) { return tileCentre(x, y); }
 
 // A 1920 by 1080 view at zoom 1: 32 pixels to a tile.
 constexpr Pixel kFullHd{1920, 1080};

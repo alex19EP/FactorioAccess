@@ -1,5 +1,7 @@
 #pragma once
 
+#include "skiprules.h"
+
 #include <cstdint>
 #include <functional>
 #include <optional>
@@ -14,25 +16,8 @@
 // that is not water. An audio ruler stops it where it comes into or out of line with the ruler, and
 // on the ruler's own tile. Where the view shows fog of war or nothing (remote view, the map), it
 // goes by what the chart's picture shows (reader::shownAt) and stops where that changes.
+// The rules themselves are in skiprules.h.
 namespace fa::skip {
-
-// The player's audio ruler, a tile.
-struct Ruler {
-   int32_t x;
-   int32_t y;
-};
-
-struct Result {
-   enum class Kind {
-      Found, // a change at `x`, `y`, `tiles` away
-      Limit, // no change within the limit; the cursor goes on to `x`, `y`
-      Edge,  // the next tile is one the cursor may not go to: it stays at `x`, `y`
-   };
-   Kind kind;
-   int32_t x;
-   int32_t y;
-   int tiles;
-};
 
 // From the tile `x`, `y` in the direction `dx`, `dy` (one of them 1 or -1), going at most `limit`
 // tiles, onto tiles `allowed` lets the cursor go to. In the game's input handling.
