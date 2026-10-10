@@ -1,5 +1,6 @@
 #include "highlights.h"
 
+#include "agui.h"
 #include "game.h"
 #include "log.h"
 #include "speech.h"
@@ -14,6 +15,7 @@
 #include <cstring>
 #include <format>
 #include <mutex>
+#include <numbers>
 #include <optional>
 #include <string>
 #include <utility>
@@ -113,9 +115,17 @@ struct DrawnBox {
    Box box;
 };
 
+// Where an inserter's hand reaches, in tiles from it (Inserter::pickupVector, dropVector).
+struct Reach {
+   double dx;
+   double dy;
+};
+
 struct Report {
    std::string meaning;
    bool drag = false;
+   // An inserter's pickup and drop, which its preview draws as arrows.
+   std::optional<std::pair<Reach, Reach>> hand;
    // The preview draws the poles that would power it: it runs on electricity.
    bool electric = false;
    bool pole = false;
@@ -266,6 +276,30 @@ std::string whereFrom(const Tiles& from, const Tiles& to) {
    return vocab::kTilesToward(tiles, vocab::direction(direction));
 }
 
+// The 8-way direction of an offset, 0 North and clockwise.
+int directionOf(double dx, double dy) {
+   const auto eighth = static_cast<int>(std::lround(std::atan2(dx, -dy) / (std::numbers::pi / 4)));
+   return (eighth + 8) % 8;
+}
+
+// "picks up from Transport belt at 1 East": what the hand's arrow points at, the highlighted entity
+// on that tile (taken from the items) or the ground, as the tile reader says an inserter.
+std::string handPart(Report& report, const vocab::Word& word, Reach reach) {
+   const int32_t tileX = (report.position.x + static_cast<int32_t>(std::lround(reach.dx * 256))) >> 8;
+   const int32_t tileY = (report.position.y + static_cast<int32_t>(std::lround(reach.dy * 256))) >> 8;
+   std::string name = vocab::kGround;
+   const auto found = std::ranges::find_if(report.items, [&](const Item& item) {
+      return item.kind == Kind::WorksWith && item.tiles.left <= tileX && tileX <= item.tiles.right &&
+             item.tiles.top <= tileY && tileY <= item.tiles.bottom;
+   });
+   if (found != report.items.end()) {
+      name = found->name;
+      report.items.erase(found);
+   }
+   const auto tiles = static_cast<int64_t>(std::lround(std::hypot(reach.dx, reach.dy)));
+   return word(name, tiles, vocab::direction(directionOf(reach.dx, reach.dy)));
+}
+
 // At most this many of a kind are named; the rest are counted.
 constexpr size_t kNamedPerKind = 5;
 
@@ -279,6 +313,10 @@ std::string text(Report& report) {
    if (report.drag) return out;
    if (report.network)
       append(report.network->empty() ? std::string(vocab::kNoNetwork) : vocab::kInNetwork(*report.network));
+   if (report.hand) {
+      append(handPart(report, vocab::kInserterPicksUp, report.hand->first));
+      append(handPart(report, vocab::kInserterDrops, report.hand->second));
+   }
 
    std::stable_sort(report.items.begin(), report.items.end(), [&](const Item& a, const Item& b) {
       if (a.kind != b.kind) return a.kind < b.kind;
@@ -496,6 +534,14 @@ void preview(const void* settings, const void* entity, std::string meaning, bool
    report.pole = virtualAt<AsPoleFunction>(prototype, layout.entityPrototypeAsPole)(prototype) != nullptr;
    collector.havePreview = true;
    if (drag) return;
+
+   if (const std::byte* inserter = agui::objectAsBase(preview, ".?AVInserter@@")) {
+      const auto reach = [&](uint32_t vector) {
+         return Reach{at<double>(inserter, vector),
+                      at<double>(inserter, vector + static_cast<uint32_t>(sizeof(double)))};
+      };
+      report.hand = {reach(layout.inserterPickupVector), reach(layout.inserterDropVector)};
+   }
 
    // The wires a pole would get, to each pole once.
    const auto& wires = at<MsvcVector<const std::byte>>(settings, layout.settingsAddedWires);
