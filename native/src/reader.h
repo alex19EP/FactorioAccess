@@ -32,7 +32,14 @@ void read(int32_t tileX, int32_t tileY, std::string prefix = {});
 // select, or its tile, then `suffix`: the cycle key's stops inside a tile (cursor.h).
 void readPoint(int32_t x, int32_t y, std::string suffix);
 
-// In the application Gui's logic: reads a pending tile.
+// Reads `entity` itself at the application Gui's next tick, as on its own tile, after `prefix` and
+// then `suffix` when they are not empty: an entity the mod's Lua names (a scanner entry, a pin's
+// target), which the mouse need not select there. On the update thread, from Lua: the tick finds
+// the entity again by its surface, prototype and position, and says only the mod's words if it has
+// gone. Replaces a pending tile, as `read` does.
+void readEntity(const void* entity, std::string prefix, std::string suffix);
+
+// In the application Gui's logic: reads a pending tile or entity.
 void tick();
 
 // For the skip and cycle keys (skip.h, cursor.h), in the game's input handling, where the game

@@ -45,11 +45,12 @@ describe("Scanner pins and map tags", function()
             local readout = extra.readout()
             ctx:assert(contains(readout, "fa.scanner-pin"), "Every readout says it is a pin")
             if contains(readout, "Home") then found_label = true end
-            if contains(readout, "entity-name.wooden-chest") then found_chest = true end
+            -- The DLL's tile reader says the entity
+            if readout.entity == chest then found_chest = true end
             if contains(readout, "fa.scanner-pin-resource") and contains(readout, "500") then found_ore = true end
          end
          ctx:assert(found_label, "A labelled pin reads its label")
-         ctx:assert(found_chest, "An entity pin reads the entity")
+         ctx:assert(found_chest, "An entity pin has the entity read")
          ctx:assert(found_ore, "A resource patch pin reads what is left of it")
 
          chest.destroy()

@@ -233,6 +233,27 @@ int cursorRead(lua_State* L) {
    return 0;
 }
 
+using ParamEntity = const void* (*)(lua_State*, int index, const char* name, const void* fallback);
+
+// fa_native.entity_read(pindex, entity, prefix, suffix): the tile reader reads the LuaEntity
+// `entity` as on its own tile, between the LocalisedStrings `prefix` and `suffix` when they are
+// given: an entity the mod names elsewhere than under the cursor, such as a scanner entry.
+int entityRead(lua_State* L) {
+   if (!world::mayBeLocalPlayer(static_cast<int>(checkInteger(L, 1)))) return 0;
+   const void* entity = reinterpret_cast<ParamEntity>(layout.luaParamEntity)(L, 2, "entity", nullptr);
+   // A MessageBuilder's words begin with the space before their first part; the reader puts its own
+   // separators between them and the entity.
+   const auto words = [&](int index) {
+      if (type(L, index) == kNil) return std::string();
+      std::string text = nameKeys(L, stripRichText(translate(L, index)));
+      const size_t first = text.find_first_not_of(' ');
+      if (first == std::string::npos) return std::string();
+      return text.substr(first, text.find_last_not_of(' ') - first + 1);
+   };
+   reader::readEntity(entity, words(3), words(4));
+   return 0;
+}
+
 // fa_native.cursor_position(pindex): the cursor's tile x and y, or nothing. Only this client knows
 // it, so the mod may speak and play sounds by it but must not change the game by it.
 int cursorPosition(lua_State* L) {
@@ -690,6 +711,7 @@ constexpr Function kFunctions[] = {
    {"cursor_jump", &cursorJump},
    {"cursor_step", &cursorStep},
    {"cursor_read", &cursorRead},
+   {"entity_read", &entityRead},
    {"cursor_position", &cursorPosition},
    {"speak", &speak},
    {"next_part", &nextPart},

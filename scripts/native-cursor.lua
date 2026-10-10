@@ -10,6 +10,7 @@ local mod = {}
 ---@field cursor_jump fun(player_index: integer, x: number, y: number)
 ---@field cursor_step fun(player_index: integer, x: number, y: number): ("read"|"moved"|"edge"|"skipped")?, integer?
 ---@field cursor_read fun(player_index: integer, x: number, y: number, prefix: LocalisedString?)
+---@field entity_read fun(player_index: integer, entity: LuaEntity, prefix: LocalisedString?, suffix: LocalisedString?)
 ---@field cursor_position fun(player_index: integer): integer?, integer?
 ---@field speak fun(player_index: integer, message: LocalisedString)
 ---@field next_part fun(player_index: integer, direction: integer)

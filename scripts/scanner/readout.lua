@@ -1,12 +1,17 @@
 --[[
-What the scanner says of an entity it moved onto.
+What the scanner says of an entry it moved onto.
 
 This runs only on the client of the player who scans, so it must only read: no storage, no change
 to any entity or player, no math.random (its state is shared). Any of those would desync that client.
 ]]
-local Info = require("scripts.fa-info")
-
 local mod = {}
+
+---What to say of an entry: the mod's own words, then an entity the DLL's tile reader reads as on its
+---own tile (native/src/reader.h), so the scanner says of it what the cursor does, then more words.
+---@class fa.scanner.Readout
+---@field words LocalisedString?
+---@field entity LuaEntity?
+---@field after LocalisedString?
 
 -- Spawners are grouped by how polluted they are. native/src/scanner.cpp kSpawnerPollution groups
 -- them at these thresholds.
@@ -30,14 +35,11 @@ local function pollution(ent)
    return SPAWNER_POLLUTION_BUCKETS[level][2]
 end
 
--- fa-info's scanner readout, with a spawner's pollution.
----@param pindex integer
+---An entity, with a spawner's pollution.
 ---@param ent LuaEntity
----@return LocalisedString
-function mod.of(pindex, ent)
-   local info = Info.ent_info(pindex, ent)
-   if ent.type == "unit-spawner" then return { "fa.scanner-spawner-announce", info, pollution(ent) } end
-   return info
+---@return fa.scanner.Readout
+function mod.of(ent)
+   return { entity = ent, after = ent.type == "unit-spawner" and pollution(ent) or nil }
 end
 
 return mod

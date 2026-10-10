@@ -26,45 +26,6 @@ function mod.get_electricity_satisfaction(electric_pole)
    return satisfaction
 end
 
---For an electricity producer, returns an info string on the current and maximum production.
----@param ent LuaEntity
-function mod.get_electricity_flow_info(ent)
-   local result = { "" }
-   local power = 0
-   local capacity = 0
-   for i, v in pairs(ent.electric_network_statistics.output_counts) do
-      power = power
-         + (
-            ent.electric_network_statistics.get_flow_count({
-               name = i,
-               category = "output",
-               precision_index = defines.flow_precision_index.five_seconds,
-            })
-         )
-      local cap_add = 0
-      for _, power_ent in pairs(ent.surface.find_entities_filtered({ name = i, force = ent.force })) do
-         if power_ent.electric_network_id == ent.electric_network_id then
-            cap_add = cap_add + prototypes.entity[i].get_max_energy_production(power_ent.quality)
-         end
-      end
-
-      if prototypes.entity[i].type == "solar-panel" then
-         cap_add = cap_add * ent.surface.solar_power_multiplier * (1 - ent.surface.darkness)
-      end
-      capacity = capacity + cap_add
-   end
-   power = power * 60
-   capacity = capacity * 60
-   result = {
-      "",
-      mod.get_power_string(power),
-      " being produced out of ",
-      mod.get_power_string(capacity),
-      " capacity, ",
-   }
-   return result
-end
-
 --Finds the neearest electric pole. Can be set to determine whether to check only for poles with electricity flow. Can call using only the first two parameters.
 function mod.find_nearest_electric_pole(ent, require_supplied, radius, alt_surface, alt_pos)
    ---@type LuaEntity
@@ -145,20 +106,6 @@ function mod.find_nearest_electric_pole(ent, require_supplied, radius, alt_surfa
       time_to_live = 60,
    })
    return nearest, min_dist
-end
-
---Returns an info string on the nearest supplied electric pole for this entity.
-function mod.report_nearest_supplied_electric_pole(ent)
-   local result = ""
-   local pole, dist = mod.find_nearest_electric_pole(ent, true)
-   local dir
-   if pole ~= nil then
-      dir = FaUtils.get_direction_biased(pole.position, ent.position)
-      result = "The nearest powered electric pole is " .. dist .. " tiles to the " .. FaUtils.direction_lookup(dir)
-   else
-      result = "And there are no powered electric poles within ten thousand tiles. Generators may be out of energy."
-   end
-   return result
 end
 
 return mod

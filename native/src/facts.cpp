@@ -195,7 +195,7 @@ Parents parentsOf(Belt belt, const Neighbours& neighbours) {
 }
 
 // The words for a transport belt's or an underground belt's shape (scripts/transport-belts.lua,
-// Node:get_shape_info, and fa-info.lua's ent_info_belt_shape).
+// Node:get_shape_info).
 std::vector<std::string> beltShape(Belt belt) {
    const Neighbours neighbours = neighboursOf(belt);
    const uint8_t outgoing = belt.direction();
@@ -343,7 +343,8 @@ bool isPipe(const std::byte* entity) {
    return type == "pipe" || type == "infinity-pipe";
 }
 
-// The shape the joined sides of a pipe or heat pipe make (fa-info.lua's pipe_shape), from the
+// The shape the joined sides of a pipe or heat pipe make (as fa-info.lua's pipe_shape says it for
+// the fluid window), from the
 // ways its connections lead; nothing when one leads elsewhere than the four sides.
 std::string shapeOf(const bool (&joined)[16]) {
    int count = 0;
@@ -424,7 +425,8 @@ std::string localisedName(const std::byte* prototype) {
    return text::speakable({name->capacity >= 16 ? name->pointer : name->buffer, name->size});
 }
 
-// A connection point on the tile, rolled up as fa-info.lua's ent_info_fluid_connections does.
+// A connection point on the tile, rolled up with the others that lead the same way to the same
+// entity.
 struct Point {
    uint8_t outward = kNorth;
    bool input = false;
@@ -578,7 +580,7 @@ std::vector<HeatPort> heatPortsOf(const std::byte* entity) {
 
 bool isHeatPipe(const std::byte* entity) { return typeName(prototypeOf(entity)) == "heat-pipe"; }
 
-// A nuclear reactor's state (fa-info.lua's ent_info_nuclear_neighbor_bonus), each a list item: too
+// A nuclear reactor's state, each a list item: too
 // hot, burning a fuel cell, and its neighbour bonus.
 std::vector<std::string> reactorState(const std::byte* entity) {
    std::vector<std::string> out;
@@ -606,7 +608,7 @@ std::string heatPipeShape(const std::byte* entity) {
    return shapeOf(joined);
 }
 
-// The heat connections on the tile (fa-info.lua's ent_info_heat_neighbors): which ways they lead,
+// The heat connections on the tile: which ways they lead,
 // unless it is a heat pipe, whose shape says so, and what they join, but for a heat pipe's other
 // heat pipes.
 std::string heatConnections(const std::byte* entity, Position tile) {
@@ -882,7 +884,7 @@ LaneWords laneWords(const Carried& lane, const Lane& here) {
    return out;
 }
 
-// What a transport belt carries on each lane (fa-info.lua's ent_info_belt_contents).
+// What a transport belt carries on each lane.
 std::string beltContents(Belt belt) {
    const LaneRange leftRange = rangeOf(belt, 1);
    const LaneRange rightRange = rangeOf(belt, 2);
@@ -942,7 +944,7 @@ std::string splitterState(Belt splitter) {
 
 bool isPole(const std::byte* entity) { return typeName(prototypeOf(entity)) == "electric-pole"; }
 
-// How many copper wires a pole has (fa-info.lua's ent_info_pole_neighbors).
+// How many copper wires a pole has.
 std::string poleWires(const std::byte* pole) {
    const size_t count = (at<uintptr_t>(pole, layout.poleWiresEnd) - at<uintptr_t>(pole, layout.poleWiresBegin)) /
                         layout.wireConnectionSize;
@@ -950,7 +952,7 @@ std::string poleWires(const std::byte* pole) {
    return vocab::kPoleWires(static_cast<int64_t>(count));
 }
 
-// How many buildings a pole powers and how many feed it (fa-info.lua's ent_info_electric_pole):
+// How many buildings a pole powers and how many feed it:
 // those the game joins to its network, with an electric energy source in its supply area.
 std::string poleSupply(const std::byte* pole) {
    using SupplyArea = void* (*)(const void* pole, std::byte* out);
@@ -1021,7 +1023,7 @@ bool isDrillOutput(const std::byte* drill, Position tile) {
 // ---- infinity chests and pipes ----
 
 // The first three filters, each an item and how many it keeps, the rest counted, and whether
-// the chest trashes the rest (fa-info.lua's ent_info_infinity_chest), as list items.
+// the chest trashes the rest, as list items.
 std::vector<std::string> infinityChestState(const std::byte* chest) {
    const auto* first = at<const std::byte*>(chest, layout.infinityChestFilters);
    const auto* last = at<const std::byte*>(chest, layout.infinityChestFilters + sizeof(void*));
@@ -1081,7 +1083,7 @@ std::string networkName(const std::byte* network) {
 }
 
 // The network a logistic chest is in, or how far and which way the nearest network's logistic area
-// is (fa-info.lua's ent_info_logistic_network).
+// is.
 std::string logisticNetwork(const std::byte* chest) {
    using FindNetwork = const std::byte* (*)(const void* manager, const Position* position);
    using FindCell = const std::byte* (*)(const void* network, const Position* position);
@@ -1141,7 +1143,7 @@ uint8_t wayOf(double dx, double dy) {
 }
 
 // What an inserter holds, and where it picks up and drops: the entity there or the ground, how
-// many tiles and which way (fa-info.lua's inserter part).
+// many tiles and which way.
 std::string inserterState(const std::byte* inserter) {
    std::vector<std::string> words;
    const std::byte* held = inserter + layout.inserterHeldStack;
@@ -1165,7 +1167,7 @@ std::string inserterState(const std::byte* inserter) {
 
 // ---- turrets, combinators, signals and switches ----
 
-// The targets a turret shoots first or only (fa-info.lua's ent_info_turret_priority), in FA's
+// The targets a turret shoots first or only, in FA's
 // words, which are shorter than the tooltip's.
 std::string turretPriorities(const std::byte* turret) {
    const auto* first = at<const uint16_t*>(turret, layout.turretPriorityList);
@@ -1241,7 +1243,7 @@ uint32_t copperNetwork(const std::byte* entity, uint32_t id) {
    return network ? at<uint32_t>(network, layout.electricNetworkIndex) + 1 : 0;
 }
 
-// On or off, and the electric networks on each side (fa-info.lua's ent_info_power_switch).
+// On or off, and the electric networks on each side.
 std::vector<std::string> powerSwitchState(const std::byte* entity) {
    const uint8_t state = at<uint8_t>(entity, layout.powerSwitchState);
    const bool on = state == layout.powerSwitchOn || state == layout.powerSwitchTurningOn;
@@ -1261,9 +1263,8 @@ bool isCombinator(std::string_view type) {
    return type == "arithmetic-combinator" || type == "decider-combinator" || type == "selector-combinator";
 }
 
-// A combinator's input and output networks by wire (fa-info.lua's ent_info_combinator_connections),
-// or any other entity's circuit networks with how many others are on each
-// (Circuits.add_circuit_network_info).
+// A combinator's input and output networks by wire, or any other entity's circuit networks with
+// how many others are on each.
 std::vector<std::string> circuitNetworks(const std::byte* entity, std::string_view type) {
    std::vector<std::string> items;
    const std::byte* red = circuitNetwork(entity, layout.connectorCircuitRed);
@@ -1293,8 +1294,7 @@ std::vector<std::string> circuitNetworks(const std::byte* entity, std::string_vi
 
 // ---- roboports ----
 
-// A roboport's network and what its cell holds (fa-info.lua's roboport part and
-// BotLogistics.roboport_contents_info).
+// A roboport's network and what its cell holds.
 std::vector<std::string> roboportState(const std::byte* roboport) {
    const std::byte* cell = roboport + layout.roboportCell;
    std::vector<std::string> items;
@@ -1382,7 +1382,7 @@ std::string trainState(const std::byte* train) {
 
 // ---- drawn icons ----
 
-// The prototypes an entity filters for, as LuaEntity::get_filter reads them (Filters.get_all_filters).
+// The prototypes an entity filters for, as LuaEntity::get_filter reads them.
 std::vector<const std::byte*> filtersOf(const std::byte* entity) {
    std::vector<const std::byte*> out;
    const std::byte* prototype = prototypeOf(entity);
@@ -1469,8 +1469,8 @@ bool isCraftingMachine(std::string_view type) {
 
 // ---- rails ----
 //
-// The rails on a tile as scripts/rails/announcer.lua and railutils/rail-describer.lua say them,
-// read from the game's own rail graph: a rail's ends, what each joins, the signals and stations.
+// The rails on a tile in the words of railutils/rail-describer.lua, read from the game's own rail
+// graph: a rail's ends, what each joins, the signals and stations.
 // A rail ghost joins nothing in the graph, so it is said by its kind alone.
 
 // The entities whose box overlaps the area, as EntitySearch<Entity> finds them.
@@ -1646,7 +1646,7 @@ bool isAxisStraight(const std::byte* rail) {
 
 bool isVerticalRail(const std::byte* rail) { return endOf(rail, kFront).direction % 8 == 0; }
 
-// The signals at a rail's end and a station beside it (scripts/rails/signal-station-classifier.lua).
+// The signals at a rail's end and a station beside it.
 struct SignalInfo {
    uint8_t direction = kNorth;
    std::string_view left;  // "rail-signal" or "rail-chain-signal", in signal; empty for none
@@ -1728,8 +1728,8 @@ std::string signalWords(const SignalInfo& info) {
    return joined(items, ", ");
 }
 
-// Where the cars of a train stopped at a nearby station would stand on this rail
-// (scripts/rails/stop-preview.lua): straight rails leading to a stop, up to seven cars.
+// Where the cars of a train stopped at a nearby station would stand on this rail: straight rails
+// leading to a stop, up to seven cars.
 std::string stopPreview(const std::byte* surface, const std::byte* rail, Position tile) {
    constexpr int32_t kMaxDistance = 49;
    constexpr int32_t kCarSize = 7;

@@ -98,12 +98,22 @@ struct OptionalContext {
 
 constexpr std::align_val_t kAlignment{16};
 
-// A tile waiting for the Gui's tick, read as the mouse at `point` (fixed point) sees it.
+// An entity the mod's Lua named, kept by what finds it again: Lua runs on the update thread, which
+// may destroy it before the Gui's tick.
+struct Target {
+   uint32_t surface;
+   const void* prototype;
+   Position position;
+};
+
+// A tile waiting for the Gui's tick, read as the mouse at `point` (fixed point) sees it, or the
+// entity `target` on it.
 struct Pending {
    Position tile;
    Position point;
    std::string prefix;
    std::string suffix;
+   std::optional<Target> target;
 };
 std::mutex g_mutex;
 std::optional<Pending> g_pending;
@@ -561,6 +571,25 @@ std::optional<std::string> readTile(Position tile, Position point) {
    return entity ? describe(here->player, entity, tile) : tileName(here->surface, tile);
 }
 
+// The entity `target` as the tile reader says it on its own tile, wherever the view is; empty when
+// it has gone or is on a surface the view does not show, and nothing outside a game with a view.
+std::optional<std::string> readTarget(const Target& target) {
+   const std::optional<Local> here = local();
+   if (!here) return std::nullopt;
+   if (at<uint32_t>(here->surface, layout.surfaceIndex) != target.surface) return std::string();
+   const Position where = target.position;
+   // A box around the position, wide enough for an entity whose own box is empty.
+   for (const void* found :
+        facts::entitiesIn(here->surface, where.x - kScale, where.y - kScale, where.x + kScale, where.y + kScale)) {
+      const auto* entity = static_cast<const std::byte*>(found);
+      const Position position = at<Position>(entity, layout.entityPosition);
+      if (at<const void*>(entity, layout.entityPrototypeOf) == target.prototype && position.x == where.x &&
+          position.y == where.y)
+         return describe(here->player, entity, Position{where.x >> 8, where.y >> 8});
+   }
+   return std::string();
+}
+
 } // namespace
 
 void read(int32_t tileX, int32_t tileY, std::string prefix) {
@@ -574,6 +603,15 @@ void readPoint(int32_t x, int32_t y, std::string suffix) {
    g_pending = Pending{Position{x >> 8, y >> 8}, Position{x, y}, {}, std::move(suffix)};
 }
 
+void readEntity(const void* entity, std::string prefix, std::string suffix) {
+   const auto* surface = at<const std::byte*>(entity, layout.entitySurface);
+   const Target target{at<uint32_t>(surface, layout.surfaceIndex), at<const void*>(entity, layout.entityPrototypeOf),
+                       at<Position>(entity, layout.entityPosition)};
+   std::scoped_lock lock(g_mutex);
+   g_pending = Pending{Position{target.position.x >> 8, target.position.y >> 8}, target.position, std::move(prefix),
+                       std::move(suffix), target};
+}
+
 void tick() {
    std::optional<Pending> pending;
    {
@@ -581,7 +619,8 @@ void tick() {
       pending = std::exchange(g_pending, std::nullopt);
    }
    if (!pending) return;
-   std::optional<std::string> text = readTile(pending->tile, pending->point);
+   std::optional<std::string> text =
+      pending->target ? readTarget(*pending->target) : readTile(pending->tile, pending->point);
    if (!text) return;
    // The mod's own words may end in their own comma ("Unanchored cursor,").
    if (!pending->prefix.empty()) {

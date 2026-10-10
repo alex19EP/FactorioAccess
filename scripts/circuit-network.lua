@@ -616,47 +616,6 @@ function mod.get_network_id_string(entity, wire_connector_id)
    return tostring(network.network_id)
 end
 
----Get circuit network info for fa-info display
----Returns info about all networks this entity is connected to
----@param entity LuaEntity
----@param msg fa.MessageBuilder Message builder to add info to
-function mod.add_circuit_network_info(entity, msg)
-   local networks = {}
-
-   -- Check red wire
-   local red_network = entity.get_circuit_network(defines.wire_connector_id.circuit_red)
-   if red_network then
-      table.insert(networks, {
-         id = red_network.network_id,
-         count = red_network.connected_circuit_count,
-         color = "red",
-      })
-   end
-
-   -- Check green wire
-   local green_network = entity.get_circuit_network(defines.wire_connector_id.circuit_green)
-   if green_network then
-      table.insert(networks, {
-         id = green_network.network_id,
-         count = green_network.connected_circuit_count,
-         color = "green",
-      })
-   end
-
-   if #networks == 0 then return end
-
-   -- Build message with list_item for each network
-   for _, network_info in ipairs(networks) do
-      local others = network_info.count - 1
-      msg:list_item()
-      if network_info.color == "red" then
-         msg:fragment({ "fa.circuit-network-info-red", tostring(network_info.id), tostring(others) })
-      else
-         msg:fragment({ "fa.circuit-network-info-green", tostring(network_info.id), tostring(others) })
-      end
-   end
-end
-
 ---Get copper wire neighbor count for fa-info display (electric poles)
 ---@param entity LuaEntity
 ---@param msg fa.MessageBuilder Message builder to add info to
@@ -706,29 +665,6 @@ function mod.get_constant_combinator_filters(entity)
    end
 
    return all_signals
-end
-
----Get info string for constant combinator signals (for fa-info)
----@param entity LuaEntity
----@param pindex number
----@return LocalisedString
-function mod.constant_combinator_signals_info(entity, pindex)
-   local all_signals = mod.get_constant_combinator_filters(entity)
-
-   if #all_signals == 0 then return { "fa.circuit-no-outputs" } end
-
-   local msg = Speech.MessageBuilder.new()
-
-   for _, signal_info in ipairs(all_signals) do
-      msg:list_item()
-      msg:fragment(mod.localise_signal(signal_info.signal))
-      if signal_info.count ~= 0 then
-         msg:fragment("x")
-         msg:fragment(tostring(signal_info.count))
-      end
-   end
-
-   return msg:build()
 end
 
 ---Get immediate neighbors via copper wires (electric poles)

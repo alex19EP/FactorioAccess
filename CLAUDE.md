@@ -213,7 +213,7 @@ end)
 ### File Locations
 - **Main entry**: `control.lua` (use grep/partial reads - it's huge!)
 - **Utilities**: `scripts/fa-utils.lua`
-- **Entity info**: `scripts/fa-info.lua`
+- **Entity info**: the DLL's tile reader, `native/src/reader.cpp` and `native/src/facts.cpp` (the cursor, the scanner and pins); Lua names an entity for it with `fa_native.entity_read`
 - **Storage**: `scripts/storage-manager.lua`
 - **Events**: `scripts/event-manager.lua` (migration in progress)
 - **Tests**: `scripts/tests/`

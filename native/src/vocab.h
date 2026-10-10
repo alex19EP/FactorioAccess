@@ -416,7 +416,7 @@ inline constexpr Word kInventoryPresentation{"fa.ent-info-inventory-presentation
 inline constexpr Word kItemQuantityQuality{"fa.item-quantity-quality"};
 inline constexpr Word kAnyQuality{"fa.ent-icon-any-quality"};
 inline constexpr Word kIconDenied{"fa.ent-icon-denied"};
-// Rails on a tile (scripts/rails/announcer.lua): a ghost, the first rail, its kind (the
+// Rails on a tile: a ghost, the first rail, its kind (the
 // fa.rails-descriptions-* keys), lonely or which end is open, its junctions, the signals at an end
 // and a station beside it, and where a train stopped at a station near it would have its cars.
 inline constexpr Word kRailGhost{"fa.rail-ghost-prefix"};

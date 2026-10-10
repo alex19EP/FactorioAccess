@@ -150,16 +150,6 @@ function mod.inserter_max_stack_size(entity)
    return mod.inserter_stack_size_with_force(entity.prototype, entity.force)
 end
 
----Get the effective stack size for a placed inserter entity.
----Uses override if set, otherwise returns max stack size with force bonuses.
----@param entity LuaEntity
----@return number
-function mod.inserter_effective_stack_size(entity)
-   local override = entity.inserter_stack_size_override
-   if override and override > 0 then return override end
-   return mod.inserter_max_stack_size(entity)
-end
-
 ---Marker to say "other item" in localise_item
 mod.ITEM_OTHER = {}
 

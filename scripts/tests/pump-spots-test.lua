@@ -52,7 +52,7 @@ describe("Offshore pump build spots", function()
 
             ctx:assert_not_equals("water", player.surface.get_tile(x, y).name, "A pump stands on land")
             local readout = spot.readout()
-            ctx:assert_equals("fa.scanner-pump-spot", readout[1])
+            ctx:assert_equals("fa.scanner-pump-spot", readout.words[1])
             ctx:assert(spot.valid(), "A listed spot can be built")
          end
 

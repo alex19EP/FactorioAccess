@@ -151,5 +151,5 @@ stuff off a bus, where the output goes both ways but the input is only one. This
 is more useful for what the user needs to know than stopping at every splitter
 especially in dense sets of them.
 
-The rest of the magic is straightforward code in fa-info.lua that takes all of
-this and turns it into words.
+The rest of the magic is straightforward code in the DLL's native/src/facts.cpp
+that takes all of this and turns it into words.

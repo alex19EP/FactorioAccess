@@ -462,15 +462,6 @@ function mod.get_iterable_array(dict)
    return result
 end
 
---Converts an array into a lookup table based on the keys it has.
-function mod.into_lookup(array)
-   local lookup = {}
-   for key, value in pairs(array) do
-      lookup[value] = key
-   end
-   return lookup
-end
-
 --Reads the localised result for the distance and direction from one point to the other. Also mentions if they are precisely aligned. Distances are rounded.
 function mod.dir_dist_locale(pos1, pos2)
    local dir_dist = mod.dir_dist(pos1, pos2)
@@ -639,16 +630,6 @@ function mod.format_number(amount)
    return tostring(amount) .. suffix
 end
 
----@param point fa.Point
----@param box fa.AABB
----@return fa.Point?
-function mod.closest_point_in_box(point, box)
-   return {
-      x = math.max(math.min(point.x, box.right_bottom.x), box.left_top.x),
-      y = math.max(math.min(point.y, box.right_bottom.y), box.left_top.y),
-   }
-end
-
 local ALL_PROTO_KINDS = {
    "item",
    "font",
@@ -729,38 +710,6 @@ function mod.format_power(value, unit)
    else
       return { "fa.unit-" .. suffix, string.format("%.1f", value) }
    end
-end
-
--- Formats a distance with direction to a localized string
----@param distance number Distance in tiles
----@param direction string|number Direction name (e.g., "north", "south") or direction number
----@return LocalisedString
-function mod.format_distance_with_direction(distance, direction)
-   -- If direction is a string, we need to convert it to a number
-   -- This is a temporary fix - ideally callers should pass the numeric direction
-   if type(direction) == "string" then
-      -- Try to convert string directions back to numbers
-      local dir_map = {
-         ["North"] = 0,
-         ["NorthNorthEast"] = 1,
-         ["NorthEast"] = 2,
-         ["EastNorthEast"] = 3,
-         ["East"] = 4,
-         ["EastSouthEast"] = 5,
-         ["SouthEast"] = 6,
-         ["SouthSouthEast"] = 7,
-         ["South"] = 8,
-         ["SouthSouthWest"] = 9,
-         ["SouthWest"] = 10,
-         ["WestSouthWest"] = 11,
-         ["West"] = 12,
-         ["WestNorthWest"] = 13,
-         ["NorthWest"] = 14,
-         ["NorthNorthWest"] = 15,
-      }
-      direction = dir_map[direction] or 0
-   end
-   return { "fa.distance-tiles-direction", tostring(distance), { "fa.direction", direction } }
 end
 
 -- Builds a list with proper separators

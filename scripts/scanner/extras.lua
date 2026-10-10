@@ -9,7 +9,6 @@ it (see readout.lua). Each collection has a generation, which the DLL says back 
 automatic refresh collects while the list made from the one before is still in use.
 ]]
 local CircuitNetwork = require("scripts.circuit-network")
-local FaInfo = require("scripts.fa-info")
 local FaUtils = require("scripts.fa-utils")
 local Localising = require("scripts.localising")
 local SC = require("scripts.scanner.scanner-consts")
@@ -23,8 +22,8 @@ local mod = {}
 ---@field key string its subcategory
 ---@field position MapPosition
 ---@field valid fun(): boolean
----@field readout fun(): LocalisedString
----@field said LocalisedString? its readout at refresh, for once it is gone
+---@field readout fun(): fa.scanner.Readout
+---@field said fa.scanner.Readout? its readout at refresh in words alone, for once it is gone
 
 -- The gui-alert-tooltip locale key for each alert type, which takes the count
 local ALERT_TOOLTIP_KEYS = {
@@ -88,17 +87,13 @@ local function describe_resource_patch(message, resources)
    message:list_item({ "fa.scanner-pin-resource", Localising.get_localised_name_with_fallback(prototype), amount })
 end
 
+---What a pin points to, other than an entity the DLL reads.
 ---@param message fa.MessageBuilder
----@param player LuaPlayer
 ---@param pin LuaPin
-local function describe_target(message, player, pin)
+local function describe_target(message, pin)
    local targets = pin.targets
    if targets[1] then
-      if targets[1].type == "resource" then
-         describe_resource_patch(message, targets)
-      else
-         message:list_item(FaInfo.ent_info(player.index, targets[1]))
-      end
+      describe_resource_patch(message, targets)
       return
    end
 
@@ -138,11 +133,16 @@ function mod.pins(player)
                return pin.valid and pin_surface_index(pin) == player.surface_index and pin.get_pin_center() ~= nil
             end,
             readout = function()
+               local label = pin.label ~= "" and pin.label or nil
+               local target = pin.targets[1]
+               if target and target.type ~= "resource" then
+                  return { words = label, entity = target, after = { "fa.scanner-pin" } }
+               end
                local message = Speech.MessageBuilder.new()
-               if pin.label ~= "" then message:list_item(pin.label) end
-               describe_target(message, player, pin)
+               message:list_item(label)
+               describe_target(message, pin)
                message:list_item({ "fa.scanner-pin" })
-               return message:build()
+               return { words = message:build() }
             end,
          })
       end
@@ -167,7 +167,7 @@ function mod.tags(player)
             local message = Speech.MessageBuilder.new()
             describe_tag(message, tag)
             message:list_item({ "fa.scanner-tag" })
-            return message:build()
+            return { words = message:build() }
          end,
       })
    end
@@ -245,9 +245,11 @@ function mod.pump_spots(player)
                end,
                readout = function()
                   return {
-                     "fa.scanner-pump-spot",
-                     Localising.get_localised_name_with_fallback(pump),
-                     FaUtils.direction_lookup(facing.direction),
+                     words = {
+                        "fa.scanner-pump-spot",
+                        Localising.get_localised_name_with_fallback(pump),
+                        FaUtils.direction_lookup(facing.direction),
+                     },
                   }
                end,
             })
@@ -255,6 +257,18 @@ function mod.pump_spots(player)
       end
    end
    return extras
+end
+
+---A readout in words alone, which outlives its entity: the entity by its name.
+---@param readout fa.scanner.Readout
+---@return fa.scanner.Readout
+local function in_words(readout)
+   if not readout.entity then return readout end
+   local message = Speech.MessageBuilder.new()
+   message:list_item(readout.words)
+   message:list_item(Localising.get_localised_name_with_fallback(readout.entity))
+   message:list_item(readout.after)
+   return { words = message:build() }
 end
 
 -- The extras of each player's latest collections by generation, on that player's client: the one
@@ -283,7 +297,7 @@ function mod.collect(player, generation)
    }
    local listed = {}
    for i, extra in ipairs(extras) do
-      extra.said = extra.readout()
+      extra.said = in_words(extra.readout())
       listed[i] = { category = extra.category, key = extra.key, x = extra.position.x, y = extra.position.y }
    end
    return listed
@@ -294,12 +308,14 @@ end
 ---@param pindex integer
 ---@param generation integer
 ---@param id integer
----@return LocalisedString?
+---@return fa.scanner.Readout?
 function mod.readout(pindex, generation, id)
    local extra = ((kept[pindex] or {})[generation] or {})[id]
    if not extra then return nil end
-   if extra.valid() then extra.said = extra.readout() end
-   return extra.said
+   if not extra.valid() then return extra.said end
+   local readout = extra.readout()
+   extra.said = in_words(readout)
+   return readout
 end
 
 return mod

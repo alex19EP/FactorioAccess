@@ -7,51 +7,6 @@ everywhere efficienhtly; this file does that.
 
 local mod = {}
 
---[[
-Remove all items from a given array where the given callback returns true by
-shuffling to the end and then deleting them.  The order of the returned array is
-unspecified.
-
-The name comes from Rust's standard library; they do an ordered variant called
-retain.
-
-Complexity: fast O(N)
-]]
----@param a any[]
----@param filter function(any): boolean
-function mod.retain_unordered(a, filter)
-   -- a is a sequence. For loops only evaluate the length once. We will be
-   -- decreasing the length as we go.  We must "hold" at a given index until we
-   -- find an invalid entity as well.  We are done when we get to the point of
-   -- hitting a nil.  The initial back is (because lua) the length of the array.
-   -- This decreases every time an invalid entry is found.
-   local back = #a
-   local i = 1
-
-   while true do
-      local ent = a[i]
-      if ent == nil then
-         return
-      elseif filter(ent) then
-         -- It's good, we aren't going to be getting rid of it, move on.
-         i = i + 1
-      else
-         -- If i = back and this is invalid, then it'll swap with itself and
-         -- remain even though it shouldn't.  Also, that means we're done.
-         if i == back then
-            a[i] = nil
-            return
-         end
-         local back_ent = a[back]
-         a[back] = nil
-         a[i] = back_ent
-         back = back - 1
-         -- Don't increment i because what i is pointing at just changed and
-         -- may, itself, be invalid.
-      end
-   end
-end
-
 -- Same as table.insert(x), except taking multiple arguments and pushing them to
 -- the back left to right. Behavior is incredibly undefined is nil is passed
 -- (LuaLS helps guard against it)
@@ -247,49 +202,6 @@ function mod.length2(table)
    return res
 end
 
-local function default_tiebreaker2(k1_1, k1_2, k2_1, k2_2)
-   return (k1_1 < k2_1) or (k1_1 == k2_1 and k1_2 < k2_2)
-end
---[[
-Given a 2-level nested table of counts, return the maximum pair of keys; if the
-table is empty return nil, nil, 0.  Break ties by comparing keys and grabbing
-the "greatest" pair, or, if a function is provided as the second argument,
-calling that function with 4 values to find out if the first two values are less
-than the second two (e.g. like sort, but with 4 arguments).
-]]
----@param table table<any, table<any, number>>
----@param tiebreaker fun(any, any, any, any): boolean
----@return any?, any?, number
-function mod.max_counts2(table, tiebreaker)
-   local max_k1, max_k2
-   local max_count = -math.huge
-
-   tiebreaker = tiebreaker or default_tiebreaker2
-
-   for k1, v in pairs(table) do
-      for k2, count in pairs(v) do
-         if count >= max_count and (not max_k1 or not tiebreaker(max_k1, max_k2, k1, k2)) then
-            max_count = count
-            max_k1 = k1
-            max_k2 = k2
-         end
-      end
-   end
-
-   return max_k1, max_k2, max_k1 and max_count or 0
-end
-
--- A tiebreaker for max_counts2 that assumes that the inner table is quality,
--- and tiebreaks based on level of quality first.
-function mod.max_counts2_tiebreak_quality(name1, qual1, name2, qual2)
-   local lev1 = -prototypes.quality[qual1].level
-   local lev2 = -prototypes.quality[qual2].level
-
-   if lev1 < lev2 then return true end
-
-   return lev1 == lev2 and name1 < name2
-end
-
 --[[
 When doing announcements we usually need to go from NQC to sorted data in
 descending order. This does that, in a form that can be directly passed to
@@ -310,10 +222,6 @@ function mod.nqc_to_sorted_descending(tab)
       return a.count > b.count
    end)
    return ret
-end
-
-function mod.insert_if_notnill(tab, what)
-   if what then table.insert(tab, what) end
 end
 
 ---@param tab table

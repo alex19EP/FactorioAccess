@@ -30,12 +30,6 @@ function mod.dir_clockwise_90(dir)
    return offset_dir(dir, 4)
 end
 
----@param dir defines.direction
----@return defines.direction
-function mod.dir_rot180(dir)
-   return (dir + 8) % 16
-end
-
 -- The dot product, but set up to not require intermediate tables.
 ---@type fun(x1: number, y1: number, x2: number, y2: number): number
 function mod.dot_unrolled_2d(x1, y1, x2, y2)
@@ -113,19 +107,6 @@ function mod.rotate_vec(local_x, local_y, direction)
    -- Matrix: [-uy  -ux]
    --         [ ux  -uy]
    return -uy * local_x - ux * local_y, ux * local_x - uy * local_y
-end
-
--- Convert a vector (dx, dy) to the nearest cardinal direction
--- Only handles the 4 cardinal directions (N/E/S/W) for axis-aligned vectors
----@param dx number
----@param dy number
----@return defines.direction
-function mod.vector_to_direction_cardinal(dx, dy)
-   if math.abs(dx) > math.abs(dy) then
-      return dx > 0 and defines.direction.east or defines.direction.west
-   else
-      return dy > 0 and defines.direction.south or defines.direction.north
-   end
 end
 
 -- Check if two directions are collinear (on the same axis, either same or opposite)

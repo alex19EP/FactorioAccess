@@ -1,4 +1,3 @@
-local FaInfo = require("scripts.fa-info")
 local FaUtils = require("scripts.fa-utils")
 local FormBuilder = require("scripts.ui.form-builder")
 local KeyGraph = require("scripts.ui.key-graph")
@@ -70,7 +69,7 @@ local function build_spidertron_form(ctx)
 
          local label = function(label_ctx)
             local mb = Speech.MessageBuilder.new()
-            mb:fragment(FaInfo.ent_info(ctx.pindex, spider))
+            mb:fragment(SpidertronRemote.name_of(spider))
             mb:fragment(FaUtils.dir_dist_locale(player_pos, spider.position))
             return mb:build()
          end

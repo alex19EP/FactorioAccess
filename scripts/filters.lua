@@ -7,7 +7,6 @@ the ground, and some other utilities to hack things into working.  This is worth
 a module because it will later need to deal with quality, and also localisation
 of filters.
 ]]
-local TH = require("scripts.table-helpers")
 
 local mod = {}
 
@@ -23,20 +22,6 @@ function mod.get_filter_prototype(filterable, index)
       return filter.name --[[@as string]]
    end
    return nil
-end
-
--- cannot be used on inventories, because in inventories the filter indices are
--- inventory slot indices, not a list of filters.
----@param ent LuaEntity
----@return  LuaItemPrototype[]
-function mod.get_all_filters(ent)
-   local ret = {}
-
-   for i = 1, ent.filter_slot_count do
-      TH.insert_if_notnill(ret, mod.get_filter_prototype(ent, i))
-   end
-
-   return ret
 end
 
 ---@param filterable fa.Filters.Filterlike

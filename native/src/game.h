@@ -462,6 +462,9 @@ struct Layout {
    // void LuaHelper::initLuaState(lua_State*): sets up the globals of every Lua state the game
    // creates (log, localised_print, ...).
    uintptr_t initLuaState = 0;
+   // Entity* LuaHelper::getParamOrDefault<Entity*>(lua_State*, int index, char const* name, Entity*
+   // default): the entity of a LuaEntity argument.
+   uintptr_t luaParamEntity = 0;
    // Flying text. Every text over the map lands in void Map::addLocalFlyingText(LocalMapFlyingText&&);
    // every text over the GUI is built in place by the allocator's
    // construct<agui::GuiFlyingText, Point&, std::string const&, Color&, Font const*&, int&, int&>.
@@ -1661,7 +1664,7 @@ struct Layout {
    uint32_t entityGetStatus = 0;
    uint32_t entityStatusSize = 0;
    uint32_t entityHealth = 0;            // EntityWithHealth::health, a float, 1 when whole
-   // The statuses the reader says (scripts/consts.lua VERBOSE_STATUSES): EntityStatus::Enum values
+   // The statuses the reader says, problems: EntityStatus::Enum values
    // by name, in kProblemStatuses order.
    uint32_t problemStatuses[kProblemStatusCount] = {};
 

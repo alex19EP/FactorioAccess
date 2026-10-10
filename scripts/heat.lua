@@ -174,18 +174,4 @@ function mod.get_pipe_shape(ent)
    return NetworkShape.get_shape_from_directions(connections)
 end
 
----Returns the total number of valid heat connections for the given entity.
----Counts all entities connected at any heat connection point (pipes and non-pipes).
----@param ent LuaEntity
----@return integer
-function mod.get_total_heat_connections(ent)
-   local total = 0
-   local cps = mod.get_connection_points(ent)
-   for _, cp in ipairs(cps) do
-      local neighbors = mod.get_connected_neighbors(ent, cp)
-      total = total + #neighbors
-   end
-   return total
-end
-
 return mod

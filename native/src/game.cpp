@@ -305,6 +305,8 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.logisticNetworkId, "LogisticNetwork", "networkID");
    offset(layout.logisticNetworkName, "LogisticNetwork", "networkName.value");
    address(layout.initLuaState, "?initLuaState@LuaHelper@@YAXPEAUlua_State@@@Z");
+   address(layout.luaParamEntity,
+           "??$getParamOrDefault@PEAVEntity@@@LuaHelper@@YAPEAVEntity@@PEAUlua_State@@HPEBDPEAV1@@Z");
    address(layout.addLocalFlyingText, "?addLocalFlyingText@Map@@QEAAX$$QEAVLocalMapFlyingText@@@Z");
    address(layout.constructGuiFlyingText,
            "??$construct@VGuiFlyingText@agui@@AEAVPoint@2@AEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@"

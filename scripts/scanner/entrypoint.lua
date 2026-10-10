@@ -73,15 +73,16 @@ local function announce(pindex, event, target)
 
    local player = game.get_player(pindex)
    ---@cast player LuaPlayer
+   ---@type fa.scanner.Readout?
    local readout
    if entry.kind == "forest" then
-      readout = { "fa.scanner-forest", entry.trees }
+      readout = { words = { "fa.scanner-forest", entry.trees } }
    elseif entry.kind == "patch" then
-      readout = entry.text
+      readout = { words = entry.text }
    elseif entry.kind == "water" then
-      readout = { "fa.scanner-water", entry.width, entry.height }
+      readout = { words = { "fa.scanner-water", entry.width, entry.height } }
    elseif entry.kind == "ice" then
-      readout = { "fa.scanner-iceberg", entry.width, entry.height }
+      readout = { words = { "fa.scanner-iceberg", entry.width, entry.height } }
    elseif entry.kind == "extra" then
       readout = Extras.readout(pindex, entry.generation, entry.extra)
       if not readout then return end
@@ -94,21 +95,28 @@ local function announce(pindex, event, target)
             break
          end
       end
-      readout = entity and Readout.of(pindex, entity)
-         or Localising.get_localised_name_with_fallback(prototypes.entity[entry.prototype])
+      readout = entity and Readout.of(entity)
+         or { words = Localising.get_localised_name_with_fallback(prototypes.entity[entry.prototype]) }
    end
 
    -- In remote view distances are from where the scan was sorted, such as the place a map search
    -- jumped to
    local from = player.position
    if player.controller_type == defines.controllers.remote then from = { x = entry.origin_x, y = entry.origin_y } end
-   Speech.speak(pindex, {
-      "fa.scanner-full-presentation",
-      readout,
+   local rest = Speech.MessageBuilder.new()
+   rest:list_item(readout.after)
+   rest:list_item({
+      "fa.scanner-entry-place",
       FaUtils.dir_dist_locale(from, target),
       tostring(entry.index),
       tostring(entry.count),
    })
+   if readout.entity then
+      local words = readout.words and Speech.process_rich_text(readout.words)
+      native.entity_read(pindex, readout.entity, words, rest:build())
+   else
+      Speech.speak(pindex, Speech.MessageBuilder.new():list_item(readout.words):list_item(rest:build()):build())
+   end
 end
 
 -- Each player's latest collection of extras, on that player's client only, as the DLL's lists are.

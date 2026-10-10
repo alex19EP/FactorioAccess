@@ -97,7 +97,9 @@ its place, else the nearest one left in it.
 Lua says the entries, and lists a few things itself. This runs only on the scanning client, so it
 must only read the game, never change it (no `storage`, no `math.random`):
 
-- `readout.lua`: what is said of an entity (fa-info's scanner readout, with a spawner's pollution).
+- `readout.lua`: what is said of an entry. An entity is read by the DLL's tile reader as on its own
+  tile (`fa_native.entity_read`), so the scanner says of it what the cursor does; Lua adds a
+  spawner's pollution, the direction and distance, and the entry's place in its list.
 - `extras.lua`: pins, map tags and the spots near the player where the offshore pump in hand can be
   built, handed to the DLL at each refresh. Lua keeps these objects in a table of its own (see
   "Automatic refresh"), and says them.

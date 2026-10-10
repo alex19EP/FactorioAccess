@@ -3,9 +3,19 @@ local mod = {}
 
 local Cursor = require("scripts.cursor")
 local EntitySelection = require("scripts.entity-selection")
-local FaInfo = require("scripts.fa-info")
+local Localising = require("scripts.localising")
 local Speech = require("scripts.speech")
 local MessageBuilder = Speech.MessageBuilder
+
+---A spidertron's name, and the label the player gave it.
+---@param spidertron LuaEntity
+---@return LocalisedString
+function mod.name_of(spidertron)
+   local mb = MessageBuilder.new()
+   mb:fragment(Localising.get_localised_name_with_fallback(spidertron))
+   if spidertron.entity_label then mb:fragment(spidertron.entity_label) end
+   return mb:build()
+end
 
 ---Check if a spidertron is in the list
 ---@param list LuaEntity[]
@@ -64,7 +74,7 @@ function mod.add_to_remote(player, spidertron)
 
    local mb = MessageBuilder.new()
    mb:fragment({ "fa.spidertron-remote-added" })
-   mb:fragment(FaInfo.ent_info(player.index, spidertron))
+   mb:fragment(mod.name_of(spidertron))
    Speech.speak(player.index, mb:build())
 end
 
