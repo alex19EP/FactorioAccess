@@ -1,6 +1,7 @@
 #pragma once
 
 #include <optional>
+#include <string>
 
 // The FA cursor: the tile the blind player points at, which this client alone owns. The game reads
 // it wherever it reads the mouse (world.h), so hover selection, building and every mod key's
@@ -51,6 +52,11 @@ std::optional<StepResult> step(int playerIndex, double x, double y);
 // The cursor's tile, for this client's player. Only this client knows it: the mod may speak and
 // play sounds by it, never change the game by it.
 std::optional<Tile> position(int playerIndex);
+
+// For the dev server's /cursor, on the main thread: this client's view (its controller, the
+// camera's centre and zoom, the tiles on the screen, the full map's cell size) and the cursor's
+// tile, a `name=value` a line.
+std::string describe();
 
 // MinHook detours for PlayerInputSource::processCustomInput and
 // PlayerInputSource::sendRenderStateChanges, and where MinHook keeps the originals.

@@ -1,6 +1,7 @@
 #include "devserver.h"
 
 #include "agui.h"
+#include "cursor.h"
 #include "input.h"
 #include "log.h"
 #include "navigator/ScreenManager.hpp"
@@ -196,6 +197,8 @@ constexpr uint64_t kFramesForModifiers = 3;
 // press lasts about six).
 constexpr uint64_t kFramesHeld = 4;
 
+std::string percentDecoded(std::string_view text);
+
 std::string runKeys(std::string_view spec) {
    struct Step {
       std::optional<Chord> chord;
@@ -204,10 +207,12 @@ std::string runKeys(std::string_view spec) {
    };
    std::vector<Step> steps;
    for (std::string_view word : words(spec)) {
-      // "text=iron" types "iron" into the focused field, case kept; "_" stands for a space.
+      // "text=iron" types "iron" into the focused field, case kept; "_" stands for a space, and
+      // "%XX" for the byte XX ("%5F" an underscore).
       if (word.starts_with("text=")) {
          std::string text(word.substr(5));
          std::ranges::replace(text, '_', ' ');
+         text = percentDecoded(text);
          if (text.empty()) return "[error] no text\n";
          steps.push_back({std::nullopt, 0, std::move(text)});
          continue;
@@ -342,7 +347,9 @@ std::pair<int, std::string> route(const Request& request) {
 
    if (request.path == "/dump") return {200, onGameThread(dumpWindows)};
 
-   return {404, "endpoints: /health /speech?since=N /screen /key /dump\n"};
+   if (request.path == "/cursor") return {200, onGameThread(cursor::describe)};
+
+   return {404, "endpoints: /health /speech?since=N /screen /key /dump /cursor\n"};
 }
 
 bool readRequest(SOCKET client, Request& request) {
@@ -491,7 +498,7 @@ void start(const std::filesystem::path& directory) {
    }
    g_running = true;
    std::thread(serve, std::move(listeners)).detach();
-   log::info("Dev server on http://localhost:{} (/health /speech /screen /key /dump)", port);
+   log::info("Dev server on http://localhost:{} (/health /speech /screen /key /dump /cursor)", port);
 }
 
 void pump() {

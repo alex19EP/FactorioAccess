@@ -15,6 +15,7 @@
 #include <cstdint>
 #include <cstring>
 #include <deque>
+#include <format>
 #include <limits>
 #include <mutex>
 #include <optional>
@@ -555,6 +556,27 @@ std::optional<Tile> position(int playerIndex) {
    const std::optional<Position> cursor = currentCursor();
    if (!cursor) return std::nullopt;
    return Tile{tileOf(cursor->x), tileOf(cursor->y)};
+}
+
+std::string describe() {
+   const std::optional<View> view = localView();
+   if (!view) return "view=none\n";
+   const char* controller = view->controller == layout.controllerCharacter ? "character"
+                            : view->controller == layout.controllerGod     ? "god"
+                            : view->controller == layout.controllerRemote  ? "remote"
+                                                                           : "other";
+   const Screen tiles = screen(*view);
+   std::string out = std::format(
+      "controller={}\ncentre={},{}\nzoom={}\nscreen={},{},{},{}\ncell={}\n", controller,
+      static_cast<double>(view->centre.x) / kScale, static_cast<double>(view->centre.y) / kScale,
+      at<double>(view->view, layout.gameViewZoom), tiles.left, tiles.top, tiles.right, tiles.bottom, cellSize(*view));
+   if (const std::optional<Position> cursor = currentCursor())
+      out += std::format("cursor={},{}\n", tileOf(cursor->x), tileOf(cursor->y));
+   else
+      out += "cursor=none\n";
+   std::scoped_lock lock(g_mutex);
+   out += std::format("anchored={}\n", g_anchored);
+   return out;
 }
 
 void* customInputDetour() { return reinterpret_cast<void*>(&detourCustomInput); }

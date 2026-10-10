@@ -31,10 +31,7 @@ constexpr ByteColor kSandColour{0xc0, 0xa0, 0x60, 0xff};
 constexpr ByteColor kWaterColour{0x20, 0x40, 0xc0, 0xff};
 constexpr ByteColor kBeltColour{0xe0, 0xc0, 0x00, 0xff};
 
-const void* PrototypeOf(std::optional<Picture> picture)
-{
-    return picture ? picture->prototype : nullptr;
-}
+const void* PrototypeOf(std::optional<Picture> picture) { return picture ? picture->prototype : nullptr; }
 
 // One step of a channel at a time, on the packed pixel.
 constexpr uint16_t kRed = 1 << 11;
@@ -141,10 +138,10 @@ TEST(MapColours_SeeThroughColourIsFoundOverEachTile)
     colours.addTile(kSandColour, &kSand, false, "b");
     const ByteColor crown{0x00, 0x60, 0x00, 0x80};
     colours.addEntity(crown, &kTree, false, "a");
-    CHECK_EQ(static_cast<const void*>(&kTree),
-        PrototypeOf(colours.lookup(pack(blend(crown, widen(pack(kGrassColour)))))));
-    CHECK_EQ(static_cast<const void*>(&kTree),
-        PrototypeOf(colours.lookup(pack(blend(crown, widen(pack(kSandColour)))))));
+    CHECK_EQ(
+        static_cast<const void*>(&kTree), PrototypeOf(colours.lookup(pack(blend(crown, widen(pack(kGrassColour)))))));
+    CHECK_EQ(
+        static_cast<const void*>(&kTree), PrototypeOf(colours.lookup(pack(blend(crown, widen(pack(kSandColour)))))));
     // The bare ground stays the ground.
     CHECK_EQ(static_cast<const void*>(&kGrass), PrototypeOf(colours.lookup(pack(kGrassColour))));
 }

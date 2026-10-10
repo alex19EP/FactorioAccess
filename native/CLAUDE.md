@@ -144,7 +144,14 @@ user:
 curl -s localhost:8773/screen                   # live screens, focus, every node
 curl -s --data "tab down enter" localhost:8773/key   # inject keys, returns the speech produced
 curl -s "localhost:8773/speech?since=0"         # everything said
+curl -s localhost:8773/cursor                   # the view, the camera and the cursor's tile
 ```
+
+`tools/cursor-checks.py` drives the cursor and its camera over the dev server and prints PASS or FAIL
+for each check: steps, the screen's edge, zooming in, remote view and the camera, the full map's
+cells, the skip and cycle keys, the fog of war. Run it after changing `cursor.cpp`, the reader or the
+skips. Its docstring says what game it needs. A DRM-free copy with FA's keys set and its own dev port
+(`FA_DEV=1`, `FA_DEV_PORT=8775`) keeps it off the shared Steam game.
 
 Rules for starting the game and using the dev server:
 - Don't poll the dev server while the game starts or loads a save. Watch `factorio-current.log`
