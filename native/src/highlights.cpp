@@ -50,6 +50,19 @@ struct Box {
    Position rightBottom;
 };
 
+// The tiles a box covers, its first and last column and row.
+struct Tiles {
+   int32_t left;
+   int32_t top;
+   int32_t right;
+   int32_t bottom;
+};
+
+Tiles tilesOf(const Box& box) {
+   const int32_t left = box.leftTop.x >> 8, top = box.leftTop.y >> 8;
+   return {left, top, std::max(left, (box.rightBottom.x - 1) >> 8), std::max(top, (box.rightBottom.y - 1) >> 8)};
+}
+
 struct MsvcString {
    union {
       char buffer[16];
@@ -90,6 +103,7 @@ struct Item {
    Kind kind;
    std::string name;
    Position position;
+   Tiles tiles;
 };
 
 // A highlight box drawn while collecting, named once the preview's surface is known.
@@ -108,6 +122,7 @@ struct Report {
    // The logistic network the preview would join, as it draws it: its name, or "" for none.
    std::optional<std::string> network;
    Position position{};
+   Tiles tiles{};
    const void* surface = nullptr;
    std::vector<Item> items;
 };
@@ -195,7 +210,7 @@ const std::byte* entityAt(const void* surface, Position position) {
 }
 
 void add(Report& report, Kind kind, const std::byte* entity) {
-   Item item{kind, entityName(entity), entityPosition(entity)};
+   Item item{kind, entityName(entity), entityPosition(entity), tilesOf(selectionBox(entity))};
    for (const Item& other : report.items)
       if (other.kind == kind && other.position == item.position && other.name == item.name) return;
    report.items.push_back(std::move(item));
@@ -218,15 +233,27 @@ void recordBox(uint8_t type, const Box* box) {
    collector.boxes.push_back({kind, type, *box});
 }
 
-// "3 tiles NorthEast", as the mod says where something is: the distance rounded up, and the
-// direction from the preview's tile to the other's, along an axis unless it is well off it.
-std::string whereFrom(Position from, Position to) {
-   const double dx = static_cast<double>(to.x - from.x) / game::kMapPositionScale;
-   const double dy = static_cast<double>(to.y - from.y) / game::kMapPositionScale;
-   const int tiles = static_cast<int>(std::ceil(std::hypot(dx, dy)));
+// The cursor's steps along one axis from the preview's tiles to the nearest of the other's: 1 for
+// the row beside it, 0 where they share a column or row.
+int32_t stepsBetween(int32_t fromFirst, int32_t fromLast, int32_t toFirst, int32_t toLast) {
+   if (toFirst > fromLast) return toFirst - fromLast;
+   if (toLast < fromFirst) return toLast - fromFirst;
+   return 0;
+}
+
+double stepsBetween(const Tiles& from, const Tiles& to) {
+   return std::hypot(static_cast<double>(stepsBetween(from.left, from.right, to.left, to.right)),
+                     static_cast<double>(stepsBetween(from.top, from.bottom, to.top, to.bottom)));
+}
+
+// "3 tiles NorthEast", as the mod says where something is: the distance rounded up, from the
+// preview's tiles to the nearest of the other's, as the cursor steps there (an entity beside the
+// preview is 1 tile away), along an axis unless it is well off it. Nothing for one it overlaps.
+std::string whereFrom(const Tiles& from, const Tiles& to) {
+   const int tileX = stepsBetween(from.left, from.right, to.left, to.right);
+   const int tileY = stepsBetween(from.top, from.bottom, to.top, to.bottom);
+   const int tiles = static_cast<int>(std::ceil(stepsBetween(from, to)));
    if (tiles == 0) return {};
-   const int tileX = (to.x >> 8) - (from.x >> 8);
-   const int tileY = (to.y >> 8) - (from.y >> 8);
    int direction = 0;
    if (std::abs(tileX) > 4 * std::abs(tileY))
       direction = tileX > 0 ? 2 : 6;
@@ -255,10 +282,7 @@ std::string text(Report& report) {
 
    std::stable_sort(report.items.begin(), report.items.end(), [&](const Item& a, const Item& b) {
       if (a.kind != b.kind) return a.kind < b.kind;
-      auto distance = [&](Position p) {
-         return std::hypot(static_cast<double>(p.x - report.position.x), static_cast<double>(p.y - report.position.y));
-      };
-      return distance(a.position) < distance(b.position);
+      return stepsBetween(report.tiles, a.tiles) < stepsBetween(report.tiles, b.tiles);
    });
    bool power = false;
    bool wires = false;
@@ -273,7 +297,7 @@ std::string text(Report& report) {
          const Item& item = report.items[i];
          part += count == 0 ? " " : ", ";
          part += item.name;
-         if (std::string where = whereFrom(report.position, item.position); !where.empty()) part += " " + where;
+         if (std::string where = whereFrom(report.tiles, item.tiles); !where.empty()) part += " " + where;
       }
       if (count > kNamedPerKind) part += ", " + vocab::kAndMore(count - kNamedPerKind);
       append(part);
@@ -465,6 +489,7 @@ void preview(const void* settings, const void* entity, std::string meaning, bool
    report.meaning = std::move(meaning);
    report.drag = drag;
    report.position = entityPosition(preview);
+   report.tiles = tilesOf(selectionBox(preview));
    report.surface = at<const void*>(preview, layout.entitySurface);
    const std::byte* prototype = at<const std::byte*>(preview, layout.entityPrototypeOf);
    using AsPoleFunction = const void* (*)(const void* prototype);
