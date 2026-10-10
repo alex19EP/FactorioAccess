@@ -20,7 +20,8 @@ function mod.get_blueprint_label(stack)
    if stack.is_blueprint_book then
       -- For blueprint books, get the label of the active blueprint
       local book_inv = stack.get_inventory(defines.inventory.item_main)
-      if book_inv and stack.active_index then
+      -- An empty book still has an active index, past its empty inventory
+      if book_inv and stack.active_index and stack.active_index <= #book_inv then
          local active_bp = book_inv[stack.active_index]
          if active_bp and active_bp.valid_for_read then return active_bp.label or "no name" end
       end
