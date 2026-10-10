@@ -395,8 +395,7 @@ Position g_lastCentre{};
 Position g_fixedCentre{};
 // Frames to wait after the controller changed, for the view to show the new one.
 int g_settling = 0;
-// Frames left for a remote view the mod's jump asked for to open, while the cursor may stay off the
-// screen.
+// Frames left for a remote view the mod's jump asked for to open, while the cursor stays where it is.
 int g_awaitingRemote = 0;
 constexpr int kSettleFrames = 2;
 constexpr int kRemoteWaitFrames = 300;
@@ -425,19 +424,18 @@ void remoteFrame(void* source, const View& view, Position cursor) {
 
 void fixedFrame(void* source, const View& view, Position cursor, bool anchored, bool jumped) {
    const Screen tiles = screen(view);
-   if (tiles.holds(cursor)) {
-      g_awaitingRemote = 0;
-      return;
-   }
-   if (jumped) {
+   if (jumped && !tiles.holds(cursor)) {
       openRemoteView(source, view, cursor);
       g_awaitingRemote = kRemoteWaitFrames;
       return;
    }
+   // In multiplayer the view shows the remote camera, on the cursor, some frames before the
+   // controller changes: keep waiting for the controller, which restores the zoom.
    if (g_awaitingRemote > 0) {
       --g_awaitingRemote;
       return;
    }
+   if (tiles.holds(cursor)) return;
    // The screen left the cursor behind: walking, zooming in.
    place(cursormoves::pulledOnto(tiles, cursor, view.centre, anchored));
 }
