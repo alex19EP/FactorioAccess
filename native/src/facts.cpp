@@ -1469,8 +1469,7 @@ bool isCraftingMachine(std::string_view type) {
 
 // ---- rails ----
 //
-// The rails on a tile in the words of railutils/rail-describer.lua, read from the game's own rail
-// graph: a rail's ends, what each joins, the signals and stations.
+// The rails on a tile, read from the game's own rail graph: a rail's ends, what each joins, the signals and stations.
 // A rail ghost joins nothing in the graph, so it is said by its kind alone.
 
 // The entities whose box overlaps the area, as EntitySearch<Entity> finds them.
@@ -1554,8 +1553,8 @@ int endFacing(const std::byte* rail, uint8_t direction) {
    return endOf(rail, kBack).direction == direction ? kBack : kFront;
 }
 
-// railutils/turn-table.lua: for a curve, which part of a 90 degree turn it is, and the turns to
-// walk from either end to find the rest of the turn.
+// For a curve, which part of a 90 degree turn it is, and the turns to walk from either end to find
+// the rest of the turn.
 struct TurnWalk {
    uint8_t end;
    int turn;

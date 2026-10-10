@@ -30,15 +30,6 @@ mod.DIRECTION_NAMES = {
    [defines.direction.northnorthwest] = "northnorthwest",
 }
 
----Map from defines.direction to cardinal name (only for cardinals)
----@type table<defines.direction, string>
-mod.CARDINAL_NAMES = {
-   [defines.direction.north] = "north",
-   [defines.direction.east] = "east",
-   [defines.direction.south] = "south",
-   [defines.direction.west] = "west",
-}
-
 ---Map from defines.direction to diagonal name (only for diagonals)
 ---@type table<defines.direction, string>
 mod.DIAGONAL_NAMES = {
@@ -53,13 +44,6 @@ mod.DIAGONAL_NAMES = {
 ---@return string
 function mod.get_direction_name(direction)
    return mod.DIRECTION_NAMES[direction] or "unknown"
-end
-
----Get cardinal name (only for cardinal directions)
----@param direction defines.direction
----@return string|nil
-function mod.get_cardinal_name(direction)
-   return mod.CARDINAL_NAMES[direction]
 end
 
 ---Get diagonal name (only for diagonal directions)
