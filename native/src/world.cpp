@@ -554,13 +554,10 @@ void placeCursor(CursorPosition position) {
 }
 
 void setKeyCursor(std::optional<CursorPosition> position) {
-   if (position) {
+   if (position)
       g_keyCursor = Position{position->x, position->y};
-      // The cursor stays there: the next movement key steps on from the entry at once.
-      placeCursor(*position);
-   } else {
+   else
       g_keyCursor.reset();
-   }
 }
 
 bool mayBeLocalPlayer(int playerIndex) {

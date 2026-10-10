@@ -2296,7 +2296,13 @@ void observeKey(const input::KeyEvent* key) {
    if (!action) return;
    std::scoped_lock lock(g_mutex);
    if (g_modUiOpen) return;
-   if (std::optional<Position> target = act(*action)) world::setKeyCursor(world::CursorPosition{target->x, target->y});
+   std::optional<Position> target = act(*action);
+   if (!target) return;
+   const world::CursorPosition position{target->x, target->y};
+   world::setKeyCursor(position);
+   // Only Home moves the cursor, and at once: the next movement key steps on from the entry. The
+   // other keys only read, and their event's position is for Lua to find the entry by.
+   if (*action == Action::Repeat) world::placeCursor(position);
 }
 
 std::optional<Entry> entryAt(int playerIndex, double x, double y) {
