@@ -289,13 +289,15 @@ bool damaged(const std::byte* entity) {
 // the kind, the status unless it is a problem, health unless the entity is damaged, what alt mode
 // draws as icons (a chest's contents, fluids), which the mod says from the icons in alt mode only,
 // the contents, the fuel and an ore's amount, which only the hover panel shows elsewhere (a missing
-// fuel is the status), the surface conditions and debug lines, and the categories' headings.
-void prune(const std::byte* entity, std::byte* description) {
+// fuel is the status), the surface conditions and debug lines, and the categories' headings. With
+// `chestContents`, a chest keeps its contents.
+void prune(const std::byte* entity, std::byte* description, bool chestContents) {
    static const std::vector<std::string> fixed = fixedLabels();
    const std::string health = vocab::translate("description.health", {});
    const std::string contents = vocab::translate("description.contents", {});
    const std::string fuel = vocab::translate("description.fuel-inventory-contents", {});
    const bool chest = contentsDrawn(entity);
+   const bool dropContents = !(chest && chestContents);
    const std::string amount = amountDrawn(entity) ? vocab::translate("description.amount", {}) : "";
    // A fluid's own temperature line ("Temperature: Steam").
    const std::string fluidTemperature = vocab::translate("description.fluid-temperature", {""});
@@ -337,7 +339,7 @@ void prune(const std::byte* entity, std::byte* description) {
             keep = damaged(entity);
          } else if (keep && !amount.empty() && name == amount) {
             keep = false;
-         } else if (keep && (inContents || (chest && name.empty()))) {
+         } else if (keep && dropContents && (inContents || (chest && name.empty()))) {
             // A chest's contents are its inventory's counts (Inventory::addCountsToDescription), a
             // line without a label.
             keep = false;
@@ -429,7 +431,9 @@ std::string nameOf(const std::byte* entity, const std::byte* description) {
    return name;
 }
 
-std::string describe(const std::byte* player, const std::byte* entity, Position tile) {
+// The entity as the reader says it on `tile`. With `chestContents` (the scanner), a chest's contents
+// are said from its description whether or not alt mode draws them, as the mod's scanner always said.
+std::string describe(const std::byte* player, const std::byte* entity, Position tile, bool chestContents = false) {
    const void* object = entity;
    auto* panel = static_cast<std::byte*>(::operator new(layout.entityInfoSize, kAlignment));
    OptionalContext panelContext{player, true};
@@ -447,13 +451,15 @@ std::string describe(const std::byte* player, const std::byte* entity, Position 
    std::vector<std::string> modLists;
    const auto* head = *reinterpret_cast<const StringNode* const*>(description + layout.descriptionModLists);
    collect(head->parent, modLists);
-   prune(entity, description);
+   prune(entity, description, chestContents);
    clear(description, layout.descriptionName);
    clear(description, layout.descriptionText);
    reinterpret_cast<void (*)(const void*, void*, bool)>(layout.descriptionFill)(description, panel, false);
    for (std::string& line : lines(reinterpret_cast<const agui::Widget*>(panel), modLists))
       parts.push_back(std::move(line));
-   for (std::string& icon : facts::drawnIcons(entity)) parts.push_back(std::move(icon));
+   // A chest's icons are its contents, said already.
+   if (!(chestContents && contentsDrawn(entity)))
+      for (std::string& icon : facts::drawnIcons(entity)) parts.push_back(std::move(icon));
 
    reinterpret_cast<void* (*)(void*, unsigned)>(layout.entityInfoDestroy)(panel, 0);
    ::operator delete(panel, kAlignment);
@@ -606,8 +612,9 @@ std::optional<std::string> readTile(Position tile, std::optional<Position> where
    return text;
 }
 
-// The entity `target` as the tile reader says it on its own tile, wherever the view is; empty when
-// it has gone or is on a surface the view does not show, and nothing outside a game with a view.
+// The entity `target` as the tile reader says it on its own tile, wherever the view is, with a
+// chest's contents (the scanner and pins); empty when it has gone or is on a surface the view does
+// not show, and nothing outside a game with a view.
 std::optional<std::string> readTarget(const Target& target) {
    const std::optional<Local> here = local();
    if (!here) return std::nullopt;
@@ -620,7 +627,7 @@ std::optional<std::string> readTarget(const Target& target) {
       const auto* entity = static_cast<const std::byte*>(found);
       if (found != target.entity || at<const void*>(entity, layout.entityPrototypeOf) != target.prototype) continue;
       const Position now = at<Position>(entity, layout.entityPosition);
-      return describe(here->player, entity, Position{now.x >> 8, now.y >> 8});
+      return describe(here->player, entity, Position{now.x >> 8, now.y >> 8}, true);
    }
    return std::string();
 }
