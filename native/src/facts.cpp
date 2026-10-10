@@ -1893,6 +1893,25 @@ bool isRailOrRailGhost(const std::byte* entity) {
 
 } // namespace
 
+std::vector<const void*> drillResources(const void* drill) {
+   struct Targeters {
+      const std::byte* first;
+      const std::byte* last;
+      const std::byte* end;
+   };
+   const auto& targeters = at<Targeters>(drill, layout.scanDrillResources);
+   std::vector<const void*> resources;
+   // A Targeter is {vfptr, target, next, previous}; the game nulls the target when it goes.
+   for (const std::byte* targeter = targeters.first; targeter < targeters.last; targeter += layout.resourceTargeterSize)
+      if (const auto* resource = at<const std::byte*>(targeter, sizeof(void*)))
+         resources.push_back(prototypeOf(resource));
+   std::ranges::sort(resources, [](const void* a, const void* b) {
+      return internalName(static_cast<const std::byte*>(a)) < internalName(static_cast<const std::byte*>(b));
+   });
+   resources.erase(std::unique(resources.begin(), resources.end()), resources.end());
+   return resources;
+}
+
 std::vector<const void*> entitiesIn(const void* surface, int32_t left, int32_t top, int32_t right, int32_t bottom) {
    std::vector<const void*> found;
    eachEntityIn(static_cast<const std::byte*>(surface), Position{left, top}, Position{right, bottom},
@@ -1962,8 +1981,14 @@ std::vector<std::string> describe(const void* object, int32_t tileX, int32_t til
    if (const std::byte* turret = agui::objectAsBase(entity, ".?AVTurret@@")) parts.push_back(turretPriorities(turret));
    if (const std::byte* inserter = agui::objectAsBase(entity, ".?AVInserter@@"))
       parts.push_back(inserterState(inserter));
-   if (type == "mining-drill")
+   if (type == "mining-drill") {
+      // The ground around the drill shows what it mines.
+      std::vector<std::string> resources;
+      for (const void* resource : drillResources(entity))
+         resources.push_back(localisedName(static_cast<const std::byte*>(resource)));
+      if (!resources.empty()) parts.push_back(vocab::kDrillMining(joined(resources, ", ")));
       if (const std::byte* target = dropTargetOf(entity)) parts.push_back(vocab::kDrillOutputsTo(targetName(target)));
+   }
    for (std::string& item : reactorState(entity)) parts.push_back(std::move(item));
    if (isHeatPipe(entity)) parts.push_back(heatPipeShape(entity));
    parts.push_back(heatConnections(entity, Position{tileX, tileY}));

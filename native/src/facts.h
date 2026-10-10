@@ -50,6 +50,11 @@ struct UndergroundEnd {
 };
 std::optional<UndergroundEnd> undergroundEnd(const void* entity, uint8_t direction);
 
+// What a mining drill mines from: the prototypes of the resources in its mining area
+// (MiningDrill::resourcesToMine), each once, by internal name. The tile reader says them, and the
+// scanner groups drills by them.
+std::vector<const void*> drillResources(const void* drill);
+
 // The entities on `surface` whose box overlaps the area from (left, top) to (right, bottom), map
 // positions in the game's fixed point, as EntitySearch<Entity> finds them.
 std::vector<const void*> entitiesIn(const void* surface, int32_t left, int32_t top, int32_t right, int32_t bottom);

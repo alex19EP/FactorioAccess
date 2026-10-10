@@ -348,7 +348,8 @@ inline constexpr Word kInserterHoldingCount{"fa.ent-info-inserter-holding-count"
 inline constexpr Word kInserterPicksUp{"fa.ent-info-inserter-picks-up-from"};
 inline constexpr Word kInserterDrops{"fa.ent-info-inserter-drops-to"};
 inline constexpr Word kGround{"fa.ent-info-ground"};
-// What a drill puts its output into.
+// What a drill mines ("mining Iron ore, Coal") and puts its output into.
+inline constexpr Word kDrillMining{"fa.ent-info-mining-drill-mining"};
 inline constexpr Word kDrillOutputsTo{"fa.ent-info-mining-drill-outputs-to"};
 inline constexpr Word kMarkedForUpgrade{"fa.ent-info-marked-for-upgrading"};
 // A wall a gate can be controlled through.
