@@ -794,7 +794,6 @@ std::string RecordSlotText(const Widget* slot)
     if (record.progress > 0 && record.progress < 1)
         text.parts.push_back(vocab::kTransferring(static_cast<int>(record.progress * 100)));
     text.AddIf(record.active, vocab::kActive);
-    text.AddIf(record.inHand, vocab::kInHand);
     return text.Text();
 }
 
@@ -821,12 +820,11 @@ std::string StackText(const Widget* slot)
     {
         ShownParts text(std::move(*shown), std::string(name));
         text.AddIf(item.active, vocab::kActive);
-        text.AddIf(item.inHand, vocab::kInHand);
         return text.Text();
     }
-    // The slot keeps its place while its item is held, and shows a hand there.
+    // The slot keeps its place while its item is held, and shows a hand there (SlotInHand).
     if (item.inHand && count == 0)
-        return std::string(vocab::kInHand);
+        return {};
     // An empty item slot can still name its filter, or the ingredient a machine expects in it.
     if (count == 0)
     {
@@ -869,7 +867,8 @@ std::string SlotText(const Widget* slot)
         text = agui::slotItem(slot).count == 0 ? requested : std::format("{}, {}", text, requested);
     }
     if (request.removal)
-        text = std::format("{}, {}", text, std::string(vocab::kToBeRemoved));
+        text = text.empty() ? std::string(vocab::kToBeRemoved)
+                            : std::format("{}, {}", text, std::string(vocab::kToBeRemoved));
     return text;
 }
 
@@ -970,6 +969,14 @@ void DescribeLimitButton(graph::NodeVtable& vtable, const Widget* button)
 // A slot is named by what it holds; a label beside it ("Fuel") is its name instead, the content
 // its value. Clicked as the Gui clicks the button under the mouse, so taking, placing and
 // splitting stacks and choosing recipes are vanilla.
+// Whether the slot shows the hand over the stack the player holds from it.
+bool SlotInHand(const Widget* slot)
+{
+    if (agui::isRecordSlot(slot))
+        return agui::recordSlot(slot).inHand;
+    return agui::derivesFrom(slot, "InventoryGuiSlot") && agui::slotItem(slot).inHand;
+}
+
 graph::NodeVtable SlotNode(const Widget* slot, std::function<std::string()> name)
 {
     graph::NodeVtable vtable;
@@ -984,6 +991,9 @@ graph::NodeVtable SlotNode(const Widget* slot, std::function<std::string()> name
     }
     else
         vtable.Announcements.emplace_back(content, live, Label);
+    // Not live: taking a stack says what is now in hand already.
+    vtable.Announcements.emplace_back(
+        [slot]() { return SlotInHand(slot) ? std::string(vocab::kInHand) : std::string(); }, false, Value);
     vtable.Announcements.emplace_back([slot]() { return LockText(slot); }, true, Value);
     vtable.Announcements.emplace_back(
         [slot]() { return agui::enabled(slot) ? std::string() : std::string(vocab::kDisabled); }, false, Enabled);

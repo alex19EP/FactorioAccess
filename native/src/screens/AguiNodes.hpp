@@ -109,7 +109,8 @@ bool TypingInField(const graph::GraphNode& node);
 void FollowCursor(const graph::GraphNode& node);
 
 /// What a slot button shows: "iron plate 50", "rare iron plate 50", "water 1200", an empty slot's
-/// filter or expected ingredient as "iron plate, empty", or "empty".
+/// filter or expected ingredient as "iron plate, empty", or "empty". Nothing for a stack taken in
+/// hand: the slot's node says "in hand" apart, so the live watch leaves it to the hand's own line.
 std::string SlotText(const agui::Widget* slot);
 
 /// Speaks the game's own tooltip for the widget, as hovering shows it: its texts a line each.
