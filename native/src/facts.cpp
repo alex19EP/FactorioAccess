@@ -4,6 +4,7 @@
 #include "entityicons.h"
 #include "game.h"
 #include "prototypes.h"
+#include "railkinds.h"
 #include "text.h"
 #include "vocab.h"
 
@@ -1497,7 +1498,12 @@ bool entityAt(const std::byte* surface, Position position, std::string_view type
    return found;
 }
 
-enum class RailType : uint8_t { Straight, HalfDiagonal, CurveA, CurveB };
+using railkinds::kBack;
+using railkinds::kFront;
+using railkinds::kLeft;
+using railkinds::kRight;
+using railkinds::kStraightOn;
+using railkinds::RailType;
 
 std::optional<RailType> railTypeOf(std::string_view type) {
    if (type == "straight-rail") return RailType::Straight;
@@ -1506,12 +1512,6 @@ std::optional<RailType> railTypeOf(std::string_view type) {
    if (type == "curved-rail-b") return RailType::CurveB;
    return std::nullopt;
 }
-
-constexpr int kFront = 0;
-constexpr int kBack = 1;
-constexpr int kLeft = -1;
-constexpr int kStraightOn = 0;
-constexpr int kRight = 1;
 
 struct RailEnd {
    Position position;
@@ -1542,99 +1542,18 @@ const std::byte* linked(const std::byte* rail, int end, int turn) {
    return at<const std::byte*>(connection, which);
 }
 
-// The end of `next` that is not joined to `from`: where a walk from `from` goes on.
-int farEnd(const std::byte* next, const std::byte* from) {
-   for (const int turn : {kLeft, kStraightOn, kRight})
-      if (linked(next, kFront, turn) == from) return kBack;
-   return kFront;
-}
-
-int endFacing(const std::byte* rail, uint8_t direction) {
-   return endOf(rail, kBack).direction == direction ? kBack : kFront;
-}
-
-// For a curve, which part of a 90 degree turn it is, and the turns to walk from either end to find
-// the rest of the turn.
-struct TurnWalk {
-   uint8_t end;
-   int turn;
-   int count;
+// The rail graph in the game's memory, for railkinds.
+struct GameRails {
+   using Rail = const std::byte*;
+   uint8_t placement(Rail rail) const { return at<uint8_t>(rail, layout.railDirection); }
+   uint8_t endDirection(Rail rail, int end) const { return endOf(rail, end).direction; }
+   Rail linked(Rail rail, int end, int turn) const { return facts::linked(rail, end, turn); }
 };
-struct Turn {
-   const char* position;
-   uint8_t from;
-   uint8_t to;
-   TurnWalk forward;
-   TurnWalk back;
-};
-// By curve (a, b) and placement direction / 2.
-constexpr Turn kTurns[2][8] = {
-   {
-      {"bottom", 4, 8, {8, 1, 0}, {15, -1, 3}},
-      {"bottom", 12, 8, {8, -1, 0}, {1, 1, 3}},
-      {"bottom", 4, 0, {3, -1, 3}, {12, 1, 0}},
-      {"top", 4, 8, {5, 1, 3}, {12, -1, 0}},
-      {"top", 12, 0, {0, 1, 0}, {7, -1, 3}},
-      {"top", 4, 0, {0, -1, 0}, {9, 1, 3}},
-      {"top", 12, 8, {11, -1, 3}, {4, 1, 0}},
-      {"bottom", 12, 0, {13, 1, 3}, {4, -1, 0}},
-   },
-   {
-      {"lower-half", 4, 8, {7, 1, 1}, {14, -1, 2}},
-      {"lower-half", 12, 8, {9, -1, 1}, {2, 1, 2}},
-      {"lower-half", 4, 0, {2, -1, 2}, {11, 1, 1}},
-      {"upper-half", 4, 8, {6, 1, 2}, {13, -1, 1}},
-      {"upper-half", 12, 0, {15, 1, 1}, {6, -1, 2}},
-      {"upper-half", 4, 0, {1, -1, 1}, {10, 1, 2}},
-      {"upper-half", 12, 8, {10, -1, 2}, {3, 1, 1}},
-      {"lower-half", 12, 0, {14, 1, 2}, {5, -1, 1}},
-   },
-};
-// The kind a curve is said as when no whole turn is built: left or right of a cardinal (a) or a
-// diagonal (b), by placement direction / 2.
-constexpr const char* kCurveFallback[2][8] = {
-   {"left-of-north", "right-of-north", "left-of-east", "right-of-east", "left-of-south", "right-of-south",
-    "left-of-west", "right-of-west"},
-   {"right-of-southeast", "left-of-southwest", "right-of-southwest", "left-of-northwest", "right-of-northwest",
-    "left-of-northeast", "right-of-northeast", "left-of-southeast"},
-};
-// A straight or half-diagonal rail's kind, by its end direction mod 8.
-constexpr const char* kSimpleKinds[8] = {"vertical",   "northnortheast", "northeast", "eastnortheast",
-                                         "horizontal", "eastsoutheast",  "southeast", "southsoutheast"};
 
-const char* cardinalName(uint8_t direction) {
-   switch (direction) {
-   case kNorth: return "north";
-   case kEast: return "east";
-   case kSouth: return "south";
-   default: return "west";
-   }
-}
+int farEnd(const std::byte* next, const std::byte* from) { return railkinds::farEnd(GameRails{}, next, from); }
 
-bool walkTurn(const std::byte* rail, const TurnWalk& walk) {
-   const std::byte* current = rail;
-   int end = endFacing(rail, walk.end);
-   for (int i = 0; i < walk.count; ++i) {
-      const std::byte* next = linked(current, end, walk.turn > 0 ? kRight : kLeft);
-      if (!next) return false;
-      end = farEnd(next, current);
-      current = next;
-   }
-   return true;
-}
-
-// The rail's kind as railutils names it ("horizontal", "bottom-of-east-to-south-turn"), turns
-// found only through the rail graph.
 std::string railKind(const std::byte* rail, RailType type, bool walk) {
-   const uint8_t direction = at<uint8_t>(rail, layout.railDirection);
-   if (type == RailType::Straight || type == RailType::HalfDiagonal)
-      return kSimpleKinds[endOf(rail, kFront).direction % 8];
-   const int curve = type == RailType::CurveA ? 0 : 1;
-   const size_t index = (direction / 2u) % 8u;
-   const Turn& turn = kTurns[curve][index];
-   if (walk && walkTurn(rail, turn.forward) && walkTurn(rail, turn.back))
-      return std::string(turn.position) + "-of-" + cardinalName(turn.from) + "-to-" + cardinalName(turn.to) + "-turn";
-   return kCurveFallback[curve][index];
+   return railkinds::kindOf(GameRails{}, rail, type, walk);
 }
 
 bool isAxisStraight(const std::byte* rail) {

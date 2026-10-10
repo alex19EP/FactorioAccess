@@ -212,6 +212,15 @@ target_include_directories(fa_graph_tests PRIVATE src tests/graph)
 target_compile_options(fa_graph_tests PRIVATE /W4 /permissive- /utf-8 /EHsc)
 add_test(NAME graph COMMAND fa_graph_tests)
 
+# The pure rail logic the tile reader says rails with, over rails laid out from the game's data.
+add_executable(fa_rail_tests
+  tests/graph/TestMain.cpp
+  tests/rails/RailKindTests.cpp
+)
+target_include_directories(fa_rail_tests PRIVATE src tests/graph)
+target_compile_options(fa_rail_tests PRIVATE /W4 /permissive- /utf-8 /EHsc)
+add_test(NAME rails COMMAND fa_rail_tests)
+
 if(FA_FACTORIO_BIN)
   add_custom_command(TARGET fa_native POST_BUILD
     COMMAND "${CMAKE_COMMAND}" -E copy_if_different

@@ -13,7 +13,7 @@ raw commands are given as well.
 
 ```
 just build      # cmake --build native/build --config RelWithDebInfo
-just test       # ctest --test-dir native/build -C RelWithDebInfo --output-on-failure (graph kernel suite)
+just test       # ctest --test-dir native/build -C RelWithDebInfo --output-on-failure (graph kernel and rail suites)
 just symbols    # fa_symbols_check <factorio.exe>: resolve every symbol and layout against a build
 just deploy     # copy winmm.dll + winmm.pdb into the Steam bin/x64 (the game must not be running)
 just run        # deploy, then start Factorio through Steam
@@ -24,7 +24,7 @@ just dev-on     # enable the loopback dev server on the next start (see below)
 Before committing native work:
 - `python launch_factorio.py --format` (stylua and clang-format; CI checks both);
 - build clean with no new warnings (`/W4`);
-- the graph tests pass;
+- the native tests pass (`just test`);
 - `fa_symbols_check` reports OK.
 
 A plain cmake build does NOT deploy unless `FA_FACTORIO_BIN` was set at configure time.
