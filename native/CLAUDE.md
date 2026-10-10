@@ -13,7 +13,7 @@ raw commands are given as well.
 
 ```
 just build      # cmake --build native/build --config RelWithDebInfo
-just test       # ctest --test-dir native/build -C RelWithDebInfo --output-on-failure (graph kernel and rail suites)
+just test       # ctest --test-dir native/build -C RelWithDebInfo --output-on-failure (graph kernel and pure logic suites)
 just symbols    # fa_symbols_check <factorio.exe>: resolve every symbol and layout against a build
 just deploy     # copy winmm.dll + winmm.pdb into the Steam bin/x64 (the game must not be running)
 just run        # deploy, then start Factorio through Steam

@@ -29,6 +29,7 @@ end
 local test_files = {
    -- Integration/smoke tests as per claude-prompt.md
    "simple-smoke-test", -- Very basic tests to verify framework works
+   "cursor-test", -- Test the cursor tile key handlers and Cursor.at see
    "wasd-event-test", -- Test that a movement key reads where its event says the cursor went
    -- Selected tests from feedback
    "crafting-menu-test", -- Test crafting menu navigation (test #10)

@@ -26,10 +26,7 @@ const char* const kDirections[16] = {"north", "northnortheast", "northeast", "ea
     "southeast", "southsoutheast", "south", "southsouthwest", "southwest", "westsouthwest", "west", "westnorthwest",
     "northwest", "northnorthwest"};
 
-uint8_t Turned(uint8_t direction, int sixteenths)
-{
-    return static_cast<uint8_t>((direction + sixteenths + 16) % 16);
-}
+uint8_t Turned(uint8_t direction, int sixteenths) { return static_cast<uint8_t>((direction + sixteenths + 16) % 16); }
 
 const Extension* FindExtension(RailType type, uint8_t placement, uint8_t end, uint8_t goal)
 {
@@ -49,8 +46,7 @@ std::vector<uint8_t> EndsOf(RailType type, uint8_t placement)
     std::vector<uint8_t> ends;
     for (const Extension& row : kExtensions)
     {
-        if (row.Type == type && row.Placement == placement
-            && (ends.empty() || ends.back() != row.End))
+        if (row.Type == type && row.Placement == placement && (ends.empty() || ends.back() != row.End))
         {
             ends.push_back(row.End);
         }
@@ -90,10 +86,7 @@ public:
         return rails_.back().get();
     }
 
-    uint8_t placement(Rail rail) const
-    {
-        return rail->Placement;
-    }
+    uint8_t placement(Rail rail) const { return rail->Placement; }
 
     uint8_t endDirection(Rail rail, int end) const
     {
@@ -210,7 +203,8 @@ TEST(RailKinds_PieceSaysTheTurnOnlyWhenAllFourAreBuilt)
         const char* const southToNorth[4] = {"bottom", "lower-half", "upper-half", "top"};
         for (int i = 1; i < 4; ++i)
         {
-            const int northward = pieces[static_cast<size_t>(i - 1)].Position.Y - pieces[static_cast<size_t>(i)].Position.Y;
+            const int northward =
+                pieces[static_cast<size_t>(i - 1)].Position.Y - pieces[static_cast<size_t>(i)].Position.Y;
             CHECK(turn.GoesNorth ? northward > 0 : northward < 0);
         }
 

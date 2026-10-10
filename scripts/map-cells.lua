@@ -4,8 +4,8 @@ Map cells: how the cursor moves on the full map.
 Zoomed out to the map, a tile is a fraction of a pixel, so the movement keys move the cursor by a
 cell: a square of tiles about a thirtieth of the screen across, rounded to a power of two (8 tiles at
 240 tiles across, 512 at 15360). Cells lie on a grid aligned to their size, so one is inside a chunk
-or made of whole chunks. The DLL moves the cursor (native/src/cursor.cpp computes the cell the same
-way) to the centre of the next cell, and moving reads what the cell holds, then what the map's
+or made of whole chunks. The DLL moves the cursor (native/src/cursormoves.h computes the cell the
+same way) to the centre of the next cell, and moving reads what the cell holds, then what the map's
 overlays that are on show over it (map-overlays.lua).
 ]]
 local Cursor = require("scripts.cursor")

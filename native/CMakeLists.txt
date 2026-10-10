@@ -212,14 +212,16 @@ target_include_directories(fa_graph_tests PRIVATE src tests/graph)
 target_compile_options(fa_graph_tests PRIVATE /W4 /permissive- /utf-8 /EHsc)
 add_test(NAME graph COMMAND fa_graph_tests)
 
-# The pure rail logic the tile reader says rails with, over rails laid out from the game's data.
-add_executable(fa_rail_tests
+# The DLL's pure logic, split from its reads of the game's memory: the rail kinds the tile reader
+# says, over rails laid out from the game's data, and where the cursor's keys take it.
+add_executable(fa_logic_tests
   tests/graph/TestMain.cpp
   tests/rails/RailKindTests.cpp
+  tests/cursor/CursorMovesTests.cpp
 )
-target_include_directories(fa_rail_tests PRIVATE src tests/graph)
-target_compile_options(fa_rail_tests PRIVATE /W4 /permissive- /utf-8 /EHsc)
-add_test(NAME rails COMMAND fa_rail_tests)
+target_include_directories(fa_logic_tests PRIVATE src tests/graph)
+target_compile_options(fa_logic_tests PRIVATE /W4 /permissive- /utf-8 /EHsc)
+add_test(NAME logic COMMAND fa_logic_tests)
 
 if(FA_FACTORIO_BIN)
   add_custom_command(TARGET fa_native POST_BUILD

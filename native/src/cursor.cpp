@@ -1,5 +1,6 @@
 #include "cursor.h"
 
+#include "cursormoves.h"
 #include "game.h"
 #include "reader.h"
 #include "skip.h"
@@ -67,23 +68,14 @@ struct MsvcVector {
 };
 
 // MapPosition, in the game's fixed point (256 to a tile).
-struct Position {
-   int32_t x;
-   int32_t y;
-   bool operator==(const Position&) const = default;
-};
-
-struct Pixel {
-   int32_t x;
-   int32_t y;
-};
-
-constexpr int32_t kScale = game::kMapPositionScale;
-
-int32_t tileOf(int32_t coordinate) { return coordinate >> 8; } // floors negative coordinates too
-Position tileCentre(int32_t tileX, int32_t tileY) { return {tileX * kScale + kScale / 2, tileY * kScale + kScale / 2}; }
-Position tileCentre(Position position) { return tileCentre(tileOf(position.x), tileOf(position.y)); }
-bool sameTile(Position a, Position b) { return tileOf(a.x) == tileOf(b.x) && tileOf(a.y) == tileOf(b.y); }
+using cursormoves::kScale;
+using cursormoves::Pixel;
+using cursormoves::Position;
+using cursormoves::sameTile;
+using cursormoves::Screen;
+using cursormoves::tileCentre;
+using cursormoves::tileOf;
+static_assert(kScale == game::kMapPositionScale);
 
 Position fromTiles(double x, double y) {
    return {static_cast<int32_t>(std::lround(x * kScale)), static_cast<int32_t>(std::lround(y * kScale))};
@@ -139,40 +131,12 @@ bool fixedCamera(uint8_t controller) {
    return controller == layout.controllerCharacter || controller == layout.controllerGod;
 }
 
-// The tiles wholly on the screen, inclusive, as the view's centre and zoom place them.
-struct Screen {
-   int32_t left;
-   int32_t top;
-   int32_t right;
-   int32_t bottom;
+Screen screen(const View& view) { return cursormoves::screenOf(view.centre, view.size, view.tilesPerPixel); }
 
-   bool holds(Position position) const {
-      const int32_t x = tileOf(position.x), y = tileOf(position.y);
-      return x >= left && x <= right && y >= top && y <= bottom;
-   }
-   Position clamp(Position position) const {
-      return tileCentre(std::clamp(tileOf(position.x), left, right), std::clamp(tileOf(position.y), top, bottom));
-   }
-};
-
-Screen screen(const View& view) {
-   const double centreX = static_cast<double>(view.centre.x) / kScale;
-   const double centreY = static_cast<double>(view.centre.y) / kScale;
-   const double halfWidth = view.size.x * view.tilesPerPixel / 2;
-   const double halfHeight = view.size.y * view.tilesPerPixel / 2;
-   return {static_cast<int32_t>(std::ceil(centreX - halfWidth)), static_cast<int32_t>(std::ceil(centreY - halfHeight)),
-           static_cast<int32_t>(std::floor(centreX + halfWidth)) - 1,
-           static_cast<int32_t>(std::floor(centreY + halfHeight)) - 1};
-}
-
-// On the full map a movement key moves a cell: a square of tiles about a thirtieth of the screen
-// across, rounded to a power of two, on a grid of its own size (the mod's map-cells.lua reads it so
-// too). Zero off the full map.
+// The full map's cell size (cursormoves::cellSize), zero off the full map.
 int32_t cellSize(const View& view) {
    if (at<uint8_t>(view.player, layout.playerRenderMode) != game::kRenderModeChart) return 0;
-   const double tiles = std::floor(std::max(view.size.x, view.size.y) * view.tilesPerPixel + 0.5);
-   const double exponent = std::floor(std::log2(tiles / 30.0) + 0.5);
-   return exponent < 0 ? 1 : int32_t{1} << static_cast<int>(exponent);
+   return cursormoves::cellSize(view.size, view.tilesPerPixel);
 }
 
 // The movement keys, by the mod's custom input names: a step, a skip (Shift), a move by the size of
@@ -280,10 +244,8 @@ void skipForKey(const MoveKey& key, const View& view, Position cursor) {
    };
    const int32_t fromX = tileOf(cursor.x), fromY = tileOf(cursor.y);
    if (key.kind == KeyKind::BySize) {
-      // A building of one tile, or nothing to build, moves a tile.
-      int shift = 1;
-      if (const auto held = world::heldBuild(playerIndex); held && held->width + held->height > 2)
-         shift = key.dx != 0 ? held->width : held->height;
+      const auto held = world::heldBuild(playerIndex);
+      const int32_t shift = cursormoves::bySizeShift(key.dx, held ? held->width : 0, held ? held->height : 0);
       const int32_t x = fromX + key.dx * shift, y = fromY + key.dy * shift;
       if (!allowed(x, y)) {
          record(cursor, Step::Edge);
@@ -358,21 +320,10 @@ void moveForKey(const void* event, const void* context) {
       return;
    }
    const int32_t size = cellSize(*view);
-   Position target;
-   if (size > 0) {
-      // The cell beyond, on the grid of cells.
-      const auto cell = [&](int32_t tile, int32_t step) {
-         const int32_t next = tile + step * size;
-         const int32_t left = next >= 0 ? next / size * size : -((-next + size - 1) / size) * size;
-         return left + size / 2;
-      };
-      target = tileCentre(cell(tileOf(cursor->x), key->dx), cell(tileOf(cursor->y), key->dy));
-   } else {
-      target = tileCentre(tileOf(cursor->x) + key->dx, tileOf(cursor->y) + key->dy);
-      if (fixedCamera(view->controller) && !screen(*view).holds(target)) {
-         record(*cursor, Step::Edge);
-         return;
-      }
+   const Position target = cursormoves::stepTarget(*cursor, key->dx, key->dy, size);
+   if (size == 0 && fixedCamera(view->controller) && !screen(*view).holds(target)) {
+      record(*cursor, Step::Edge);
+      return;
    }
    place(target);
    // A drag build builds on the tile after this; the game's build preview tells what blocks it.
@@ -488,7 +439,7 @@ void fixedFrame(void* source, const View& view, Position cursor, bool anchored, 
       return;
    }
    // The screen left the cursor behind: walking, zooming in.
-   place(anchored ? tileCentre(view.centre) : tiles.clamp(cursor));
+   place(cursormoves::pulledOnto(tiles, cursor, view.centre, anchored));
 }
 
 void frame(void* source) {
