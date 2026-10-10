@@ -432,9 +432,6 @@ struct Layout {
    uintptr_t drawInfoIcon = 0;
    uint32_t qualityDrawByDefault = 0;      // QualityPrototype::drawSpriteByDefault, bool
    uintptr_t comparisonStr = 0;            // char const* Comparison::str() const
-   // Entity* LuaHelper::getParamOrDefault<Entity*>(lua_State*, int index, char const* name, Entity*
-   // default): the entity of a LuaEntity argument.
-   uintptr_t luaParamEntity = 0;
    // void LuaHelper::initLuaState(lua_State*): sets up the globals of every Lua state the game
    // creates (log, localised_print, ...).
    uintptr_t initLuaState = 0;

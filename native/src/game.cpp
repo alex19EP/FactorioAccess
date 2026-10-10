@@ -285,8 +285,6 @@ bool resolve(pdb::SymbolTable& symbols) {
            "W4Enum@RenderLayer@@AEBVVector@@CVColor@@@Z");
    offset(layout.qualityDrawByDefault, "QualityPrototype", "drawSpriteByDefault");
    address(layout.comparisonStr, "?str@Comparison@@QEBAPEBDXZ");
-   address(layout.luaParamEntity,
-           "??$getParamOrDefault@PEAVEntity@@@LuaHelper@@YAPEAVEntity@@PEAUlua_State@@HPEBDPEAV1@@Z");
    offset(layout.logisticNetworkId, "LogisticNetwork", "networkID");
    offset(layout.logisticNetworkName, "LogisticNetwork", "networkName.value");
    address(layout.initLuaState, "?initLuaState@LuaHelper@@YAXPEAUlua_State@@@Z");

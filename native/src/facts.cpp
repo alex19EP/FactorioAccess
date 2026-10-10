@@ -2117,4 +2117,59 @@ std::vector<std::string> drawnIcons(const void* object) {
    return items;
 }
 
+Likeness likenessOf(const void* object) {
+   const auto* entity = static_cast<const std::byte*>(object);
+   Likeness out;
+   // A ghost looks like the building it stands for.
+   const std::byte* building = entity;
+   if (typeName(prototypeOf(entity)) == "entity-ghost") {
+      out.ghost = true;
+      building = at<const std::byte*>(entity, layout.scanGhostInner);
+      if (!building) building = entity;
+   }
+   out.prototype = prototypeOf(building);
+   if (virtualAt<bool (*)(const void*)>(building, layout.entityHasDirection)(building)) {
+      uint8_t direction = 0;
+      virtualAt<void* (*)(const void*, uint8_t*)>(building, layout.entityGetDirection)(building, &direction);
+      out.direction = direction;
+   }
+   if (!out.ghost && typeName(out.prototype) == "transport-belt") {
+      const Belt belt{building};
+      const Neighbours neighbours = neighboursOf(belt);
+      out.beltInputs = neighbours.inputCount;
+      out.beltOutputs = neighbours.outputCount;
+      out.beltShape = belt.shape();
+   }
+   return out;
+}
+
+bool skipsOver(const void* entity) {
+   const std::string_view type = typeName(prototypeOf(entity));
+   return type == "logistic-robot" || type == "construction-robot" || type == "combat-robot" || type == "corpse";
+}
+
+std::optional<UndergroundEnd> undergroundEnd(const void* object, uint8_t direction) {
+   const auto* entity = static_cast<const std::byte*>(object);
+   const std::string_view type = typeName(prototypeOf(entity));
+   const Position from = at<Position>(entity, layout.entityPosition);
+   const std::byte* partner = nullptr;
+   if (type == "underground-belt") {
+      partner = Belt{entity}.partner().entity;
+   } else if (type == "pipe-to-ground") {
+      const std::vector<const std::byte*> boxes = fluidBoxesOf(entity);
+      if (boxes.empty()) return std::nullopt;
+      for (const PipeConnection& connection : connectionsOf(boxes[0]))
+         if (connection.type == layout.pipeTypeUnderground && connection.target) {
+            const std::byte* owner = ownerOf(connection.target);
+            if (directionBiased(at<Position>(owner, layout.entityPosition), from) == direction) partner = owner;
+         }
+   }
+   if (!partner) return std::nullopt;
+   const Position to = at<Position>(partner, layout.entityPosition);
+   if (directionBiased(to, from) != direction) return std::nullopt;
+   const double dx = static_cast<double>(to.x - from.x) / kScale;
+   const double dy = static_cast<double>(to.y - from.y) / kScale;
+   return UndergroundEnd{tileOf(to.x), tileOf(to.y), static_cast<int>(std::ceil(std::hypot(dx, dy)))};
+}
+
 } // namespace fa::facts

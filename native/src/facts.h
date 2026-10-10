@@ -1,6 +1,8 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -20,5 +22,32 @@ std::vector<std::string> describe(const void* entity, int32_t tileX, int32_t til
 // "Denies", fluids as "Has", a beacon's modules with counts, any other icon by name. Each part a
 // list item; none while the game draws no icons. In the application Gui's logic.
 std::vector<std::string> drawnIcons(const void* entity);
+
+// What the skip keys tell entities apart by (control.lua's cursor_skip_iteration): its prototype (a
+// ghost's building's), the way it faces when it has a direction, and for a transport belt how many
+// belts feed it and it feeds and its corner. A skip goes on over the same entity and over equals.
+struct Likeness {
+   const void* prototype = nullptr;
+   bool ghost = false;
+   int direction = -1;
+   size_t beltInputs = 0;
+   size_t beltOutputs = 0;
+   uint32_t beltShape = ~0u;
+   bool operator==(const Likeness&) const = default;
+};
+Likeness likenessOf(const void* entity);
+
+// Whether the skip keys pass over `entity` as if it were not there: robots and corpses, which lie
+// on or fly over what is built. A character's corpse stays.
+bool skipsOver(const void* entity);
+
+// The tile of the other end of an underground belt or pipe to ground, when it lies in the 16-way
+// `direction` from the entity, and how many tiles away; a skip jumps to it.
+struct UndergroundEnd {
+   int32_t tileX;
+   int32_t tileY;
+   int tiles;
+};
+std::optional<UndergroundEnd> undergroundEnd(const void* entity, uint8_t direction);
 
 } // namespace fa::facts

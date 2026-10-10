@@ -23,7 +23,6 @@ local Cursor = require("scripts.cursor")
 local FaUtils = require("scripts.fa-utils")
 local EntitySelection = require("scripts.entity-selection")
 local Sounds = require("scripts.ui.sounds")
-local TileReader = require("scripts.tile-reader")
 local Combat = require("scripts.combat")
 local VanillaMode = require("scripts.vanilla-mode")
 
@@ -92,7 +91,7 @@ function mod.process_walking_announcements(pindex)
          then
             Sounds.play_close_inventory(pindex)
          end
-         TileReader.read_tile(pindex)
+         Cursor.read(pindex)
       end)
    else
       -- NON-ANCHORED MODE: Don't announce while walking

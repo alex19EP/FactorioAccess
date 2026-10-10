@@ -35,7 +35,7 @@ end
 ---@param ent LuaEntity
 ---@return LocalisedString
 function mod.of(pindex, ent)
-   local info = Info.ent_info(pindex, ent, true)
+   local info = Info.ent_info(pindex, ent)
    if ent.type == "unit-spawner" then return { "fa.scanner-spawner-announce", info, pollution(ent) } end
    return info
 end

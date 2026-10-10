@@ -2,6 +2,8 @@
 
 #include "game.h"
 #include "reader.h"
+#include "skip.h"
+#include "vocab.h"
 #include "world.h"
 
 #include <algorithm>
@@ -14,6 +16,7 @@
 #include <limits>
 #include <mutex>
 #include <optional>
+#include <string>
 #include <string_view>
 #include <utility>
 
@@ -170,13 +173,32 @@ int32_t cellSize(const View& view) {
    return exponent < 0 ? 1 : int32_t{1} << static_cast<int>(exponent);
 }
 
-// The movement keys, by the mod's custom input names.
+// The movement keys, by the mod's custom input names: a step, a skip (Shift) and a move by the
+// size of the building in hand (Ctrl). The skips come first, so a key with Shift or Ctrl is never
+// taken for the plain step.
+enum class KeyKind { Step, Skip, BySize };
 struct MoveKey {
    std::string_view name;
    int32_t dx;
    int32_t dy;
+   KeyKind kind;
 };
-constexpr std::array<MoveKey, 4> kMoveKeys{{{"fa-w", 0, -1}, {"fa-a", -1, 0}, {"fa-s", 0, 1}, {"fa-d", 1, 0}}};
+constexpr std::array<MoveKey, 12> kMoveKeys{{
+   {"fa-s-w", 0, -1, KeyKind::Skip},
+   {"fa-s-a", -1, 0, KeyKind::Skip},
+   {"fa-s-s", 0, 1, KeyKind::Skip},
+   {"fa-s-d", 1, 0, KeyKind::Skip},
+   {"fa-c-w", 0, -1, KeyKind::BySize},
+   {"fa-c-a", -1, 0, KeyKind::BySize},
+   {"fa-c-s", 0, 1, KeyKind::BySize},
+   {"fa-c-d", 1, 0, KeyKind::BySize},
+   {"fa-w", 0, -1, KeyKind::Step},
+   {"fa-a", -1, 0, KeyKind::Step},
+   {"fa-s", 0, 1, KeyKind::Step},
+   {"fa-d", 1, 0, KeyKind::Step},
+}};
+// How far a skip looks for a change.
+constexpr int kSkipLimit = 100;
 
 // Their ControlInputs in the game's control settings, found again when the settings are rebuilt.
 struct MoveInputs {
@@ -220,19 +242,21 @@ bool g_modeKnown = false;
 bool g_vanilla = false;
 bool g_keys = false;
 bool g_anchored = false;
+std::optional<skip::Ruler> g_ruler;
 // The mod jumped the cursor: the next frame opens remote view if the screen does not hold it.
 bool g_jumped = false;
 
 struct StepRecord {
    Position position;
    Step step;
+   int tiles;
 };
 std::deque<StepRecord> g_steps;
 constexpr size_t kMaxSteps = 64;
 
-void record(Position position, Step step) {
+void record(Position position, Step step, int tiles = 1) {
    std::scoped_lock lock(g_mutex);
-   g_steps.push_back({position, step});
+   g_steps.push_back({position, step, tiles});
    if (g_steps.size() > kMaxSteps) g_steps.pop_front();
 }
 
@@ -243,6 +267,52 @@ std::optional<Position> currentCursor() {
 }
 
 void place(Position position) { world::placeCursor({position.x, position.y}); }
+
+// A skip key, or Ctrl with a movement key: the cursor goes on to the next tile that differs, or by
+// the size of the building or blueprint in hand, and the reader reads it after how far it went.
+void skipForKey(const MoveKey& key, const View& view, Position cursor) {
+   const int playerIndex = at<uint16_t>(view.player, layout.playerIndex) + 1;
+   const auto allowed = [&](int32_t x, int32_t y) {
+      return !fixedCamera(view.controller) || screen(view).holds(tileCentre(x, y));
+   };
+   const int32_t fromX = tileOf(cursor.x), fromY = tileOf(cursor.y);
+   if (key.kind == KeyKind::BySize) {
+      // A building of one tile, or nothing to build, moves a tile.
+      int shift = 1;
+      if (const auto held = world::heldBuild(playerIndex); held && held->width + held->height > 2)
+         shift = key.dx != 0 ? held->width : held->height;
+      const int32_t x = fromX + key.dx * shift, y = fromY + key.dy * shift;
+      if (!allowed(x, y)) {
+         record(cursor, Step::Edge);
+         return;
+      }
+      const Position target = tileCentre(x, y);
+      place(target);
+      reader::read(x, y, vocab::kSkippedByPreview(shift));
+      record(target, Step::Read);
+      return;
+   }
+   std::optional<skip::Ruler> ruler;
+   {
+      std::scoped_lock lock(g_mutex);
+      ruler = g_ruler;
+   }
+   const skip::Result found = skip::find(fromX, fromY, key.dx, key.dy, kSkipLimit, allowed, ruler);
+   const Position target = tileCentre(found.x, found.y);
+   place(target);
+   if (found.kind == skip::Result::Kind::Edge) {
+      record(target, Step::Edge);
+      return;
+   }
+   const bool limit = found.kind == skip::Result::Kind::Limit;
+   std::string prefix;
+   if (limit)
+      prefix = vocab::kSkippedNoChange(kSkipLimit);
+   else if (found.tiles > 1)
+      prefix = vocab::kSkipped(found.tiles);
+   reader::read(found.x, found.y, std::move(prefix));
+   record(target, Step::Skipped, limit ? -1 : found.tiles);
+}
 
 void moveForKey(const void* event, const void* context) {
    if (!event) return;
@@ -256,6 +326,10 @@ void moveForKey(const void* event, const void* context) {
    if (!key) return;
    const std::optional<View> view = localView();
    if (!view) return;
+   if (key->kind != KeyKind::Step) {
+      skipForKey(*key, *view, *cursor);
+      return;
+   }
    const int32_t size = cellSize(*view);
    Position target;
    if (size > 0) {
@@ -280,7 +354,7 @@ void moveForKey(const void* event, const void* context) {
       record(target, Step::Moved);
       return;
    }
-   reader::moved(tileOf(target.x), tileOf(target.y));
+   reader::read(tileOf(target.x), tileOf(target.y));
    record(target, Step::Read);
 }
 
@@ -461,7 +535,7 @@ void detourRenderState(void* source) {
 
 } // namespace
 
-void setMode(int playerIndex, bool vanilla, bool keys, bool anchored) {
+void setMode(int playerIndex, bool vanilla, bool keys, bool anchored, std::optional<Tile> ruler) {
    if (!isLocalPlayer(playerIndex)) return;
    {
       std::scoped_lock lock(g_mutex);
@@ -469,6 +543,7 @@ void setMode(int playerIndex, bool vanilla, bool keys, bool anchored) {
       g_vanilla = vanilla;
       g_keys = keys && !vanilla;
       g_anchored = anchored;
+      g_ruler = ruler ? std::optional<skip::Ruler>(skip::Ruler{ruler->x, ruler->y}) : std::nullopt;
    }
    if (vanilla) world::releaseCursor(playerIndex);
 }
@@ -481,14 +556,14 @@ void jump(int playerIndex, double x, double y) {
    g_jumped = true;
 }
 
-std::optional<Step> step(int playerIndex, double x, double y) {
+std::optional<StepResult> step(int playerIndex, double x, double y) {
    if (!isLocalPlayer(playerIndex)) return std::nullopt;
    const Position position = fromTiles(x, y);
    std::scoped_lock lock(g_mutex);
    auto found = std::find_if(g_steps.begin(), g_steps.end(),
                              [&](const StepRecord& record) { return record.position == position; });
    if (found == g_steps.end()) return std::nullopt;
-   const Step result = found->step;
+   const StepResult result{found->step, found->tiles};
    // Steps before it were said already, or never will be.
    g_steps.erase(g_steps.begin(), found + 1);
    return result;

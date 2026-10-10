@@ -64,7 +64,7 @@ function mod.add_to_remote(player, spidertron)
 
    local mb = MessageBuilder.new()
    mb:fragment({ "fa.spidertron-remote-added" })
-   mb:fragment(FaInfo.ent_info(player.index, spidertron, true))
+   mb:fragment(FaInfo.ent_info(player.index, spidertron))
    Speech.speak(player.index, mb:build())
 end
 

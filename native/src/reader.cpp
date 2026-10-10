@@ -97,15 +97,13 @@ struct OptionalContext {
 
 constexpr std::align_val_t kAlignment{16};
 
-// A step waiting for the Gui's tick, and the tile last read with the entity it described, which the
-// mod's words must match.
-struct Reading {
+// A tile waiting for the Gui's tick.
+struct Pending {
    Position tile;
-   std::optional<Entity> entity;
+   std::string prefix;
 };
 std::mutex g_mutex;
-std::optional<Position> g_pending;
-std::optional<Reading> g_read;
+std::optional<Pending> g_pending;
 
 const std::byte* currentGame() {
    const auto* context = *reinterpret_cast<const std::byte* const*>(layout.globalContext);
@@ -466,68 +464,94 @@ std::string waterShape(const std::byte* surface, Position tile) {
 }
 
 std::string tileName(const std::byte* surface, Position tile) {
-   const std::byte* found = reinterpret_cast<TileAtFunction>(layout.surfaceTileAt)(surface, &tile);
-   if (!found) return vocab::translate("fa.tile-uncharted-out-of-range", {});
-   const std::byte* prototype = prototypeAt(layout.tilePrototypes, at<uint16_t>(found, 0));
+   const std::byte* prototype = tilePrototypeAt(surface, tile);
    if (!prototype) return {};
    if (isWater(prototype)) return localisedName(prototype) + " " + waterShape(surface, tile);
    return localisedName(prototype);
 }
 
-// What the tile `tile` holds, for the local player, or nothing outside a game with a view.
-std::optional<std::string> read(Position tile, std::optional<Entity>& described) {
+// This client's player and the surface its view shows, while a game with a view is up.
+struct Local {
+   const std::byte* player;
+   const std::byte* surface;
+};
+
+std::optional<Local> local() {
    const std::byte* game = currentGame();
    if (!game) return std::nullopt;
    const std::byte* player = at<const std::byte*>(game, layout.gameLocalPlayer);
    const std::byte* view = at<const std::byte*>(game, layout.gameView);
    if (!player || !view || at<const std::byte*>(view, layout.gameViewPlayer) != player) return std::nullopt;
-   const auto* surface = reinterpret_cast<const std::byte* (*)(const void*)>(layout.gameViewSurface)(view);
-   const Position centre{tile.x * kScale + kScale / 2, tile.y * kScale + kScale / 2};
-   const std::byte* entity = entityAt(player, surface, centre);
-   if (!entity) return tileName(surface, tile);
-   const std::byte* prototype = at<const std::byte*>(entity, layout.entityPrototypeOf);
-   const Position position = at<Position>(entity, layout.entityPosition);
-   described = Entity{std::string(reinterpret_cast<const MsvcString*>(prototype + layout.prototypeName)->view()),
-                      static_cast<double>(position.x) / kScale, static_cast<double>(position.y) / kScale};
-   return describe(player, entity, tile);
+   return Local{player, reinterpret_cast<const std::byte* (*)(const void*)>(layout.gameViewSurface)(view)};
+}
+
+Position centreOf(Position tile) { return {tile.x * kScale + kScale / 2, tile.y * kScale + kScale / 2}; }
+
+// "uncharted" where the player's force has not charted the tile's chunk, "blurred" where it has
+// but does not see into it now (Mouse.cursor_visibility_info).
+std::string visibility(const Local& here, Position tile) {
+   const std::byte* map = at<const std::byte*>(here.player, layout.playerMap);
+   const std::byte* force =
+      at<const std::byte* const*>(map, layout.mapForces)[at<uint8_t>(here.player, layout.playerForce)];
+   const uint32_t surfaceIndex = at<uint32_t>(here.surface, layout.surfaceIndex);
+   const Position centre = centreOf(tile);
+   using ChartedFunction = bool (*)(const void* force, uint32_t surfaceIndex, const Position* position);
+   if (!reinterpret_cast<ChartedFunction>(layout.forceIsChunkCharted)(force, surfaceIndex, &centre))
+      return vocab::kUncharted;
+   using ChartFunction = const void* (*)(const void* force, uint32_t surfaceIndex);
+   const void* chart = reinterpret_cast<ChartFunction>(layout.forceChart)(force, surfaceIndex);
+   const Position chunk{centre.x >> 13, centre.y >> 13};
+   using CoveredFunction = bool (*)(const void* chart, const Position* chunk);
+   if (!chart || reinterpret_cast<CoveredFunction>(layout.chartChunkCovered)(chart, &chunk)) return vocab::kBlurred;
+   return {};
+}
+
+// What the tile `tile` holds, for the local player, or nothing outside a game with a view.
+std::optional<std::string> readTile(Position tile) {
+   const std::optional<Local> here = local();
+   if (!here) return std::nullopt;
+   const std::byte* entity = entityAt(here->player, here->surface, centreOf(tile));
+   // A tile the map has not generated says so, and no more.
+   if (!entity && !reinterpret_cast<TileAtFunction>(layout.surfaceTileAt)(here->surface, &tile))
+      return vocab::translate("fa.tile-uncharted-out-of-range", {});
+   std::string text = entity ? describe(here->player, entity, tile) : tileName(here->surface, tile);
+   const std::string seen = visibility(*here, tile);
+   if (!seen.empty()) text += (text.empty() ? "" : ", ") + seen;
+   return text;
 }
 
 } // namespace
 
-void moved(int32_t tileX, int32_t tileY) {
+void read(int32_t tileX, int32_t tileY, std::string prefix) {
    std::scoped_lock lock(g_mutex);
-   g_pending = Position{tileX, tileY};
+   g_pending = Pending{Position{tileX, tileY}, std::move(prefix)};
 }
 
 void tick() {
-   std::optional<Position> pending;
+   std::optional<Pending> pending;
    {
       std::scoped_lock lock(g_mutex);
       pending = std::exchange(g_pending, std::nullopt);
    }
    if (!pending) return;
-   std::optional<Entity> described;
-   std::optional<std::string> text = read(*pending, described);
+   std::optional<std::string> text = readTile(pending->tile);
    if (!text) return;
-   {
-      std::scoped_lock lock(g_mutex);
-      g_read = Reading{*pending, std::move(described)};
+   // The mod's own words may end in their own comma ("Unanchored cursor,").
+   if (!pending->prefix.empty()) {
+      const char* separator = text->empty() ? "" : pending->prefix.ends_with(',') ? " " : ", ";
+      *text = pending->prefix + separator + *text;
    }
    speech::say(std::move(*text), true);
 }
 
-void more(int32_t tileX, int32_t tileY, std::string_view text) {
-   {
-      std::scoped_lock lock(g_mutex);
-      if (!g_read || g_read->tile.x != tileX || g_read->tile.y != tileY || g_pending) return;
-   }
-   if (text.find_first_not_of(" \t\r\n") != std::string_view::npos) speech::say(std::string(text), false);
+const void* selectedAt(int32_t tileX, int32_t tileY) {
+   const std::optional<Local> here = local();
+   return here ? entityAt(here->player, here->surface, centreOf(Position{tileX, tileY})) : nullptr;
 }
 
-std::optional<Entity> entity(int32_t tileX, int32_t tileY) {
-   std::scoped_lock lock(g_mutex);
-   if (!g_read || g_read->tile.x != tileX || g_read->tile.y != tileY) return std::nullopt;
-   return g_read->entity;
+bool waterAt(int32_t tileX, int32_t tileY) {
+   const std::optional<Local> here = local();
+   return here && isWater(tilePrototypeAt(here->surface, Position{tileX, tileY}));
 }
 
 } // namespace fa::reader

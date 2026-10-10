@@ -28,7 +28,6 @@ local Daytime = require("scripts.daytime")
 local Driving = require("scripts.driving")
 local HandMonitor = require("scripts.hand-monitor")
 local Electrical = require("scripts.electrical")
-local EntitySelection = require("scripts.entity-selection")
 local Equipment = require("scripts.equipment")
 local EventManager = require("scripts.event-manager")
 require("scripts.fa-commands") -- registers FA's console commands
@@ -60,7 +59,6 @@ local Spidertron = require("scripts.spidertron")
 local SpidertronRemote = require("scripts.spidertron-remote")
 local TH = require("scripts.table-helpers")
 local TestFramework = require("scripts.test-framework")
-local TileReader = require("scripts.tile-reader")
 local TransportBelts = require("scripts.transport-belts")
 local UpgradePlanner = require("scripts.upgrade-planner")
 local VanillaMode = require("scripts.vanilla-mode")
@@ -172,19 +170,6 @@ function check_for_player(index)
    end
 end
 
----Local helper: Reads the tile at the cursor. With a building in hand, the DLL then reads what the
----game's preview shows there.
----@param pindex integer Player index
----@param start_text LocalisedString? Optional text to prepend to the result
-local function read_tile_with_preview_info(pindex, start_text)
-   local message = MessageBuilder.new()
-   if start_text then message:fragment(start_text) end
-
-   TileReader.read_tile_inner(pindex, message)
-
-   Speech.speak(pindex, message:build())
-end
-
 --Update the position info and cursor info during smooth walking.
 EventManager.on_event(
    defines.events.on_player_changed_position,
@@ -213,7 +198,8 @@ local function report_cursor_modes()
             pindex,
             VanillaMode.is_enabled(pindex),
             not UiRouter.get_router(pindex):is_ui_open() and not Combat.is_combat_mode(pindex),
-            Viewpoint.get_viewpoint(pindex):get_cursor_anchored()
+            Viewpoint.get_viewpoint(pindex):get_cursor_anchored(),
+            Rulers.ruler_tile(pindex)
          )
       end
    end
@@ -722,33 +708,28 @@ local function play_cursor_step(pindex, volume)
    end
 end
 
----Reads where a movement key took the cursor: the DLL moves it as the game reads the key, so the
----key's event already carries the new tile, or on the full map the new cell.
+---Sounds where a movement key took the cursor: the DLL moves it as the game reads the key, so the
+---key's event already carries the new tile, or on the full map the new cell, and the DLL reads the
+---tile itself.
 ---@param pindex integer
 ---@param event EventData.CustomInputEvent
 local function cursor_mode_move(pindex, event)
    local step = Cursor.step(pindex, event)
+   if not step then return end
    if step == "edge" then
       ViewLimit.say_edge(pindex)
       return
    end
 
-   -- The DLL read the tile as the key was pressed; the mod adds what only it tells
-   if step == "read" then
-      Cursor.read_more(pindex, TileReader.read_tile_more(pindex))
-      play_cursor_step(pindex, 0.75)
-      return
+   if step == "moved" then
+      local cell_size = Zoom.get_map_cell_size(pindex)
+      if cell_size then
+         MapCells.read(pindex, cell_size)
+         return
+      end
+      -- A step of a drag build, which the game builds on after it: its own preview says what
+      -- blocks the build
    end
-
-   local cell_size = Zoom.get_map_cell_size(pindex)
-   if cell_size then
-      MapCells.read(pindex, cell_size)
-      return
-   end
-
-   -- While the build key drags, the game builds here after this reading, so it would name the
-   -- ground; the game's own preview says what blocks the build instead
-   if not NativeCursor.drag_build(pindex) then read_tile_with_preview_info(pindex) end
    play_cursor_step(pindex, 0.75)
 end
 
@@ -799,304 +780,42 @@ EventManager.on_event(
    end
 )
 
--- cursor_skip_iteration's result when the next tile is off the screen: the cursor stays on the last
--- tile it reached.
-local SKIP_AT_EDGE = -2
-
---Moves the cursor in the same direction multiple times until the reported entity changes. Change includes: new entity name or new direction for entites with the same name, or changing between nil and ent. Returns move count.
-local function cursor_skip_iteration(pindex, direction, iteration_limit)
-   local p = game.get_player(pindex)
-   local start = nil
-   local cursor_pos = Cursor.tile(pindex)
-   local start_tile_is_water = FaUtils.tile_is_water(p.surface, cursor_pos)
-   local start_tile_is_ruler_aligned = Rulers.is_any_ruler_aligned(pindex, cursor_pos)
-   local current = nil
-   local limit = iteration_limit or 100
-   local moved = 1
-   local comment = ""
-
-   -- Returns a new value for current or nil, ignoring a list of entities.
-   --
-   ---@returns LuaEntity?
-   local function compute_current()
-      for ent in EntitySelection.iterate_selected_ents(pindex) do
-         local bad = ent.type == "logistic-robot"
-            or ent.type == "construction-robot"
-            or ent.type == "combat-robot"
-            or ent.type == "corpse"
-         if not bad then return ent end
-      end
-
-      return nil
-   end
-
-   start = compute_current()
-
-   --For pipes to ground, apply a special case where you jump to the underground neighbour
-   if start ~= nil and start.valid and start.type == "pipe-to-ground" then
-      local connections = start.get_fluid_box_pipe_connections(1)
-      for i, con in ipairs(connections) do
-         if con.target ~= nil then
-            local dist =
-               math.ceil(util.distance(start.position, con.target.get_fluid_box_pipe_connections(1)[1].position))
-            local dir_neighbor = FaUtils.get_direction_biased(con.target_position, start.position)
-            if con.connection_type == "underground" and dir_neighbor == direction then
-               local other_end = con.target.get_fluid_box_pipe_connections(1)[1].position
-               if not ViewLimit.allows(pindex, other_end) then return SKIP_AT_EDGE end
-               Cursor.jump(pindex, other_end)
-               current = EntitySelection.get_first_ent_at_tile(pindex)
-               return dist
-            end
-         end
-      end
-      --For underground belts, apply a special case where you jump to the underground neighbour
-   elseif start ~= nil and start.valid and start.type == "underground-belt" then
-      local neighbour = start.underground_belt_neighbour
-      if neighbour then
-         local other_end = neighbour
-         local dist = math.ceil(util.distance(start.position, other_end.position))
-         local dir_neighbor = FaUtils.get_direction_biased(other_end.position, start.position)
-         if dir_neighbor == direction then
-            if not ViewLimit.allows(pindex, other_end.position) then return SKIP_AT_EDGE end
-            Cursor.jump(pindex, other_end.position)
-            current = EntitySelection.get_first_ent_at_tile(pindex)
-            return dist
-         end
-      end
-      --For water start, find the first non-water tile
-   elseif start_tile_is_water then
-      local selected_tile_is_water = nil
-      --Iterate first_tile
-      cursor_pos = FaUtils.offset_position_legacy(cursor_pos, direction, 1)
-      if not ViewLimit.allows(pindex, cursor_pos) then return SKIP_AT_EDGE end
-      Cursor.jump(pindex, cursor_pos)
-      selected_tile_is_water = FaUtils.tile_is_water(p.surface, cursor_pos)
-
-      --Run checks and skip when needed
-      while moved < limit do
-         if selected_tile_is_water == false then
-            --Water tile -> non-water tile found
-            return moved
-         else
-            --For audio rulers, stop if crossing into or out of alignment with any rulers
-            local current_tile_is_ruler_aligned = Rulers.is_any_ruler_aligned(pindex, cursor_pos)
-            if start_tile_is_ruler_aligned ~= current_tile_is_ruler_aligned then
-               return moved
-               --Also for rulers, stop if at the definiton point of any ruler
-            elseif Rulers.is_at_any_ruler_definition(pindex, cursor_pos) then
-               return moved
-            end
-            --Iterate again
-            cursor_pos = FaUtils.offset_position_legacy(cursor_pos, direction, 1)
-            if not ViewLimit.allows(pindex, cursor_pos) then return SKIP_AT_EDGE end
-            Cursor.jump(pindex, cursor_pos)
-            selected_tile_is_water = FaUtils.tile_is_water(p.surface, cursor_pos)
-            moved = moved + 1
-         end
-      end
-      --Reached limit
-      return -1
-   end
-   --Iterate first tile
-   cursor_pos = FaUtils.offset_position_legacy(cursor_pos, direction, 1)
-   if not ViewLimit.allows(pindex, cursor_pos) then return SKIP_AT_EDGE end
-   Cursor.jump(pindex, cursor_pos)
-
-   current = compute_current()
-
-   --Run checks and skip when needed
-   while moved < limit do
-      --For audio rulers, stop if crossing into or out of alignment with any rulers
-      local current_tile_is_ruler_aligned = Rulers.is_any_ruler_aligned(pindex, cursor_pos)
-      if start_tile_is_ruler_aligned ~= current_tile_is_ruler_aligned then
-         return moved
-         --Also for rulers, stop if at the definiton point of any ruler
-      elseif Rulers.is_at_any_ruler_definition(pindex, cursor_pos) then
-         return moved
-      end
-      --Check the current entity or tile against the starting one
-      if current == nil then
-         if start == nil then
-            --Both are nil: check if water, else skip
-            local selected_tile_is_water = FaUtils.tile_is_water(p.surface, cursor_pos)
-            if selected_tile_is_water then
-               --Non-water tile -> water tile found
-               return moved
-            else
-               --skip
-            end
-         else
-            --Valid start ent -> nil found
-            return moved
-         end
-      else
-         if start == nil or start.valid == false then
-            --Nil entity start -> valid entity found
-            return moved
-         else
-            --Both are valid
-            if start.unit_number == current.unit_number and current.type ~= "resource" then
-               --They are the same ent: skip
-            else
-               --They are different ents OR they are resource ents (which can have the same unit number despite being different ents)
-               if start.name ~= current.name then
-                  --They have different names: return
-                  --p.print("RET 1, start: " .. start.name .. ", current: " .. current.name .. ", comment:" .. comment)--
-                  return moved
-               else
-                  --They have the same name
-                  if current.supports_direction == false then
-                     --They both do not support direction: skip
-                  else
-                     --They support direction
-                     if current.direction ~= start.direction then
-                        --They have different directions: return
-                        --p.print("RET 2, start: " .. start.name .. ", current: " .. current.name .. ", comment:" .. comment)--
-                        return moved
-                     else
-                        --They have same direction: skip
-
-                        --Exception for transport belts facing the same direction: Return if neighbor counts or shapes are different
-                        if start.type == "transport-belt" then
-                           local start_input_neighbors = #start.belt_neighbours["inputs"]
-                           local start_output_neighbors = #start.belt_neighbours["outputs"]
-                           local current_input_neighbors = #current.belt_neighbours["inputs"]
-                           local current_output_neighbors = #current.belt_neighbours["outputs"]
-                           if
-                              start_input_neighbors ~= current_input_neighbors
-                              or start_output_neighbors ~= current_output_neighbors
-                              or start.belt_shape ~= current.belt_shape
-                           then
-                              --p.print("RET 3, start: " .. start.name .. ", current: " .. current.name .. ", comment:" .. comment)--
-                              return moved
-                           end
-                        end
-                     end
-                  end
-               end
-            end
-            --p.print("start: " .. start.name .. ", current: " .. current.name .. ", comment:" .. comment)--
-         end
-      end
-      --Skip case: Move 1 more tile
-      cursor_pos = FaUtils.offset_position_legacy(cursor_pos, direction, 1)
-      if not ViewLimit.allows(pindex, cursor_pos) then return SKIP_AT_EDGE end
-      Cursor.jump(pindex, cursor_pos)
-      moved = moved + 1
-      current = compute_current()
-   end
-   --Reached limit
-   return -1
-end
-
---Shift the cursor by the size of the preview in hand, or by a tile.
+---Sounds where a skip key took the cursor (Shift with a movement key, or Ctrl, which moves by the
+---size of the building in hand): the DLL finds the tile as the game reads the key and reads it
+---itself (native/src/skip.h).
 ---@param pindex integer
----@param direction defines.direction Which way to move
----@param build_direction defines.direction? The game's build direction, from the key's event
-local function apply_skip_by_preview_size(pindex, direction, build_direction)
-   local p = game.get_player(pindex)
-   local cursor_pos = Cursor.tile(pindex)
-
-   --Check the moved count against the dimensions of the preview in hand
-   local stack = p.cursor_stack
-   local width, height = BuildDimensions.get_stack_build_dimensions(stack, build_direction)
-
-   local shift
-   if not width or not height or (width + height <= 2) then
-      shift = 1
-   elseif direction == dirs.east or direction == dirs.west then
-      --For entities/blueprints larger than 1x1, move by the appropriate dimension
-      shift = width
-   elseif direction == dirs.north or direction == dirs.south then
-      shift = height
-   end
-
-   local target = FaUtils.offset_position_legacy(cursor_pos, direction, shift)
-   if not ViewLimit.allows(pindex, target) then return SKIP_AT_EDGE end
-   Cursor.jump(pindex, target)
-   return shift
-end
-
---Runs the cursor skip actions and reads out results
----@param build_direction defines.direction? With use_preview_size: the game's build direction, from the key's event
-local function cursor_skip(pindex, direction, iteration_limit, use_preview_size, build_direction)
-   local p = game.get_player(pindex)
-   local limit = iteration_limit or 100
-
-   local cursor_pos
-   local result = ""
-   local moved_count = 0
-   if use_preview_size == true then
-      moved_count = apply_skip_by_preview_size(pindex, direction, build_direction)
-      result = "Skipped by preview size " .. moved_count .. ", "
-   else
-      moved_count = cursor_skip_iteration(pindex, direction, limit)
-      result = "Skipped "
-   end
-
-   cursor_pos = Cursor.tile(pindex)
-
-   if moved_count == SKIP_AT_EDGE then
+---@param event EventData.CustomInputEvent
+local function cursor_skip(pindex, event)
+   local step, tiles = Cursor.step(pindex, event)
+   if not step then return end
+   if step == "edge" then
       ViewLimit.say_edge(pindex)
       return
-   elseif use_preview_size then
-      --Rolling always plays the regular moving sound
-      if storage.players[pindex].remote_view then
-         sounds.play_building_placement(p.index, cursor_pos)
-      else
-         p.play_sound({
-            path = "Close-Inventory-Sound",
-            position = p.position,
-            volume_modifier = 1,
-         })
-      end
-   elseif moved_count < 0 then
-      --No change found within the limit
-      result = result .. limit .. " tiles without a change, "
-      if storage.players[pindex].remote_view then
-         sounds.play_sound_at_position({ path = "inventory-wrap-around", volume_modifier = 1 }, cursor_pos)
-      else
-         p.play_sound({
-            path = "inventory-wrap-around",
-            position = p.position,
-            volume_modifier = 1,
-         })
-      end
-   elseif moved_count == 1 then
-      result = ""
-      if storage.players[pindex].remote_view then
-         sounds.play_building_placement(p.index, cursor_pos)
-      else
-         p.play_sound({
-            path = "Close-Inventory-Sound",
-            position = p.position,
-            volume_modifier = 1,
-         })
-      end
-   elseif moved_count > 1 then
-      --Change found, with more than 1 tile moved
-      result = result .. moved_count .. " tiles, "
-      if storage.players[pindex].remote_view then
-         sounds.play_sound_at_position({ path = "inventory-wrap-around", volume_modifier = 1 }, cursor_pos)
-      else
-         p.play_sound({
-            path = "inventory-wrap-around",
-            position = p.position,
-            volume_modifier = 1,
-         })
-      end
    end
 
-   --Read the tile reached
-   read_tile_with_preview_info(pindex, result)
+   local p = game.get_player(pindex)
+   local cursor_pos = Cursor.tile(pindex)
+   -- A skip of more than a tile, or one that found no change, rolls
+   if step == "skipped" and tiles ~= 1 then
+      if storage.players[pindex].remote_view then
+         sounds.play_sound_at_position({ path = "inventory-wrap-around", volume_modifier = 1 }, cursor_pos)
+      else
+         p.play_sound({ path = "inventory-wrap-around", position = p.position, volume_modifier = 1 })
+      end
+   elseif storage.players[pindex].remote_view then
+      sounds.play_building_placement(p.index, cursor_pos)
+   else
+      p.play_sound({ path = "Close-Inventory-Sound", position = p.position, volume_modifier = 1 })
+   end
 end
 
 ---Handle shift+direction key press
 ---In combat mode with capsule: use capsule in direction
 ---Outside combat mode: cursor skip
----@param pindex integer
 ---@param direction defines.direction
-local function handle_shift_direction(pindex, direction)
+---@param event EventData.CustomInputEvent
+local function handle_shift_direction(direction, event)
+   local pindex = event.player_index
    -- In combat mode, shift+wasd throws capsules if one is held
    if Combat.is_combat_mode(pindex) then
       if Capsules.get_held_capsule_data(pindex) then
@@ -1106,15 +825,22 @@ local function handle_shift_direction(pindex, direction)
       end
       return
    end
-   -- Outside combat mode, do normal cursor skip
-   cursor_skip(pindex, direction)
+   cursor_skip(pindex, event)
+end
+
+---Handle ctrl+direction key press: the cursor moves by the size of the building in hand.
+---@param event EventData.CustomInputEvent
+local function handle_ctrl_direction(event)
+   local pindex = event.player_index
+   if skip_in_combat_mode(pindex) then return end
+   cursor_skip(pindex, event)
 end
 
 EventManager.on_event(
    "fa-s-w",
    ---@param event EventData.CustomInputEvent
    function(event, pindex)
-      handle_shift_direction(pindex, defines.direction.north)
+      handle_shift_direction(defines.direction.north, event)
    end
 )
 
@@ -1122,7 +848,7 @@ EventManager.on_event(
    "fa-s-a",
    ---@param event EventData.CustomInputEvent
    function(event, pindex)
-      handle_shift_direction(pindex, defines.direction.west)
+      handle_shift_direction(defines.direction.west, event)
    end
 )
 
@@ -1130,7 +856,7 @@ EventManager.on_event(
    "fa-s-s",
    ---@param event EventData.CustomInputEvent
    function(event, pindex)
-      handle_shift_direction(pindex, defines.direction.south)
+      handle_shift_direction(defines.direction.south, event)
    end
 )
 
@@ -1138,45 +864,14 @@ EventManager.on_event(
    "fa-s-d",
    ---@param event EventData.CustomInputEvent
    function(event, pindex)
-      handle_shift_direction(pindex, defines.direction.east)
+      handle_shift_direction(defines.direction.east, event)
    end
 )
 
-EventManager.on_event(
-   "fa-c-w",
-   ---@param event EventData.CustomInputEvent
-   function(event, pindex)
-      if skip_in_combat_mode(pindex) then return end
-      cursor_skip(pindex, defines.direction.north, 1000, true, event.cursor_direction)
-   end
-)
-
-EventManager.on_event(
-   "fa-c-a",
-   ---@param event EventData.CustomInputEvent
-   function(event, pindex)
-      if skip_in_combat_mode(pindex) then return end
-      cursor_skip(pindex, defines.direction.west, 1000, true, event.cursor_direction)
-   end
-)
-
-EventManager.on_event(
-   "fa-c-s",
-   ---@param event EventData.CustomInputEvent
-   function(event, pindex)
-      if skip_in_combat_mode(pindex) then return end
-      cursor_skip(pindex, defines.direction.south, 1000, true, event.cursor_direction)
-   end
-)
-
-EventManager.on_event(
-   "fa-c-d",
-   ---@param event EventData.CustomInputEvent
-   function(event, pindex)
-      if skip_in_combat_mode(pindex) then return end
-      cursor_skip(pindex, defines.direction.east, 1000, true, event.cursor_direction)
-   end
-)
+EventManager.on_event("fa-c-w", handle_ctrl_direction)
+EventManager.on_event("fa-c-a", handle_ctrl_direction)
+EventManager.on_event("fa-c-s", handle_ctrl_direction)
+EventManager.on_event("fa-c-d", handle_ctrl_direction)
 
 -- Ctrl+shift+wasd force-fires capsules even in safe mode
 EventManager.on_event(
@@ -1330,7 +1025,7 @@ EventManager.on_event(
    "fa-k",
    ---@param event EventData.CustomInputEvent
    function(event, pindex)
-      -- Check for virtual train driving (status command doesn't need TileReader.read_tile)
+      -- Check for virtual train driving (its status command reads no tile)
       if VirtualTrainDriving.on_kb_descriptive_action_name(event) then return end
 
       read_coords(pindex)
@@ -1504,7 +1199,7 @@ EventManager.on_event(
    ---@param event EventData.CustomInputEvent
    function(event, pindex)
       if not VirtualTrainDriving.is_locked(pindex) then return end
-      if VirtualTrainDriving.return_to_bookmark(pindex) then TileReader.read_tile(pindex) end
+      if VirtualTrainDriving.return_to_bookmark(pindex) then Cursor.read(pindex) end
    end
 )
 
@@ -1566,7 +1261,7 @@ local function toggle_cursor_mode(pindex, muted)
       --Finally, read the new tile
       vp:set_cursor_anchored(false)
       -- For the unanchored case it's worth reading the tile the cursor ended up on.
-      if muted ~= true then read_tile_with_preview_info(pindex, { "fa.unanchored-cursor" }) end
+      if muted ~= true then Cursor.read(pindex, { "fa.unanchored-cursor" }) end
    end
 end
 
@@ -2454,7 +2149,7 @@ EventManager.on_event("fa-comma", function(event)
    -- Check for virtual train driving
    local handled, should_read = VirtualTrainDriving.on_kb_descriptive_action_name(event)
    if handled then
-      if should_read then TileReader.read_tile(event.player_index) end
+      if should_read then Cursor.read(event.player_index) end
       return
    end
 
@@ -2488,7 +2183,7 @@ EventManager.on_event("fa-m", function(event)
    -- Check for virtual train driving
    local handled, should_read = VirtualTrainDriving.on_kb_descriptive_action_name(event)
    if handled then
-      if should_read then TileReader.read_tile(event.player_index) end
+      if should_read then Cursor.read(event.player_index) end
       return
    end
 
@@ -2505,7 +2200,7 @@ EventManager.on_event("fa-m", function(event)
          return
       elseif stack.prototype.type == "spidertron-remote" then
          SpidertronRemote.cycle_spidertrons(player, -1)
-         TileReader.read_tile(pindex)
+         Cursor.read(pindex)
          return
       end
    end
@@ -2517,7 +2212,7 @@ EventManager.on_event("fa-dot", function(event)
    -- Check for virtual train driving
    local handled, should_read = VirtualTrainDriving.on_kb_descriptive_action_name(event)
    if handled then
-      if should_read then TileReader.read_tile(event.player_index) end
+      if should_read then Cursor.read(event.player_index) end
       return
    end
 
@@ -2534,7 +2229,7 @@ EventManager.on_event("fa-dot", function(event)
          return
       elseif stack.prototype.type == "spidertron-remote" then
          SpidertronRemote.cycle_spidertrons(player, 1)
-         TileReader.read_tile(pindex)
+         Cursor.read(pindex)
          return
       end
    end
@@ -2558,7 +2253,7 @@ end, EventManager.EVENT_KIND.WORLD)
 EventManager.on_event("fa-c-m", function(event)
    local handled, should_read = VirtualTrainDriving.on_kb_descriptive_action_name(event)
    if handled then
-      if should_read then TileReader.read_tile(event.player_index) end
+      if should_read then Cursor.read(event.player_index) end
       return
    end
 end, EventManager.EVENT_KIND.WORLD)
@@ -2566,7 +2261,7 @@ end, EventManager.EVENT_KIND.WORLD)
 EventManager.on_event("fa-s-m", function(event)
    local handled, should_read = VirtualTrainDriving.on_kb_descriptive_action_name(event)
    if handled then
-      if should_read then TileReader.read_tile(event.player_index) end
+      if should_read then Cursor.read(event.player_index) end
       return
    end
 end, EventManager.EVENT_KIND.WORLD)
@@ -2574,7 +2269,7 @@ end, EventManager.EVENT_KIND.WORLD)
 EventManager.on_event("fa-c-dot", function(event)
    local handled, should_read = VirtualTrainDriving.on_kb_descriptive_action_name(event)
    if handled then
-      if should_read then TileReader.read_tile(event.player_index) end
+      if should_read then Cursor.read(event.player_index) end
       return
    end
 end, EventManager.EVENT_KIND.WORLD)
@@ -2582,7 +2277,7 @@ end, EventManager.EVENT_KIND.WORLD)
 EventManager.on_event("fa-s-dot", function(event)
    local handled, should_read = VirtualTrainDriving.on_kb_descriptive_action_name(event)
    if handled then
-      if should_read then TileReader.read_tile(event.player_index) end
+      if should_read then Cursor.read(event.player_index) end
       return
    end
 end, EventManager.EVENT_KIND.WORLD)
@@ -2632,7 +2327,7 @@ EventManager.on_event("fa-backspace", function(event)
    -- Check for virtual train driving
    local handled, should_read = VirtualTrainDriving.on_kb_descriptive_action_name(event)
    if handled then
-      if should_read then TileReader.read_tile(event.player_index) end
+      if should_read then Cursor.read(event.player_index) end
       return
    end
 

@@ -2,8 +2,9 @@
 Audio rulers.
 
 A ruler triggers when the cursor touches or crosses its boundaries and plays a
-sound.  Right now there is one ruler per player and no interaction with cursor
-skipping.  Both of these will change later.  For the sake of the prototype,
+sound.  Right now there is one ruler per player.  The DLL's cursor skip stops
+where it comes into or out of line with the ruler (native/src/skip.h), from the
+tile the mod reports every tick.  For the sake of the prototype,
 players place a ruler with alt+b and clear with alt+shift+b.  If they want to
 also have a bookmark there, we make them do so themselves.
 
@@ -212,19 +213,6 @@ function handle_class:play_if_needed(x, y)
    play_ruler_alignment(self.pindex, alignment)
 end
 
--- Report how this position aligns with this ruler
----@param x number
----@param y number
----@returns fa.RulerAlignmentResult
-function handle_class:report_alignment(x, y)
-   assert(self.ruler, DELETED_MSG)
-
-   x = math.floor(x)
-   y = math.floor(y)
-
-   return determine_alignment(x, y, self.ruler.x, self.ruler.y)
-end
-
 -- Must be called every time the "viewpoint" for a player moves, e.g. cursor,
 -- walking, whatever.  Should be passed the coords of the tile.  Arguments are floored.
 function mod.on_viewpoint_moved(pindex, x, y)
@@ -241,22 +229,13 @@ function mod.clear_rulers(pindex)
    end
 end
 
---Checks the alignment of all rulers against the position
-function mod.is_at_any_ruler_definition(pindex, position)
-   if module_state[pindex].handle then
-      local alignment = module_state[pindex].handle:report_alignment(position.x, position.y)
-      if alignment == ALIGNMENT.AT_DEFINITION then return true end
-   end
-   return false
-end
-
---Checks the alignment of all rulers against the position
-function mod.is_any_ruler_aligned(pindex, position)
-   if module_state[pindex].handle then
-      local alignment = module_state[pindex].handle:report_alignment(position.x, position.y)
-      if alignment == ALIGNMENT.CENTERED or alignment == ALIGNMENT.AT_DEFINITION then return true end
-   end
-   return false
+---The tile of the player's ruler, nil without one: the DLL's skip keys stop by it.
+---@param pindex integer
+---@return fa.Point?
+function mod.ruler_tile(pindex)
+   local handle = module_state[pindex].handle
+   if not handle then return nil end
+   return { x = handle.ruler.x, y = handle.ruler.y }
 end
 
 ---Update ruler checks for a single player based on movement history

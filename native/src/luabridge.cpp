@@ -2,7 +2,6 @@
 
 #include "audio.h"
 #include "cursor.h"
-#include "entityicons.h"
 #include "game.h"
 #include "log.h"
 #include "modfiles.h"
@@ -189,9 +188,13 @@ int speak(lua_State* L) {
    return 0;
 }
 
-// fa_native.cursor_mode(pindex, vanilla, keys, anchored), every tick: see cursor::setMode.
+// fa_native.cursor_mode(pindex, vanilla, keys, anchored, ruler_x, ruler_y), every tick, the ruler's
+// tile nil without one: see cursor::setMode.
 int cursorMode(lua_State* L) {
-   cursor::setMode(static_cast<int>(checkInteger(L, 1)), toBoolean(L, 2), toBoolean(L, 3), toBoolean(L, 4));
+   std::optional<cursor::Tile> ruler;
+   if (type(L, 5) == kNumber && type(L, 6) == kNumber)
+      ruler = cursor::Tile{static_cast<int>(std::floor(toNumber(L, 5))), static_cast<int>(std::floor(toNumber(L, 6)))};
+   cursor::setMode(static_cast<int>(checkInteger(L, 1)), toBoolean(L, 2), toBoolean(L, 3), toBoolean(L, 4), ruler);
    return 0;
 }
 
@@ -201,35 +204,33 @@ int cursorJump(lua_State* L) {
    return 0;
 }
 
-// fa_native.cursor_step(pindex, x, y): "read", "moved" or "edge" for a movement key whose event
-// carries the position, or nil when the cursor did not take that key. Only this client knows it.
+// fa_native.cursor_step(pindex, x, y): "read", "moved", "edge" or "skipped" for a movement or skip
+// key whose event carries the position, and for "skipped" how many tiles (-1: no change within the
+// limit); nil when the cursor did not take that key. Only this client knows it.
 int cursorStep(lua_State* L) {
    const auto step = cursor::step(static_cast<int>(checkInteger(L, 1)), checkNumber(L, 2), checkNumber(L, 3));
    if (!step) return 0;
-   pushString(L, *step == cursor::Step::Read ? "read" : *step == cursor::Step::Moved ? "moved" : "edge");
-   return 1;
-}
-
-// fa_native.cursor_read_more(pindex, x, y, text): the mod's own words for the tile (x, y) a step
-// read, said after the reading unless a later step has been read since. See reader::more.
-int cursorReadMore(lua_State* L) {
-   if (!world::mayBeLocalPlayer(static_cast<int>(checkInteger(L, 1)))) return 0;
-   const auto tile = [&](int index) { return static_cast<int32_t>(std::floor(checkNumber(L, index))); };
-   reader::more(tile(2), tile(3), nameKeys(L, stripRichText(translate(L, 4))));
+   switch (step->step) {
+   case cursor::Step::Read: pushString(L, "read"); return 1;
+   case cursor::Step::Moved: pushString(L, "moved"); return 1;
+   case cursor::Step::Edge: pushString(L, "edge"); return 1;
+   case cursor::Step::Skipped:
+      pushString(L, "skipped");
+      pushInt(L, step->tiles);
+      return 2;
+   }
    return 0;
 }
 
-// fa_native.cursor_read_entity(pindex, x, y): the prototype name and the position of the entity the
-// step's reading of the tile (x, y) described, or nothing. Only this client knows it.
-int cursorReadEntity(lua_State* L) {
+// fa_native.cursor_read(pindex, x, y, prefix): the tile reader reads the tile (x, y), after the
+// LocalisedString `prefix` when one is given: for the mod's own jumps and announcements.
+int cursorRead(lua_State* L) {
    if (!world::mayBeLocalPlayer(static_cast<int>(checkInteger(L, 1)))) return 0;
    const auto tile = [&](int index) { return static_cast<int32_t>(std::floor(checkNumber(L, index))); };
-   const auto entity = reader::entity(tile(2), tile(3));
-   if (!entity) return 0;
-   pushString(L, entity->name);
-   pushNumber(L, entity->x);
-   pushNumber(L, entity->y);
-   return 3;
+   std::string prefix;
+   if (type(L, 4) != kNil) prefix = nameKeys(L, stripRichText(translate(L, 4)));
+   reader::read(tile(2), tile(3), std::move(prefix));
+   return 0;
 }
 
 // fa_native.cursor_position(pindex): the cursor's tile x and y, or nothing. Only this client knows
@@ -315,51 +316,6 @@ int openSelectedInfo(lua_State* L) {
    if (!world::mayBeLocalPlayer(static_cast<int>(checkInteger(L, 1)))) return 0;
    selectedinfo::request();
    return 0;
-}
-
-using ParamEntity = const void* (*)(lua_State*, int index, const char* name, const void* fallback);
-
-// What an entity shows on the map, as the game draws it now (see entityicons.h): a table {status =
-// {utility sprite names}, icons = {{kind, name, quality, comparison, any_quality, denied}}}, kind
-// absent for a utility sprite; nil for another client's player. Only this client draws, so the mod
-// may speak it but must not change the game by it.
-int entityIcons(lua_State* L) {
-   if (!world::mayBeLocalPlayer(static_cast<int>(checkInteger(L, 1)))) return 0;
-   const void* entity = reinterpret_cast<ParamEntity>(layout.luaParamEntity)(L, 2, "entity", nullptr);
-   if (!entity) return 0;
-   const auto drawn = entityicons::read(entity);
-   if (!drawn) return 0;
-   createTable(L, 0, 2);
-   createTable(L, static_cast<int>(drawn->status.size()), 0);
-   for (size_t i = 0; i < drawn->status.size(); ++i) {
-      pushString(L, drawn->status[i]);
-      rawSetI(L, -2, static_cast<int>(i + 1));
-   }
-   setField(L, -2, "status");
-   createTable(L, static_cast<int>(drawn->icons.size()), 0);
-   for (size_t i = 0; i < drawn->icons.size(); ++i) {
-      const entityicons::Icon& icon = drawn->icons[i];
-      createTable(L, 0, 6);
-      const auto text = [&](const char* field, std::string_view value) {
-         if (value.empty()) return;
-         pushString(L, value);
-         setField(L, -2, field);
-      };
-      const auto flag = [&](const char* field, bool value) {
-         if (!value) return;
-         pushBoolean(L, true);
-         setField(L, -2, field);
-      };
-      text("kind", icon.kind);
-      text("name", icon.name);
-      text("quality", icon.quality);
-      text("comparison", icon.comparison);
-      flag("any_quality", icon.anyQuality);
-      flag("denied", icon.denied);
-      rawSetI(L, -2, static_cast<int>(i + 1));
-   }
-   setField(L, -2, "icons");
-   return 1;
 }
 
 // The overlays this client's map draws, as its map view options toggle them: a table with each
@@ -733,8 +689,7 @@ constexpr Function kFunctions[] = {
    {"cursor_mode", &cursorMode},
    {"cursor_jump", &cursorJump},
    {"cursor_step", &cursorStep},
-   {"cursor_read_more", &cursorReadMore},
-   {"cursor_read_entity", &cursorReadEntity},
+   {"cursor_read", &cursorRead},
    {"cursor_position", &cursorPosition},
    {"speak", &speak},
    {"next_part", &nextPart},
@@ -743,7 +698,6 @@ constexpr Function kFunctions[] = {
    {"drag_build", &dragBuild},
    {"walking_step", &walkingStep},
    {"open_selected_info", &openSelectedInfo},
-   {"entity_icons", &entityIcons},
    {"map_overlays", &mapOverlays},
    {"audio", &playAudio},
    {"scanner_refresh", &scannerRefresh},

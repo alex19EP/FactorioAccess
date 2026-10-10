@@ -54,26 +54,10 @@ local SurfaceHelper = require("scripts.rails.surface-helper")
 local RailQueries = require("railutils.queries")
 local TrainHelpers = require("scripts.rails.train-helpers")
 
-local native = rawget(_G, "fa_native")
-
 local mod = {}
-
----@class fa.Info.DrawnIcon
----@field kind string? Prototype kind as rich text names it ("item", "virtual-signal"); nil for a utility sprite
----@field name string
----@field quality string?
----@field comparison string?
----@field any_quality boolean?
----@field denied boolean?
-
----@class fa.Info.DrawnIcons
----@field status string[] Utility sprite names of the status icons
----@field icons fa.Info.DrawnIcon[]
 
 ---@class fa.Info.EntInfoContext
 ---@field message fa.MessageBuilder
----@field is_scanner boolean
----@field drawn fa.Info.DrawnIcons? What the game draws on the entity, for the tile reader
 ---@field ent LuaEntity
 ---@field pindex number
 ---@field player LuaPlayer
@@ -1222,128 +1206,6 @@ local function ent_info_filters(ctx)
    end
 end
 
----A utility sprite by its prototype name ("no_path_icon"), as the mod's locale says it, else by the name itself.
----@param name string
----@return LocalisedString
-local function utility_sprite_info(name)
-   local key = string.gsub(name, "_", "-")
-   local plain = string.gsub((string.gsub(name, "_icon$", "")), "_", " ")
-   return { "?", { "fa.ent-status-icon-" .. key }, plain }
-end
-
--- The info icons alt mode draws on the entity (recipe, contents, filters, modules, fluid, ammo, signals), in the
--- game's order. Where FA has words for what an icon shows, they are said in its place: the recipe ("producing"),
--- the filters ("Filters for", "Denies"), the fluids ("Has steam", no amount) and a beacon's modules ("Has", with
--- counts). Any other icon is said by name, once: an item drawn more than once with its count (three speed modules),
--- anything else without.
----@param ctx fa.Info.EntInfoContext
-local function ent_info_drawn_icons(ctx)
-   if not ctx.drawn then return end
-   local ent = ctx.ent
-   if not next(ctx.drawn.icons) then return end
-
-   if ent.type == "beacon" then
-      local modules = ent.get_module_inventory()
-      if modules then ctx.message:list_item_forced_comma(InventoryUtils.present_list(modules.get_contents())) end
-      return
-   end
-
-   local filter_names = {}
-   for _, proto in pairs(Filters.get_all_filters(ent)) do
-      filter_names[type(proto) == "string" and proto or proto.name] = true
-   end
-
-   -- A crafting machine draws its recipe as the recipe's own icon or, without one, its main product's.
-   local recipe
-   if Consts.CRAFTING_MACHINES[ent.type] then recipe = ent.get_recipe() end
-   local products = {}
-   if recipe then
-      for _, product in ipairs(recipe.products) do
-         products[product.name] = true
-      end
-   end
-
-   local said_recipe, said_filters, said_fluids = false, false, false
-   local fluids, seen_fluids = {}, {}
-   for _, icon in ipairs(ctx.drawn.icons) do
-      if recipe and not said_recipe and (icon.kind == "recipe" or products[icon.name]) then
-         said_recipe = true
-      elseif icon.kind == "fluid" and not seen_fluids[icon.name] then
-         seen_fluids[icon.name] = true
-         table.insert(fluids, Localising.get_localised_name_with_fallback(prototypes.fluid[icon.name]))
-      end
-   end
-
-   local icons = {}
-   local recipe_icon_seen = false
-   for _, icon in ipairs(ctx.drawn.icons) do
-      if said_recipe and not recipe_icon_seen and (icon.kind == "recipe" or products[icon.name]) then
-         recipe_icon_seen = true
-         ctx.message:list_item_forced_comma({ "fa.ent-info-producing" })
-         ctx.message:fragment(Localising.get_localised_name_with_fallback(recipe))
-      elseif icon.kind == "fluid" then
-         if not said_fluids then
-            said_fluids = true
-            ctx.message:list_item_forced_comma({
-               "fa.ent-info-inventory-presentation",
-               FaUtils.localise_cat_table(fluids, ", "),
-            })
-         end
-      elseif icon.kind and filter_names[icon.name] then
-         if not said_filters then
-            said_filters = true
-            ent_info_filters(ctx)
-         end
-      else
-         table.insert(icons, icon)
-      end
-   end
-
-   local groups, order = {}, {}
-   for _, icon in ipairs(icons) do
-      local key = table.concat({
-         icon.kind or "",
-         icon.name,
-         icon.quality or "",
-         icon.comparison or "",
-         tostring(icon.any_quality),
-         tostring(icon.denied),
-      }, "|")
-      if groups[key] then
-         groups[key].count = groups[key].count + 1
-      else
-         groups[key] = { icon = icon, count = 1 }
-         table.insert(order, key)
-      end
-   end
-
-   for _, key in ipairs(order) do
-      local icon, count = groups[key].icon, groups[key].count
-      ctx.message:list_item_forced_comma()
-      if icon.comparison then ctx.message:fragment(icon.comparison) end
-      if icon.kind then
-         local protos = prototypes[string.gsub(icon.kind, "-", "_")]
-         if icon.kind ~= "item" then count = nil end
-         ctx.message:fragment(
-            ItemInfo.item_or_fluid_info({ name = icon.name, quality = icon.quality, count = count }, protos)
-         )
-      else
-         ctx.message:fragment(utility_sprite_info(icon.name))
-      end
-      if icon.any_quality then ctx.message:fragment({ "fa.ent-icon-any-quality" }) end
-      if icon.denied then ctx.message:fragment({ "fa.ent-icon-denied" }) end
-   end
-end
-
--- The status icons the game draws on the entity: no power, no fuel, no ammo and the like.
----@param ctx fa.Info.EntInfoContext
-local function ent_info_drawn_status(ctx)
-   if not ctx.drawn then return end
-   for _, name in ipairs(ctx.drawn.status) do
-      ctx.message:list_item(utility_sprite_info(name))
-   end
-end
-
 ---Check if a type string is a rail type
 ---@param type_str string
 ---@return boolean
@@ -1382,13 +1244,11 @@ local function ent_info_rail(ctx)
    ctx.message:fragment(announcement)
 end
 
---Outputs basic entity info, usually called when the cursor selects an entity.
+--The whole of an entity's info, for readouts of an entity elsewhere than under the cursor: a scanner
+--entry, a spidertron in the remote's list. The tile reader is the DLL's (native/src/reader.h).
 ---@param ent LuaEntity
----@param is_scanner boolean?
----@param after_native boolean? Said after the DLL's reading of the tile (native/src/reader.h), which
----gave the name, the status, the health and the game's tooltip: only what the mod adds to them.
 ---@return LocalisedString
-function mod.ent_info(pindex, ent, is_scanner, after_native)
+function mod.ent_info(pindex, ent)
    local p = game.get_player(pindex)
    assert(p)
 
@@ -1397,7 +1257,6 @@ function mod.ent_info(pindex, ent, is_scanner, after_native)
       ent = ent,
       pindex = pindex,
       message = MessageBuilder.new(),
-      is_scanner = is_scanner,
       player = p,
       -- Only spoken: which part of the entity the cursor is on. A readout of an entity elsewhere,
       -- such as a scanner entry's, is from the entity's own tile.
@@ -1407,9 +1266,7 @@ function mod.ent_info(pindex, ent, is_scanner, after_native)
    -- We need to special case ghosts, so that we can fold the "x of y" in, e.g.
    -- "entity ghost of transport belt".
    -- Rail ghosts are handled by ent_info_rail, so skip the generic ghost message for them.
-   if after_native then
-      -- The DLL said the name with its backer name, and a rolling stock's train name.
-   elseif ent.type == "entity-ghost" and is_rail_type(ent.ghost_type) then
+   if ent.type == "entity-ghost" and is_rail_type(ent.ghost_type) then
       -- Rail ghosts: skip entity name - rail classification will be announced by ent_info_rail handler
    elseif ent.type == "entity-ghost" or ent.type == "tile-ghost" then
       ctx.message:fragment({
@@ -1443,34 +1300,9 @@ function mod.ent_info(pindex, ent, is_scanner, after_native)
       handler(ctx)
       if not nolist then ctx.message:list_item() end
    end
-   -- What alt mode shows as icons (recipe, contents, filters, fluid, modules, signals) and the power status icons.
-   -- The tile reader says only what the game draws on the entity, so it tells what a sighted player sees: these
-   -- with alt mode on, the status icons whenever the game shows them.
-   local function run_drawn_handler(handler, nolist)
-      if is_scanner then run_handler(handler, nolist) end
-   end
-   -- What the game's tooltip says, which the DLL's reading gave already: the status, the amount of
-   -- a resource, temperature, power made and stored, a train stop's name and limit, a radar's
-   -- charting, a solar panel's output, a silo's rocket parts, a spidertron's label, the item on the
-   -- ground, the player of a character or corpse.
-   local function run_tooltip_handler(handler, nolist)
-      if not after_native then run_handler(handler, nolist) end
-   end
-   -- What the DLL's reading says itself (native/src/facts.cpp): facing, an underground belt's end
-   -- and partner, a belt's shape, a pipe's or heat pipe's shape, the fluid and heat connections on the
-   -- tile, a nuclear reactor's state, a power pole's wires and what it powers, what a belt carries,
-   -- a splitter's priorities, a logistic chest's network, an infinity chest's filters, an infinity
-   -- pipe draining, a drill's output tile and what it outputs to, a combinator's description, a
-   -- signal's state, a wall's gate contact, an upgrade mark, a power switch, a turret's priorities,
-   -- an inserter's hand, the circuit networks, a vehicle's heading, a rolling stock's train name
-   -- and state, a roboport's network and robots, what alt mode's icons show.
-   local run_native_fact_handler = run_tooltip_handler
-   if not is_scanner and not after_native and native then ctx.drawn = native.entity_icons(pindex, ent) end
-
-   run_native_fact_handler(ent_info_drawn_icons, true)
 
    --Explain the recipe of a machine without pause and before the direction
-   run_drawn_handler(function()
+   run_handler(function()
       pcall(function()
          if ent.get_recipe() ~= nil then
             ctx.message:fragment({ "fa.ent-info-producing" })
@@ -1478,9 +1310,8 @@ function mod.ent_info(pindex, ent, is_scanner, after_native)
          end
       end)
    end, true)
-   --For furnaces (which produce only 1 output item type at a time) state how many output units are ready. The game
-   --draws nothing of it, so the tile reader leaves it to the scanner.
-   if is_scanner and ent.type == "furnace" then
+   --For furnaces (which produce only 1 output item type at a time) state how many output units are ready.
+   if ent.type == "furnace" then
       local output_stack = ent.get_output_inventory()[1]
       if output_stack and output_stack.valid_for_read then
          local item_str = ItemInfo.item_info(output_stack)
@@ -1489,51 +1320,51 @@ function mod.ent_info(pindex, ent, is_scanner, after_native)
       end
    end
 
-   run_native_fact_handler(ent_info_facing, true)
+   run_handler(ent_info_facing, true)
    run_handler(ent_info_rail, true)
-   run_native_fact_handler(ent_info_combinator_description)
-   run_native_fact_handler(ent_info_underground_belt_type, true)
+   run_handler(ent_info_combinator_description)
+   run_handler(ent_info_underground_belt_type, true)
 
-   run_native_fact_handler(ent_info_belt_shape, true)
-   run_native_fact_handler(ent_info_belt_contents, true)
-   run_native_fact_handler(ent_info_pole_neighbors, true)
+   run_handler(ent_info_belt_shape, true)
+   run_handler(ent_info_belt_contents, true)
+   run_handler(ent_info_pole_neighbors, true)
 
-   run_tooltip_handler(ent_info_resource)
-   run_tooltip_handler(ent_info_character)
-   run_tooltip_handler(ent_info_character_corpse)
-   run_drawn_handler(ent_info_container)
-   run_drawn_handler(ent_info_fluid_contents)
-   run_native_fact_handler(ent_info_logistic_network)
-   run_native_fact_handler(ent_info_infinity_chest)
-   run_native_fact_handler(ent_info_infinity_pipe)
-   run_native_fact_handler(ent_info_pipe_shape)
-   run_native_fact_handler(ent_info_fluid_connections)
+   run_handler(ent_info_resource)
+   run_handler(ent_info_character)
+   run_handler(ent_info_character_corpse)
+   run_handler(ent_info_container)
+   run_handler(ent_info_fluid_contents)
+   run_handler(ent_info_logistic_network)
+   run_handler(ent_info_infinity_chest)
+   run_handler(ent_info_infinity_pipe)
+   run_handler(ent_info_pipe_shape)
+   run_handler(ent_info_fluid_connections)
 
-   run_tooltip_handler(ent_info_train_stop)
-   run_native_fact_handler(ent_info_mining_drill_output_chute)
-   run_native_fact_handler(ent_info_rail_signal_state)
+   run_handler(ent_info_train_stop)
+   run_handler(ent_info_mining_drill_output_chute)
+   run_handler(ent_info_rail_signal_state)
 
-   run_native_fact_handler(ent_info_gate_connection_point)
-   run_native_fact_handler(ent_info_marked_for_upgrade)
-   run_tooltip_handler(ent_info_power_production)
-   run_native_fact_handler(ent_info_underground_belt_connection)
-   run_native_fact_handler(ent_info_splitter_states)
-   run_drawn_handler(ent_info_cargo_wagon)
-   run_tooltip_handler(ent_info_radar)
-   run_native_fact_handler(ent_info_electric_pole)
-   run_native_fact_handler(ent_info_power_switch)
+   run_handler(ent_info_gate_connection_point)
+   run_handler(ent_info_marked_for_upgrade)
+   run_handler(ent_info_power_production)
+   run_handler(ent_info_underground_belt_connection)
+   run_handler(ent_info_splitter_states)
+   run_handler(ent_info_cargo_wagon)
+   run_handler(ent_info_radar)
+   run_handler(ent_info_electric_pole)
+   run_handler(ent_info_power_switch)
 
-   if ent.type == "roboport" and not after_native then
+   if ent.type == "roboport" then
       ctx.message:fragment({ "fa.ent-info-roboport-network", BotLogistics.get_network_name(ent) })
       ctx.message:list_item(BotLogistics.roboport_contents_info(ent))
    end
-   run_tooltip_handler(ent_info_spidertron)
-   run_drawn_handler(ent_info_filters)
-   run_tooltip_handler(ent_info_verbose_status)
-   run_native_fact_handler(ent_info_turret_priority)
+   run_handler(ent_info_spidertron)
+   run_handler(ent_info_filters)
+   run_handler(ent_info_verbose_status)
+   run_handler(ent_info_turret_priority)
 
    --Inserters: Explain held items, pickup and drop positions
-   if ent.type == "inserter" and not after_native then
+   if ent.type == "inserter" then
       --Read held item
       if ent.held_stack ~= nil and ent.held_stack.valid_for_read and ent.held_stack.valid then
          ctx.message:fragment({
@@ -1590,18 +1421,12 @@ function mod.ent_info(pindex, ent, is_scanner, after_native)
       else
          drop_name = { "fa.ent-info-ground" }
       end
-      --Report info. The DLL says what it outputs to, and its tooltip's status says when the output is full.
-      if not after_native then
-         if drop ~= nil and drop.valid then
-            ctx.message:fragment({ "fa.ent-info-mining-drill-outputs-to", drop_name })
-         end
-         if ent.status == defines.entity_status.waiting_for_space_in_destination then
-            ctx.message:list_item(Localising.entity_status_localised(ent.status))
-         end
+      if drop ~= nil and drop.valid then ctx.message:fragment({ "fa.ent-info-mining-drill-outputs-to", drop_name }) end
+      if ent.status == defines.entity_status.waiting_for_space_in_destination then
+         ctx.message:list_item(Localising.entity_status_localised(ent.status))
       end
-      --The ore left under the drill. The game draws no amounts, and alt mode shows what is mined as an icon, so the
-      --tile reader leaves it to the scanner.
-      local dict = is_scanner and ResourceMining.compute_resources_under_drill(ent) or {}
+      --The ore left under the drill
+      local dict = ResourceMining.compute_resources_under_drill(ent)
       if table_size(dict) > 0 then
          ctx.message:fragment({ "fa.ent-info-mining-drill-mining-from" })
          for i, amount in pairs(dict) do
@@ -1622,25 +1447,24 @@ function mod.ent_info(pindex, ent, is_scanner, after_native)
       end
    end
 
-   run_drawn_handler(ent_info_power_status)
-   run_handler(ent_info_drawn_status)
+   run_handler(ent_info_power_status)
 
-   run_tooltip_handler(ent_info_accumulator)
-   run_tooltip_handler(ent_info_solar)
-   run_tooltip_handler(ent_info_rocket_silo)
-   run_drawn_handler(ent_info_beacon_status)
-   run_tooltip_handler(ent_info_temperature)
-   run_native_fact_handler(ent_info_nuclear_neighbor_bonus)
-   run_tooltip_handler(ent_info_item_on_ground)
-   run_native_fact_handler(ent_info_heat_pipe_shape)
-   run_native_fact_handler(ent_info_heat_neighbors)
+   run_handler(ent_info_accumulator)
+   run_handler(ent_info_solar)
+   run_handler(ent_info_rocket_silo)
+   run_handler(ent_info_beacon_status)
+   run_handler(ent_info_temperature)
+   run_handler(ent_info_nuclear_neighbor_bonus)
+   run_handler(ent_info_item_on_ground)
+   run_handler(ent_info_heat_pipe_shape)
+   run_handler(ent_info_heat_neighbors)
 
-   run_drawn_handler(ent_info_constant_combinator)
-   run_native_fact_handler(ent_info_combinator_connections)
-   run_native_fact_handler(ent_info_circuit_network)
+   run_handler(ent_info_constant_combinator)
+   run_handler(ent_info_combinator_connections)
+   run_handler(ent_info_circuit_network)
 
    -- Train state handler (lowest priority, runs last)
-   run_native_fact_handler(ent_info_train_state)
+   run_handler(ent_info_train_state)
 
    return ctx.message:build()
 end

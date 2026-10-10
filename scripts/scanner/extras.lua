@@ -97,7 +97,7 @@ local function describe_target(message, player, pin)
       if targets[1].type == "resource" then
          describe_resource_patch(message, targets)
       else
-         message:list_item(FaInfo.ent_info(player.index, targets[1], true))
+         message:list_item(FaInfo.ent_info(player.index, targets[1]))
       end
       return
    end

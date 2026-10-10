@@ -70,7 +70,7 @@ local function build_spidertron_form(ctx)
 
          local label = function(label_ctx)
             local mb = Speech.MessageBuilder.new()
-            mb:fragment(FaInfo.ent_info(ctx.pindex, spider, true))
+            mb:fragment(FaInfo.ent_info(ctx.pindex, spider))
             mb:fragment(FaUtils.dir_dist_locale(player_pos, spider.position))
             return mb:build()
          end

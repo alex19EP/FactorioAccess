@@ -76,38 +76,28 @@ function mod.jump(pindex, position)
    if native then native.cursor_jump(pindex, position.x, position.y) end
 end
 
----What the DLL did with the movement key whose event is being handled: "read" when it moved there and
----read the tile itself (native/src/reader.h), "moved" when it moved there unread (a cell of the full
----map, a step of a drag build), "edge" when it stayed at the screen's edge, or nil. Only this client
----knows it: speak by it, never change the game by it.
+---What the DLL did with the movement or skip key whose event is being handled: "read" when it moved
+---there and read the tile itself (native/src/reader.h), "moved" when it moved there unread (a cell
+---of the full map, a step of a drag build), "edge" when it stayed at the screen's edge, "skipped"
+---when a skip key took it there and the DLL read it, with how many tiles it skipped (-1 when it
+---found no change within its limit), or nil. Ctrl with a movement key, which moves by the size of
+---the building in hand, gives "read". Only this client knows it: speak by it, never change the game
+---by it.
 ---@param pindex integer
 ---@param event EventData.CustomInputEvent
----@return ("read"|"moved"|"edge")?
+---@return ("read"|"moved"|"edge"|"skipped")?, integer?
 function mod.step(pindex, event)
-   return native and native.cursor_step(pindex, event.cursor_position.x, event.cursor_position.y)
-end
-
----Says the mod's own words for the tile a step read, after the DLL's reading of it; dropped when a
----later step has been read since.
----@param pindex integer
----@param text LocalisedString
-function mod.read_more(pindex, text)
-   local tile = mod.tile(pindex)
-   if native then native.cursor_read_more(pindex, tile.x, tile.y, text) end
-end
-
----The entity the DLL's reading of the cursor's tile described, so the mod's own words are about the
----same one: the game's selection under the mouse there, which the mod's own entity order may not
----pick. Nil when it read the tile without one. Only this client knows it: speak by it, never change
----the game by it.
----@param pindex integer
----@return LuaEntity?
-function mod.read_entity(pindex)
    if not native then return nil end
+   return native.cursor_step(pindex, event.cursor_position.x, event.cursor_position.y)
+end
+
+---The DLL reads the cursor's tile as a movement key's step reads it (native/src/reader.h), after
+---`prefix` when one is given: for the mod's own jumps and announcements.
+---@param pindex integer
+---@param prefix LocalisedString?
+function mod.read(pindex, prefix)
    local tile = mod.tile(pindex)
-   local name, x, y = native.cursor_read_entity(pindex, tile.x, tile.y)
-   if not name then return nil end
-   return game.get_player(pindex).surface.find_entity(name, { x = x, y = y })
+   if native then native.cursor_read(pindex, tile.x, tile.y, prefix) end
 end
 
 ---The cursor's tile at any time, for sounds and speech only: only this client knows it, so never
@@ -122,13 +112,14 @@ function mod.speech_tile(pindex)
    return { x = x, y = y }
 end
 
----Tells the DLL, every tick, what the movement keys do now.
+---Tells the DLL, every tick, what the movement and skip keys do now.
 ---@param pindex integer
 ---@param vanilla boolean The mouse is the cursor
----@param keys boolean The movement keys move the cursor
+---@param keys boolean The movement and skip keys move the cursor
 ---@param anchored boolean The cursor goes back to the character when the screen leaves it
-function mod.report_mode(pindex, vanilla, keys, anchored)
-   if native then native.cursor_mode(pindex, vanilla, keys, anchored) end
+---@param ruler fa.Point? The tile of the player's audio ruler, where skips stop
+function mod.report_mode(pindex, vanilla, keys, anchored, ruler)
+   if native then native.cursor_mode(pindex, vanilla, keys, anchored, ruler and ruler.x, ruler and ruler.y) end
 end
 
 return mod

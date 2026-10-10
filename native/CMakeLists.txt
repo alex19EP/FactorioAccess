@@ -151,6 +151,7 @@ add_library(fa_native SHARED
   src/ui.cpp
   src/world.cpp
   src/cursor.cpp
+  src/skip.cpp
   src/reader.cpp
   src/facts.cpp
   src/highlights.cpp

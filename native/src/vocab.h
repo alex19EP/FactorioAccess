@@ -391,6 +391,14 @@ inline constexpr Word kWaterCrevice{"fa.water-crevice"};
 inline constexpr Word kWaterShoreCorner{"fa.water-shore-corner"};
 inline constexpr Word kWaterShore{"fa.water-shore"};
 inline constexpr Word kWaterOpen{"fa.water-open"};
+// A tile the player's force has not charted, or charted but does not see into now.
+inline constexpr Word kUncharted{"fa.native-uncharted"};
+inline constexpr Word kBlurred{"fa.native-blurred"};
+// Before the reading of the tile a skip key reached: how far it went, that it found no change
+// within its limit, or how far the size of the building in hand moved it.
+inline constexpr Word kSkipped{"fa.native-skipped"};
+inline constexpr Word kSkippedNoChange{"fa.native-skipped-no-change"};
+inline constexpr Word kSkippedByPreview{"fa.native-skipped-by-preview"};
 // The info icons alt mode draws: a machine's recipe ("producing"), the filters it allows or denies,
 // what it has ("Has steam"), an item with its quality and count, and a badge's any quality or deny.
 inline constexpr Word kProducing{"fa.ent-info-producing"};
