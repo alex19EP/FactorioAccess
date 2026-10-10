@@ -1619,6 +1619,9 @@ struct Layout {
    uintptr_t deduceSelectedEntity = 0;
    uint32_t selectionModeNormal = 0;
    uintptr_t respectsFogOfWar = 0;
+   // Character const* Player::getCharacter() const: the player's own character, which the mouse
+   // never selects; null without one (god, editor, dead).
+   uintptr_t playerGetCharacter = 0;
    // The cycle key's order (cursor.h): static bool EntitySelector::selectPriorityLess(Entity const*,
    // Entity const*, SelectionContext const&), true when the first loses the mouse to the second:
    // lower selection priority, else its selection box's centre further north, else further from

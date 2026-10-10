@@ -569,7 +569,16 @@ std::optional<std::string> readTile(Position tile, Position point) {
    // A tile the map has not generated says so, and no more.
    if (!entity && !reinterpret_cast<TileAtFunction>(layout.surfaceTileAt)(here->surface, &tile))
       return vocab::translate("fa.tile-uncharted-out-of-range", {});
-   return entity ? describe(here->player, entity, tile) : tileName(here->surface, tile);
+   std::string text = entity ? describe(here->player, entity, tile) : tileName(here->surface, tile);
+   // The view shows the player's own character standing on its tile, though the mouse never
+   // selects it there: the character is said first, then what the mouse selects.
+   const auto* character = reinterpret_cast<const std::byte* (*)(const void*)>(layout.playerGetCharacter)(here->player);
+   const std::byte* self = character ? agui::objectAsBase(character, ".?AVEntity@@") : nullptr;
+   if (self && at<const std::byte*>(self, layout.entitySurface) == here->surface) {
+      const Position feet = at<Position>(self, layout.entityPosition);
+      if (feet.x >> 8 == tile.x && feet.y >> 8 == tile.y) text = describe(here->player, self, tile) + ", " + text;
+   }
+   return text;
 }
 
 // The entity `target` as the tile reader says it on its own tile, wherever the view is; empty when

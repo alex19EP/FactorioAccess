@@ -1162,6 +1162,7 @@ bool resolve(pdb::SymbolTable& symbols) {
            "VAllowToSelectMyCharacterTag@@@@PEAVLatencyState@@PEAV2@W4EntitySelectionMode@@@Z");
    enumerator(layout.selectionModeNormal, "EntitySelectionMode", "Normal");
    address(layout.respectsFogOfWar, "?shouldRespectFogOfWar@Player@@QEBA_N_N@Z");
+   address(layout.playerGetCharacter, "?getCharacter@Player@@QEBAPEBVCharacter@@XZ");
    address(layout.selectPriorityLess, "?selectPriorityLess@EntitySelector@@SA_NPEBVEntity@@0AEBVSelectionContext@@@Z");
    size(layout.selectionContextSize, "SelectionContext");
    offset(layout.selectionContextPosition, "SelectionContext", "position");
