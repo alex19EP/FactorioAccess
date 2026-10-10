@@ -20,8 +20,9 @@ To set up for non-AI and AI dev:
 If you are going to use Claude Code (our "official" option, though other LLMs will work with some tweaking):
 
 - Get Claude Code
-- Get Python 3.11 on your path
-- Do `python launch_factorio.py --run-tests` to verify that the tests can run
+- Get Python 3.11, [just](https://github.com/casey/just) and PowerShell 7 on your path
+- Set up `.env` as `devdocs/dev-setup.md` describes. It also covers building the native DLL.
+- Do `just test-mod` to verify that the tests can run
 - Ask Claude Code to run linting.  This relies on your VSCode setup being right. You are looking to confirm that you
   don't get tons of false positives about Factorio types.  The easiest to check for is `LocalisedString`.  If things are
   working right you will *not* get `LocalisedString` warnings, if it's broken you will.
@@ -190,7 +191,7 @@ We format with Stylua.  Specifically (from CI, may be out of date):
 cargo install --version 2.3.0 stylua --features lua52
 ```
 
-You can run it with the proper args with `python launch_factorio.py --format`.  Your PR runs through CI which will check
+You can run it with the proper args with `just format`.  Your PR runs through CI which will check
 it.
 
 The prebuilt binaries may also work but YMMV, this falls under Lua tooling is immature.
