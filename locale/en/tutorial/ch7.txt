@@ -52,7 +52,7 @@ Control backspace is dangerous delete, used when destroying something you can't 
 
 To answer a commonly asked question, you cannot destroy regular physical items this way.  The only way to destroy regular items is to put them in a chest, then shoot the chest.
 
-The first thing you want to do now is find water.  This is in the resource category of your scanner.  Your cursor is placed on the part of the water closest to your character.  Get your character over there.  Note that your character cannot swim, so you need it to be on land.
+The first thing you want to do now is find water.  This is in the resource category of your scanner.  Press home to put your cursor on the part of the water closest to your character.  Get your character over there.  Note that your character cannot swim, so you need it to be on land.
 
 this tutorial will explain the setup from the south to north.  The setup we are going to build is 3 tiles wide and 11 tiles high.  You will want to use cursor skipping to make sure you have enough room, and you will want it to be near water.
 
@@ -86,7 +86,7 @@ Now we need to get this setup some water.
 
 Offshore pumps draw water from water tiles.  A pump stands on a land tile at the edge of the water and faces the water, and the water comes out of its back.  The game turns the pump to face the water for you.
 
-To find a spot, get your character near water and put an offshore pump in hand.  The scanner updates within a few seconds, or at once when you press end.  The build spots category then lists every place within 30 tiles of your character where the pump fits, closest first.  Press control page up and down to reach it.  The scanner puts your cursor on the spot, and left bracket builds the pump there.  Then, find the pump with your scanner.
+To find a spot, get your character near water and put an offshore pump in hand.  The scanner updates within a few seconds, or at once when you press end.  The build spots category then lists every place within 30 tiles of your character where the pump fits, closest first.  Press control page up and down to reach it.  Press home to put your cursor on the spot, and left bracket builds the pump there.  Then, find the pump with your scanner.
 
 Pipes are a little bit magical.  Factorio models fluids as instant teleportation.  If a pipe has water in it and something at the other end needs it, then the thing at the other end gets the water even if it is a very long pipe.
 

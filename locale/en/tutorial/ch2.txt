@@ -10,7 +10,7 @@ The simplest use of the scanner is to find rocks.  Rocks, when mined, contain st
 
 The scanner keeps its list of things up to date by itself, sorted by distance from your character.  To update it at once, press end.
 
-To move between things in the scanner list, press page up and page down.
+To move between things in the scanner list, press page up and page down.  These only read the list.  To move your cursor to the thing the scanner is on, press home.
 
 The mod offers a few ways of moving around.  The first we will teach you is Kruise Kontrol.
 
@@ -18,7 +18,7 @@ Kruise Kontrol, often referred to as KK, is a mod by one of the Factorio develop
 
 In this case, we can use it to mine rocks without having to find them one by one.  Please read a bit further before trying to use it, as you will not be able to read this tutorial at the same time.
 
-To start KK, you press control alt right bracket with the cursor on an item.  We will talk about the cursor more in a little while, but for now what you need to know is that it is moved by the scanner.
+To start KK, you press control alt right bracket with the cursor on an item.  We will talk about the cursor more in a little while, but for now what you need to know is that pressing home moves it to the thing the scanner is on.
 
 To stop KK, you press enter while it is doing something.
 

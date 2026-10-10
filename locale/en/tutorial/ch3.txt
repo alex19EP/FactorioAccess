@@ -52,7 +52,7 @@ The list of scanner categories changes based on whether or not a category has so
 
 Cycle to the resources category, then use page up and down to find your coal patch.
 
-You will now also want to explore some with your cursor, so it is a good time to note that the scanner remembers what you are on. Pressing home will move your cursor back to the scanner's  current item.
+You will now also want to explore some with your cursor, so it is a good time to note that the scanner remembers what you are on. Pressing home will move your cursor to the scanner's current item, opening remote view if it is off the screen.
 
 When you found the coal patch, your cursor was moved to the middle of it.  The mod will say something like "coal x 1234".  Coal is the resource, and the number is how much of it is still available on this tile.
 
