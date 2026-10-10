@@ -100,11 +100,13 @@ struct OptionalContext {
 constexpr std::align_val_t kAlignment{16};
 
 // An entity the mod's Lua named, kept by what finds it again: Lua runs on the update thread, which
-// may destroy it before the Gui's tick.
+// may destroy it before the Gui's tick. `entity` is only compared with the entities still near
+// `position`, never read, so one that moved since (a fish) is found and one freed is not.
 struct Target {
    uint32_t surface;
    const void* prototype;
    Position position;
+   const void* entity;
 };
 
 // A tile waiting for the Gui's tick, read as the mouse at `point` (fixed point) sees it, or the
@@ -595,14 +597,14 @@ std::optional<std::string> readTarget(const Target& target) {
    if (!here) return std::nullopt;
    if (at<uint32_t>(here->surface, layout.surfaceIndex) != target.surface) return std::string();
    const Position where = target.position;
-   // A box around the position, wide enough for an entity whose own box is empty.
+   // A box around the position, wide enough for an entity whose own box is empty and for one that
+   // moved less than a tile since.
    for (const void* found :
         facts::entitiesIn(here->surface, where.x - kScale, where.y - kScale, where.x + kScale, where.y + kScale)) {
       const auto* entity = static_cast<const std::byte*>(found);
-      const Position position = at<Position>(entity, layout.entityPosition);
-      if (at<const void*>(entity, layout.entityPrototypeOf) == target.prototype && position.x == where.x &&
-          position.y == where.y)
-         return describe(here->player, entity, Position{where.x >> 8, where.y >> 8});
+      if (found != target.entity || at<const void*>(entity, layout.entityPrototypeOf) != target.prototype) continue;
+      const Position now = at<Position>(entity, layout.entityPosition);
+      return describe(here->player, entity, Position{now.x >> 8, now.y >> 8});
    }
    return std::string();
 }
@@ -623,7 +625,7 @@ void readPoint(int32_t x, int32_t y, std::string suffix) {
 void readEntity(const void* entity, std::string prefix, std::string suffix) {
    const auto* surface = at<const std::byte*>(entity, layout.entitySurface);
    const Target target{at<uint32_t>(surface, layout.surfaceIndex), at<const void*>(entity, layout.entityPrototypeOf),
-                       at<Position>(entity, layout.entityPosition)};
+                       at<Position>(entity, layout.entityPosition), entity};
    std::scoped_lock lock(g_mutex);
    g_pending = Pending{Position{target.position.x >> 8, target.position.y >> 8}, target.position, std::move(prefix),
                        std::move(suffix), target};
