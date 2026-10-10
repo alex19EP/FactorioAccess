@@ -224,6 +224,8 @@ std::vector<std::string> fixedLabels() {
       "description.temperature",
       "description.pipeline-extent",
       "description.storage",
+      // What mining gives, on every tree and rock (the user, 2026-10-10).
+      "description.expected-resources",
    };
    std::vector<std::string> labels;
    for (const char* key : kKeys) labels.push_back(vocab::translate(key, {}));
