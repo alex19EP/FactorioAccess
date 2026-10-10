@@ -1,6 +1,9 @@
 #pragma once
 
+#include "mappicture.h"
+
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -39,6 +42,16 @@ void tick();
 const void* selectedAt(int32_t tileX, int32_t tileY);
 const void* selectedAtPoint(int32_t x, int32_t y);
 bool waterAt(int32_t tileX, int32_t tileY);
+
+// For the skip keys, where the view draws no live world on the tile: whether the force charted it,
+// and what the chart's picture shows there (mappicture.h), as the reader says it. Nothing where the
+// view shows the live world.
+struct Shown {
+   bool charted;
+   std::optional<mappicture::Picture> picture;
+   bool operator==(const Shown&) const = default;
+};
+std::optional<Shown> shownAt(int32_t tileX, int32_t tileY);
 
 // The cycle key's stops in the tile `tileX`, `tileY` (cursor.h), in the game's input handling:
 // each entity the mouse can select somewhere in the tile, with a point (fixed point) where it

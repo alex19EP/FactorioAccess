@@ -12,7 +12,8 @@
 // turning otherwise, ground after an entity or water after ground. From an underground belt or pipe
 // to ground it jumps to the other end when that lies ahead; from water it stops on the first tile
 // that is not water. An audio ruler stops it where it comes into or out of line with the ruler, and
-// on the ruler's own tile.
+// on the ruler's own tile. Where the view shows fog of war or nothing (remote view, the map), it
+// goes by what the chart's picture shows (reader::shownAt) and stops where that changes.
 namespace fa::skip {
 
 // The player's audio ruler, a tile.

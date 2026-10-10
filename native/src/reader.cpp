@@ -519,12 +519,17 @@ Seen sightOf(const Local& here, Position tile) {
    return {Sight::Live};
 }
 
-// What the chart's picture shows on the tile (mappicture.h), or nothing.
-std::string pictureOf(const Local& here, const void* chart, Position tile) {
+// What the chart's picture shows on the tile (mappicture.h), if anything.
+std::optional<mappicture::Picture> pictureAt(const Local& here, const void* chart, Position tile) {
    const std::optional<mappicture::Shown> shown =
       mappicture::at(chart, tile.x, tile.y, tilePrototypeAt(here.surface, tile));
-   if (!shown || !shown->picture) return {};
-   const mappicture::Picture& picture = *shown->picture;
+   return shown ? shown->picture : std::nullopt;
+}
+
+std::string pictureOf(const Local& here, const void* chart, Position tile) {
+   const std::optional<mappicture::Picture> shown = pictureAt(here, chart, tile);
+   if (!shown) return {};
+   const mappicture::Picture& picture = *shown;
    switch (picture.kind) {
    case mappicture::Picture::Kind::Tile:
    case mappicture::Picture::Kind::Entity: return localisedName(static_cast<const std::byte*>(picture.prototype));
@@ -590,6 +595,19 @@ void tick() {
 const void* selectedAt(int32_t tileX, int32_t tileY) {
    const Position centre = centreOf(Position{tileX, tileY});
    return selectedAtPoint(centre.x, centre.y);
+}
+
+std::optional<Shown> shownAt(int32_t tileX, int32_t tileY) {
+   const std::optional<Local> here = local();
+   if (!here) return std::nullopt;
+   const Position tile{tileX, tileY};
+   const Seen seen = sightOf(*here, tile);
+   switch (seen.sight) {
+   case Sight::Live: return std::nullopt;
+   case Sight::Uncharted: return Shown{false, std::nullopt};
+   case Sight::Fogged: return Shown{true, pictureAt(*here, seen.chart, tile)};
+   }
+   return std::nullopt;
 }
 
 const void* selectedAtPoint(int32_t x, int32_t y) {

@@ -17,6 +17,7 @@ struct Picture {
    enum class Kind { Tile, Entity, Building, Enemy, Ghost, TileGhost };
    Kind kind;
    const void* prototype; // the tile or entity prototype, for Tile and Entity
+   bool operator==(const Picture&) const = default;
 };
 
 // What the chart `chart` (ForceData::getChart) shows on the tile `tileX`, `tileY`: nothing when

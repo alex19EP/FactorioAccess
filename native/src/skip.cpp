@@ -37,7 +37,10 @@ Result find(int32_t x, int32_t y, int32_t dx, int32_t dy, int limit,
    auto next = [&](Tile tile) { return Tile{tile.x + dx, tile.y + dy}; };
    auto may = [&](Tile tile) { return allowed(tile.x, tile.y); };
 
-   const void* start = entityOn(origin);
+   // Under fog of war the view shows the chart's picture, and the mouse selects nothing there: the
+   // skip goes by the picture, and stops where it changes, where the fog ends or where it begins.
+   const std::optional<reader::Shown> startShown = reader::shownAt(x, y);
+   const void* start = startShown ? nullptr : entityOn(origin);
    if (start) {
       if (const auto end = facts::undergroundEnd(start, directionOf(dx, dy))) {
          if (!may(Tile{end->tileX, end->tileY})) return {Result::Kind::Edge, x, y, 0};
@@ -50,7 +53,7 @@ Result find(int32_t x, int32_t y, int32_t dx, int32_t dy, int limit,
    int moved = 1;
 
    // From water, the first tile that is not water.
-   if (!start && reader::waterAt(x, y)) {
+   if (!startShown && !start && reader::waterAt(x, y)) {
       while (moved < limit) {
          if (!reader::waterAt(tile.x, tile.y) || rulerStops(tile)) return {Result::Kind::Found, tile.x, tile.y, moved};
          const Tile further = next(tile);
@@ -65,9 +68,12 @@ Result find(int32_t x, int32_t y, int32_t dx, int32_t dy, int limit,
       start ? std::optional<facts::Likeness>(facts::likenessOf(start)) : std::nullopt;
    while (moved < limit) {
       if (rulerStops(tile)) return {Result::Kind::Found, tile.x, tile.y, moved};
-      const void* current = reader::selectedAt(tile.x, tile.y);
+      const std::optional<reader::Shown> shown = reader::shownAt(tile.x, tile.y);
+      const void* current = shown ? nullptr : reader::selectedAt(tile.x, tile.y);
       bool changed = false;
-      if (current && facts::skipsOver(current)) {
+      if (shown || startShown) {
+         changed = shown != startShown;
+      } else if (current && facts::skipsOver(current)) {
          // A robot or corpse hides what is under it: go on over it.
       } else if (!current) {
          // Ground after an entity, or water after ground.
