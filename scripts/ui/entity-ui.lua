@@ -34,24 +34,6 @@ local turret_config_tab = require("scripts.ui.tabs.turret-config")
 
 local mod = {}
 
--- Entity names that have UIs (for exact name matching)
-local ENTITY_NAMES_WITH_UI = {
-   ["rocket-silo-rocket-shadow"] = true,
-   ["rocket-silo-rocket"] = true,
-}
-
--- Entity types that have UIs
-local ENTITY_TYPES_WITH_UI = {
-   ["constant-combinator"] = true,
-   ["car"] = true,
-   ["spider-vehicle"] = true,
-   ["spider-leg"] = true,
-   ["cargo-wagon"] = true,
-   ["artillery-wagon"] = true,
-   ["locomotive"] = true,
-   ["roboport"] = true,
-}
-
 -- Entity types that should show configuration section before inventories
 local CONFIG_FIRST_TYPES = {
    ["locomotive"] = true,
@@ -391,64 +373,6 @@ mod.entity_ui = TabList.declare_tablist({
       return { { kind = UiRouter.BIND_KIND.ENTITY, entity = entity } }
    end,
 })
-
----Check if an entity has a UI accessible via the entity UI system
----@param entity LuaEntity The entity to check
----@return boolean true if the entity can open an entity UI
-function mod.has_ui(entity)
-   if not entity or not entity.valid then return false end
-
-   -- Check by entity name
-   if ENTITY_NAMES_WITH_UI[entity.name] then return true end
-
-   -- Check by entity type
-   if ENTITY_TYPES_WITH_UI[entity.type] then return true end
-
-   -- Operable buildings
-   if entity.operable and entity.prototype.is_building then return true end
-
-   return false
-end
-
----Attempt to open entity UI, handling entity indirection and special UI cases
----This is the main entry point for opening entity UIs from user interaction
----Returns false if the entity has no UI, otherwise attempts to open it
----@param pindex number Player index
----@param entity LuaEntity The entity that was clicked
----@return boolean success True if UI was opened, false if entity has no UI or error occurred
-function mod.maybe_open_entity(pindex, entity)
-   -- Early exit if entity has no UI
-   if not mod.has_ui(entity) then return false end
-
-   -- Handle entity indirection cases
-   local target_entity = entity
-
-   -- Spider legs should open the spider
-   if entity.type == "spider-leg" then
-      local spiders =
-         entity.surface.find_entities_filtered({ position = entity.position, radius = 5, type = "spider-vehicle" })
-      local spider = entity.surface.get_closest(entity.position, spiders)
-      if spider and spider.valid then
-         target_entity = spider
-      else
-         return false
-      end
-   end
-
-   -- Rocket silo rockets should open the silo
-   if entity.name == "rocket-silo-rocket-shadow" or entity.name == "rocket-silo-rocket" then
-      local silos =
-         entity.surface.find_entities_filtered({ position = entity.position, radius = 5, type = "rocket-silo" })
-      local silo = entity.surface.get_closest(entity.position, silos)
-      if silo and silo.valid then
-         target_entity = silo
-      else
-         return false
-      end
-   end
-
-   return mod.open_entity_ui(pindex, target_entity)
-end
 
 ---Open the entity UI for a given entity
 ---@param pindex number Player index
