@@ -14,8 +14,10 @@
 // alike for every entity of the kind (the mod it comes from, its description, wire reach, maximum
 // consumption, the last player ...): its name, FA's own facts (facts.h), a status only when it
 // tells of a problem, health only when damaged, then the lines that tell of this entity's state and
-// the icons alt mode draws. With no entity there, the tile's name and a water tile's shape. Last,
-// whether the player's force has not charted the tile, or charted it but does not see it now.
+// the icons alt mode draws. With no entity there, the tile's name and a water tile's shape. Where
+// the view draws fog of war (remote view and the map), a tile the force has not charted is only
+// "uncharted", and one it charted but does not see now is what the chart's old picture shows there
+// (mappicture.h), then "blurred".
 namespace fa::reader {
 
 // Reads the tile `tileX`, `tileY` at the application Gui's next tick, after `prefix` when it is not

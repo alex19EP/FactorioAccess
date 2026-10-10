@@ -3,6 +3,7 @@
 #include "agui.h"
 #include "facts.h"
 #include "game.h"
+#include "mappicture.h"
 #include "graph/GraphAnnouncer.hpp"
 #include "graph/GraphBuilder.hpp"
 #include "screens/AguiNodes.hpp"
@@ -489,9 +490,18 @@ std::optional<Local> local() {
 
 Position centreOf(Position tile) { return {tile.x * kScale + kScale / 2, tile.y * kScale + kScale / 2}; }
 
-// "uncharted" where the player's force has not charted the tile's chunk, "blurred" where it has
-// but does not see into it now (Mouse.cursor_visibility_info).
-std::string visibility(const Local& here, Position tile) {
+// What the view draws on the tile's chunk: the live world; nothing, where the player's force has
+// not charted it; or under fog of war the chart's picture of it, where the force charted it but
+// does not see into it now. Only remote view and the map draw fog: the character and god views
+// show the live world everywhere (Player::shouldRespectFogOfWar).
+enum class Sight { Live, Uncharted, Fogged };
+struct Seen {
+   Sight sight;
+   const void* chart = nullptr;
+};
+
+Seen sightOf(const Local& here, Position tile) {
+   if (!reinterpret_cast<bool (*)(const void*, bool)>(layout.respectsFogOfWar)(here.player, true)) return {Sight::Live};
    const std::byte* map = at<const std::byte*>(here.player, layout.playerMap);
    const std::byte* force =
       at<const std::byte* const*>(map, layout.mapForces)[at<uint8_t>(here.player, layout.playerForce)];
@@ -499,28 +509,51 @@ std::string visibility(const Local& here, Position tile) {
    const Position centre = centreOf(tile);
    using ChartedFunction = bool (*)(const void* force, uint32_t surfaceIndex, const Position* position);
    if (!reinterpret_cast<ChartedFunction>(layout.forceIsChunkCharted)(force, surfaceIndex, &centre))
-      return vocab::kUncharted;
+      return {Sight::Uncharted};
    using ChartFunction = const void* (*)(const void* force, uint32_t surfaceIndex);
    const void* chart = reinterpret_cast<ChartFunction>(layout.forceChart)(force, surfaceIndex);
    const Position chunk{centre.x >> 13, centre.y >> 13};
    using CoveredFunction = bool (*)(const void* chart, const Position* chunk);
-   if (!chart || reinterpret_cast<CoveredFunction>(layout.chartChunkCovered)(chart, &chunk)) return vocab::kBlurred;
+   if (!chart) return {Sight::Uncharted};
+   if (reinterpret_cast<CoveredFunction>(layout.chartChunkCovered)(chart, &chunk)) return {Sight::Fogged, chart};
+   return {Sight::Live};
+}
+
+// What the chart's picture shows on the tile (mappicture.h), or nothing.
+std::string pictureOf(const Local& here, const void* chart, Position tile) {
+   const std::optional<mappicture::Shown> shown =
+      mappicture::at(chart, tile.x, tile.y, tilePrototypeAt(here.surface, tile));
+   if (!shown || !shown->picture) return {};
+   const mappicture::Picture& picture = *shown->picture;
+   switch (picture.kind) {
+   case mappicture::Picture::Kind::Tile:
+   case mappicture::Picture::Kind::Entity: return localisedName(static_cast<const std::byte*>(picture.prototype));
+   case mappicture::Picture::Kind::Building: return vocab::kMapBuilding;
+   case mappicture::Picture::Kind::Enemy: return vocab::kMapEnemy;
+   case mappicture::Picture::Kind::Ghost: return vocab::kMapGhost;
+   case mappicture::Picture::Kind::TileGhost: return vocab::kMapTileGhost;
+   }
    return {};
 }
 
-// What the tile `tile` holds where the mouse at `point` selects, for the local player, or nothing
-// outside a game with a view.
+// What the tile `tile` holds where the mouse at `point` selects, as the player's view shows it, or
+// nothing outside a game with a view.
 std::optional<std::string> readTile(Position tile, Position point) {
    const std::optional<Local> here = local();
    if (!here) return std::nullopt;
+   const Seen seen = sightOf(*here, tile);
+   // The view shows black there.
+   if (seen.sight == Sight::Uncharted) return std::string(vocab::kUncharted);
+   if (seen.sight == Sight::Fogged) {
+      const std::string picture = pictureOf(*here, seen.chart, tile);
+      const std::string blurred = vocab::kBlurred;
+      return picture.empty() ? blurred : picture + ", " + blurred;
+   }
    const std::byte* entity = entityAt(here->player, here->surface, point);
    // A tile the map has not generated says so, and no more.
    if (!entity && !reinterpret_cast<TileAtFunction>(layout.surfaceTileAt)(here->surface, &tile))
       return vocab::translate("fa.tile-uncharted-out-of-range", {});
-   std::string text = entity ? describe(here->player, entity, tile) : tileName(here->surface, tile);
-   const std::string seen = visibility(*here, tile);
-   if (!seen.empty()) text += (text.empty() ? "" : ", ") + seen;
-   return text;
+   return entity ? describe(here->player, entity, tile) : tileName(here->surface, tile);
 }
 
 } // namespace

@@ -394,6 +394,12 @@ inline constexpr Word kWaterOpen{"fa.water-open"};
 // A tile the player's force has not charted, or charted but does not see into now.
 inline constexpr Word kUncharted{"fa.native-uncharted"};
 inline constexpr Word kBlurred{"fa.native-blurred"};
+// What a fogged tile's map picture shows, where the colour names no single thing (mappicture.h):
+// the colour every building without its own takes, an enemy's, a ghost's, a tile ghost's.
+inline constexpr Word kMapBuilding{"fa.native-map-building"};
+inline constexpr Word kMapEnemy{"fa.native-map-enemy"};
+inline constexpr Word kMapGhost{"fa.native-map-ghost"};
+inline constexpr Word kMapTileGhost{"fa.native-map-tile-ghost"};
 // Before the reading of the tile a skip key reached: how far it went, that it found no change
 // within its limit, or how far the size of the building in hand moved it.
 inline constexpr Word kSkipped{"fa.native-skipped"};
