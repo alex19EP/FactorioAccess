@@ -597,10 +597,11 @@ void Navigator::UpdateClaims(bool haveRender)
         // chords never match, so Alt+F4 and friends always reach the game. Shift+arrows skip
         // across a canvas.
         auto arrows = static_cast<uint8_t>(plain | mods::Ctrl | (canvas ? mods::Shift : 0));
+        auto tab = static_cast<uint8_t>((_screen->GameTab() ? mods::Shift : shiftable) | mods::Ctrl);
         claims = {{keys::Up, arrows}, {keys::Down, arrows}, {keys::Left, arrows}, {keys::Right, arrows},
-            {keys::Tab, shiftable | mods::Ctrl}, {keys::Home, plain}, {keys::End, plain},
-            {keys::Return, plain | mods::Shift | mods::Ctrl}, {keys::KeypadEnter, plain | mods::Shift | mods::Ctrl},
-            {keys::Y, plain}, {keys::LeftBracket, plain | mods::Shift | mods::Ctrl},
+            {keys::Tab, tab}, {keys::Home, plain}, {keys::End, plain}, {keys::Return, plain | mods::Shift | mods::Ctrl},
+            {keys::KeypadEnter, plain | mods::Shift | mods::Ctrl}, {keys::Y, plain},
+            {keys::LeftBracket, plain | mods::Shift | mods::Ctrl},
             // A held Shift or Control reaches the game's own handling of the right click.
             {keys::Backspace, plain | mods::Shift | mods::Ctrl}, {keys::RightBracket, plain | mods::Shift | mods::Ctrl},
             {keys::Backslash, plain | mods::Shift | mods::Ctrl}};

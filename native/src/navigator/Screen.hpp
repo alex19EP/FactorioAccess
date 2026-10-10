@@ -66,6 +66,10 @@ public:
     /// instead of between the parts of the screen, in the field and out of it.
     virtual bool CommandLine() const { return false; }
 
+    /// True for a screen whose plain Tab is the game's own control (the scenario message's
+    /// Confirm message): Tab reaches the game, and Shift+Tab and Ctrl+Tab stay the navigator's.
+    virtual bool GameTab() const { return false; }
+
     /// True for a screen the game knows nothing of as a window (a part of the HUD), whose Escape
     /// must not reach the game's own Back. The navigator then takes Escape and calls OnEscape.
     virtual bool ClaimsEscape() const { return false; }

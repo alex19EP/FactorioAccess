@@ -3,6 +3,7 @@
 // The scenario's message dialog over a loaded game (show_message_dialog; the freeplay welcome).
 // It is a speech bubble rather than a window, so no window screen sees it. Its text reads a line
 // per node, followed by "continue", which closes it as the game's Confirm message control does.
+// Tab, the key the message names, stays the game's, so Confirm message runs as for anyone.
 // Any menu opened over it (Escape) takes the keys while it is up, then hands them back.
 
 #include "agui.h"
@@ -17,6 +18,7 @@ public:
     std::string Name() const override { return {}; }
     const char* DiagName() const override { return "scenario message"; }
     int Layer() const override { return -1; }
+    bool GameTab() const override { return true; }
     bool IsActive() override;
     void Build(graph::GraphBuilder& builder) override;
     void OnPop() override;
