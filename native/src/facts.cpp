@@ -1935,6 +1935,18 @@ bool isRailOrRailGhost(const std::byte* entity) {
 
 } // namespace
 
+std::vector<const void*> entitiesIn(const void* surface, int32_t left, int32_t top, int32_t right, int32_t bottom) {
+   std::vector<const void*> found;
+   eachEntityIn(static_cast<const std::byte*>(surface), Position{left, top}, Position{right, bottom},
+                [&](const std::byte* entity) { found.push_back(entity); });
+   return found;
+}
+
+SelectionBox selectionBox(const void* entity) {
+   const Box box = selectionBoxOf(static_cast<const std::byte*>(entity));
+   return {box.leftTop.x, box.leftTop.y, box.rightBottom.x, box.rightBottom.y};
+}
+
 std::vector<std::string> describe(const void* object, int32_t tileX, int32_t tileY) {
    const auto* entity = static_cast<const std::byte*>(object);
    const Belt candidate{entity};

@@ -386,6 +386,33 @@ struct Layout {
    // Both only read.
    uintptr_t forceChart = 0;
    uintptr_t chartChunkCovered = 0;
+   // The map picture (mappicture.h): Chart::chartedChunks, an InfiniteRectangle<SubChart*> of chunk
+   // columns, each an InfiniteVector<SubChart*> {data, dataSize, zeroIndex} indexed by chunk y,
+   // in a vector of them indexed by chunk x the same way; null where uncharted.
+   uint32_t chartColumns = 0;     // Chart::chartedChunks.data, InfiniteVector<InfiniteVector<SubChart*>>
+   uint32_t infiniteData = 0;     // InfiniteVector<SubChart *>::data
+   uint32_t infiniteSize = 0;     // InfiniteVector<SubChart *>::dataSize, int
+   uint32_t infiniteZero = 0;     // InfiniteVector<SubChart *>::zeroIndex, int
+   uint32_t infiniteVectorSize = 0; // sizeof(InfiniteVector<SubChart *>)
+   // SubChart::pixels, uint16_t[32][32] by [y][x]: RGB565, one a tile, 0 where nothing was drawn.
+   uint32_t subChartPixels = 0;
+   // The colours the chart draws with (Chart::chartChunkInternal, Chart::drawEntity): a tile's
+   // TilePrototype::mapColor (ByteColor); an entity's EntityPrototype::mapColor, else
+   // friendlyMapColor (default_friendly_color_by_type folded in), else the utility constant
+   // chartDefaultFriendlyColor; an enemy's enemyMapColor, else chartDefaultEnemyColor; every ghost
+   // chartEntityGhostColor, tile ghosts chartTileGhostColor. The prototype colours are
+   // std::optional<ByteColor>: four bytes, then the has-value bool.
+   uint32_t tilePrototypeMapColor = 0;
+   uint32_t entityPrototypeMapColor = 0;
+   uint32_t entityPrototypeFriendlyMapColor = 0;
+   uint32_t entityPrototypeEnemyMapColor = 0;
+   uint32_t globalUtilityConstants = 0; // GlobalContext::utilityConstants.value, UtilityConstants*
+   uint32_t chartDefaultFriendlyColor = 0;
+   uint32_t chartDefaultEnemyColor = 0;
+   uint32_t chartEntityGhostColor = 0;
+   uint32_t chartTileGhostColor = 0;
+   uint32_t prototypeOrder = 0;  // PrototypeBase::orderString, std::string
+   uint32_t prototypeHidden = 0; // PrototypeBase::hidden, bool
    // ForceID Entity::getForceID() const, a virtual slot: neutral for entities of no force. Returned
    // through a hidden pointer, as member functions return classes.
    uint32_t entityGetForceId = 0;
@@ -1586,6 +1613,15 @@ struct Layout {
    uintptr_t deduceSelectedEntity = 0;
    uint32_t selectionModeNormal = 0;
    uintptr_t respectsFogOfWar = 0;
+   // The cycle key's order (cursor.h): static bool EntitySelector::selectPriorityLess(Entity const*,
+   // Entity const*, SelectionContext const&), true when the first loses the mouse to the second:
+   // lower selection priority, else its selection box's centre further north, else further from
+   // the context's position. A SelectionContext is {Optional<MapPosition> position (0x7fffffff
+   // both when empty), cursorID, selectionMode}.
+   uintptr_t selectPriorityLess = 0;
+   uint32_t selectionContextSize = 0;
+   uint32_t selectionContextPosition = 0;
+   uint32_t selectionContextMode = 0;
    // The tooltip's content: SelectedInfo::update builds a Description, has the entity add itself
    // (virtual void Entity::addToDescription(Description&) const) and fills the panel from it with
    // void Description::fill(agui::Widget&, NamedBool<PlainTag>) const. Description(std::optional<

@@ -10,7 +10,9 @@
 // The movement keys (fa-w, fa-a, fa-s, fa-d) move it a tile, or on the full map a cell, as the
 // game reads the key: the key's own event already carries the new position, with no wait for the
 // server. The skip keys (fa-s-w ...) move it to the next tile that differs (skip.h), and Ctrl with
-// a movement key (fa-c-w ...) by the size of the building or blueprint in hand, the same way.
+// a movement key (fa-c-w ...) by the size of the building or blueprint in hand, the same way. The
+// cycle key (fa-s-f) moves it within its tile to the next point where the mouse selects something
+// else, so the game selects each overlapping thing in turn; a movement key goes back to the centre.
 //
 // It reaches only what a sighted player's mouse reaches: in the character and god views, whose
 // camera stays on the player, the tiles on the screen, and the movement keys stop at the edge. In

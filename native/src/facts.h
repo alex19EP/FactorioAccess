@@ -50,4 +50,18 @@ struct UndergroundEnd {
 };
 std::optional<UndergroundEnd> undergroundEnd(const void* entity, uint8_t direction);
 
+// The entities on `surface` whose box overlaps the area from (left, top) to (right, bottom), map
+// positions in the game's fixed point, as EntitySearch<Entity> finds them.
+std::vector<const void*> entitiesIn(const void* surface, int32_t left, int32_t top, int32_t right, int32_t bottom);
+
+// The box the mouse selects `entity` in (Entity::getSelectionBox), in fixed point; a vehicle's as
+// if unturned.
+struct SelectionBox {
+   int32_t left;
+   int32_t top;
+   int32_t right;
+   int32_t bottom;
+};
+SelectionBox selectionBox(const void* entity);
+
 } // namespace fa::facts

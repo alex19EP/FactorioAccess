@@ -293,6 +293,14 @@ data:extend({
       consuming = "none",
    },
 
+   -- The DLL's cursor takes it (native/src/cursor.h); the mod's Lua has no handler
+   {
+      type = "custom-input",
+      name = "fa-s-f",
+      key_sequence = "SHIFT + F",
+      consuming = "none",
+   },
+
    {
       type = "custom-input",
       name = "fa-e",

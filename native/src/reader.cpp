@@ -97,10 +97,12 @@ struct OptionalContext {
 
 constexpr std::align_val_t kAlignment{16};
 
-// A tile waiting for the Gui's tick.
+// A tile waiting for the Gui's tick, read as the mouse at `point` (fixed point) sees it.
 struct Pending {
    Position tile;
+   Position point;
    std::string prefix;
+   std::string suffix;
 };
 std::mutex g_mutex;
 std::optional<Pending> g_pending;
@@ -506,11 +508,12 @@ std::string visibility(const Local& here, Position tile) {
    return {};
 }
 
-// What the tile `tile` holds, for the local player, or nothing outside a game with a view.
-std::optional<std::string> readTile(Position tile) {
+// What the tile `tile` holds where the mouse at `point` selects, for the local player, or nothing
+// outside a game with a view.
+std::optional<std::string> readTile(Position tile, Position point) {
    const std::optional<Local> here = local();
    if (!here) return std::nullopt;
-   const std::byte* entity = entityAt(here->player, here->surface, centreOf(tile));
+   const std::byte* entity = entityAt(here->player, here->surface, point);
    // A tile the map has not generated says so, and no more.
    if (!entity && !reinterpret_cast<TileAtFunction>(layout.surfaceTileAt)(here->surface, &tile))
       return vocab::translate("fa.tile-uncharted-out-of-range", {});
@@ -523,8 +526,14 @@ std::optional<std::string> readTile(Position tile) {
 } // namespace
 
 void read(int32_t tileX, int32_t tileY, std::string prefix) {
+   const Position tile{tileX, tileY};
    std::scoped_lock lock(g_mutex);
-   g_pending = Pending{Position{tileX, tileY}, std::move(prefix)};
+   g_pending = Pending{tile, centreOf(tile), std::move(prefix), {}};
+}
+
+void readPoint(int32_t x, int32_t y, std::string suffix) {
+   std::scoped_lock lock(g_mutex);
+   g_pending = Pending{Position{x >> 8, y >> 8}, Position{x, y}, {}, std::move(suffix)};
 }
 
 void tick() {
@@ -534,24 +543,87 @@ void tick() {
       pending = std::exchange(g_pending, std::nullopt);
    }
    if (!pending) return;
-   std::optional<std::string> text = readTile(pending->tile);
+   std::optional<std::string> text = readTile(pending->tile, pending->point);
    if (!text) return;
    // The mod's own words may end in their own comma ("Unanchored cursor,").
    if (!pending->prefix.empty()) {
       const char* separator = text->empty() ? "" : pending->prefix.ends_with(',') ? " " : ", ";
       *text = pending->prefix + separator + *text;
    }
+   if (!pending->suffix.empty()) *text += (text->empty() ? "" : ", ") + pending->suffix;
    speech::say(std::move(*text), true);
 }
 
 const void* selectedAt(int32_t tileX, int32_t tileY) {
+   const Position centre = centreOf(Position{tileX, tileY});
+   return selectedAtPoint(centre.x, centre.y);
+}
+
+const void* selectedAtPoint(int32_t x, int32_t y) {
    const std::optional<Local> here = local();
-   return here ? entityAt(here->player, here->surface, centreOf(Position{tileX, tileY})) : nullptr;
+   return here ? entityAt(here->player, here->surface, Position{x, y}) : nullptr;
 }
 
 bool waterAt(int32_t tileX, int32_t tileY) {
    const std::optional<Local> here = local();
    return here && isWater(tilePrototypeAt(here->surface, Position{tileX, tileY}));
+}
+
+std::vector<Stop> stopsIn(int32_t tileX, int32_t tileY) {
+   const std::optional<Local> here = local();
+   if (!here) return {};
+   const int32_t left = tileX * kScale, top = tileY * kScale, right = left + kScale, bottom = top + kScale;
+   const Position centre = centreOf(Position{tileX, tileY});
+
+   // The selection boxes reaching into the tile cut it into cells, and the same boxes hold every
+   // point of a cell, so a point in each cell meets everything the mouse can select here. A box
+   // may reach past its entity's own (a tree's crown): the search looks a tile around.
+   std::vector<int32_t> xs{left, right}, ys{top, bottom};
+   for (const void* entity :
+        facts::entitiesIn(here->surface, left - kScale, top - kScale, right + kScale, bottom + kScale)) {
+      const facts::SelectionBox box = facts::selectionBox(entity);
+      if (box.right <= left || box.left >= right || box.bottom <= top || box.top >= bottom) continue;
+      xs.push_back(std::clamp(box.left, left, right));
+      xs.push_back(std::clamp(box.right, left, right));
+      ys.push_back(std::clamp(box.top, top, bottom));
+      ys.push_back(std::clamp(box.bottom, top, bottom));
+   }
+   for (std::vector<int32_t>* edges : {&xs, &ys}) {
+      std::ranges::sort(*edges);
+      edges->erase(std::ranges::unique(*edges).begin(), edges->end());
+   }
+   std::vector<Position> points{centre};
+   for (size_t i = 0; i + 1 < xs.size(); ++i)
+      for (size_t j = 0; j + 1 < ys.size(); ++j) points.push_back({(xs[i] + xs[i + 1]) / 2, (ys[j] + ys[j + 1]) / 2});
+   const auto distance = [&](Position point) {
+      const int64_t dx = point.x - centre.x, dy = point.y - centre.y;
+      return dx * dx + dy * dy;
+   };
+   std::ranges::stable_sort(points, {}, distance);
+
+   std::vector<Stop> stops;
+   std::optional<Stop> ground;
+   for (const Position point : points) {
+      const void* entity = entityAt(here->player, here->surface, point);
+      if (!entity) {
+         if (!ground) ground = Stop{nullptr, point.x, point.y};
+      } else if (std::ranges::find(stops, entity, &Stop::entity) == stops.end()) {
+         stops.push_back(Stop{entity, point.x, point.y});
+      }
+   }
+
+   alignas(8) std::byte context[32]{};
+   if (stops.size() > 2 && layout.selectionContextSize <= sizeof(context)) {
+      std::memcpy(context + layout.selectionContextPosition, &centre, sizeof(centre));
+      context[layout.selectionContextMode] = static_cast<std::byte>(layout.selectionModeNormal);
+      using Less = bool (*)(const void* a, const void* b, const void* context);
+      const auto less = reinterpret_cast<Less>(layout.selectPriorityLess);
+      // The game's "loses to": the one that takes the mouse comes first.
+      std::stable_sort(stops.begin() + 1, stops.end(),
+                       [&](const Stop& a, const Stop& b) { return less(b.entity, a.entity, context); });
+   }
+   if (ground) stops.push_back(*ground);
+   return stops;
 }
 
 } // namespace fa::reader

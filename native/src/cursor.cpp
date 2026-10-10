@@ -3,6 +3,7 @@
 #include "game.h"
 #include "reader.h"
 #include "skip.h"
+#include "speech.h"
 #include "vocab.h"
 #include "world.h"
 
@@ -19,6 +20,7 @@
 #include <string>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 namespace fa::cursor {
 
@@ -173,17 +175,18 @@ int32_t cellSize(const View& view) {
    return exponent < 0 ? 1 : int32_t{1} << static_cast<int>(exponent);
 }
 
-// The movement keys, by the mod's custom input names: a step, a skip (Shift) and a move by the
-// size of the building in hand (Ctrl). The skips come first, so a key with Shift or Ctrl is never
-// taken for the plain step.
-enum class KeyKind { Step, Skip, BySize };
+// The movement keys, by the mod's custom input names: a step, a skip (Shift), a move by the size of
+// the building in hand (Ctrl), and the cycle through what the mouse can select inside the tile
+// (Shift+F). The skips come first, so a key with Shift or Ctrl is never taken for the plain step.
+enum class KeyKind { Step, Skip, BySize, Cycle };
 struct MoveKey {
    std::string_view name;
    int32_t dx;
    int32_t dy;
    KeyKind kind;
 };
-constexpr std::array<MoveKey, 12> kMoveKeys{{
+constexpr std::array<MoveKey, 13> kMoveKeys{{
+   {"fa-s-f", 0, 0, KeyKind::Cycle},
    {"fa-s-w", 0, -1, KeyKind::Skip},
    {"fa-s-a", -1, 0, KeyKind::Skip},
    {"fa-s-s", 0, 1, KeyKind::Skip},
@@ -314,6 +317,26 @@ void skipForKey(const MoveKey& key, const View& view, Position cursor) {
    record(target, Step::Skipped, limit ? -1 : found.tiles);
 }
 
+// The cycle key: the cursor goes to the next point inside its tile where the mouse selects
+// something else (reader::stopsIn), and the game selects it there, as a sighted player picks among
+// overlapping things by moving the mouse within the tile. The last stop wraps to the first. A
+// building in hand keeps the cursor at the tile's centre, where it builds.
+void cycleForKey(const View& view, Position cursor) {
+   const int playerIndex = at<uint16_t>(view.player, layout.playerIndex) + 1;
+   if (world::heldBuild(playerIndex)) {
+      speech::say(std::string(vocab::kCycleHoldingBuild), true);
+      return;
+   }
+   const std::vector<reader::Stop> stops = reader::stopsIn(tileOf(cursor.x), tileOf(cursor.y));
+   if (stops.empty()) return;
+   const void* current = reader::selectedAtPoint(cursor.x, cursor.y);
+   const auto shown = std::ranges::find(stops, current, &reader::Stop::entity);
+   const size_t next = shown == stops.end() ? 0 : (static_cast<size_t>(shown - stops.begin()) + 1) % stops.size();
+   const reader::Stop& stop = stops[next];
+   place(Position{stop.x, stop.y});
+   reader::readPoint(stop.x, stop.y, vocab::kPosition(next + 1, stops.size()));
+}
+
 void moveForKey(const void* event, const void* context) {
    if (!event) return;
    {
@@ -326,6 +349,10 @@ void moveForKey(const void* event, const void* context) {
    if (!key) return;
    const std::optional<View> view = localView();
    if (!view) return;
+   if (key->kind == KeyKind::Cycle) {
+      cycleForKey(*view, *cursor);
+      return;
+   }
    if (key->kind != KeyKind::Step) {
       skipForKey(*key, *view, *cursor);
       return;
@@ -478,6 +505,10 @@ void frame(void* source) {
       return;
    }
    if (!world::drivesCursor()) place(tileCentre(view->centre));
+   // A building in hand builds from the tile's centre, wherever the cycle key left the cursor in it.
+   if (const std::optional<Position> cursor = currentCursor();
+       cursor && *cursor != tileCentre(*cursor) && world::heldBuild(at<uint16_t>(view->player, layout.playerIndex) + 1))
+      place(tileCentre(*cursor));
 
    if (view->controller != g_lastController) {
       if (view->controller == layout.controllerRemote && g_lastController && fixedCamera(*g_lastController))

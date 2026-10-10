@@ -399,6 +399,8 @@ inline constexpr Word kBlurred{"fa.native-blurred"};
 inline constexpr Word kSkipped{"fa.native-skipped"};
 inline constexpr Word kSkippedNoChange{"fa.native-skipped-no-change"};
 inline constexpr Word kSkippedByPreview{"fa.native-skipped-by-preview"};
+// The cycle key with a building in hand, which keeps the cursor at the tile's centre.
+inline constexpr Word kCycleHoldingBuild{"fa.native-cycle-holding-build"};
 // The info icons alt mode draws: a machine's recipe ("producing"), the filters it allows or denies,
 // what it has ("Has steam"), an item with its quality and count, and a badge's any quality or deny.
 inline constexpr Word kProducing{"fa.ent-info-producing"};
