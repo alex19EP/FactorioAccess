@@ -5,7 +5,8 @@ The mod's Lua tests run without graphics, so no view is shown there and the DLL'
 These checks drive a game that shows one: movement keys and the screen's edge, the pull back onto the
 screen when zooming in, a far jump opening remote view, the camera following the cursor, a camera the
 game moves bringing the cursor, leaving remote view, the full map's cells, the skip and cycle keys, an
-item lying away from its tile's centre, and reading the fog of war's picture.
+item lying away from its tile's centre, the scanner's keys leaving the cursor where it is but for
+Home, and reading the fog of war's picture.
 
 Before running:
 - a game with the DLL and the dev server on (FA_DEV=1, FA_DEV_PORT for another port than 8773), in a
@@ -364,6 +365,28 @@ def an_item_away_from_the_centre_is_read_and_selected(game):
     if "Stone" not in said or selected != "item-on-ground":
         return False, f"the stone's tile said {said!r} and selected {selected}"
     return True, f"said {said.strip()!r}, the game selects the stone"
+
+
+@check
+def only_home_moves_the_cursor_onto_a_scanner_entry(game):
+    x, row = build_strip(game)
+    game.keys("end")
+    # The list is made on a thread of its own.
+    game.wait(60)
+    game.jump(x, row)
+    game.until(lambda s: s["cursor"] == (x, row), 60)
+    for key in ("shift+pagedown", "shift+pagedown", "pagedown", "shift+pageup"):
+        said = game.keys(key)
+        state = game.state()
+        if not re.search(r"\d+ of \d+", said):
+            return False, f"{key} said {said!r}, not an entry"
+        if state["cursor"] != (x, row):
+            return False, f"{key} moved the cursor from {x},{row} to {state['cursor']}; said {said!r}"
+    said = game.keys("home")
+    state = game.until(lambda s: s["cursor"] != (x, row), 60)
+    if state["cursor"] == (x, row):
+        return False, f"home left the cursor on the bare ground at {x},{row}; said {said!r}"
+    return True, f"reading kept the cursor at {x},{row}, home took it to {state['cursor']}"
 
 
 @check

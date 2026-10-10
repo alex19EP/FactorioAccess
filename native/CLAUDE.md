@@ -149,8 +149,9 @@ curl -s localhost:8773/cursor                   # the view, the camera and the c
 
 `tools/cursor-checks.py` drives the cursor and its camera over the dev server and prints PASS or FAIL
 for each check: steps, the screen's edge, zooming in, remote view and the camera, the full map's
-cells, the skip and cycle keys, an item off its tile's centre, the fog of war. Run it after changing `cursor.cpp`, the reader or the
-skips. Its docstring says what game it needs. A DRM-free copy with FA's keys set and its own dev port
+cells, the skip and cycle keys, an item off its tile's centre, the scanner keys (only Home moves the
+cursor), the fog of war. Run it after changing `cursor.cpp`, the reader, the skips or the scanner's
+keys. Its docstring says what game it needs. A DRM-free copy with FA's keys set and its own dev port
 (`FA_DEV=1`, `FA_DEV_PORT=8775`) keeps it off the shared Steam game.
 
 Rules for starting the game and using the dev server:
