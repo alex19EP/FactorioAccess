@@ -83,13 +83,14 @@ constexpr uint16_t kNotListedBit = 0x10;
 
 std::string facing(const std::byte* entity) {
    const std::string_view type = typeName(prototypeOf(entity));
-   // Rails have their own description.
-   if (type == "straight-rail" || type == "half-diagonal-rail" || type == "curved-rail-a" || type == "curved-rail-b")
-      return {};
-   // A ghost faces as the building it stands for.
+   // A ghost faces as the building it stands for. Rails and rail ghosts have their own description.
    const std::byte* building = type == "entity-ghost" ? at<const std::byte*>(entity, layout.scanGhostInner) : entity;
    if (!building) return {};
    const std::byte* prototype = prototypeOf(building);
+   const std::string_view buildingType = typeName(prototype);
+   if (buildingType == "straight-rail" || buildingType == "half-diagonal-rail" || buildingType == "curved-rail-a" ||
+       buildingType == "curved-rail-b")
+      return {};
    if (!virtualAt<bool (*)(const void*)>(prototype, layout.prototypeIsBuilding)(prototype) ||
        !virtualAt<bool (*)(const void*)>(building, layout.entityHasDirection)(building))
       return {};
@@ -1466,6 +1467,472 @@ bool isCraftingMachine(std::string_view type) {
    return type == "assembling-machine" || type == "furnace" || type == "rocket-silo";
 }
 
+// ---- rails ----
+//
+// The rails on a tile as scripts/rails/announcer.lua and railutils/rail-describer.lua say them,
+// read from the game's own rail graph: a rail's ends, what each joins, the signals and stations.
+// A rail ghost joins nothing in the graph, so it is said by its kind alone.
+
+// The entities whose box overlaps the area, as EntitySearch<Entity> finds them.
+template <class Visit>
+void eachEntityIn(const std::byte* surface, Position leftTop, Position rightBottom, Visit&& visit) {
+   using Search = void* (*)(std::byte* search, const void* surface, const std::byte* area);
+   alignas(8) std::byte area[game::kBoundingBoxCapacity]{};
+   std::memcpy(area + layout.boundingLeftTop, &leftTop, sizeof(leftTop));
+   std::memcpy(area + layout.boundingRightBottom, &rightBottom, sizeof(rightBottom));
+   alignas(8) std::byte search[game::kEntitySearchCapacity]{};
+   reinterpret_cast<Search>(layout.entitySearch)(search, surface, area);
+   const auto* first = at<const std::byte* const*>(search, layout.entitySearchContent);
+   const auto* last = at<const std::byte* const*>(search, layout.entitySearchContent + sizeof(void*));
+   for (const std::byte* const* it = first; it != last; ++it) visit(*it);
+   reinterpret_cast<void (*)(std::byte*)>(layout.entitySearchDestroy)(search);
+}
+
+// Whether an entity of the type stands at the position, as LuaSurface::find_entity looks.
+bool entityAt(const std::byte* surface, Position position, std::string_view type) {
+   constexpr int32_t kNear = kScale / 8;
+   bool found = false;
+   eachEntityIn(surface, Position{position.x - kNear, position.y - kNear},
+                Position{position.x + kNear, position.y + kNear},
+                [&](const std::byte* entity) { found = found || typeName(prototypeOf(entity)) == type; });
+   return found;
+}
+
+enum class RailType : uint8_t { Straight, HalfDiagonal, CurveA, CurveB };
+
+std::optional<RailType> railTypeOf(std::string_view type) {
+   if (type == "straight-rail") return RailType::Straight;
+   if (type == "half-diagonal-rail") return RailType::HalfDiagonal;
+   if (type == "curved-rail-a") return RailType::CurveA;
+   if (type == "curved-rail-b") return RailType::CurveB;
+   return std::nullopt;
+}
+
+constexpr int kFront = 0;
+constexpr int kBack = 1;
+constexpr int kLeft = -1;
+constexpr int kStraightOn = 0;
+constexpr int kRight = 1;
+
+struct RailEnd {
+   Position position;
+   uint8_t direction;
+};
+
+// A rail end as LuaRailEnd::location reads it: the prototype's connection point for the rail's
+// direction, from the rail's position.
+const std::byte* connectionPoint(const std::byte* rail, int end) {
+   return prototypeOf(rail) + layout.railConnectionPoints +
+          (size_t{at<uint8_t>(rail, layout.railDirection)} * 2 + static_cast<size_t>(end)) * layout.connectionPointSize;
+}
+
+RailEnd endOf(const std::byte* rail, int end) {
+   const std::byte* point = connectionPoint(rail, end);
+   const Position relative = at<Position>(point, layout.railLocationPosition);
+   const Position position = at<Position>(rail, layout.entityPosition);
+   return {Position{position.x + relative.x, position.y + relative.y},
+           at<uint8_t>(point, layout.railLocationDirection)};
+}
+
+// The rail joined to an end, turning left, straight on or right, or null.
+const std::byte* linked(const std::byte* rail, int end, int turn) {
+   const std::byte* connection = rail + (end == kFront ? layout.railFront : layout.railBack);
+   const uint32_t which = turn == kLeft    ? layout.connectionLeft
+                          : turn == kRight ? layout.connectionRight
+                                           : layout.connectionStraight;
+   return at<const std::byte*>(connection, which);
+}
+
+// The end of `next` that is not joined to `from`: where a walk from `from` goes on.
+int farEnd(const std::byte* next, const std::byte* from) {
+   for (const int turn : {kLeft, kStraightOn, kRight})
+      if (linked(next, kFront, turn) == from) return kBack;
+   return kFront;
+}
+
+int endFacing(const std::byte* rail, uint8_t direction) {
+   return endOf(rail, kBack).direction == direction ? kBack : kFront;
+}
+
+// railutils/turn-table.lua: for a curve, which part of a 90 degree turn it is, and the turns to
+// walk from either end to find the rest of the turn.
+struct TurnWalk {
+   uint8_t end;
+   int turn;
+   int count;
+};
+struct Turn {
+   const char* position;
+   uint8_t from;
+   uint8_t to;
+   TurnWalk forward;
+   TurnWalk back;
+};
+// By curve (a, b) and placement direction / 2.
+constexpr Turn kTurns[2][8] = {
+   {
+      {"bottom", 4, 8, {8, 1, 0}, {15, -1, 3}},
+      {"bottom", 12, 8, {8, -1, 0}, {1, 1, 3}},
+      {"bottom", 4, 0, {3, -1, 3}, {12, 1, 0}},
+      {"top", 4, 8, {5, 1, 3}, {12, -1, 0}},
+      {"top", 12, 0, {0, 1, 0}, {7, -1, 3}},
+      {"top", 4, 0, {0, -1, 0}, {9, 1, 3}},
+      {"top", 12, 8, {11, -1, 3}, {4, 1, 0}},
+      {"bottom", 12, 0, {13, 1, 3}, {4, -1, 0}},
+   },
+   {
+      {"lower-half", 4, 8, {7, 1, 1}, {14, -1, 2}},
+      {"lower-half", 12, 8, {9, -1, 1}, {2, 1, 2}},
+      {"lower-half", 4, 0, {2, -1, 2}, {11, 1, 1}},
+      {"upper-half", 4, 8, {6, 1, 2}, {13, -1, 1}},
+      {"upper-half", 12, 0, {15, 1, 1}, {6, -1, 2}},
+      {"upper-half", 4, 0, {1, -1, 1}, {10, 1, 2}},
+      {"upper-half", 12, 8, {10, -1, 2}, {3, 1, 1}},
+      {"lower-half", 12, 0, {14, 1, 2}, {5, -1, 1}},
+   },
+};
+// The kind a curve is said as when no whole turn is built: left or right of a cardinal (a) or a
+// diagonal (b), by placement direction / 2.
+constexpr const char* kCurveFallback[2][8] = {
+   {"left-of-north", "right-of-north", "left-of-east", "right-of-east", "left-of-south", "right-of-south",
+    "left-of-west", "right-of-west"},
+   {"right-of-southeast", "left-of-southwest", "right-of-southwest", "left-of-northwest", "right-of-northwest",
+    "left-of-northeast", "right-of-northeast", "left-of-southeast"},
+};
+// A straight or half-diagonal rail's kind, by its end direction mod 8.
+constexpr const char* kSimpleKinds[8] = {"vertical",   "northnortheast", "northeast", "eastnortheast",
+                                         "horizontal", "eastsoutheast",  "southeast", "southsoutheast"};
+
+const char* cardinalName(uint8_t direction) {
+   switch (direction) {
+   case kNorth: return "north";
+   case kEast: return "east";
+   case kSouth: return "south";
+   default: return "west";
+   }
+}
+
+bool walkTurn(const std::byte* rail, const TurnWalk& walk) {
+   const std::byte* current = rail;
+   int end = endFacing(rail, walk.end);
+   for (int i = 0; i < walk.count; ++i) {
+      const std::byte* next = linked(current, end, walk.turn > 0 ? kRight : kLeft);
+      if (!next) return false;
+      end = farEnd(next, current);
+      current = next;
+   }
+   return true;
+}
+
+// The rail's kind as railutils names it ("horizontal", "bottom-of-east-to-south-turn"), turns
+// found only through the rail graph.
+std::string railKind(const std::byte* rail, RailType type, bool walk) {
+   const uint8_t direction = at<uint8_t>(rail, layout.railDirection);
+   if (type == RailType::Straight || type == RailType::HalfDiagonal)
+      return kSimpleKinds[endOf(rail, kFront).direction % 8];
+   const int curve = type == RailType::CurveA ? 0 : 1;
+   const size_t index = (direction / 2u) % 8u;
+   const Turn& turn = kTurns[curve][index];
+   if (walk && walkTurn(rail, turn.forward) && walkTurn(rail, turn.back))
+      return std::string(turn.position) + "-of-" + cardinalName(turn.from) + "-to-" + cardinalName(turn.to) + "-turn";
+   return kCurveFallback[curve][index];
+}
+
+bool isAxisStraight(const std::byte* rail) {
+   if (railTypeOf(typeName(prototypeOf(rail))) != RailType::Straight) return false;
+   const uint8_t end = endOf(rail, kFront).direction % 8;
+   return end == 0 || end == 4;
+}
+
+bool isVerticalRail(const std::byte* rail) { return endOf(rail, kFront).direction % 8 == 0; }
+
+// The signals at a rail's end and a station beside it (scripts/rails/signal-station-classifier.lua).
+struct SignalInfo {
+   uint8_t direction = kNorth;
+   std::string_view left;  // "rail-signal" or "rail-chain-signal", in signal; empty for none
+   std::string_view right; // out signal
+   bool station = false;
+};
+
+std::string_view signalAt(const std::byte* surface, Position position) {
+   if (entityAt(surface, position, "rail-signal")) return "rail-signal";
+   if (entityAt(surface, position, "rail-chain-signal")) return "rail-chain-signal";
+   return {};
+}
+
+std::optional<SignalInfo> signalInfo(const std::byte* surface, const std::byte* rail) {
+   using Location = std::byte* (*)(const void* point, std::byte* out);
+   alignas(8) std::byte location[32]{};
+   if (layout.optionalRailLocationSize > sizeof(location)) return std::nullopt;
+   // The connection point as LuaRailEnd builds it: the rail's own, moved to the rail's position.
+   auto pointAt = [&](int end, std::byte* point) {
+      std::memcpy(point, connectionPoint(rail, end), layout.connectionPointSize);
+      const Position position = endOf(rail, end).position;
+      std::memcpy(point + layout.railLocationPosition, &position, sizeof(position));
+   };
+   auto signalOf = [&](const std::byte* point, uintptr_t main, uintptr_t alternative) {
+      std::memset(location, 0, sizeof(location));
+      reinterpret_cast<Location>(main)(point, location);
+      std::string_view found = signalAt(surface, at<Position>(location, layout.railLocationPosition));
+      if (found.empty()) {
+         std::memset(location, 0, sizeof(location));
+         reinterpret_cast<Location>(alternative)(point, location);
+         if (at<bool>(location, layout.optionalRailLocationHas))
+            found = signalAt(surface, at<Position>(location, layout.railLocationPosition));
+      }
+      return found;
+   };
+
+   bool station = false;
+   if (isAxisStraight(rail)) {
+      const Position position = at<Position>(rail, layout.entityPosition);
+      const int32_t two = 2 * kScale;
+      const bool vertical = isVerticalRail(rail);
+      for (const int32_t side : {-two, two}) {
+         const Position check =
+            vertical ? Position{position.x + side, position.y} : Position{position.x, position.y + side};
+         station = station || entityAt(surface, check, "train-stop");
+      }
+   }
+   for (const int end : {kFront, kBack}) {
+      alignas(8) std::byte point[32]{};
+      if (layout.connectionPointSize > sizeof(point)) return std::nullopt;
+      pointAt(end, point);
+      SignalInfo info;
+      info.direction = endOf(rail, end).direction;
+      info.left = signalOf(point, layout.pointInSignal, layout.pointAlternativeInSignal);
+      info.right = signalOf(point, layout.pointOutSignal, layout.pointAlternativeOutSignal);
+      info.station = station;
+      if (!info.left.empty() || !info.right.empty()) return info;
+   }
+   if (station) return SignalInfo{endOf(rail, kFront).direction, {}, {}, true};
+   return std::nullopt;
+}
+
+std::string signalWords(const SignalInfo& info) {
+   const std::string way = directionName(info.direction);
+   std::vector<std::string> items;
+   const bool chainLeft = info.left == "rail-chain-signal";
+   const bool chainRight = info.right == "rail-chain-signal";
+   if (!info.left.empty() && !info.right.empty()) {
+      if (info.left == info.right)
+         items.push_back(chainLeft ? vocab::kRailChainPair(way) : vocab::kRailSignalPair(way));
+      else
+         items.push_back(chainLeft ? vocab::kRailChainedLeft(way) : vocab::kRailChainedRight(way));
+   } else if (!info.right.empty()) {
+      items.push_back(chainRight ? vocab::kRailChainOut(way) : vocab::kRailSignalOut(way));
+   } else if (!info.left.empty()) {
+      items.push_back(chainLeft ? vocab::kRailChainIn(way) : vocab::kRailSignalIn(way));
+   }
+   if (info.station) items.emplace_back(vocab::kRailAtStation);
+   return joined(items, ", ");
+}
+
+// Where the cars of a train stopped at a nearby station would stand on this rail
+// (scripts/rails/stop-preview.lua): straight rails leading to a stop, up to seven cars.
+std::string stopPreview(const std::byte* surface, const std::byte* rail, Position tile) {
+   constexpr int32_t kMaxDistance = 49;
+   constexpr int32_t kCarSize = 7;
+   if (!isAxisStraight(rail)) return {};
+   const Position centre{tile.x * kScale + kScale / 2, tile.y * kScale + kScale / 2};
+
+   struct Candidate {
+      const std::byte* stop;
+      const std::byte* rail;
+      uint8_t facing;
+   };
+   std::vector<Candidate> candidates;
+   constexpr int32_t kReach = (kMaxDistance + 10) * kScale;
+   eachEntityIn(surface, Position{centre.x - kReach, centre.y - kReach}, Position{centre.x + kReach, centre.y + kReach},
+                [&](const std::byte* stop) {
+                   if (typeName(prototypeOf(stop)) != "train-stop") return;
+                   const Position stopAt = at<Position>(stop, layout.entityPosition);
+                   const double dx = static_cast<double>(stopAt.x - centre.x) / kScale;
+                   const double dy = static_cast<double>(stopAt.y - centre.y) / kScale;
+                   if (dx * dx + dy * dy > static_cast<double>(kMaxDistance + 10) * (kMaxDistance + 10)) return;
+                   const std::byte* object = agui::objectAsBase(stop, ".?AVTrainStop@@");
+                   const std::byte* stopRail = object ? at<const std::byte*>(object, layout.trainStopRail) : nullptr;
+                   if (!stopRail || !isAxisStraight(stopRail)) return;
+                   const uint8_t direction = at<uint8_t>(object, layout.trainStopDirection);
+                   const int end = direction == kNorth || direction == kEast ? kFront : kBack;
+                   const uint8_t facing = endOf(stopRail, end).direction;
+                   // The rail lies two tiles to the stop's left as it faces.
+                   const uint8_t toRail = counterclockwise(facing);
+                   const int32_t ux = toRail == kEast ? 1 : toRail == kWest ? -1 : 0;
+                   const int32_t uy = toRail == kSouth ? 1 : toRail == kNorth ? -1 : 0;
+                   const Position railAt = at<Position>(stopRail, layout.entityPosition);
+                   if (std::abs(railAt.x - (stopAt.x + ux * 2 * kScale)) > kScale / 2 ||
+                       std::abs(railAt.y - (stopAt.y + uy * 2 * kScale)) > kScale / 2)
+                      return;
+                   candidates.push_back({stop, stopRail, facing});
+                });
+   if (candidates.empty()) return {};
+   auto candidateOf = [&](const std::byte* on) -> const Candidate* {
+      for (const Candidate& candidate : candidates)
+         if (candidate.rail == on) return &candidate;
+      return nullptr;
+   };
+
+   const Candidate* found = candidateOf(rail);
+   for (const int start : {kFront, kBack}) {
+      if (found) break;
+      const std::byte* current = rail;
+      int end = start;
+      for (int tiles = 0;;) {
+         if ((found = candidateOf(current))) break;
+         tiles += 2;
+         if (tiles > kMaxDistance) break;
+         const std::byte* next = linked(current, end, kStraightOn);
+         if (!next || railTypeOf(typeName(prototypeOf(next))) != RailType::Straight) break;
+         end = farEnd(next, current);
+         current = next;
+      }
+   }
+   if (!found) return {};
+
+   const Position stopRail = at<Position>(found->rail, layout.entityPosition);
+   const Position here = at<Position>(rail, layout.entityPosition);
+   const int32_t dx = here.x - stopRail.x;
+   const int32_t dy = here.y - stopRail.y;
+   if (std::abs(dx) > kScale / 2 || std::abs(dy) > kScale / 2) {
+      const uint8_t from = std::abs(dx) > std::abs(dy) ? (dx > 0 ? kEast : kWest) : (dy > 0 ? kSouth : kNorth);
+      if (from != opposite(found->facing)) return {};
+   }
+   const bool vertical = isVerticalRail(found->rail);
+   double distance = vertical ? static_cast<double>(centre.y - stopRail.y) / kScale
+                              : static_cast<double>(centre.x - stopRail.x) / kScale;
+   if ((vertical && found->facing == kSouth) || (!vertical && found->facing == kEast)) distance = -distance;
+   if (distance < 0) return {};
+   const auto tiles = static_cast<int64_t>(std::floor(distance));
+   if (tiles > kMaxDistance) return {};
+   const int64_t car = tiles / kCarSize + 1;
+   const int64_t place = tiles % kCarSize + 1;
+   const std::string name = backerName(found->stop);
+   if (place == kCarSize) return vocab::kStopGapAfterCar(name, car);
+   return vocab::kStopCarPosition(name, car, place);
+}
+
+// What a rail is said as (RailAnnouncer.announce_rail).
+std::string railWords(const std::byte* surface, const std::byte* rail, RailType type, bool ghost, bool first,
+                      Position tile) {
+   std::vector<std::string> words;
+   if (ghost) words.emplace_back(vocab::kRailGhost);
+   if (first) words.emplace_back(vocab::kRailPrefix);
+   words.push_back(vocab::translate(("fa.rails-descriptions-" + railKind(rail, type, !ghost)).c_str(), {}));
+   std::vector<std::string> items;
+   if (!ghost) {
+      bool open[2] = {};
+      int connections = 0;
+      struct Junction {
+         uint8_t direction;
+         const vocab::Word* word;
+      };
+      std::vector<Junction> junctions;
+      for (const int end : {kFront, kBack}) {
+         const bool left = linked(rail, end, kLeft) != nullptr;
+         const bool straight = linked(rail, end, kStraightOn) != nullptr;
+         const bool right = linked(rail, end, kRight) != nullptr;
+         const int count = left + straight + right;
+         connections += count;
+         open[end] = count == 0;
+         const vocab::Word* word = !straight && left && right   ? &vocab::kRailSplit
+                                   : straight && !left && right ? &vocab::kRailForkRight
+                                   : straight && left && !right ? &vocab::kRailForkLeft
+                                   : straight && left && right  ? &vocab::kRailForkBoth
+                                                                : nullptr;
+         if (word) junctions.push_back({endOf(rail, end).direction, word});
+      }
+      if (connections == 0)
+         words.emplace_back(vocab::kRailLonely);
+      else if (open[kFront] || open[kBack])
+         words.push_back(vocab::kRailEnds(directionName(endOf(rail, open[kFront] ? kFront : kBack).direction)));
+      std::ranges::sort(junctions, {}, &Junction::direction);
+      for (const Junction& junction : junctions) items.push_back((*junction.word)(directionName(junction.direction)));
+      if (const std::optional<SignalInfo> info = signalInfo(surface, rail)) items.push_back(signalWords(*info));
+      items.push_back(stopPreview(surface, rail, tile));
+   }
+   items.insert(items.begin(), joined(words));
+   return joined(items, ", ");
+}
+
+int railPriority(RailType type) { return static_cast<int>(type); }
+
+uint64_t unitNumberOf(const std::byte* entity) {
+   const std::byte* owner = agui::objectAsBase(entity, ".?AVEntityWithOwner@@");
+   return owner ? at<uint64_t>(owner, layout.entityUnitNumber) : 0;
+}
+
+struct TileRail {
+   const std::byte* entity; // the rail, or the ghost
+   const std::byte* rail;   // the Rail itself; a ghost's inner one
+   RailType type;
+};
+
+// Rails on one tile, only those not joined to a rail said already; rails with signals or a station
+// are always said (PrimaryFinder.deduplicate_secondary_rails). A ghost joins nothing.
+std::vector<TileRail> primaryRails(const std::byte* surface, std::vector<TileRail> rails, bool ghosts) {
+   if (rails.size() <= 1) return rails;
+   std::vector<TileRail> result;
+   std::vector<const std::byte*> joinedToKept;
+   auto keep = [&](const TileRail& rail) {
+      result.push_back(rail);
+      for (const int end : {kFront, kBack})
+         for (const int turn : {kLeft, kStraightOn, kRight})
+            if (const std::byte* other = linked(rail.rail, end, turn)) joinedToKept.push_back(other);
+   };
+   std::vector<TileRail> regular;
+   for (const TileRail& rail : rails) {
+      if (!ghosts && signalInfo(surface, rail.rail))
+         keep(rail);
+      else
+         regular.push_back(rail);
+   }
+   std::ranges::stable_sort(regular, [](const TileRail& a, const TileRail& b) {
+      if (a.type != b.type) return railPriority(a.type) < railPriority(b.type);
+      return unitNumberOf(a.entity) < unitNumberOf(b.entity);
+   });
+   for (const TileRail& rail : regular)
+      if (std::ranges::find(joinedToKept, rail.rail) == joinedToKept.end()) keep(rail);
+   return result;
+}
+
+// Every rail on the tile, then every rail ghost (TileReader.read_tile_rails), and the one the
+// cursor selects there though its box misses the tile.
+std::string railsOnTile(const std::byte* surface, const std::byte* selected, Position tile) {
+   std::vector<TileRail> rails;
+   std::vector<TileRail> ghosts;
+   auto add = [&](const std::byte* entity) {
+      const std::string_view type = typeName(prototypeOf(entity));
+      const bool ghost = type == "entity-ghost";
+      const std::byte* inner = ghost ? at<const std::byte*>(entity, layout.scanGhostInner) : entity;
+      if (!inner) return;
+      const std::optional<RailType> railType = railTypeOf(ghost ? typeName(prototypeOf(inner)) : type);
+      const std::byte* rail = railType ? agui::objectAsBase(inner, ".?AVRail@@") : nullptr;
+      if (!rail) return;
+      std::vector<TileRail>& list = ghost ? ghosts : rails;
+      if (std::ranges::none_of(list, [&](const TileRail& known) { return known.entity == entity; }))
+         list.push_back({entity, rail, *railType});
+   };
+   const Position leftTop{tile.x * kScale + 1, tile.y * kScale + 1};
+   const Position rightBottom{tile.x * kScale + kScale - 1, tile.y * kScale + kScale - 1};
+   eachEntityIn(surface, leftTop, rightBottom, add);
+   add(selected);
+   std::vector<std::string> said;
+   for (const TileRail& rail : primaryRails(surface, rails, false))
+      said.push_back(railWords(surface, rail.rail, rail.type, false, said.empty(), tile));
+   for (const TileRail& rail : primaryRails(surface, ghosts, true))
+      said.push_back(railWords(surface, rail.rail, rail.type, true, said.empty(), tile));
+   return joined(said, ", ");
+}
+
+bool isRailOrRailGhost(const std::byte* entity) {
+   const std::string_view type = typeName(prototypeOf(entity));
+   if (railTypeOf(type)) return true;
+   if (type != "entity-ghost") return false;
+   const std::byte* inner = at<const std::byte*>(entity, layout.scanGhostInner);
+   return inner && railTypeOf(typeName(prototypeOf(inner)));
+}
+
 } // namespace
 
 std::vector<std::string> describe(const void* object, int32_t tileX, int32_t tileY) {
@@ -1493,6 +1960,8 @@ std::vector<std::string> describe(const void* object, int32_t tileX, int32_t til
    first.push_back(combinatorDescription(entity));
 
    std::vector<std::string> parts{joined(first)};
+   if (isRailOrRailGhost(entity))
+      parts.push_back(railsOnTile(at<const std::byte*>(entity, layout.entitySurface), entity, Position{tileX, tileY}));
    if (belt && belt.isUnderground()) parts.push_back(undergroundConnection(belt));
    if (candidate.type() == "splitter") parts.push_back(splitterState(candidate));
    if (isPole(entity)) {

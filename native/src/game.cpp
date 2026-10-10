@@ -1354,6 +1354,28 @@ bool resolve(pdb::SymbolTable& symbols) {
       size(layout.fluidProductSize, "FluidProductPrototype");
       offset(layout.fluidProductId, "FluidProductPrototype", "result.id");
    }
+   offset(layout.railDirection, "Rail", "direction");
+   offset(layout.railFront, "Rail", "front");
+   offset(layout.railBack, "Rail", "back");
+   offset(layout.connectionLeft, "Rail::RailConnection", "left");
+   offset(layout.connectionStraight, "Rail::RailConnection", "straight");
+   offset(layout.connectionRight, "Rail::RailConnection", "right");
+   offset(layout.railConnectionPoints, "RailPrototype", "connectionPoints");
+   size(layout.connectionPointSize, "RailConnectionPoint");
+   offset(layout.railLocationPosition, "RailLocation", "position");
+   offset(layout.railLocationDirection, "RailLocation", "direction");
+   address(layout.pointInSignal, "?inSignalLocation@RailConnectionPoint@@QEBA?AVRailLocation@@XZ");
+   address(layout.pointOutSignal, "?outSignalLocation@RailConnectionPoint@@QEBA?AVRailLocation@@XZ");
+   address(layout.pointAlternativeInSignal,
+           "?alternativeInSignalLocation@RailConnectionPoint@@QEBA?AV?$optional@VRailLocation@@@std@@XZ");
+   address(layout.pointAlternativeOutSignal,
+           "?alternativeOutSignalLocation@RailConnectionPoint@@QEBA?AV?$optional@VRailLocation@@@std@@XZ");
+   size(layout.optionalRailLocationSize, "std::optional<RailLocation>");
+   offset(layout.optionalRailLocationHas, "std::optional<RailLocation>", "_Has_value");
+   offset(layout.trainStopRail, "TrainStop", "rail");
+   offset(layout.trainStopDirection, "TrainStop", "direction");
+   offset(layout.boundingLeftTop, "BoundingBox", "leftTop");
+   offset(layout.boundingRightBottom, "BoundingBox", "rightBottom");
 
    if (ok && (layout.chartSelectionSize > kChartSelectionCapacity || layout.patchInfoSize > kPatchInfoCapacity)) {
       log::error("A chart structure outgrew its buffer: ChartSelection {} bytes, ResourcePatchInfo {}",

@@ -1908,6 +1908,36 @@ struct Layout {
    uint32_t itemProductId = 0;
    uint32_t fluidProductSize = 0;
    uint32_t fluidProductId = 0;
+   // Rails, from the game's own rail graph. Rail::direction (Direction, uint8) and Rail::front and
+   // ::back (Rail::RailConnection, the rails joined at that end: left, straight, right, Rail* or
+   // null). RailPrototype::connectionPoints holds a RailConnectionPoint (a RailLocation: position
+   // relative to the rail and direction) for each direction and end, at direction * 2 + end (front
+   // 0, back 1), as LuaRailEnd::location reads it. RailLocation RailConnectionPoint::
+   // inSignalLocation() const and outSignalLocation() const, and std::optional<RailLocation>
+   // alternativeInSignalLocation() / alternativeOutSignalLocation() const, are where its signals
+   // stand (LuaRailEnd's in/out_signal_location), all returned through a pointer. A train stop's
+   // TrainStop::rail and TrainStop::direction (north or east face the rail's front end, as
+   // LuaEntity::connected_rail_direction). BoundingBox: leftTop and rightBottom, MapPositions.
+   uint32_t railDirection = 0;
+   uint32_t railFront = 0;
+   uint32_t railBack = 0;
+   uint32_t connectionLeft = 0;            // Rail::RailConnection::left
+   uint32_t connectionStraight = 0;
+   uint32_t connectionRight = 0;
+   uint32_t railConnectionPoints = 0;      // RailPrototype::connectionPoints, RailConnectionPoint[32]
+   uint32_t connectionPointSize = 0;
+   uint32_t railLocationPosition = 0;      // RailLocation::position, MapPosition
+   uint32_t railLocationDirection = 0;     // RailLocation::direction, uint8
+   uintptr_t pointInSignal = 0;
+   uintptr_t pointOutSignal = 0;
+   uintptr_t pointAlternativeInSignal = 0;
+   uintptr_t pointAlternativeOutSignal = 0;
+   uint32_t optionalRailLocationSize = 0;  // sizeof(std::optional<RailLocation>)
+   uint32_t optionalRailLocationHas = 0;   // std::optional<RailLocation>::_Has_value, bool
+   uint32_t trainStopRail = 0;             // TrainStop::rail, Rail*
+   uint32_t trainStopDirection = 0;        // TrainStop::direction, uint8
+   uint32_t boundingLeftTop = 0;           // BoundingBox::leftTop
+   uint32_t boundingRightBottom = 0;       // BoundingBox::rightBottom
 };
 
 // Bits of agui::Widget::usageBitMask, read from Widget::setVisible and Widget::isEnabled in

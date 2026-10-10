@@ -82,7 +82,7 @@ function mod.announce_rail(description, opts)
    if is_ghost then message:fragment({ "fa.rail-ghost-prefix" }) end
 
    -- Add "rail" prefix if requested
-   if prefix_rail then message:fragment("rail") end
+   if prefix_rail then message:fragment({ "fa.rail-prefix" }) end
 
    -- Main rail kind
    message:fragment({ "fa.rails-descriptions-" .. description.kind })

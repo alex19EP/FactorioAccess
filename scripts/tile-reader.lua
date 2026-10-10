@@ -101,8 +101,8 @@ function mod.read_tile_rails(pindex, message)
 end
 
 ---What the mod says of the cursor's tile after the DLL's reading of it (native/src/reader.h), which
----said the entity's name, status, tooltip and the mod's facts, or the tile's name and a water tile's
----shape: what only the mod tells.
+---said the entity's name, status, tooltip and the mod's facts (the tile's rails among them), or the
+---tile's name and a water tile's shape: what only the mod tells.
 ---@param pindex integer
 ---@return LocalisedString
 function mod.read_tile_more(pindex)
@@ -111,11 +111,7 @@ function mod.read_tile_more(pindex)
    if ent then
       local is_rail = Consts.RAIL_TYPES_SET[ent.type]
          or (ent.type == "entity-ghost" and Consts.RAIL_TYPES_SET[ent.ghost_type])
-      if is_rail then
-         mod.read_tile_rails(pindex, message)
-      else
-         message:fragment(FaInfo.ent_info(pindex, ent, false, true))
-      end
+      if not is_rail then message:fragment(FaInfo.ent_info(pindex, ent, false, true)) end
    end
    message:fragment(Mouse.cursor_visibility_info(pindex))
    return message:build()

@@ -400,6 +400,28 @@ inline constexpr Word kInventoryPresentation{"fa.ent-info-inventory-presentation
 inline constexpr Word kItemQuantityQuality{"fa.item-quantity-quality"};
 inline constexpr Word kAnyQuality{"fa.ent-icon-any-quality"};
 inline constexpr Word kIconDenied{"fa.ent-icon-denied"};
+// Rails on a tile (scripts/rails/announcer.lua): a ghost, the first rail, its kind (the
+// fa.rails-descriptions-* keys), lonely or which end is open, its junctions, the signals at an end
+// and a station beside it, and where a train stopped at a station near it would have its cars.
+inline constexpr Word kRailGhost{"fa.rail-ghost-prefix"};
+inline constexpr Word kRailPrefix{"fa.rail-prefix"};
+inline constexpr Word kRailLonely{"fa.rail-lonely"};
+inline constexpr Word kRailEnds{"fa.rail-end-direction"};
+inline constexpr Word kRailSplit{"fa.rail-junction-split"};
+inline constexpr Word kRailForkLeft{"fa.rail-junction-fork-left"};
+inline constexpr Word kRailForkRight{"fa.rail-junction-fork-right"};
+inline constexpr Word kRailForkBoth{"fa.rail-junction-fork-both"};
+inline constexpr Word kRailSignalOut{"fa.rail-signal-out"};
+inline constexpr Word kRailSignalIn{"fa.rail-signal-in"};
+inline constexpr Word kRailChainOut{"fa.rail-chain-out"};
+inline constexpr Word kRailChainIn{"fa.rail-chain-in"};
+inline constexpr Word kRailSignalPair{"fa.rail-signal-pair"};
+inline constexpr Word kRailChainPair{"fa.rail-chain-pair"};
+inline constexpr Word kRailChainedLeft{"fa.rail-pair-chained-left"};
+inline constexpr Word kRailChainedRight{"fa.rail-pair-chained-right"};
+inline constexpr Word kRailAtStation{"fa.rail-at-station"};
+inline constexpr Word kStopGapAfterCar{"fa.stop-preview-gap-after-car"};
+inline constexpr Word kStopCarPosition{"fa.stop-preview-car-position"};
 // A train driven by hand.
 inline constexpr Word kTrainManual{"fa.train-state-manual"};
 
