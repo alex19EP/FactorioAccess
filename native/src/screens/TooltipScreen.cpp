@@ -69,7 +69,8 @@ void TooltipScreen::Build(graph::GraphBuilder& builder)
         if (line.section)
             builder.SetRegion("section/" + std::to_string(++section));
         graph::NodeVtable vtable;
-        vtable.Announcements.emplace_back([text = line.text]() { return text; }, false, graph::AnnouncementKinds::Label);
+        vtable.Announcements.emplace_back(
+            [text = line.text]() { return text; }, false, graph::AnnouncementKinds::Label);
         // The tooltip key again puts it away.
         vtable.OnTooltip = []() { Close(); };
         builder.AddItem(graph::ControlId::Structural("line/" + std::to_string(i)), std::move(vtable));

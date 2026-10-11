@@ -41,8 +41,8 @@ void note(std::string_view message) {
    if (file == INVALID_HANDLE_VALUE) return;
    SYSTEMTIME now;
    GetLocalTime(&now);
-   const std::string line =
-      std::format("{:02}:{:02}:{:02}.{:03} [stub] {}\n", now.wHour, now.wMinute, now.wSecond, now.wMilliseconds, message);
+   const std::string line = std::format("{:02}:{:02}:{:02}.{:03} [stub] {}\n", now.wHour, now.wMinute, now.wSecond,
+                                        now.wMilliseconds, message);
    DWORD written = 0;
    WriteFile(file, line.data(), static_cast<DWORD>(line.size()), &written, nullptr);
    CloseHandle(file);
@@ -263,9 +263,9 @@ DWORD WINAPI run(void*) {
       if (g_core.module) unload();
       load(generation++);
       reopenLua();
-      note(std::format("Reload took {} ms", std::chrono::duration_cast<std::chrono::milliseconds>(
-                                                std::chrono::steady_clock::now() - started)
-                                                .count()));
+      note(std::format(
+         "Reload took {} ms",
+         std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - started).count()));
    }
 }
 
