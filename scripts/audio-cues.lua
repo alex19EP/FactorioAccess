@@ -1,12 +1,11 @@
 --[[
 Audio Cues
 Centralized management of various audio cues that need to be played periodically.
-Handles driving alerts, mining sounds, and crafting sounds.
+Handles driving alerts and mining sounds.
 ]]
 
 local Driving = require("scripts.driving")
 local PlayerMiningTools = require("scripts.player-mining-tools")
-local sounds = require("scripts.ui.sounds")
 local VanillaMode = require("scripts.vanilla-mode")
 
 local mod = {}
@@ -76,14 +75,6 @@ function mod.on_init()
       local p = game.get_player(pindex)
       if p ~= nil and p.mining_state.mining == true then PlayerMiningTools.play_mining_sound(pindex) end
    end, 30, 8, true)
-
-   -- Crafting sounds
-   mod.register_cue("crafting", function(pindex, tick)
-      local p = game.get_player(pindex)
-      if p.character and p.crafting_queue ~= nil and #p.crafting_queue > 0 and p.crafting_queue_size > 0 then
-         sounds.play_crafting(pindex)
-      end
-   end, 60, 11, true)
 end
 
 return mod

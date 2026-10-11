@@ -32,11 +32,12 @@ function mod.on_tick()
       -- Inserter sonification (when hovering inserter)
       InserterSonifier.on_tick_per_player(pindex)
 
+      local mod_settings = player.mod_settings
+
       -- Player crafting sounds
-      PlayerCraftingSonifier.on_tick_per_player(pindex)
+      if mod_settings[SETTING_NAMES.HANDCRAFTING_SOUND].value then PlayerCraftingSonifier.on_tick_per_player(pindex) end
 
       -- Grid-based sonification (crafting machines etc)
-      local mod_settings = player.mod_settings
       if mod_settings[SETTING_NAMES.SONIFICATION_CRAFTING].value then GridSonifier.on_tick_per_player(pindex) end
 
       -- Combat sonification
