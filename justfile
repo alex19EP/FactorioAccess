@@ -24,6 +24,12 @@ STEAM_APPID := env_var_or_default("FACTORIO_STEAM_APPID", "427520")
 # quote it once here so every consumer can splat it raw.
 VCVARS := '"' + VCVARS_RAW + '"'
 
+# cl writes its /showIncludes notes in the console's code page (localised in a non-English Visual
+# Studio), CMake keeps the prefix it saw when it configured, and ninja records a header dependency
+# only where the bytes match. Without one code page for every configure and build, a tree set up
+# from one terminal and built from another records no header dependencies, and objects go stale.
+CODEPAGE := 'chcp 65001 >nul'
+
 # List the recipes
 default:
     @just --list
@@ -34,11 +40,11 @@ default:
 
 # Configure the native build tree (Ninja Multi-Config, see CMakePresets.json)
 configure: _require-vcvars
-    @cmd.exe /c '{{VCVARS}} >nul 2>&1 && cmake -S {{NATIVE}} --preset default'
+    @cmd.exe /c '{{CODEPAGE}} && {{VCVARS}} >nul 2>&1 && cmake -S {{NATIVE}} --preset default'
 
 # Build winmm.dll, fa_native.dll, the native tests and the symbol checker (RelWithDebInfo)
 build: _ensure-configured _require-vcvars
-    @cmd.exe /c '{{VCVARS}} >nul 2>&1 && cmake --build {{BUILD_DIR}} --config RelWithDebInfo'
+    @cmd.exe /c '{{CODEPAGE}} && {{VCVARS}} >nul 2>&1 && cmake --build {{BUILD_DIR}} --config RelWithDebInfo'
 
 # Run the graph kernel conformance suite (pure STL, never touches the game)
 test: build
@@ -62,7 +68,7 @@ symbols: build _require-steam
 
 # compile_commands.json for clangd (Ninja, so it needs the VS environment)
 clangd: _require-vcvars
-    @cmd.exe /c '{{VCVARS}} >nul 2>&1 && cmake -S {{NATIVE}} --preset clangd'
+    @cmd.exe /c '{{CODEPAGE}} && {{VCVARS}} >nul 2>&1 && cmake -S {{NATIVE}} --preset clangd'
 
 # Remove the native build trees
 clean:
