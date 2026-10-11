@@ -18,15 +18,20 @@ namespace fa::facts {
 // where the game translates.
 std::vector<std::string> describe(const void* entity, int32_t tileX, int32_t tileY);
 
-// A blueprint's entities, which lie on no surface: what the blueprint's picture would pick at a map
-// position (fixed point, the blueprint's own coordinates), or null. The game links a blueprint's
-// belts, pipes and heat pipes among themselves (Entity::blueprintSetup), but not its underground
-// belt pairs nor what an inserter or a drill reaches: those are found through this.
-using Lookup = std::function<const void*(int32_t x, int32_t y)>;
+// A blueprint's entities, which lie on no surface. The game links its belts, pipes and heat pipes
+// among themselves (Entity::blueprintSetup), but not its underground belt pairs nor what an
+// inserter or a drill reaches: those are found with `entityAt`, what the blueprint's picture would
+// pick at a map position (fixed point, the blueprint's own coordinates) among the entities it
+// keeps, or null. The links stay to an entity the player removed from the blueprint, which is not
+// built: `keeps` tells it apart.
+struct Design {
+   std::function<const void*(int32_t x, int32_t y)> entityAt;
+   std::function<bool(const void* entity)> keeps;
+};
 
 // The facts of a blueprint's entity that tell of its design, as describe says them: none of the
 // world's state (what a belt carries, power, networks, trains).
-std::vector<std::string> describeDesign(const void* entity, int32_t tileX, int32_t tileY, const Lookup& lookup);
+std::vector<std::string> describeDesign(const void* entity, int32_t tileX, int32_t tileY, const Design& design);
 
 // What the info icons the game draws on `entity` show (alt mode), in FA's words where it has them:
 // the recipe as "producing", filters as "Filters for" or
@@ -61,14 +66,14 @@ bool skipsOver(const void* entity);
 bool nextOfKind(const void* left, const void* entered);
 
 // The tile of the other end of an underground belt or pipe to ground, when it lies in the 16-way
-// `direction` from the entity, and how many tiles away; a skip jumps to it. With `lookup`, in a
+// `direction` from the entity, and how many tiles away; a skip jumps to it. With `design`, in a
 // blueprint.
 struct UndergroundEnd {
    int32_t tileX;
    int32_t tileY;
    int tiles;
 };
-std::optional<UndergroundEnd> undergroundEnd(const void* entity, uint8_t direction, const Lookup* lookup = nullptr);
+std::optional<UndergroundEnd> undergroundEnd(const void* entity, uint8_t direction, const Design* design = nullptr);
 
 // What a mining drill mines from: the prototypes of the resources in its mining area
 // (MiningDrill::resourcesToMine), each once, by internal name. The tile reader says them, and the

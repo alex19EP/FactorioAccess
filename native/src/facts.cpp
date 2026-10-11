@@ -131,14 +131,18 @@ struct Belt {
 // The way items flow through an underground belt: an entrance's facing, an exit's opposite.
 uint8_t flowOf(Belt belt) { return belt.isUndergroundExit() ? opposite(belt.direction()) : belt.direction(); }
 
+// Whether an entity the game linked to another is there: in the world always; in a blueprint,
+// unless the player removed it, as it is not built then.
+bool kept(const std::byte* entity, const Design* design) { return entity && (!design || design->keeps(entity)); }
+
 // The underground belt `belt` pairs with: in the world its own link; in a blueprint, which leaves
 // them unpaired, the one the game would pair it with once built (undergroundrules.h).
-Belt partnerOf(Belt belt, const Lookup* lookup) {
-   if (!lookup || !belt.isUnderground()) return belt.partner();
+Belt partnerOf(Belt belt, const Design* design) {
+   if (!design || !belt.isUnderground()) return belt.partner();
    const std::byte* prototype = prototypeOf(belt.entity);
    const auto sameKindAt = [&](int32_t x, int32_t y) {
       constexpr int32_t scale = game::kMapPositionScale;
-      const auto* found = static_cast<const std::byte*>((*lookup)(x * scale + scale / 2, y * scale + scale / 2));
+      const auto* found = static_cast<const std::byte*>(design->entityAt(x * scale + scale / 2, y * scale + scale / 2));
       return Belt{found && prototypeOf(found) == prototype ? found : nullptr};
    };
    const Position position = at<Position>(belt.entity, layout.entityPosition);
@@ -155,13 +159,15 @@ struct Neighbours {
 };
 
 // A splitter's other half has its own neighbours (Splitter::secondaryConnections), counted too.
-Neighbours neighboursOf(Belt belt) {
+Neighbours neighboursOf(Belt belt, const Design* design) {
    Neighbours out;
    const uint8_t own = belt.direction();
    auto add = [&](const uint32_t (&sides)[4]) {
       for (size_t i = 0; i < 4; ++i) {
          const Belt other{at<const std::byte*>(belt.entity, sides[i])};
-         if (!other || other == belt || (at<uint16_t>(other.entity, layout.entityUsageBits) & kNotListedBit)) continue;
+         if (!kept(other.entity, design) || other == belt ||
+             (at<uint16_t>(other.entity, layout.entityUsageBits) & kNotListedBit))
+            continue;
          const uint8_t side = kStraight[i];
          if (side == own) {
             if (other.direction() != opposite(own) && out.outputCount < std::size(out.outputs))
@@ -192,7 +198,7 @@ struct Parents {
    Belt right;
 };
 
-Parents parentsOf(Belt belt, const Neighbours& neighbours, const Lookup* lookup) {
+Parents parentsOf(Belt belt, const Neighbours& neighbours, const Design* design) {
    Parents out;
    if (!belt.isTransportBelt() && !belt.isUnderground()) return out;
    const uint8_t outgoing = belt.direction();
@@ -210,20 +216,20 @@ Parents parentsOf(Belt belt, const Neighbours& neighbours, const Lookup* lookup)
             out.right = input;
       }
    }
-   if (belt.isUndergroundExit()) out.behind = partnerOf(belt, lookup);
+   if (belt.isUndergroundExit()) out.behind = partnerOf(belt, design);
    return out;
 }
 
 // The words for a transport belt's or an underground belt's shape (scripts/transport-belts.lua,
 // Node:get_shape_info).
-std::vector<std::string> beltShape(Belt belt, const Lookup* lookup) {
-   const Neighbours neighbours = neighboursOf(belt);
+std::vector<std::string> beltShape(Belt belt, const Design* design) {
+   const Neighbours neighbours = neighboursOf(belt, design);
    const uint8_t outgoing = belt.direction();
-   const auto [behind, left, right] = parentsOf(belt, neighbours, lookup);
+   const auto [behind, left, right] = parentsOf(belt, neighbours, design);
 
    // An entrance feeds its exit.
    Belt child = neighbours.outputCount > 0 ? neighbours.outputs[0] : Belt{};
-   if (!child && belt.isUnderground() && !belt.isUndergroundExit()) child = partnerOf(belt, lookup);
+   if (!child && belt.isUnderground() && !belt.isUndergroundExit()) child = partnerOf(belt, design);
 
    const bool hasInput = behind || left || right;
    const bool hasOutput = static_cast<bool>(child);
@@ -260,8 +266,8 @@ std::vector<std::string> beltShape(Belt belt, const Lookup* lookup) {
 }
 
 // Where an underground belt's partner is: straight ahead or behind, so one of four directions.
-std::string undergroundConnection(Belt belt, const Lookup* lookup) {
-   const Belt partner = partnerOf(belt, lookup);
+std::string undergroundConnection(Belt belt, const Design* design) {
+   const Belt partner = partnerOf(belt, design);
    if (!partner) return vocab::kUndergroundNotConnected;
    const Position from = at<Position>(belt.entity, layout.entityPosition);
    const Position to = at<Position>(partner.entity, layout.entityPosition);
@@ -341,7 +347,8 @@ struct PipeConnection {
    uint16_t opposite = 0;            // its index among the target's connections
 };
 
-std::vector<PipeConnection> connectionsOf(const std::byte* box) {
+// A box's connections; in a blueprint, one to a removed entity joins nothing.
+std::vector<PipeConnection> connectionsOf(const std::byte* box, const Design* design) {
    const auto* first = at<const std::byte*>(box, layout.fluidBoxConnectionsBegin);
    const auto* last = at<const std::byte*>(box, layout.fluidBoxConnectionsEnd);
    const std::byte* definitions =
@@ -350,9 +357,10 @@ std::vector<PipeConnection> connectionsOf(const std::byte* box) {
    for (size_t i = 0; first + i * layout.fluidConnectionSize < last; ++i) {
       const std::byte* connection = first + i * layout.fluidConnectionSize;
       const std::byte* definition = definitions + i * layout.pipeDefinitionSize;
+      const std::byte* target = at<const std::byte*>(connection, layout.fluidConnectionTarget);
+      if (target && !kept(ownerOf(target), design)) target = nullptr;
       out.push_back({locate(box, i), at<uint8_t>(definition, layout.pipeDefinitionFlow),
-                     at<uint8_t>(definition, layout.pipeDefinitionType),
-                     at<const std::byte*>(connection, layout.fluidConnectionTarget),
+                     at<uint8_t>(definition, layout.pipeDefinitionType), target,
                      at<uint16_t>(connection, layout.fluidConnectionOpposite)});
    }
    return out;
@@ -393,11 +401,11 @@ std::string shapeOf(const bool (&joined)[16]) {
 
 // A pipe's shape from the sides it joins to anything, a pipe, a machine or a tank, so a pipe that
 // leads into an engine is no lonely pipe.
-std::string pipeShape(const std::byte* entity) {
+std::string pipeShape(const std::byte* entity, const Design* design) {
    const std::vector<const std::byte*> boxes = fluidBoxesOf(entity);
    if (boxes.size() != 1) return {};
    bool joined[16] = {};
-   for (const PipeConnection& connection : connectionsOf(boxes[0]))
+   for (const PipeConnection& connection : connectionsOf(boxes[0], design))
       if (connection.target) joined[connection.location.direction % 16] = true;
    return shapeOf(joined);
 }
@@ -466,14 +474,14 @@ std::string fluidWords(const Point& point) {
    return prototype ? localisedName(prototype) : std::string(vocab::kAnyFluid);
 }
 
-std::vector<Point> pointsOn(const std::byte* entity, Position tile) {
+std::vector<Point> pointsOn(const std::byte* entity, Position tile, const Design* design) {
    std::vector<Point> points;
    if (typeName(prototypeOf(entity)) == "fluid-wagon") return points;
    const bool pipe = isPipe(entity);
    const std::byte* machine = agui::objectAsBase(entity, ".?AVCraftingMachine@@");
    const bool noRecipe = machine && !at<uint16_t>(machine + layout.craftingRecipe, layout.idWithQualityBase);
    for (const std::byte* box : fluidBoxesOf(entity)) {
-      const std::vector<PipeConnection> connections = connectionsOf(box);
+      const std::vector<PipeConnection> connections = connectionsOf(box, design);
       const uint16_t fluid = requiredFluid(box, connections);
       for (const PipeConnection& connection : connections) {
          const Position where = connection.location.position;
@@ -502,12 +510,12 @@ std::vector<Point> pointsOn(const std::byte* entity, Position tile) {
 }
 
 // The tile's fluid connections, a list item per fluid, distance and way: in, out, then both ways.
-std::vector<std::string> fluidConnections(const std::byte* entity, Position tile) {
+std::vector<std::string> fluidConnections(const std::byte* entity, Position tile, const Design* design) {
    // By the way each leads out: what comes in, what goes out, and what does both.
    const Point* in[16] = {};
    const Point* out[16] = {};
    const Point* both[16] = {};
-   const std::vector<Point> points = pointsOn(entity, tile);
+   const std::vector<Point> points = pointsOn(entity, tile, design);
    for (const Point& point : points) {
       if (point.input) in[point.outward] = &point;
       if (point.output) out[point.outward] = &point;
@@ -559,8 +567,9 @@ struct HeatPort {
    const std::byte* joined = nullptr;
 };
 
-// The entity's heat connections, where the game itself finds them (HeatBuffer::findOtherEnd).
-std::vector<HeatPort> heatPortsOf(const std::byte* entity) {
+// The entity's heat connections, where the game itself finds them (HeatBuffer::findOtherEnd); in a
+// blueprint, one to a removed entity joins nothing.
+std::vector<HeatPort> heatPortsOf(const std::byte* entity, const Design* design) {
    std::vector<HeatPort> ports;
    if (typeName(prototypeOf(entity)) == "entity-ghost") return ports;
    const std::byte* buffer = virtualAt<const std::byte* (*)(const void*)>(entity, layout.entityGetHeatBuffer)(entity);
@@ -593,6 +602,7 @@ std::vector<HeatPort> heatPortsOf(const std::byte* entity) {
              at<const std::byte*>(first + i * layout.heatConnectionSize, layout.heatConnectionTarget))
          if (const std::byte* holder = at<const std::byte*>(target, layout.heatBufferHolder))
             port.joined = at<const std::byte*>(holder, layout.heatHolderOwner);
+      if (!kept(port.joined, design)) port.joined = nullptr;
       ports.push_back(port);
    }
    return ports;
@@ -621,9 +631,9 @@ std::vector<std::string> reactorState(const std::byte* entity) {
 }
 
 // A heat pipe's shape from the sides it joins to anything, as a pipe's.
-std::string heatPipeShape(const std::byte* entity) {
+std::string heatPipeShape(const std::byte* entity, const Design* design) {
    bool joined[16] = {};
-   for (const HeatPort& port : heatPortsOf(entity))
+   for (const HeatPort& port : heatPortsOf(entity, design))
       if (port.joined) joined[port.direction] = true;
    return shapeOf(joined);
 }
@@ -631,12 +641,12 @@ std::string heatPipeShape(const std::byte* entity) {
 // The heat connections on the tile: which ways they lead,
 // unless it is a heat pipe, whose shape says so, and what they join, but for a heat pipe's other
 // heat pipes.
-std::string heatConnections(const std::byte* entity, Position tile) {
+std::string heatConnections(const std::byte* entity, Position tile, const Design* design) {
    const bool pipe = isHeatPipe(entity);
    std::vector<std::string> ways;
    // Each joined entity's name, then the way to it.
    std::vector<std::string> partners;
-   for (const HeatPort& port : heatPortsOf(entity)) {
+   for (const HeatPort& port : heatPortsOf(entity, design)) {
       if (port.tile.x != tile.x || port.tile.y != tile.y) continue;
       ways.push_back(directionName(port.direction));
       if (port.joined && !(pipe && isHeatPipe(port.joined))) {
@@ -931,7 +941,9 @@ std::string beltContents(Belt belt) {
 // A splitter's input and output priorities and its filter (transport-belts.lua's
 // splitter_priority_info), each side named with the way it leads.
 std::string splitterState(Belt splitter) {
-   const std::byte* logic = splitter.entity + layout.splitterLogic;
+   // A lane splitter's sides are a belt's lanes, which lie the same ways.
+   const std::byte* logic =
+      splitter.entity + (splitter.type() == "lane-splitter" ? layout.laneSplitterLogic : layout.splitterLogic);
    const uint8_t direction = splitter.direction();
    auto isRight = [&](uint32_t offset) { return at<uint32_t>(logic, offset) == layout.splitterRight; };
    auto way = [&](uint32_t offset) {
@@ -1188,17 +1200,17 @@ uint8_t wayOf(double dx, double dy) {
 // What is at the end of an inserter's hand or a drill's chute, `dx`, `dy` tiles from `entity`: in
 // the world its own link, `linked`; in a blueprint, whose entities keep none, what lies there.
 const std::byte* reachedAt(const std::byte* entity, double dx, double dy, const std::byte* linked,
-                           const Lookup* lookup) {
-   if (!lookup) return linked;
+                           const Design* design) {
+   if (!design) return linked;
    const Position position = at<Position>(entity, layout.entityPosition);
    constexpr double scale = game::kMapPositionScale;
-   return static_cast<const std::byte*>((*lookup)(position.x + static_cast<int32_t>(std::lround(dx * scale)),
-                                                  position.y + static_cast<int32_t>(std::lround(dy * scale))));
+   return static_cast<const std::byte*>(design->entityAt(position.x + static_cast<int32_t>(std::lround(dx * scale)),
+                                                         position.y + static_cast<int32_t>(std::lround(dy * scale))));
 }
 
 // What an inserter holds, and where it picks up and drops: the entity there or the ground, how
 // many tiles and which way.
-std::string inserterState(const std::byte* entity, const std::byte* inserter, const Lookup* lookup) {
+std::string inserterState(const std::byte* entity, const std::byte* inserter, const Design* design) {
    std::vector<std::string> words;
    const std::byte* held = inserter + layout.inserterHeldStack;
    const uint32_t count = at<uint32_t>(held, layout.itemStackCount);
@@ -1211,7 +1223,7 @@ std::string inserterState(const std::byte* entity, const std::byte* inserter, co
       const double dx = at<double>(inserter, vector);
       const double dy = at<double>(inserter, vector + static_cast<uint32_t>(sizeof(double)));
       const auto tiles = static_cast<int64_t>(std::lround(std::sqrt(dx * dx + dy * dy)));
-      const std::byte* target = reachedAt(entity, dx, dy, linked, lookup);
+      const std::byte* target = reachedAt(entity, dx, dy, linked, design);
       words.push_back(word(targetName(target), tiles, directionName(wayOf(dx, dy))));
    };
    reach(vocab::kInserterPicksUp, at<const std::byte*>(inserter, layout.inserterPickupTarget),
@@ -1981,10 +1993,10 @@ SelectionBox selectionBox(const void* entity) {
 
 namespace {
 
-// The facts describe says, or with `lookup` those of a blueprint's entity: its design only, with
+// The facts describe says, or with `design` those of a blueprint's entity: its design only, with
 // what it reaches found in the blueprint.
-std::vector<std::string> factsOf(const std::byte* entity, Position tile, const Lookup* lookup) {
-   const bool live = !lookup;
+std::vector<std::string> factsOf(const std::byte* entity, Position tile, const Design* design) {
+   const bool live = !design;
    const int32_t tileX = tile.x, tileY = tile.y;
    const Belt candidate{entity};
    const Belt belt = candidate.isTransportBelt() || candidate.isUnderground() ? candidate : Belt{};
@@ -2004,7 +2016,7 @@ std::vector<std::string> factsOf(const std::byte* entity, Position tile, const L
    if (belt && belt.isUnderground())
       first.emplace_back(belt.isUndergroundExit() ? vocab::kUndergroundExit : vocab::kUndergroundEntrance);
    if (belt)
-      for (std::string& word : beltShape(belt, lookup)) first.push_back(std::move(word));
+      for (std::string& word : beltShape(belt, design)) first.push_back(std::move(word));
    if (live && belt && belt.isTransportBelt()) first.push_back(beltContents(belt));
    first.push_back(combinatorDescription(entity));
 
@@ -2013,8 +2025,8 @@ std::vector<std::string> factsOf(const std::byte* entity, Position tile, const L
       for (std::string& item : spiderState(spider)) parts.push_back(std::move(item));
    if (live && isRailOrRailGhost(entity))
       parts.push_back(railsOnTile(at<const std::byte*>(entity, layout.entitySurface), entity, Position{tileX, tileY}));
-   if (belt && belt.isUnderground()) parts.push_back(undergroundConnection(belt, lookup));
-   if (candidate.type() == "splitter") parts.push_back(splitterState(candidate));
+   if (belt && belt.isUnderground()) parts.push_back(undergroundConnection(belt, design));
+   if (candidate.type() == "splitter" || candidate.type() == "lane-splitter") parts.push_back(splitterState(candidate));
    if (isPole(entity)) {
       parts.push_back(poleWires(entity));
       if (live) parts.push_back(poleSupply(entity));
@@ -2024,8 +2036,8 @@ std::vector<std::string> factsOf(const std::byte* entity, Position tile, const L
       for (std::string& item : infinityChestState(entity)) parts.push_back(std::move(item));
    if (type == "infinity-pipe" && !at<uint16_t>(entity, layout.infinityPipeFluid))
       parts.emplace_back(vocab::kInfinityPipeDraining);
-   if (isPipe(entity)) parts.push_back(pipeShape(entity));
-   for (std::string& item : fluidConnections(entity, Position{tileX, tileY})) parts.push_back(std::move(item));
+   if (isPipe(entity)) parts.push_back(pipeShape(entity, design));
+   for (std::string& item : fluidConnections(entity, Position{tileX, tileY}, design)) parts.push_back(std::move(item));
    if (type == "mining-drill" && isDrillOutput(entity, Position{tileX, tileY})) parts.emplace_back(vocab::kDrillOutput);
    if (const std::byte* signal = live ? agui::objectAsBase(entity, ".?AVRailSignalBase@@") : nullptr)
       parts.push_back(
@@ -2040,7 +2052,7 @@ std::vector<std::string> factsOf(const std::byte* entity, Position tile, const L
       for (std::string& item : roboportState(roboport)) parts.push_back(std::move(item));
    if (const std::byte* turret = agui::objectAsBase(entity, ".?AVTurret@@")) parts.push_back(turretPriorities(turret));
    if (const std::byte* inserter = agui::objectAsBase(entity, ".?AVInserter@@"))
-      parts.push_back(inserterState(entity, inserter, lookup));
+      parts.push_back(inserterState(entity, inserter, design));
    if (live && type == "resource")
       if (std::string look = oreLook(entity); !look.empty()) parts.push_back(std::move(look));
    if (type == "mining-drill") {
@@ -2051,18 +2063,18 @@ std::vector<std::string> factsOf(const std::byte* entity, Position tile, const L
             resources.push_back(localisedName(static_cast<const std::byte*>(resource)));
       if (!resources.empty()) parts.push_back(vocab::kDrillMining(joined(resources, ", ")));
       const std::byte* target = live ? dropTargetOf(entity) : nullptr;
-      if (lookup) {
+      if (design) {
          using DropPosition = const Position* (*)(const void* entity, Position* out);
          Position drop{};
          virtualAt<DropPosition>(entity, layout.entityDropPosition)(entity, &drop);
-         target = static_cast<const std::byte*>((*lookup)(drop.x, drop.y));
+         target = static_cast<const std::byte*>(design->entityAt(drop.x, drop.y));
       }
       if (target) parts.push_back(vocab::kDrillOutputsTo(targetName(target)));
    }
    if (live)
       for (std::string& item : reactorState(entity)) parts.push_back(std::move(item));
-   if (isHeatPipe(entity)) parts.push_back(heatPipeShape(entity));
-   parts.push_back(heatConnections(entity, Position{tileX, tileY}));
+   if (isHeatPipe(entity)) parts.push_back(heatPipeShape(entity, design));
+   parts.push_back(heatConnections(entity, Position{tileX, tileY}, design));
    if (live)
       for (std::string& item : circuitNetworks(entity, type)) parts.push_back(std::move(item));
    if (train) parts.push_back(trainState(train));
@@ -2075,8 +2087,8 @@ std::vector<std::string> describe(const void* entity, int32_t tileX, int32_t til
    return factsOf(static_cast<const std::byte*>(entity), Position{tileX, tileY}, nullptr);
 }
 
-std::vector<std::string> describeDesign(const void* entity, int32_t tileX, int32_t tileY, const Lookup& lookup) {
-   return factsOf(static_cast<const std::byte*>(entity), Position{tileX, tileY}, &lookup);
+std::vector<std::string> describeDesign(const void* entity, int32_t tileX, int32_t tileY, const Design& design) {
+   return factsOf(static_cast<const std::byte*>(entity), Position{tileX, tileY}, &design);
 }
 
 std::vector<std::string> drawnIcons(const void* entity) { return drawnIcons(entity, nullptr); }
@@ -2134,6 +2146,25 @@ std::vector<std::string> drawnIcons(const void* object, const void* renderParame
       return !icon.kind.empty() &&
              std::ranges::any_of(filters, [&](const std::byte* filter) { return internalName(filter) == icon.name; });
    };
+   // A loader that filters each lane on its own: its first filter is the left lane's, its second
+   // the right's, either one unset.
+   const std::byte* lanes[2] = {};
+   bool perLane = false;
+   if (const std::byte* loader = agui::objectAsBase(entity, ".?AVLoader@@")) {
+      const std::byte* prototype = agui::objectAsBase(prototypeOf(entity), ".?AVLoaderPrototype@@");
+      perLane = prototype && at<bool>(prototype, layout.loaderPerLane);
+      for (size_t i = 0; perLane && i < 2; ++i)
+         if (const uint16_t id =
+                at<uint16_t>(loader + layout.loaderFilters + i * layout.itemFilterSize, layout.itemFilterId))
+            lanes[i] = prototypeAt(layout.itemPrototypes, id);
+   }
+   // A splitter's filter is said with its priorities (splitterState), not again as an icon.
+   const std::byte* splitterFilter = nullptr;
+   if (type == "splitter" || type == "lane-splitter") {
+      const std::byte* logic = entity + (type == "lane-splitter" ? layout.laneSplitterLogic : layout.splitterLogic);
+      if (const uint16_t id = at<uint16_t>(logic + layout.splitterFilter, layout.itemFilterId))
+         splitterFilter = prototypeAt(layout.itemPrototypes, id);
+   }
 
    // A crafting machine draws its recipe as the recipe's own icon or, without one, its main product's.
    const std::byte* recipe = nullptr;
@@ -2174,12 +2205,20 @@ std::vector<std::string> drawnIcons(const void* object, const void* renderParame
             // A filter that denies is drawn crossed out.
             const bool denies = std::ranges::any_of(
                icons, [&](const entityicons::Icon& drawnIcon) { return drawnIcon.denied && isFilter(drawnIcon); });
-            for (size_t i = 0; i < filters.size(); ++i) {
-               const std::string name = localisedName(filters[i]);
-               items.push_back(i == 0 ? joined({denies ? vocab::kFilterDenies : vocab::kFilterAllows, name}) : name);
+            if (perLane) {
+               if (denies) items.emplace_back(vocab::kFilterDenies);
+               if (lanes[0]) items.push_back(vocab::kLeftLane(localisedName(lanes[0])));
+               if (lanes[1]) items.push_back(vocab::kRightLane(localisedName(lanes[1])));
+            } else {
+               for (size_t i = 0; i < filters.size(); ++i) {
+                  const std::string name = localisedName(filters[i]);
+                  items.push_back(i == 0 ? joined({denies ? vocab::kFilterDenies : vocab::kFilterAllows, name}) : name);
+               }
             }
          }
          saidFilters = true;
+      } else if (splitterFilter && !icon.kind.empty() && icon.name == internalName(splitterFilter)) {
+         // Said with the splitter's priorities.
       } else {
          others.push_back(&icon);
       }
@@ -2217,7 +2256,7 @@ Likeness likenessOf(const void* object) {
    }
    if (!out.ghost && typeName(out.prototype) == "transport-belt") {
       const Belt belt{building};
-      const Neighbours neighbours = neighboursOf(belt);
+      const Neighbours neighbours = neighboursOf(belt, nullptr);
       out.beltInputs = neighbours.inputCount;
       out.beltOutputs = neighbours.outputCount;
       out.beltShape = belt.shape();
@@ -2239,17 +2278,17 @@ bool nextOfKind(const void* left, const void* entered) {
    return box.rightBottom.x - box.leftTop.x > kScale || box.rightBottom.y - box.leftTop.y > kScale;
 }
 
-std::optional<UndergroundEnd> undergroundEnd(const void* object, uint8_t direction, const Lookup* lookup) {
+std::optional<UndergroundEnd> undergroundEnd(const void* object, uint8_t direction, const Design* design) {
    const auto* entity = static_cast<const std::byte*>(object);
    const std::string_view type = typeName(prototypeOf(entity));
    const Position from = at<Position>(entity, layout.entityPosition);
    const std::byte* partner = nullptr;
    if (type == "underground-belt") {
-      partner = partnerOf(Belt{entity}, lookup).entity;
+      partner = partnerOf(Belt{entity}, design).entity;
    } else if (type == "pipe-to-ground") {
       const std::vector<const std::byte*> boxes = fluidBoxesOf(entity);
       if (boxes.empty()) return std::nullopt;
-      for (const PipeConnection& connection : connectionsOf(boxes[0]))
+      for (const PipeConnection& connection : connectionsOf(boxes[0], design))
          if (connection.type == layout.pipeTypeUnderground && connection.target) {
             const std::byte* owner = ownerOf(connection.target);
             if (directionBiased(at<Position>(owner, layout.entityPosition), from) == direction) partner = owner;

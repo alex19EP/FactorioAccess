@@ -655,6 +655,7 @@ bool resolve(pdb::SymbolTable& symbols) {
                                    "AEBVMapPosition@@@Z");
    offset(layout.blueprintEntityList, "Blueprint", "entities.data");
    size(layout.entityDataSize, "BlueprintEntities::EntityData");
+   offset(layout.entityDataEntity, "BlueprintEntities::EntityData", "entity");
    offset(layout.entityDataInsertPlan, "BlueprintEntities::EntityData", "insertPlan.data.data");
    size(layout.insertPairSize, "Pair<IDWithQuality<ID<ItemPrototype,unsigned short> >,ItemInventoryPositions>");
    offset(layout.insertPairPositions, "Pair<IDWithQuality<ID<ItemPrototype,unsigned short> >,ItemInventoryPositions>",
@@ -677,6 +678,7 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.itemFilterId, "IDWithQualityFilter<ID<ItemPrototype,unsigned short> >", "baseID");
    offset(layout.inserterFilters, "Inserter", "filter");
    offset(layout.splitterLogic, "Splitter", "leftLogic");
+   offset(layout.laneSplitterLogic, "LaneSplitter", "logic");
    offset(layout.splitterInputLocked, "SplitterLogic", "inputLocked");
    offset(layout.splitterOutputLocked, "SplitterLogic", "outputLocked");
    offset(layout.splitterTakeFrom, "SplitterLogic", "takeNextItemFrom");
@@ -684,6 +686,7 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.splitterFilter, "SplitterLogic", "filter");
    enumerator(layout.splitterRight, "SplitterDirection", "Right");
    offset(layout.loaderFilters, "Loader", "filter");
+   offset(layout.loaderPerLane, "LoaderPrototype", "perLaneFilters");
    offset(layout.loaderType, "Loader", "type");
    enumerator(layout.loaderOutput, "LoaderType", "Output");
    offset(layout.undergroundType, "UndergroundBelt", "type");

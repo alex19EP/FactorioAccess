@@ -925,6 +925,7 @@ struct Layout {
    // with a count). Its tiles, std::vector<TileWithPosition>.
    uint32_t blueprintEntityList = 0;   // Blueprint::entities.data
    uint32_t entityDataSize = 0;
+   uint32_t entityDataEntity = 0;      // EntityData::entity, Entity*
    uint32_t entityDataInsertPlan = 0;  // EntityData::insertPlan.data.data, the pairs' vector
    uint32_t insertPairSize = 0;        // Pair<IDWithQuality<ItemID>, ItemInventoryPositions>
    uint32_t insertPairPositions = 0;   // ::second
@@ -955,6 +956,7 @@ struct Layout {
    uint32_t itemFilterId = 0;          // ::baseID, ID<ItemPrototype>
    uint32_t inserterFilters = 0;       // Inserter::filter, std::array of 5
    uint32_t splitterLogic = 0;         // Splitter::leftLogic, SplitterLogic
+   uint32_t laneSplitterLogic = 0;     // LaneSplitter::logic, SplitterLogic
    uint32_t splitterInputLocked = 0;   // SplitterLogic::inputLocked, bool
    uint32_t splitterOutputLocked = 0;  // ::outputLocked, bool
    uint32_t splitterTakeFrom = 0;      // ::takeNextItemFrom, SplitterDirection
@@ -962,6 +964,9 @@ struct Layout {
    uint32_t splitterFilter = 0;        // ::filter
    uint32_t splitterRight = 0;         // SplitterDirection Right
    uint32_t loaderFilters = 0;         // Loader::filter, std::array of 5
+   // A loader that filters each lane on its own: its first filter the left lane's, its second the
+   // right's.
+   uint32_t loaderPerLane = 0;         // LoaderPrototype::perLaneFilters, bool
    uint32_t loaderType = 0;            // Loader::type, LoaderType
    uint32_t loaderOutput = 0;          // LoaderType Output
    uint32_t undergroundType = 0;       // UndergroundBelt::type, UndergroundBeltType

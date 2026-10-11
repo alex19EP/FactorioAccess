@@ -422,10 +422,13 @@ inline constexpr Word kFootprintOutside{"fa.native-footprint-outside"};
 inline constexpr Word kFootprintBlocked{"fa.native-footprint-blocked"};
 inline constexpr Word kFootprintAlreadyBuilt{"fa.native-footprint-already-built"};
 // The info icons alt mode draws: a machine's recipe ("producing"), the filters it allows or denies,
-// what it has ("Has steam"), an item with its quality and count, and a badge's any quality or deny.
+// a loader's filter for each lane, what it has ("Has steam"), an item with its quality and count,
+// and a badge's any quality or deny.
 inline constexpr Word kProducing{"fa.ent-info-producing"};
 inline constexpr Word kFilterAllows{"fa.filter-allows"};
 inline constexpr Word kFilterDenies{"fa.filter-denies"};
+inline constexpr Word kLeftLane{"fa.native-left-lane"};
+inline constexpr Word kRightLane{"fa.native-right-lane"};
 inline constexpr Word kInventoryPresentation{"fa.ent-info-inventory-presentation"};
 inline constexpr Word kItemQuantityQuality{"fa.item-quantity-quality"};
 inline constexpr Word kAnyQuality{"fa.ent-icon-any-quality"};

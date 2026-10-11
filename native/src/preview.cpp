@@ -297,10 +297,29 @@ const std::byte* entityAtPoint(const std::byte* widget, MapPosition point) {
    return at<const std::byte*>(result, layout.selectionEntity);
 }
 
-// What the facts find around an entity of the picture: its underground belts' partners, what its
-// inserters and drills reach.
-facts::Lookup lookupIn(const std::byte* widget) {
-   return [widget](int32_t x, int32_t y) -> const void* { return entityAtPoint(widget, MapPosition{x, y}); };
+// Whether the picture keeps the blueprint's entity `entity`: false for one the player removed.
+bool keeps(const std::byte* widget, const void* entity) {
+   const auto& entities = at<MsvcVector<const std::byte>>(blueprintOf(widget), layout.blueprintEntityList);
+   uint32_t index = 0;
+   for (const std::byte* data = entities.first; data < entities.last; data += layout.entityDataSize, ++index)
+      if (at<const void*>(data, layout.entityDataEntity) == entity)
+         return !removed(widget, layout.parametersEntities, index);
+   return true;
+}
+
+// The blueprint as the facts find what lies around an entity of the picture (its underground
+// belts' partners, what its inserters and drills reach, what its belts and pipes join), leaving
+// out what the player removed, which is not built.
+facts::Design designOf(const std::byte* widget) {
+   return {[widget](int32_t x, int32_t y) -> const void* {
+              alignas(16) std::byte result[64] = {};
+              if (!selectAt(widget, MapPosition{x, y}, result)) return nullptr;
+              const auto* entity = at<const std::byte*>(result, layout.selectionEntity);
+              if (!entity || removed(widget, layout.parametersEntities, at<uint32_t>(result, layout.selectionIndex)))
+                 return nullptr;
+              return entity;
+           },
+           [widget](const void* entity) { return keeps(widget, entity); }};
 }
 
 // The floor under an entity, which the picture draws beneath it while the blueprint's tiles are
@@ -325,7 +344,7 @@ std::string describeEntity(const std::byte* widget, const std::byte* entity, uin
          name = qualityPrefix(at<uint8_t>(owner, layout.entityQuality)) + name;
    parts.push_back(std::move(name));
    if (removed(widget, layout.parametersEntities, index)) parts.emplace_back(vocab::kRemoved);
-   for (std::string& fact : facts::describeDesign(entity, x, y, lookupIn(widget))) parts.push_back(std::move(fact));
+   for (std::string& fact : facts::describeDesign(entity, x, y, designOf(widget))) parts.push_back(std::move(fact));
    addAlwaysShown(parts, entity, alt);
    for (std::string& icon : facts::drawnIcons(entity, widget + layout.pictureRenderParameters))
       parts.push_back(std::move(icon));
@@ -353,7 +372,7 @@ MapPosition pixelOf(const std::byte* widget, int x, int y) {
 struct PictureWorld {
    using Entity = const void*;
    const std::byte* widget;
-   facts::Lookup lookup;
+   facts::Design design;
 
    Entity selectedAt(int32_t x, int32_t y) const { return entityAtPoint(widget, centreOf(x, y)); }
    bool waterAt(int32_t, int32_t) const { return false; }
@@ -365,7 +384,7 @@ struct PictureWorld {
    bool skipsOver(Entity entity) const { return facts::skipsOver(entity); }
    facts::Likeness likenessOf(Entity entity) const { return facts::likenessOf(entity); }
    std::optional<facts::UndergroundEnd> undergroundEnd(Entity entity, uint8_t direction) const {
-      return facts::undergroundEnd(entity, direction, &lookup);
+      return facts::undergroundEnd(entity, direction, &design);
    }
 };
 
@@ -406,7 +425,7 @@ skip::Result skipFrom(const agui::Widget* picture, int x, int y, int dx, int dy)
    };
    // The box's edge comes before any limit.
    const int limit = (box->right - box->left) + (box->bottom - box->top);
-   const PictureWorld world{widget, lookupIn(widget)};
+   const PictureWorld world{widget, designOf(widget)};
    return skip::find(world, x, y, dx, dy, limit, inside, {});
 }
 
