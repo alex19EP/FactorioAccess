@@ -16,6 +16,11 @@
 // cycle key (fa-s-f) moves it within its tile to the next point where the mouse selects something
 // else, so the game selects each overlapping thing in turn; a movement key goes back to the centre.
 //
+// A building or blueprint in hand goes where the cursor is (world.h) until the player detaches the
+// cursor from it: the build stays pinned in place, drawn and built there, while the cursor moves on
+// alone to explore around it. Ctrl with a movement key then nudges the build a tile instead, the
+// cursor staying on its tile, and the build key builds it where it is pinned.
+//
 // It reaches only what a sighted player's mouse reaches: in the character and god views, whose
 // camera stays on the player, the tiles on the screen, and the movement keys stop at the edge. In
 // remote view the camera follows the cursor, moved as a sighted player's map drag moves it, and a
@@ -32,6 +37,11 @@ struct Tile {
    int y;
 };
 void setMode(int playerIndex, bool vanilla, bool keys, bool anchored, std::vector<Tile> rulers);
+
+// The detach key, for this client's player: with a building or blueprint in hand, pins it where it
+// is and frees the cursor; again, re-attaches it, the cursor going back to the build's north-west
+// corner. Holding anything else, or another surface in view, re-attaches it on its own.
+void toggleDetach(int playerIndex);
 
 // The mod moves the cursor to the tile holding (x, y): its own jumps, such as to an alert or a
 // scanner entry. A tile off the screen in the character or god view opens remote view there.

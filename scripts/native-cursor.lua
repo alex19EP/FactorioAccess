@@ -8,6 +8,7 @@ local mod = {}
 ---@class fa.Native
 ---@field cursor_mode fun(player_index: integer, vanilla: boolean, keys: boolean, anchored: boolean, rulers: integer[])
 ---@field cursor_jump fun(player_index: integer, x: number, y: number)
+---@field detach_build fun(player_index: integer)
 ---@field cursor_step fun(player_index: integer, x: number, y: number): ("read"|"moved"|"edge"|"skipped")?, integer?, boolean?
 ---@field cursor_read fun(player_index: integer, x: number, y: number, prefix: LocalisedString?)
 ---@field entity_read fun(player_index: integer, entity: LuaEntity, prefix: LocalisedString?, suffix: LocalisedString?)
@@ -61,6 +62,14 @@ end
 ---@return defines.direction?
 function mod.build_direction(pindex)
    return native and native.build_direction(pindex)
+end
+
+---The detach key with a building or blueprint in hand: pins it where it is and frees the cursor to
+---explore around it, or re-attaches it. Only this client knows the pin; the build input the game
+---sends carries its position to every client.
+---@param pindex integer
+function mod.toggle_detach(pindex)
+   if native then native.detach_build(pindex) end
 end
 
 ---The entity or blueprint in hand as the game builds it, already turned or flipped by a rotate or

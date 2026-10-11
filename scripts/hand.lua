@@ -24,6 +24,24 @@ local function facing(pindex, item)
    return 0, ""
 end
 
+---Whether the player holds something that builds on the map: an item that places an entity, a
+---blueprint or a book, from the inventory or the library, or the ghost of such an item. The I key
+---detaches the cursor from it instead of anchoring the cursor to the character. Read from the game
+---alone, so every client takes the key the same way.
+---@param pindex integer
+---@return boolean
+function mod.holds_build(pindex)
+   local player = game.get_player(pindex)
+   local stack = player.cursor_stack
+   if stack and stack.valid_for_read then
+      return stack.is_blueprint or stack.is_blueprint_book or stack.prototype.place_result ~= nil
+   end
+   local ghost = player.cursor_ghost
+   if ghost then return ghost.name.place_result ~= nil end
+   local record = player.cursor_record
+   return record ~= nil and (record.type == "blueprint" or record.type == "blueprint-book")
+end
+
 ---Describes what the player holds. Nil when the hand is empty.
 ---@param pindex integer
 ---@return LocalisedString?

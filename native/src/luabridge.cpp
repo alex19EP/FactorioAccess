@@ -215,6 +215,13 @@ int cursorJump(lua_State* L) {
    return 0;
 }
 
+// fa_native.detach_build(pindex): the detach key with a building or blueprint in hand (see
+// cursor::toggleDetach).
+int detachBuild(lua_State* L) {
+   cursor::toggleDetach(static_cast<int>(checkInteger(L, 1)));
+   return 0;
+}
+
 // fa_native.cursor_step(pindex, x, y): "read", "moved", "edge" or "skipped" for a movement or skip
 // key whose event carries the position, and for "skipped" how many tiles (-1: no change within the
 // limit); nil when the cursor did not take that key. For "read", third, whether it went onto the
@@ -725,6 +732,7 @@ struct Function {
 constexpr Function kFunctions[] = {
    {"cursor_mode", &cursorMode},
    {"cursor_jump", &cursorJump},
+   {"detach_build", &detachBuild},
    {"cursor_step", &cursorStep},
    {"cursor_read", &cursorRead},
    {"entity_read", &entityRead},

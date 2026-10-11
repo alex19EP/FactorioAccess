@@ -46,6 +46,7 @@ int buildDirection(int playerIndex);
 // as the game reads the key, before the mod's Lua sees the key.
 struct HeldBuild {
    bool blueprint = false;
+   int entity = 0;             // the entity's prototype index; 0 for a blueprint
    int direction = 0;          // 16-way defines.direction; a blueprint's rotation
    int width = 0;              // tiles east to west, as built
    int height = 0;             // tiles north to south, as built
@@ -76,6 +77,14 @@ std::optional<DragBuild> dragBuild(int playerIndex);
 // every client; Player::buildFromCursor, which scripts run in the game state, is left alone. Tiles,
 // the rail planner, off-grid entities, rail supports, diagonal directions, blueprints with a
 // snapping grid and blueprints of only off-grid entities build as vanilla does.
+
+// A build pinned in place: while set, this client reads its build input, draws the hand and builds
+// as if the cursor were at `position`, anchored as above, and the cursor moves on alone (see
+// cursor.h, detaching). The input carries the position to every client. It lapses when another
+// game loads.
+void pinBuild(CursorPosition position);
+void unpinBuild();
+std::optional<CursorPosition> pinnedBuild();
 
 // The build preview says what its tint means, never the colour: when the entity in hand's preview
 // moves, turns or changes entity while the mod drives the cursor, this client says the game's

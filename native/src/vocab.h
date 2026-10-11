@@ -412,6 +412,13 @@ inline constexpr Word kSkippedNoChange{"fa.native-skipped-no-change"};
 inline constexpr Word kSkippedByPreview{"fa.native-skipped-by-preview"};
 // The cycle key with a building in hand, which keeps the cursor at the tile's centre.
 inline constexpr Word kCycleHoldingBuild{"fa.native-cycle-holding-build"};
+// The detach key: the cursor leaves the building or blueprint in hand pinned in place, or goes
+// back to it, or there is nothing in hand to leave. Before the cursor's tile read again after Ctrl
+// with a movement key nudged the pinned build: which way it went.
+inline constexpr Word kDetachedCursor{"fa.native-detached-cursor"};
+inline constexpr Word kAttachedCursor{"fa.native-attached-cursor"};
+inline constexpr Word kNothingToDetach{"fa.native-nothing-to-detach"};
+inline constexpr Word kNudged{"fa.native-nudged"};
 // The info icons alt mode draws: a machine's recipe ("producing"), the filters it allows or denies,
 // what it has ("Has steam"), an item with its quality and count, and a badge's any quality or deny.
 inline constexpr Word kProducing{"fa.ent-info-producing"};

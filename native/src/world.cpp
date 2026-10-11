@@ -72,11 +72,22 @@ const std::byte* gameOfLocalPlayer(int playerIndex) {
    return game;
 }
 
+// The pinned build's position and the Game* it was pinned in; see pinBuild.
+std::atomic<const void*> g_pinGame{nullptr};
+std::atomic<uint64_t> g_pin{0};
+std::atomic<bool> g_hasPin{false};
+
 // The reported cursor, when it belongs to the current game.
 bool cursor(const std::byte* game, Position& out) {
    if (!game || !g_hasCursor.load() || g_game.load() != game) return false;
    out = unpack(g_cursor.load());
    return true;
+}
+
+// The pinned build's position, when it belongs to the current game.
+std::optional<Position> pinned(const std::byte* game) {
+   if (!game || !g_hasPin.load() || g_pinGame.load() != game) return std::nullopt;
+   return unpack(g_pin.load());
 }
 
 int32_t fixedPoint(double tiles) { return static_cast<int32_t>(std::lround(tiles * game::kMapPositionScale)); }
@@ -350,22 +361,28 @@ bool modDrivesCursor(const void* player) {
 using SimpleBuildInputFunction = void* (*)(const void* player, std::byte* out, const void* drag);
 SimpleBuildInputFunction g_simpleBuildInputOriginal = nullptr;
 
-// Reads the input as the game would, then, when it builds an entity on the grid, reads it again
-// with the cursor at the anchored position, so the direction and every snapping step still come
-// from the game.
-void* detourSimpleBuildInput(const void* player, std::byte* out, const void* drag) {
-   void* result = g_simpleBuildInputOriginal(player, out, drag);
-   Position anchor;
-   if (t_inScriptBuild || t_anchoring || !modDrivesCursor(player) || !anchoredPosition(player, out, anchor))
-      return result;
+// Reads the input as the game would with the cursor at `position`, or where it is.
+void* buildInputAt(const void* player, std::byte* out, const void* drag, std::optional<Position> position) {
+   if (!position) return g_simpleBuildInputOriginal(player, out, drag);
    struct Scope {
       Scope(Position position) {
          t_anchor = position;
          t_anchoring = true;
       }
       ~Scope() { t_anchoring = false; }
-   } scope(anchor);
+   } scope(*position);
    return g_simpleBuildInputOriginal(player, out, drag);
+}
+
+// Reads the input as the game would, at the pinned build while there is one, then, when it builds
+// an entity on the grid, reads it again with the cursor at the anchored position, so the direction
+// and every snapping step still come from the game.
+void* detourSimpleBuildInput(const void* player, std::byte* out, const void* drag) {
+   if (t_inScriptBuild || t_anchoring || !modDrivesCursor(player)) return g_simpleBuildInputOriginal(player, out, drag);
+   void* result = buildInputAt(player, out, drag, pinned(currentGame()));
+   Position anchor;
+   if (!anchoredPosition(player, out, anchor)) return result;
+   return buildInputAt(player, out, drag, anchor);
 }
 
 // The entity in hand's preview, as drawn this frame: where, which entity and facing which way.
@@ -404,9 +421,10 @@ int detourPrepareBuilding(void* renderer, const void* player, const Position* cu
       return g_prepareBuildingOriginal(renderer, player, cursor, drawQueue);
    }
    alignas(8) std::byte input[game::kSimpleBuildInputCapacity];
-   g_simpleBuildInputOriginal(player, input, nullptr);
+   const std::optional<Position> pin = pinned(currentGame());
+   buildInputAt(player, input, nullptr, pin);
    Position anchor;
-   const Position* position = anchoredPosition(player, input, anchor) ? &anchor : cursor;
+   const Position* position = anchoredPosition(player, input, anchor) ? &anchor : pin ? &*pin : cursor;
    const auto entity = at<uint16_t>(input, layout.simpleBuildInputEntity);
    if (entity == 0) {
       g_spokenPreview.reset();
@@ -560,6 +578,22 @@ void setKeyCursor(std::optional<CursorPosition> position) {
       g_keyCursor.reset();
 }
 
+void pinBuild(CursorPosition position) {
+   const std::byte* game = currentGame();
+   if (!game) return;
+   g_pin.store(pack({position.x, position.y}));
+   g_pinGame.store(game);
+   g_hasPin.store(true);
+}
+
+void unpinBuild() { g_hasPin.store(false); }
+
+std::optional<CursorPosition> pinnedBuild() {
+   const std::optional<Position> position = pinned(currentGame());
+   if (!position) return std::nullopt;
+   return CursorPosition{position->x, position->y};
+}
+
 bool mayBeLocalPlayer(int playerIndex) {
    const std::byte* game = currentGame();
    const std::byte* player = game ? localPlayer(game) : nullptr;
@@ -587,6 +621,7 @@ std::optional<HeldBuild> heldBuild(int playerIndex) {
       const std::byte* prototype = entityPrototype(index);
       if (!prototype) return std::nullopt;
       HeldBuild held;
+      held.entity = index;
       // As Player::getSimpleBuildInput takes it.
       held.direction = at<uint32_t>(prototype, layout.entityPrototypeFlags) & game::kEntityNotRotatable
                           ? 0

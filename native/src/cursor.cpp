@@ -251,6 +251,33 @@ std::optional<Position> currentCursor() {
 
 void place(Position position) { world::placeCursor({position.x, position.y}); }
 
+// What was in hand and in view when the build was pinned: holding anything else, or another surface
+// in view, re-attaches it. Under g_mutex.
+struct Pin {
+   bool blueprint;
+   int entity;
+   uint32_t surface;
+};
+std::optional<Pin> g_pin;
+
+// Whether the building or blueprint in hand goes where the cursor is: one is held and not pinned.
+bool buildFollowsCursor(int playerIndex) { return world::heldBuild(playerIndex) && !world::pinnedBuild(); }
+
+// Ctrl with a movement key while the build is pinned: the build goes a tile that way, as long as
+// its north-west corner stays on the screen, and the cursor reads its own tile again.
+void nudgeForKey(const MoveKey& key, const View& view, Position cursor, Position pinned) {
+   const int32_t x = tileOf(pinned.x) + key.dx, y = tileOf(pinned.y) + key.dy;
+   const Position target = tileCentre(x, y);
+   if (fixedCamera(view.controller) && !screen(view).holds(target)) {
+      record(cursor, Step::Edge);
+      return;
+   }
+   world::pinBuild({target.x, target.y});
+   const int eighth = key.dx > 0 ? 2 : key.dx < 0 ? 6 : key.dy > 0 ? 4 : 0;
+   reader::read(tileOf(cursor.x), tileOf(cursor.y), vocab::kNudged(vocab::direction(eighth)));
+   record(cursor, Step::Read);
+}
+
 // A skip key, or Ctrl with a movement key: the cursor goes on to the next tile that differs, or by
 // the size of the building or blueprint in hand, and the reader reads it after how far it went.
 void skipForKey(const MoveKey& key, const View& view, Position cursor) {
@@ -260,6 +287,10 @@ void skipForKey(const MoveKey& key, const View& view, Position cursor) {
    };
    const int32_t fromX = tileOf(cursor.x), fromY = tileOf(cursor.y);
    if (key.kind == KeyKind::BySize) {
+      if (const auto pinned = world::pinnedBuild()) {
+         nudgeForKey(key, view, cursor, Position{pinned->x, pinned->y});
+         return;
+      }
       const auto held = world::heldBuild(playerIndex);
       const int32_t shift = cursormoves::bySizeShift(key.dx, held ? held->width : 0, held ? held->height : 0);
       const int32_t x = fromX + key.dx * shift, y = fromY + key.dy * shift;
@@ -299,10 +330,10 @@ void skipForKey(const MoveKey& key, const View& view, Position cursor) {
 // The cycle key: the cursor goes to the next point inside its tile where the mouse selects
 // something else (reader::stopsIn), and the game selects it there, as a sighted player picks among
 // overlapping things by moving the mouse within the tile. The last stop wraps to the first. A
-// building in hand keeps the cursor at the tile's centre, where it builds.
+// building in hand keeps the cursor at the tile's centre, where it builds, unless it is pinned.
 void cycleForKey(const View& view, Position cursor) {
    const int playerIndex = at<uint16_t>(view.player, layout.playerIndex) + 1;
-   if (world::heldBuild(playerIndex)) {
+   if (buildFollowsCursor(playerIndex)) {
       speech::say(std::string(vocab::kCycleHoldingBuild), true);
       return;
    }
@@ -418,6 +449,28 @@ int g_awaitingRemote = 0;
 constexpr int kSettleFrames = 2;
 constexpr int kRemoteWaitFrames = 300;
 
+void unpin() {
+   world::unpinBuild();
+   std::scoped_lock lock(g_mutex);
+   g_pin.reset();
+}
+
+// The pinned build re-attaches once the hand holds anything else or another surface is in view.
+void checkPin(const View& view, int playerIndex) {
+   if (!world::pinnedBuild()) return;
+   std::optional<Pin> pin;
+   {
+      std::scoped_lock lock(g_mutex);
+      pin = g_pin;
+   }
+   const std::optional<world::HeldBuild> held = world::heldBuild(playerIndex);
+   if (pin && held && held->blueprint == pin->blueprint && held->entity == pin->entity &&
+       at<uint32_t>(view.view, layout.gameViewSurfaceIndex) == pin->surface)
+      return;
+   unpin();
+   speech::say(std::string(vocab::kAttachedCursor), false);
+}
+
 void reset() {
    g_lastController.reset();
    g_landedTile.reset();
@@ -469,14 +522,17 @@ void frame(void* source) {
    }
    const std::optional<View> view = localView();
    if (!view || !known || vanilla) {
+      // The mouse is the cursor in vanilla mode, and the build follows it.
+      if (vanilla && world::pinnedBuild()) unpin();
       reset();
       return;
    }
    if (!world::drivesCursor()) place(tileCentre(view->centre));
    const int playerIndex = at<uint16_t>(view->player, layout.playerIndex) + 1;
+   checkPin(*view, playerIndex);
    // A building in hand builds from the tile's centre, wherever the cycle key left the cursor in it.
    if (const std::optional<Position> cursor = currentCursor();
-       cursor && *cursor != tileCentre(*cursor) && world::heldBuild(playerIndex))
+       cursor && *cursor != tileCentre(*cursor) && buildFollowsCursor(playerIndex))
       place(tileCentre(*cursor));
    // Arriving on a tile at its centre, the cursor rests on what lies there away from the centre
    // (reader::landingIn), as a sighted player puts the mouse on it. A building in hand and a drag
@@ -485,7 +541,7 @@ void frame(void* source) {
       const std::pair tile{tileOf(cursor->x), tileOf(cursor->y)};
       if (tile != g_landedTile) {
          g_landedTile = tile;
-         if (*cursor == tileCentre(*cursor) && !world::heldBuild(playerIndex) && !world::dragBuild(playerIndex)) {
+         if (*cursor == tileCentre(*cursor) && !buildFollowsCursor(playerIndex) && !world::dragBuild(playerIndex)) {
             const reader::Point landing = reader::landingIn(tile.first, tile.second);
             if (landing.x != cursor->x || landing.y != cursor->y) place(Position{landing.x, landing.y});
          }
@@ -562,6 +618,32 @@ void setMode(int playerIndex, bool vanilla, bool keys, bool anchored, std::vecto
    if (vanilla) world::releaseCursor(playerIndex);
 }
 
+void toggleDetach(int playerIndex) {
+   if (!isLocalPlayer(playerIndex)) return;
+   const std::optional<Position> cursor = currentCursor();
+   const std::optional<View> view = localView();
+   if (!cursor || !view) return;
+   if (const auto pinned = world::pinnedBuild()) {
+      unpin();
+      place(Position{pinned->x, pinned->y});
+      reader::read(tileOf(pinned->x), tileOf(pinned->y), std::string(vocab::kAttachedCursor));
+      return;
+   }
+   const std::optional<world::HeldBuild> held = world::heldBuild(playerIndex);
+   if (!held) {
+      speech::say(std::string(vocab::kNothingToDetach), true);
+      return;
+   }
+   // The build goes on from the tile's centre, where it is built now.
+   const Position corner = tileCentre(*cursor);
+   world::pinBuild({corner.x, corner.y});
+   {
+      std::scoped_lock lock(g_mutex);
+      g_pin = Pin{held->blueprint, held->entity, at<uint32_t>(view->view, layout.gameViewSurfaceIndex)};
+   }
+   speech::say(std::string(vocab::kDetachedCursor), true);
+}
+
 void jump(int playerIndex, double x, double y) {
    if (!isLocalPlayer(playerIndex)) return;
    const Position position = fromTiles(x, y);
@@ -606,6 +688,8 @@ std::string describe() {
       out += std::format("cursor={},{}\n", tileOf(cursor->x), tileOf(cursor->y));
    else
       out += "cursor=none\n";
+   if (const auto pinned = world::pinnedBuild())
+      out += std::format("pinned={},{}\n", tileOf(pinned->x), tileOf(pinned->y));
    std::scoped_lock lock(g_mutex);
    out += std::format("anchored={}\n", g_anchored);
    return out;

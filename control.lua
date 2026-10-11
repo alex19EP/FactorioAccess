@@ -1274,6 +1274,10 @@ EventManager.on_event(
    ---@param event EventData.CustomInputEvent
    function(event, pindex)
       if skip_in_combat_mode(pindex) then return end
+      if Hand.holds_build(pindex) then
+         NativeCursor.toggle_detach(pindex)
+         return
+      end
       toggle_cursor_mode(pindex, false)
    end
 )
