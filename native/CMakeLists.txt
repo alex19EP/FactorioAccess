@@ -158,6 +158,7 @@ add_library(fa_native SHARED
   src/reader.cpp
   src/facts.cpp
   src/highlights.cpp
+  src/footprint.cpp
   src/entityicons.cpp
   src/selectedinfo.cpp
   src/luabridge.cpp

@@ -2027,6 +2027,8 @@ inline constexpr int32_t kMapPositionScale = 256;
 inline constexpr uint32_t kEntityNotRotatable = 0x1;              // "not-rotatable"
 inline constexpr uint32_t kEntityPlaceableOffGrid = 0x10;         // "placeable-off-grid"
 inline constexpr uint32_t kEntityNotOnMap = 0x1000;               // "not-on-map"
+// EntitySelector::checkEntityForSelection never selects an entity with this bit.
+inline constexpr uint32_t kEntityNotSelectable = 0x800000;
 inline constexpr uint32_t kEntitySnapToRailSupportSpot = 0x10000000; // "snap-to-rail-support-spot"
 
 // EntityFlipping, code constants: NotAvailable 0, Simple 1, DirectionTransform 2,

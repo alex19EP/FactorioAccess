@@ -10,6 +10,7 @@
 #include "speech.h"
 #include "text.h"
 #include "vocab.h"
+#include "world.h"
 
 #include <algorithm>
 #include <array>
@@ -143,6 +144,32 @@ std::string_view typeName(const std::byte* prototype) {
    return virtualAt<const char* (*)(const void*)>(prototype, layout.prototypeGetType)(prototype);
 }
 
+// With a blueprint in hand the mouse selects nothing, the item in the cursor ruling every entity
+// out, yet the view still shows what is built there: the entity whose box holds `position` that
+// the game's own priority puts on top (EntitySelector::selectPriorityLess), as an empty hand would
+// select it.
+const std::byte* underBlueprint(const std::byte* surface, Position position) {
+   alignas(8) std::byte context[32]{};
+   if (layout.selectionContextSize > sizeof(context)) return nullptr;
+   std::memcpy(context + layout.selectionContextPosition, &position, sizeof(position));
+   context[layout.selectionContextMode] = static_cast<std::byte>(layout.selectionModeNormal);
+   using Less = bool (*)(const void* a, const void* b, const void* context);
+   const auto less = reinterpret_cast<Less>(layout.selectPriorityLess);
+   const std::byte* best = nullptr;
+   // A box may reach past its entity's own (a tree's crown): the search looks a tile around.
+   for (const void* found : facts::entitiesIn(surface, position.x - kScale, position.y - kScale, position.x + kScale,
+                                              position.y + kScale)) {
+      const auto* entity = static_cast<const std::byte*>(found);
+      const auto* prototype = at<const std::byte*>(entity, layout.entityPrototypeOf);
+      if (at<uint32_t>(prototype, layout.entityPrototypeFlags) & game::kEntityNotSelectable) continue;
+      const facts::SelectionBox box = facts::selectionBox(entity);
+      if (position.x < box.left || position.x >= box.right || position.y < box.top || position.y >= box.bottom)
+         continue;
+      if (!best || less(best, entity, context)) best = entity;
+   }
+   return best;
+}
+
 // What the mouse at `position` selects, as the game finds it each frame for the local player; null
 // in a chunk the player's force does not see into while the view respects fog of war.
 const std::byte* entityAt(const std::byte* player, const std::byte* surface, Position position) {
@@ -164,9 +191,12 @@ const std::byte* entityAt(const std::byte* player, const std::byte* surface, Pos
    }
    using Deduce = const std::byte* (*)(void* selector, const void* surface, const Position* position, bool myCharacter,
                                        void* latency, const void* only, uint32_t mode);
-   return reinterpret_cast<Deduce>(layout.deduceSelectedEntity)(selector, surface, &position, false,
-                                                                at<void*>(player, layout.playerLatencyState), nullptr,
-                                                                layout.selectionModeNormal);
+   const std::byte* selected = reinterpret_cast<Deduce>(layout.deduceSelectedEntity)(
+      selector, surface, &position, false, at<void*>(player, layout.playerLatencyState), nullptr,
+      layout.selectionModeNormal);
+   if (selected) return selected;
+   const auto held = world::heldBuild(at<uint16_t>(player, layout.playerIndex) + 1);
+   return held && held->blueprint ? underBlueprint(surface, position) : nullptr;
 }
 
 // The tooltip's labels of lines that read alike on every entity of a kind, as the game translates

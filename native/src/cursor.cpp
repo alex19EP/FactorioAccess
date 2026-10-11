@@ -2,6 +2,7 @@
 
 #include "cursormoves.h"
 #include "facts.h"
+#include "footprint.h"
 #include "game.h"
 #include "reader.h"
 #include "skip.h"
@@ -258,7 +259,8 @@ std::optional<Pin> g_pin;
 bool buildFollowsCursor(int playerIndex) { return world::heldBuild(playerIndex) && !world::pinnedBuild(); }
 
 // Ctrl with a movement key while the build is pinned: the build goes a tile that way, as long as
-// its north-west corner stays on the screen, and the cursor reads its own tile again.
+// its north-west corner stays on the screen. Once its preview has drawn there, how it fits and the
+// piece now on the cursor's tile follow.
 void nudgeForKey(const MoveKey& key, const View& view, Position cursor, Position pinned) {
    const int32_t x = tileOf(pinned.x) + key.dx, y = tileOf(pinned.y) + key.dy;
    const Position target = tileCentre(x, y);
@@ -268,8 +270,17 @@ void nudgeForKey(const MoveKey& key, const View& view, Position cursor, Position
    }
    world::pinBuild({target.x, target.y});
    const int eighth = key.dx > 0 ? 2 : key.dx < 0 ? 6 : key.dy > 0 ? 4 : 0;
-   reader::read(tileOf(cursor.x), tileOf(cursor.y), vocab::kNudged(vocab::direction(eighth)));
+   speech::say(vocab::kNudged(vocab::direction(eighth)), true);
+   footprint::announce({}, tileOf(cursor.x), tileOf(cursor.y));
    record(cursor, Step::Read);
+}
+
+// Before the reading of a tile the cursor reached: `lead` (how far a skip went), then the pinned
+// build's piece there (footprint.h).
+std::string withPiece(std::string lead, int32_t tileX, int32_t tileY) {
+   const std::string piece = footprint::tilePrefix(tileX, tileY);
+   if (!piece.empty()) lead += (lead.empty() ? "" : ", ") + piece;
+   return lead;
 }
 
 // A skip key, or Ctrl with a movement key: the cursor goes on to the next tile that differs, or by
@@ -317,7 +328,7 @@ void skipForKey(const MoveKey& key, const View& view, Position cursor) {
       prefix = vocab::kSkippedNoChange(kSkipLimit);
    else if (found.tiles > 1)
       prefix = vocab::kSkipped(found.tiles);
-   reader::read(found.x, found.y, std::move(prefix));
+   reader::read(found.x, found.y, withPiece(std::move(prefix), found.x, found.y));
    record(target, Step::Skipped, limit ? -1 : found.tiles);
 }
 
@@ -373,7 +384,7 @@ void moveForKey(const void* event, const void* context) {
       record(target, Step::Moved);
       return;
    }
-   reader::read(tileOf(target.x), tileOf(target.y));
+   reader::read(tileOf(target.x), tileOf(target.y), withPiece({}, tileOf(target.x), tileOf(target.y)));
    record(target, Step::Read, 1, nextOfKind(*cursor, target));
 }
 
@@ -445,6 +456,7 @@ constexpr int kRemoteWaitFrames = 300;
 
 void unpin() {
    world::unpinBuild();
+   footprint::clear();
    std::scoped_lock lock(g_mutex);
    g_pin.reset();
 }
@@ -636,6 +648,7 @@ void toggleDetach(int playerIndex) {
       g_pin = Pin{held->blueprint, held->entity, at<uint32_t>(view->view, layout.gameViewSurfaceIndex)};
    }
    speech::say(std::string(vocab::kDetachedCursor), true);
+   footprint::announce({}, tileOf(corner.x), tileOf(corner.y));
 }
 
 void jump(int playerIndex, double x, double y) {

@@ -1,11 +1,14 @@
 #include "world.h"
 
+#include "facts.h"
+#include "footprint.h"
 #include "game.h"
 #include "highlights.h"
 #include "text.h"
 #include "vocab.h"
 #include "zoom.h"
 
+#include <algorithm>
 #include <atomic>
 #include <cmath>
 #include <cstddef>
@@ -414,6 +417,10 @@ bool g_outOfReachSaid = false;
 using PrepareBuildingFunction = int (*)(void* renderer, const void* player, const Position* cursor, void* drawQueue);
 PrepareBuildingFunction g_prepareBuildingOriginal = nullptr;
 
+// Set while the preview of a pinned build draws in a frame that gathers its pieces (footprint.h):
+// every EntityToBeBuiltSettings::draw adds one.
+thread_local bool t_gatheringPieces = false;
+
 // The item in hand is drawn where it would be built.
 int detourPrepareBuilding(void* renderer, const void* player, const Position* cursor, void* drawQueue) {
    if (t_inScriptBuild || !modDrivesCursor(player)) {
@@ -426,6 +433,20 @@ int detourPrepareBuilding(void* renderer, const void* player, const Position* cu
    Position anchor;
    const Position* position = anchoredPosition(player, input, anchor) ? &anchor : pin ? &*pin : cursor;
    const auto entity = at<uint16_t>(input, layout.simpleBuildInputEntity);
+   struct Gathering {
+      std::optional<Position> at;
+      Gathering(std::optional<Position> pin, bool blueprint) {
+         if (!pin || !footprint::wants(pin->x, pin->y)) return;
+         at = pin;
+         footprint::begin(blueprint);
+         t_gatheringPieces = true;
+      }
+      ~Gathering() {
+         if (!at) return;
+         t_gatheringPieces = false;
+         footprint::end(at->x, at->y);
+      }
+   } gathering(pin, entity == 0);
    if (entity == 0) {
       g_spokenPreview.reset();
       return g_prepareBuildingOriginal(renderer, player, position, drawQueue);
@@ -472,13 +493,34 @@ const void* selectedEntity(const std::byte* adapter) {
 // While the build control drags, the mod names nothing at the cursor, and this says only what
 // blocks the build: nothing for already built, nor for the entity the drag has just built where
 // the preview stands.
-std::string previewMeaning(const void* settings, const void* entity, Position position, bool drag) {
+// The game's buildability check of `entity` as the preview `settings` draws it, into `result`, as
+// EntityToBeBuiltSettings::draw tints it; the result's type.
+uint32_t checkBuild(const void* settings, const void* entity, std::byte* result) {
    const std::byte* player = at<const std::byte*>(settings, layout.settingsPlayer);
    const std::byte* adapter = stateAdapter(player);
    alignas(8) std::byte data[game::kBuildCheckDataCapacity];
    reinterpret_cast<BuildCheckDataFunction>(layout.settingsBuildCheckData)(settings, data);
-   alignas(8) std::byte result[game::kBuildCheckResultCapacity];
    virtualAt<BuildabilityCheckFunction>(adapter, layout.adapterBuildabilityCheck)(adapter, result, entity, data);
+   return at<uint32_t>(result, layout.buildCheckResultType);
+}
+
+// The game's reason a check failed, or "Can't build here" when it gives none.
+std::string checkReason(const std::byte* result) {
+   alignas(8) std::byte message[256];
+   if (layout.localisedStringSize > sizeof(message)) return {};
+   reinterpret_cast<BuildCheckMessageFunction>(layout.buildCheckMessage)(result, message);
+   std::string reason = takeSpeakable(message);
+   if (!reason.empty()) return reason;
+   reinterpret_cast<void* (*)(void*, const char*)>(layout.localisedStringFromKey)(message,
+                                                                                  "cant-build-reason.cant-build-here");
+   return takeSpeakable(message);
+}
+
+std::string previewMeaning(const void* settings, const void* entity, Position position, bool drag) {
+   const std::byte* player = at<const std::byte*>(settings, layout.settingsPlayer);
+   const std::byte* adapter = stateAdapter(player);
+   alignas(8) std::byte result[game::kBuildCheckResultCapacity];
+   checkBuild(settings, entity, result);
 
    const bool tooFar = at<bool>(settings, layout.settingsTooFar);
    if (!tooFar) g_outOfReachSaid = false;
@@ -500,15 +542,34 @@ std::string previewMeaning(const void* settings, const void* entity, Position po
          return {};
       }
    }
+   return checkReason(result);
+}
 
-   alignas(8) std::byte message[256];
-   if (layout.localisedStringSize > sizeof(message)) return {};
-   reinterpret_cast<BuildCheckMessageFunction>(layout.buildCheckMessage)(result, message);
-   std::string reason = takeSpeakable(message);
-   if (!reason.empty()) return reason;
-   reinterpret_cast<void* (*)(void*, const char*)>(layout.localisedStringFromKey)(message,
-                                                                                  "cant-build-reason.cant-build-here");
-   return takeSpeakable(message);
+// One piece of the pinned build as its preview draws it: name, facing, tiles and whether it fits.
+footprint::Piece pieceOf(const void* settings, const void* entity) {
+   const std::byte* prototype = at<const std::byte*>(entity, layout.entityPrototypeOf);
+   const MsvcString* name =
+      reinterpret_cast<LocalisedStr>(layout.localisedStringStr)(prototype + layout.prototypeLocalisedName, nullptr);
+   footprint::Piece piece{};
+   piece.name = text::speakable({name->capacity >= sizeof(name->buffer) ? name->pointer : name->buffer, name->size});
+   piece.direction = -1;
+   if (virtualAt<bool (*)(const void*)>(entity, layout.entityHasDirection)(entity)) {
+      uint8_t direction = 0;
+      virtualAt<void* (*)(const void*, uint8_t*)>(entity, layout.entityGetDirection)(entity, &direction);
+      piece.direction = direction;
+   }
+   const facts::SelectionBox box = facts::selectionBox(entity);
+   piece.left = box.left >> 8;
+   piece.top = box.top >> 8;
+   piece.right = std::max(piece.left, (box.right - 1) >> 8);
+   piece.bottom = std::max(piece.top, (box.bottom - 1) >> 8);
+   alignas(8) std::byte result[game::kBuildCheckResultCapacity];
+   const uint32_t type = checkBuild(settings, entity, result);
+   piece.fit = type == game::kBuildCheckBuildable   ? footprint::Fit::Fits
+               : type == game::kBuildCheckIgnorable ? footprint::Fit::AlreadyBuilt
+                                                    : footprint::Fit::Blocked;
+   if (piece.fit == footprint::Fit::Blocked) piece.reason = checkReason(result);
+   return piece;
 }
 
 using SettingsDrawFunction = void (*)(const void* settings, void* drawQueue, const void* entity);
@@ -518,6 +579,7 @@ SettingsDrawFunction g_settingsDrawOriginal = nullptr;
 // spoken the cursor's move: the cursor reaches the game in the tick, the preview a frame later.
 void detourSettingsDraw(const void* settings, void* drawQueue, const void* entity) {
    g_settingsDrawOriginal(settings, drawQueue, entity);
+   if (t_gatheringPieces) footprint::add(pieceOf(settings, entity));
    if (!t_preview.active || t_preview.read || at<const void*>(settings, layout.settingsBlueprint)) return;
    t_preview.read = true;
    if (g_spokenPreview == t_preview.key) return;

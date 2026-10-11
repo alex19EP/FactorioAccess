@@ -18,8 +18,9 @@
 //
 // A building or blueprint in hand goes where the cursor is (world.h) until the player detaches the
 // cursor from it: the build stays pinned in place, drawn and built there, while the cursor moves on
-// alone to explore around it. Ctrl with a movement key then nudges the build a tile instead, the
-// cursor staying on its tile, and the build key builds it where it is pinned.
+// alone to explore around it, saying on each tile what the build puts there and whether it fits
+// (footprint.h). Ctrl with a movement key then nudges the build a tile instead, the cursor staying
+// on its tile, and the build key builds it where it is pinned.
 //
 // It reaches only what a sighted player's mouse reaches: in the character and god views, whose
 // camera stays on the player, the tiles on the screen, and the movement keys stop at the edge. In
