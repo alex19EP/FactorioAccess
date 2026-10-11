@@ -42,11 +42,14 @@ void jump(int playerIndex, double x, double y);
 // build), stayed at the edge of the screen, or skipped there (Shift+WASD) over `tiles` tiles, or
 // found no change within the skip's limit (-1), and the reader read it. Ctrl+WASD, which moves by
 // the size of the building in hand, reads as a step. Nothing when the cursor did not take the key.
-// Each result is given once.
+// Each result is given once. A step that read `nextOfKind` went from an entity bigger than a tile
+// onto another of its kind: in a row of machines alike the reader says the same name on each, and
+// the mod sounds where the next one begins.
 enum class Step { Read, Moved, Edge, Skipped };
 struct StepResult {
    Step step;
    int tiles;
+   bool nextOfKind;
 };
 std::optional<StepResult> step(int playerIndex, double x, double y);
 

@@ -208,6 +208,15 @@ data:extend({
 
    {
       type = "sound",
+      name = "next-machine",
+      category = "gui-effect",
+      filename = "__FactorioAccess__/audio/sonifiers/grid/crafting_machine/new_machine.ogg",
+      volume = 1,
+      preload = true,
+   },
+
+   {
+      type = "sound",
       name = "player-damaged-character",
       category = "alert",
       filename = "__FactorioAccess__/audio/player-damaged-character-zapsplat-modified_multimedia_beep_harsh_synth_single_high_pitched_87498.wav",

@@ -8,7 +8,7 @@ local mod = {}
 ---@class fa.Native
 ---@field cursor_mode fun(player_index: integer, vanilla: boolean, keys: boolean, anchored: boolean, rulers: integer[])
 ---@field cursor_jump fun(player_index: integer, x: number, y: number)
----@field cursor_step fun(player_index: integer, x: number, y: number): ("read"|"moved"|"edge"|"skipped")?, integer?
+---@field cursor_step fun(player_index: integer, x: number, y: number): ("read"|"moved"|"edge"|"skipped")?, integer?, boolean?
 ---@field cursor_read fun(player_index: integer, x: number, y: number, prefix: LocalisedString?)
 ---@field entity_read fun(player_index: integer, entity: LuaEntity, prefix: LocalisedString?, suffix: LocalisedString?)
 ---@field cursor_position fun(player_index: integer): integer?, integer?

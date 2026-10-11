@@ -1,6 +1,7 @@
 #include "cursor.h"
 
 #include "cursormoves.h"
+#include "facts.h"
 #include "game.h"
 #include "reader.h"
 #include "skip.h"
@@ -218,14 +219,28 @@ struct StepRecord {
    Position position;
    Step step;
    int tiles;
+   bool nextOfKind;
 };
 std::deque<StepRecord> g_steps;
 constexpr size_t kMaxSteps = 64;
 
-void record(Position position, Step step, int tiles = 1) {
+void record(Position position, Step step, int tiles = 1, bool nextOfKind = false) {
    std::scoped_lock lock(g_mutex);
-   g_steps.push_back({position, step, tiles});
+   g_steps.push_back({position, step, tiles, nextOfKind});
    if (g_steps.size() > kMaxSteps) g_steps.pop_front();
+}
+
+// Whether a step from `from` to `to` leaves an entity bigger than a tile for another of its kind,
+// by what the mouse selects on each tile. In the game's input handling.
+bool nextOfKind(Position from, Position to) {
+   const void* left = reader::selectedAt(tileOf(from.x), tileOf(from.y));
+   const void* entered = reader::selectedAt(tileOf(to.x), tileOf(to.y));
+   if (!left || !entered || left == entered) return false;
+   const facts::Likeness was = facts::likenessOf(left);
+   const facts::Likeness is = facts::likenessOf(entered);
+   if (was.prototype != is.prototype || was.ghost != is.ghost) return false;
+   const facts::SelectionBox box = facts::selectionBox(entered);
+   return box.right - box.left > kScale || box.bottom - box.top > kScale;
 }
 
 std::optional<Position> currentCursor() {
@@ -253,9 +268,10 @@ void skipForKey(const MoveKey& key, const View& view, Position cursor) {
          return;
       }
       const Position target = tileCentre(x, y);
+      const bool next = nextOfKind(cursor, target);
       place(target);
       reader::read(x, y, vocab::kSkippedByPreview(shift));
-      record(target, Step::Read);
+      record(target, Step::Read, 1, next);
       return;
    }
    std::vector<skip::Ruler> rulers;
@@ -333,7 +349,7 @@ void moveForKey(const void* event, const void* context) {
       return;
    }
    reader::read(tileOf(target.x), tileOf(target.y));
-   record(target, Step::Read);
+   record(target, Step::Read, 1, nextOfKind(*cursor, target));
 }
 
 // The remote view's camera, kept on the cursor as a sighted player's map drag keeps it: by
@@ -561,7 +577,7 @@ std::optional<StepResult> step(int playerIndex, double x, double y) {
    auto found = std::find_if(g_steps.begin(), g_steps.end(),
                              [&](const StepRecord& record) { return record.position == position; });
    if (found == g_steps.end()) return std::nullopt;
-   const StepResult result{found->step, found->tiles};
+   const StepResult result{found->step, found->tiles, found->nextOfKind};
    // Steps before it were said already, or never will be.
    g_steps.erase(g_steps.begin(), found + 1);
    return result;

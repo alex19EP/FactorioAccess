@@ -81,11 +81,12 @@ end
 ---of the full map, a step of a drag build), "edge" when it stayed at the screen's edge, "skipped"
 ---when a skip key took it there and the DLL read it, with how many tiles it skipped (-1 when it
 ---found no change within its limit), or nil. Ctrl with a movement key, which moves by the size of
----the building in hand, gives "read". Only this client knows it: speak by it, never change the game
----by it.
+---the building in hand, gives "read". With "read", third, whether it went from an entity bigger than
+---a tile onto the next of its kind, as along a row of assemblers. Only this client knows it: speak
+---by it, never change the game by it.
 ---@param pindex integer
 ---@param event EventData.CustomInputEvent
----@return ("read"|"moved"|"edge"|"skipped")?, integer?
+---@return ("read"|"moved"|"edge"|"skipped")?, integer?, boolean?
 function mod.step(pindex, event)
    if not native then return nil end
    return native.cursor_step(pindex, event.cursor_position.x, event.cursor_position.y)

@@ -217,12 +217,17 @@ int cursorJump(lua_State* L) {
 
 // fa_native.cursor_step(pindex, x, y): "read", "moved", "edge" or "skipped" for a movement or skip
 // key whose event carries the position, and for "skipped" how many tiles (-1: no change within the
-// limit); nil when the cursor did not take that key. Only this client knows it.
+// limit); nil when the cursor did not take that key. For "read", third, whether it went onto the
+// next entity of a kind bigger than a tile. Only this client knows it.
 int cursorStep(lua_State* L) {
    const auto step = cursor::step(static_cast<int>(checkInteger(L, 1)), checkNumber(L, 2), checkNumber(L, 3));
    if (!step) return 0;
    switch (step->step) {
-   case cursor::Step::Read: pushString(L, "read"); return 1;
+   case cursor::Step::Read:
+      pushString(L, "read");
+      setTop(L, getTop(L) + 1); // no tile count
+      pushBoolean(L, step->nextOfKind);
+      return 3;
    case cursor::Step::Moved: pushString(L, "moved"); return 1;
    case cursor::Step::Edge: pushString(L, "edge"); return 1;
    case cursor::Step::Skipped:

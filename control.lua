@@ -697,25 +697,22 @@ EventManager.on_event(defines.events.on_player_controller_changed, function(even
 end)
 -- New input event definitions
 
----Plays the sound of a cursor step.
+---Plays the sound of a step onto the next entity of a kind bigger than a tile: in a row of machines
+---alike the reader says the same name on each, and this marks where one ends.
 ---@param pindex integer
----@param volume number
-local function play_cursor_step(pindex, volume)
-   local p = game.get_player(pindex)
-   if p.controller_type == defines.controllers.remote then
-      sounds.play_building_placement(pindex, Cursor.tile(pindex))
-   else
-      p.play_sound({ path = "Close-Inventory-Sound", position = p.position, volume_modifier = volume })
+local function play_next_of_kind(pindex)
+   if game.get_player(pindex).mod_settings[SETTING_NAMES.NEXT_MACHINE_SOUND].value then
+      sounds.play_next_machine(pindex)
    end
 end
 
----Sounds where a movement key took the cursor: the DLL moves it as the game reads the key, so the
----key's event already carries the new tile, or on the full map the new cell, and the DLL reads the
----tile itself.
+---Says where a movement key took the cursor, when the DLL did not read it: the DLL moves it as the
+---game reads the key, so the key's event already carries the new tile, or on the full map the new
+---cell, and the DLL reads the tile itself. A step has no sound of its own.
 ---@param pindex integer
 ---@param event EventData.CustomInputEvent
 local function cursor_mode_move(pindex, event)
-   local step = Cursor.step(pindex, event)
+   local step, _, next_of_kind = Cursor.step(pindex, event)
    if not step then return end
    if step == "edge" then
       ViewLimit.say_edge(pindex)
@@ -723,15 +720,13 @@ local function cursor_mode_move(pindex, event)
    end
 
    if step == "moved" then
-      local cell_size = Zoom.get_map_cell_size(pindex)
-      if cell_size then
-         MapCells.read(pindex, cell_size)
-         return
-      end
-      -- A step of a drag build, which the game builds on after it: its own preview says what
+      -- Else a step of a drag build, which the game builds on after it: its own preview says what
       -- blocks the build
+      local cell_size = Zoom.get_map_cell_size(pindex)
+      if cell_size then MapCells.read(pindex, cell_size) end
+      return
    end
-   play_cursor_step(pindex, 0.75)
+   if next_of_kind then play_next_of_kind(pindex) end
 end
 
 --Chooses the function to call after a movement keypress, according to the current mode.
@@ -787,12 +782,13 @@ EventManager.on_event(
 ---@param pindex integer
 ---@param event EventData.CustomInputEvent
 local function cursor_skip(pindex, event)
-   local step, tiles = Cursor.step(pindex, event)
+   local step, tiles, next_of_kind = Cursor.step(pindex, event)
    if not step then return end
    if step == "edge" then
       ViewLimit.say_edge(pindex)
       return
    end
+   if next_of_kind then play_next_of_kind(pindex) end
 
    local p = game.get_player(pindex)
    local cursor_pos = Cursor.tile(pindex)

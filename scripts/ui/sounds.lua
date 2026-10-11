@@ -227,6 +227,11 @@ function mod.play_tile_walking(pindex, tile_name)
    end
 end
 
+-- The cursor stepped onto the next machine of a row alike
+function mod.play_next_machine(pindex)
+   play_sound_internal(pindex, { path = "next-machine" })
+end
+
 -- Building sounds
 function mod.play_building_placement(pindex, position)
    -- Special handling for positioned sounds

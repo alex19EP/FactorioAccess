@@ -19,6 +19,7 @@ mod.SETTING_NAMES = {
    SONIFICATION_COMBAT_ENEMIES = "fa-combat-enemy-sonification",
    SONIFICATION_COMBAT_SPAWNERS = "fa-combat-spawner-sonification",
    HANDCRAFTING_SOUND = "fa-handcrafting-sound",
+   NEXT_MACHINE_SOUND = "fa-next-machine-sound",
    ACCESS_RADAR = "fa-access-radar",
 }
 
@@ -58,6 +59,13 @@ mod.declarations = {
       setting_type = "runtime-per-user",
       default_value = true,
       order = "e",
+   },
+   {
+      name = mod.SETTING_NAMES.NEXT_MACHINE_SOUND,
+      type = "bool-setting",
+      setting_type = "runtime-per-user",
+      default_value = true,
+      order = "f",
    },
    {
       name = mod.SETTING_NAMES.ACCESS_RADAR,
