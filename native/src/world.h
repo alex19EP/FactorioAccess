@@ -114,5 +114,8 @@ void* buildFromCursorDetour();
 void** buildFromCursorOriginal();
 void* settingsDrawDetour();
 void** settingsDrawOriginal();
+// MinHook detour for BuildingRenderer::drawTileToBeBuilt: a pinned blueprint's tiles (footprint.h).
+void* drawTileDetour();
+void** drawTileOriginal();
 
 } // namespace fa::world

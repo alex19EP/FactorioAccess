@@ -18,11 +18,21 @@ namespace {
 // it changes what fits.
 constexpr int kRefreshFrames = 30;
 
+// An entity on the map that building the pieces changes.
+struct Alteration {
+   std::string words;
+   int32_t left;
+   int32_t top;
+   int32_t right;
+   int32_t bottom;
+};
+
 struct Pieces {
    bool blueprint = false;
    int32_t x = 0;
    int32_t y = 0;
    std::vector<Piece> pieces;
+   std::vector<Alteration> alterations;
 };
 
 struct Announcement {
@@ -42,11 +52,11 @@ bool g_wasInside = false;
 // The thread drawing the preview alone touches these.
 Pieces g_gathering;
 int g_framesSinceGathered = 0;
+thread_local bool t_gathering = false;
 
-const Piece* pieceAt(const Pieces& pieces, int32_t tileX, int32_t tileY) {
-   for (const Piece& piece : pieces.pieces)
-      if (tileX >= piece.left && tileX <= piece.right && tileY >= piece.top && tileY <= piece.bottom) return &piece;
-   return nullptr;
+template <class Area>
+bool covers(const Area& area, int32_t tileX, int32_t tileY) {
+   return tileX >= area.left && tileX <= area.right && tileY >= area.top && tileY <= area.bottom;
 }
 
 // Within the box around every piece.
@@ -73,7 +83,24 @@ std::string describe(const Piece& piece) {
    return out;
 }
 
-// "2 blocked, Tree is in the way, 1 already built", or that it all fits.
+void append(std::string& out, const std::string& part) {
+   if (part.empty()) return;
+   if (!out.empty()) out += ", ";
+   out += part;
+}
+
+// The pieces on the tile, then what building them does to the map there: "Landfill planned,
+// Transport belt East planned, removes Tree".
+std::string tileWords(const Pieces& pieces, int32_t tileX, int32_t tileY) {
+   std::string out;
+   for (const Piece& piece : pieces.pieces)
+      if (covers(piece, tileX, tileY)) append(out, describe(piece));
+   for (const Alteration& alteration : pieces.alterations)
+      if (covers(alteration, tileX, tileY)) append(out, alteration.words);
+   return out;
+}
+
+// "2 blocked, Tree is in the way, 1 already built"; nothing when it all fits.
 std::string summary(const Pieces& pieces) {
    int blocked = 0, built = 0;
    const Piece* firstBlocked = nullptr;
@@ -81,27 +108,17 @@ std::string summary(const Pieces& pieces) {
       if (piece.fit == Fit::Blocked && !blocked++) firstBlocked = &piece;
       if (piece.fit == Fit::AlreadyBuilt) ++built;
    }
-   if (!blocked && !built) return vocab::kFootprintFits;
    std::string out;
    if (blocked) out = vocab::kFootprintBlocked(blocked, firstBlocked->reason);
    if (built) out += (out.empty() ? "" : ", ") + vocab::kFootprintAlreadyBuilt(built);
    return out;
 }
 
-void append(std::string& out, const std::string& part) {
-   if (part.empty()) return;
-   if (!out.empty()) out += ", ";
-   out += part;
-}
-
 // The announcement's words, from the pieces of the build where it is pinned.
 std::string compose(const Announcement& announcement, const Pieces& pieces) {
    std::string out;
    if (pieces.blueprint) append(out, summary(pieces));
-   if (const Piece* piece = pieceAt(pieces, announcement.tileX, announcement.tileY))
-      append(out, describe(*piece));
-   else if (inside(pieces, announcement.tileX, announcement.tileY))
-      append(out, vocab::kFootprintEmpty);
+   append(out, tileWords(pieces, announcement.tileX, announcement.tileY));
    std::string lead = announcement.lead;
    append(lead, out);
    return lead;
@@ -118,13 +135,23 @@ bool wants(int32_t x, int32_t y) {
 }
 
 void begin(bool blueprint) {
-   g_gathering = {blueprint, 0, 0, {}};
+   g_gathering = {blueprint, 0, 0, {}, {}};
    g_framesSinceGathered = 0;
+   t_gathering = true;
 }
+
+bool gathering() { return t_gathering; }
 
 void add(Piece piece) { g_gathering.pieces.push_back(std::move(piece)); }
 
+void alter(std::string words, int32_t left, int32_t top, int32_t right, int32_t bottom) {
+   for (const Alteration& alteration : g_gathering.alterations)
+      if (alteration.words == words && alteration.left == left && alteration.top == top) return;
+   g_gathering.alterations.push_back({std::move(words), left, top, right, bottom});
+}
+
 void end(int32_t x, int32_t y) {
+   t_gathering = false;
    g_gathering.x = x;
    g_gathering.y = y;
    std::string words;
@@ -150,9 +177,8 @@ std::string tilePrefix(int32_t tileX, int32_t tileY) {
    std::scoped_lock lock(g_mutex);
    if (!g_pieces) return {};
    const bool wasInside = std::exchange(g_wasInside, inside(*g_pieces, tileX, tileY));
-   if (const Piece* piece = pieceAt(*g_pieces, tileX, tileY)) return describe(*piece);
-   if (g_wasInside) return vocab::kFootprintEmpty;
-   return wasInside ? std::string(vocab::kFootprintOutside) : std::string();
+   if (std::string words = tileWords(*g_pieces, tileX, tileY); !words.empty()) return words;
+   return wasInside && !g_wasInside ? std::string(vocab::kFootprintOutside) : std::string();
 }
 
 void announce(std::string lead, int32_t tileX, int32_t tileY) {

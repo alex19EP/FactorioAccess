@@ -207,6 +207,7 @@ inline constexpr Word kInNetwork{"fa.native-in-network"};
 inline constexpr Word kNoNetwork{"fa.native-no-network"};
 inline constexpr Word kPairsWith{"fa.native-pairs-with"};
 inline constexpr Word kReplaces{"fa.native-replaces"};
+inline constexpr Word kRemoves{"fa.native-removes"};
 inline constexpr Word kTurns{"fa.native-turns"};
 inline constexpr Word kChanges{"fa.native-changes"};
 inline constexpr Word kKeeps{"fa.native-keeps"};
@@ -413,14 +414,11 @@ inline constexpr Word kAttachedCursor{"fa.native-attached-cursor"};
 inline constexpr Word kNothingToDetach{"fa.native-nothing-to-detach"};
 inline constexpr Word kNudged{"fa.native-nudged"};
 // What the pinned build puts on the detached cursor's tile (footprint.h): a piece by name, facing
-// a way where it has one; a gap inside the build; that the cursor left it. Then for a blueprint,
-// how it fits: all of it, or how many pieces are blocked with the first one's reason and how many
-// are already built.
+// a way where it has one; that the cursor left the build. Then for a blueprint, how many pieces
+// are blocked with the first one's reason and how many are already built.
 inline constexpr Word kFootprintPiece{"fa.native-footprint-piece"};
 inline constexpr Word kFootprintPieceFacing{"fa.native-footprint-piece-facing"};
-inline constexpr Word kFootprintEmpty{"fa.native-footprint-empty"};
 inline constexpr Word kFootprintOutside{"fa.native-footprint-outside"};
-inline constexpr Word kFootprintFits{"fa.native-footprint-fits"};
 inline constexpr Word kFootprintBlocked{"fa.native-footprint-blocked"};
 inline constexpr Word kFootprintAlreadyBuilt{"fa.native-footprint-already-built"};
 // The info icons alt mode draws: a machine's recipe ("producing"), the filters it allows or denies,

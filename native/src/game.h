@@ -283,6 +283,17 @@ struct Layout {
    uintptr_t adapterDestroy = 0;
    uintptr_t adapterSetDirection = 0;
    uintptr_t drawPoleConnections = 0;
+   // bool DrawAdapter::orderDeconstruction(Entity*) const marks what the build would have robots
+   // remove (trees, rocks, a blueprint's way), with a CursorBoxNotAllowed box.
+   uintptr_t adapterOrderDeconstruction = 0;
+   // A blueprint's tiles: static void BuildingRenderer::drawTileToBeBuilt(TileCheckData const&,
+   // TilePosition, PlaceAsTile const*, TilePrototype const&, NamedBool<TooFarTag>,
+   // NamedBool<GhostModeTag>, bool, bool skipCheck, DrawQueue&, BuildMode, DrawAdapter const*) draws
+   // each, tinted by BuildCheckResult TileCheckData::checkBuildability(TilePrototype const&,
+   // PlaceAsTile const*, TilePosition const&, NamedBool<GhostModeTag>, bool, BuildMode,
+   // NamedBool<CheckCoverabilityTag>) const, called with coverability on, unless skipCheck.
+   uintptr_t drawTileToBeBuilt = 0;
+   uintptr_t tileCheckBuildability = 0;
    // The poles a pole preview would wire to: EntityToBeBuiltSettings::wiresInPreview.addedWires,
    // std::vector<Wire>, each Wire two PointerWireEnd (source and target) of an Entity* and a
    // connector.

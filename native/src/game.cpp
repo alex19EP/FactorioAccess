@@ -200,6 +200,15 @@ bool resolve(pdb::SymbolTable& symbols) {
                                        "VDirection@@V?$NamedBool@VMirroringTag@@@@@Z");
    address(layout.drawPoleConnections,
            "?drawPoleConnections@ElectricEnergySource@@SAXAEAVDrawQueue@@AEBVSurface@@AEBVBoundingBox@@@Z");
+   address(layout.adapterOrderDeconstruction, "?orderDeconstruction@DrawAdapter@@UEBA_NPEAVEntity@@@Z");
+   address(
+      layout.drawTileToBeBuilt,
+      "?drawTileToBeBuilt@BuildingRenderer@@SAXAEBVTileCheckData@@VTilePosition@@PEBVPlaceAsTile@@AEBVTilePrototype@@"
+      "V?$NamedBool@VTooFarTag@@@@V?$NamedBool@VGhostModeTag@@@@_N6AEAVDrawQueue@@W4BuildMode@@PEBVDrawAdapter@@@Z");
+   address(layout.tileCheckBuildability,
+           "?checkBuildability@TileCheckData@@QEBA?AVBuildCheckResult@@AEBVTilePrototype@@PEBVPlaceAsTile@@"
+           "AEBVTilePosition@@"
+           "V?$NamedBool@VGhostModeTag@@@@_NW4BuildMode@@V?$NamedBool@VCheckCoverabilityTag@@@@@Z");
    offset(layout.settingsAddedWires, "EntityToBeBuiltSettings", "wiresInPreview.addedWires");
    size(layout.wireSize, "Wire");
    offset(layout.wireSource, "Wire", "source.entity");

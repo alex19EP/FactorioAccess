@@ -1,6 +1,7 @@
 #include "highlights.h"
 
 #include "agui.h"
+#include "footprint.h"
 #include "game.h"
 #include "log.h"
 #include "speech.h"
@@ -82,11 +83,12 @@ struct MsvcVector {
 };
 
 // What a highlight says about its entity, in the order they are said.
-enum class Kind { Replaces, Turns, Changes, Keeps, Pair, Power, Wire, Covers, WorksWith, Link, Other };
+enum class Kind { Replaces, Removes, Turns, Changes, Keeps, Pair, Power, Wire, Covers, WorksWith, Link, Other };
 
 vocab::Word verb(Kind kind) {
    switch (kind) {
    case Kind::Replaces: return vocab::kReplaces;
+   case Kind::Removes: return vocab::kRemoves;
    case Kind::Turns: return vocab::kTurns;
    case Kind::Changes: return vocab::kChanges;
    case Kind::Keeps: return vocab::kKeeps;
@@ -389,11 +391,16 @@ AdapterRenderCursorBoxFunction g_adapterRenderCursorBoxOriginal = nullptr;
 void detourAdapterRenderCursorBox(const void* adapter, const std::byte* entity, uint8_t skipSurfaceCheck,
                                   uint32_t type) {
    Collector& collector = t_collector;
-   if (!collector.active) return g_adapterRenderCursorBoxOriginal(adapter, entity, skipSurfaceCheck, type);
    const auto boxType = static_cast<uint8_t>(type);
    const Kind kind = collector.adapterAction             ? *collector.adapterAction
                      : boxType == game::kCursorBoxEntity ? Kind::Keeps
                                                          : boxKind(boxType);
+   if (footprint::gathering()) {
+      const Tiles tiles = tilesOf(selectionBox(entity));
+      footprint::alter(std::string(verb(kind)) + " " + entityName(entity), tiles.left, tiles.top, tiles.right,
+                       tiles.bottom);
+   }
+   if (!collector.active) return g_adapterRenderCursorBoxOriginal(adapter, entity, skipSurfaceCheck, type);
    add(collector.report, kind, entity);
    collector.inAdapter = true;
    g_adapterRenderCursorBoxOriginal(adapter, entity, skipSurfaceCheck, type);
@@ -420,6 +427,17 @@ void* detourAdapterSetDirection(const void* adapter, void* out, void* entity, ui
    Collector& collector = t_collector;
    collector.adapterAction = Kind::Turns;
    void* result = g_adapterSetDirectionOriginal(adapter, out, entity, direction, mirroring);
+   collector.adapterAction.reset();
+   return result;
+}
+
+using AdapterOrderDeconstructionFunction = bool (*)(const void* adapter, void* entity);
+AdapterOrderDeconstructionFunction g_adapterOrderDeconstructionOriginal = nullptr;
+
+bool detourAdapterOrderDeconstruction(const void* adapter, void* entity) {
+   Collector& collector = t_collector;
+   collector.adapterAction = Kind::Removes;
+   const bool result = g_adapterOrderDeconstructionOriginal(adapter, entity);
    collector.adapterAction.reset();
    return result;
 }
@@ -563,6 +581,8 @@ void* adapterDestroyDetour() { return reinterpret_cast<void*>(&detourAdapterDest
 void** adapterDestroyOriginal() { return reinterpret_cast<void**>(&g_adapterDestroyOriginal); }
 void* adapterSetDirectionDetour() { return reinterpret_cast<void*>(&detourAdapterSetDirection); }
 void** adapterSetDirectionOriginal() { return reinterpret_cast<void**>(&g_adapterSetDirectionOriginal); }
+void* adapterOrderDeconstructionDetour() { return reinterpret_cast<void*>(&detourAdapterOrderDeconstruction); }
+void** adapterOrderDeconstructionOriginal() { return reinterpret_cast<void**>(&g_adapterOrderDeconstructionOriginal); }
 void* drawPoleConnectionsDetour() { return reinterpret_cast<void*>(&detourDrawPoleConnections); }
 void** drawPoleConnectionsOriginal() { return reinterpret_cast<void**>(&g_drawPoleConnectionsOriginal); }
 void* findMatchingNetworkDetour() { return reinterpret_cast<void*>(&detourFindMatchingNetwork); }

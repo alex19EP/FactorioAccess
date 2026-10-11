@@ -35,6 +35,8 @@ void* adapterDestroyDetour();
 void** adapterDestroyOriginal();
 void* adapterSetDirectionDetour();
 void** adapterSetDirectionOriginal();
+void* adapterOrderDeconstructionDetour();
+void** adapterOrderDeconstructionOriginal();
 void* drawPoleConnectionsDetour();
 void** drawPoleConnectionsOriginal();
 void* findMatchingNetworkDetour();

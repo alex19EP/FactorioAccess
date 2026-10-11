@@ -417,10 +417,6 @@ bool g_outOfReachSaid = false;
 using PrepareBuildingFunction = int (*)(void* renderer, const void* player, const Position* cursor, void* drawQueue);
 PrepareBuildingFunction g_prepareBuildingOriginal = nullptr;
 
-// Set while the preview of a pinned build draws in a frame that gathers its pieces (footprint.h):
-// every EntityToBeBuiltSettings::draw adds one.
-thread_local bool t_gatheringPieces = false;
-
 // The item in hand is drawn where it would be built.
 int detourPrepareBuilding(void* renderer, const void* player, const Position* cursor, void* drawQueue) {
    if (t_inScriptBuild || !modDrivesCursor(player)) {
@@ -433,18 +429,17 @@ int detourPrepareBuilding(void* renderer, const void* player, const Position* cu
    Position anchor;
    const Position* position = anchoredPosition(player, input, anchor) ? &anchor : pin ? &*pin : cursor;
    const auto entity = at<uint16_t>(input, layout.simpleBuildInputEntity);
+   // A frame that gathers the pinned build's pieces (footprint.h): every EntityToBeBuiltSettings::
+   // draw and BuildingRenderer::drawTileToBeBuilt adds one.
    struct Gathering {
       std::optional<Position> at;
       Gathering(std::optional<Position> pin, bool blueprint) {
          if (!pin || !footprint::wants(pin->x, pin->y)) return;
          at = pin;
          footprint::begin(blueprint);
-         t_gatheringPieces = true;
       }
       ~Gathering() {
-         if (!at) return;
-         t_gatheringPieces = false;
-         footprint::end(at->x, at->y);
+         if (at) footprint::end(at->x, at->y);
       }
    } gathering(pin, entity == 0);
    if (entity == 0) {
@@ -579,13 +574,58 @@ SettingsDrawFunction g_settingsDrawOriginal = nullptr;
 // spoken the cursor's move: the cursor reaches the game in the tick, the preview a frame later.
 void detourSettingsDraw(const void* settings, void* drawQueue, const void* entity) {
    g_settingsDrawOriginal(settings, drawQueue, entity);
-   if (t_gatheringPieces) footprint::add(pieceOf(settings, entity));
+   if (footprint::gathering()) footprint::add(pieceOf(settings, entity));
    if (!t_preview.active || t_preview.read || at<const void*>(settings, layout.settingsBlueprint)) return;
    t_preview.read = true;
    if (g_spokenPreview == t_preview.key) return;
    g_spokenPreview = t_preview.key;
    const bool drag = localDragging();
    highlights::preview(settings, entity, previewMeaning(settings, entity, t_preview.key.position, drag), drag);
+}
+
+// TilePosition: two ints, passed by value in one register. NamedBool<Tag> is one byte and
+// BuildMode an int, by value too.
+struct TilePosition {
+   int32_t x;
+   int32_t y;
+};
+using DrawTileFunction = void (*)(const void* check, TilePosition tile, const void* placeAsTile, const void* prototype,
+                                  uint8_t tooFar, uint8_t ghostMode, bool flag, bool skipCheck, void* drawQueue,
+                                  int32_t buildMode, const void* adapter);
+DrawTileFunction g_drawTileOriginal = nullptr;
+using TileCheckFunction = void* (*)(const void* check, std::byte* out, const void* prototype, const void* placeAsTile,
+                                    const TilePosition* tile, uint8_t ghostMode, bool flag, int32_t buildMode,
+                                    uint8_t coverability);
+
+// A blueprint's tile, drawn while the pieces of a pinned build are gathered, is one of them, with
+// the check that tints it; one drawn unchecked is tinted as blocked.
+void detourDrawTile(const void* check, TilePosition tile, const void* placeAsTile, const void* prototype,
+                    uint8_t tooFar, uint8_t ghostMode, bool flag, bool skipCheck, void* drawQueue, int32_t buildMode,
+                    const void* adapter) {
+   if (footprint::gathering()) {
+      const auto* tilePrototype = static_cast<const std::byte*>(prototype);
+      const MsvcString* name = reinterpret_cast<LocalisedStr>(layout.localisedStringStr)(
+         tilePrototype + layout.prototypeLocalisedName, nullptr);
+      footprint::Piece piece{};
+      piece.name = text::speakable({name->capacity >= sizeof(name->buffer) ? name->pointer : name->buffer, name->size});
+      piece.direction = -1;
+      piece.left = piece.right = tile.x;
+      piece.top = piece.bottom = tile.y;
+      piece.fit = footprint::Fit::Blocked;
+      alignas(8) std::byte result[game::kBuildCheckResultCapacity];
+      if (!skipCheck) {
+         reinterpret_cast<TileCheckFunction>(layout.tileCheckBuildability)(check, result, prototype, placeAsTile, &tile,
+                                                                           ghostMode, flag, buildMode, 1);
+         const auto type = at<uint32_t>(result, layout.buildCheckResultType);
+         piece.fit = type == game::kBuildCheckBuildable   ? footprint::Fit::Fits
+                     : type == game::kBuildCheckIgnorable ? footprint::Fit::AlreadyBuilt
+                                                          : footprint::Fit::Blocked;
+         if (piece.fit == footprint::Fit::Blocked) piece.reason = checkReason(result);
+      }
+      footprint::add(std::move(piece));
+   }
+   g_drawTileOriginal(check, tile, placeAsTile, prototype, tooFar, ghostMode, flag, skipCheck, drawQueue, buildMode,
+                      adapter);
 }
 
 // NamedBool<GhostModeTag> is one byte, passed by value.
@@ -742,5 +782,7 @@ void* buildFromCursorDetour() { return reinterpret_cast<void*>(&detourBuildFromC
 void** buildFromCursorOriginal() { return reinterpret_cast<void**>(&g_buildFromCursorOriginal); }
 void* settingsDrawDetour() { return reinterpret_cast<void*>(&detourSettingsDraw); }
 void** settingsDrawOriginal() { return reinterpret_cast<void**>(&g_settingsDrawOriginal); }
+void* drawTileDetour() { return reinterpret_cast<void*>(&detourDrawTile); }
+void** drawTileOriginal() { return reinterpret_cast<void**>(&g_drawTileOriginal); }
 
 } // namespace fa::world

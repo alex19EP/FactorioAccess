@@ -29,21 +29,26 @@ struct Piece {
    Fit fit;
    std::string reason; // the game's, for a blocked piece
 };
-// Between begin and end, every piece the preview drew. A blueprint's pieces get a summary.
+// Between begin and end, on the thread that called begin, every piece the preview drew (a
+// blueprint's tiles among them) and each entity on the map that building it would replace, turn,
+// remove or otherwise change, with the words that say so ("removes Tree") and its tiles. A
+// blueprint's pieces get a summary.
 void begin(bool blueprint);
+bool gathering();
 void add(Piece piece);
+void alter(std::string words, int32_t left, int32_t top, int32_t right, int32_t bottom);
 void end(int32_t x, int32_t y);
 
 // Forgets the pieces: the build is no longer pinned.
 void clear();
 
-// For a step of the detached cursor onto the tile `tileX`, `tileY`: the piece there, or that the
-// tile is a gap inside the build, or that the step left the build; empty elsewhere. Before the
-// tile's own reading.
+// For a step of the detached cursor onto the tile `tileX`, `tileY`: the pieces there and what
+// building them does to the map there, or that the step left the build; empty elsewhere. Before
+// the tile's own reading.
 std::string tilePrefix(int32_t tileX, int32_t tileY);
 
-// Says `lead`, then for a blueprint what blocks it or is already built, then the piece on the tile
-// `tileX`, `tileY`, once the pieces of the build where it is now pinned are gathered: after a
+// Says `lead`, then for a blueprint what blocks it or is already built, then what is on the tile
+// `tileX`, `tileY` as a step reads it, once the pieces of the build where it is now pinned are gathered: after a
 // nudge, the frame after.
 void announce(std::string lead, int32_t tileX, int32_t tileY);
 

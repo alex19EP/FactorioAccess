@@ -47,6 +47,9 @@
    X(adapterDestroy, highlights::adapterDestroyDetour(), highlights::adapterDestroyOriginal(), "DrawAdapter::destroy") \
    X(adapterSetDirection, highlights::adapterSetDirectionDetour(), highlights::adapterSetDirectionOriginal(),          \
      "DrawAdapter::setDirectionAndMirroring")                                                                          \
+   X(adapterOrderDeconstruction, highlights::adapterOrderDeconstructionDetour(),                                       \
+     highlights::adapterOrderDeconstructionOriginal(), "DrawAdapter::orderDeconstruction")                             \
+   X(drawTileToBeBuilt, world::drawTileDetour(), world::drawTileOriginal(), "BuildingRenderer::drawTileToBeBuilt")     \
    X(drawPoleConnections, highlights::drawPoleConnectionsDetour(), highlights::drawPoleConnectionsOriginal(),          \
      "ElectricEnergySource::drawPoleConnections")                                                                      \
    X(findMatchingNetwork, highlights::findMatchingNetworkDetour(), highlights::findMatchingNetworkOriginal(),          \
