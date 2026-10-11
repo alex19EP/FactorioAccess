@@ -41,6 +41,11 @@ public:
     /// For the dev server: the live screens, then what the navigator shows (Navigator::Describe).
     std::string Describe();
 
+    /// The screen the navigator is attached to, or null.
+    Screen* Focused() const { return _navigator.AttachedScreen(); }
+
+    bool IsLive(const Screen* screen) const;
+
 private:
     ScreenManager();
 
@@ -49,8 +54,6 @@ private:
         Screen* Target;
         std::unique_ptr<graph::GraphState> State;
     };
-
-    bool IsLive(const Screen* screen) const;
 
     /// Keeps a popped screen's cursor if it asks for that (Screen::RemembersCursor), and hands it
     /// back when the same screen next comes up showing the same thing (its DiagName).

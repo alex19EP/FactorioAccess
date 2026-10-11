@@ -113,11 +113,20 @@ void FollowCursor(const graph::GraphNode& node);
 /// hand: the slot's node says "in hand" apart, so the live watch leaves it to the hand's own line.
 std::string SlotText(const agui::Widget* slot);
 
-/// Speaks the game's own tooltip for the widget, as hovering shows it: its texts a line each.
+/// Reads the game's own tooltip for the widget, as hovering shows it (ReadTooltip).
 void SpeakGameTooltip(const agui::Widget* widget);
 
-/// The texts of a tooltip widget the game made, a line each.
-std::string TooltipText(const agui::Widget* tooltip);
+/// A line of a tooltip, and whether the game draws a line above it, starting a section.
+struct TooltipLine
+{
+    std::string text;
+    bool section = false;
+};
+
+/// The lines of a tooltip widget the game made, in the order shown: a text's lines, a row of texts
+/// (an ingredient's count and name) as one, and the items of a table of icons (a recipe's total raw)
+/// or a slot with a number drawn on it, a line each.
+std::vector<TooltipLine> TooltipLines(const agui::Widget* tooltip);
 
 /// Declares a single control, if it is visible. Returns whether it did.
 bool AddControl(graph::GraphBuilder& builder, const std::string& key, const agui::Widget* widget,

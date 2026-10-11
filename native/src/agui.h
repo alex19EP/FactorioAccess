@@ -112,6 +112,9 @@ std::string_view textBoxText(const Widget* textBox);
 // crafting makes it from intermediates.
 enum class LabelTone { Plain, Red, Orange };
 LabelTone labelTone(const Widget* label);
+// Whether a slot button has the compact red slot style: in a recipe tooltip's total raw, a material
+// the player has too little of.
+bool redSlot(const Widget* slot);
 
 bool tabSelected(const Widget* tab);
 

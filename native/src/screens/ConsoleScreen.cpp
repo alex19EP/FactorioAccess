@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "AguiNodes.hpp"
+#include "TooltipScreen.hpp"
 #include "speech.h"
 #include "text.h"
 #include "vocab.h"
@@ -111,9 +112,9 @@ void ConsoleScreen::Build(graph::GraphBuilder& builder)
             vtable.OnTooltip = [item, section]()
             {
                 const Widget* tooltip = agui::hoverConsoleLink(item, section);
-                std::string text = tooltip ? TooltipText(tooltip) : std::string();
+                std::vector<TooltipLine> lines = tooltip ? TooltipLines(tooltip) : std::vector<TooltipLine>();
                 agui::clearConsoleHover();
-                speech::say(text.empty() ? std::string(vocab::kNoTooltip) : text, true);
+                ReadTooltip(std::move(lines));
             };
             builder.AddItem(graph::ControlId::Referenced(item, std::format("{}/link{}", key, i)), std::move(vtable));
         }

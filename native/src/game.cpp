@@ -345,6 +345,9 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.guiStyleBoldRedLabel, "GuiStyle", "_boldRedLabel");
    offset(layout.guiStyleBoldOrangeLabel, "GuiStyle", "_boldOrangeLabel");
    offset(layout.integratedLabelStyleAgui, "IntegratedStyle<LabelStyleSpecification>", "agui");
+   offset(layout.buttonStyleParent, "agui::Button", "style.parent");
+   offset(layout.guiStyleCompactRedSlot, "GuiStyle", "_compactRedSlot");
+   offset(layout.integratedButtonStyleAgui, "IntegratedStyle<ButtonStyleSpecification>", "agui");
    address(layout.luaCreateTable, "lua_createtable");
    address(layout.luaPushCClosure, "lua_pushcclosure");
    address(layout.luaSetField, "lua_setfield");

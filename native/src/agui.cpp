@@ -393,6 +393,15 @@ LabelTone labelTone(const Widget* label) {
    return LabelTone::Plain;
 }
 
+bool redSlot(const Widget* slot) {
+   const std::byte* base = asBase(slot, ".?AVButton@agui@@");
+   auto* context = *reinterpret_cast<const std::byte* const*>(layout.globalContext);
+   const std::byte* styles = context ? at<const std::byte*>(context, layout.globalStyle) : nullptr;
+   if (!base || !styles) return false;
+   const std::byte* style = at<const std::byte*>(styles, layout.guiStyleCompactRedSlot);
+   return style && at<const std::byte*>(base, layout.buttonStyleParent) == style + layout.integratedButtonStyleAgui;
+}
+
 bool tabSelected(const Widget* tab) {
    const auto* pane = at<const std::byte*>(asBaseChecked(tab, ".?AVTab@agui@@"), layout.tabPane);
    if (!pane) return false;

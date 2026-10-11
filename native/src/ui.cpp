@@ -48,6 +48,7 @@
 #include "screens/SplitterScreen.hpp"
 #include "screens/StatusScreen.hpp"
 #include "screens/TechnologyScreen.hpp"
+#include "screens/TooltipScreen.hpp"
 #include "speech.h"
 
 #include <windows.h>
@@ -196,6 +197,8 @@ void start() {
    manager.Register(std::make_unique<screens::FilterSelectScreen>());
    // Over any of them, an open dropdown's list.
    manager.Register(std::make_unique<screens::DropDownScreen>());
+   // Over whichever screen it came from, a tooltip too long to say at once.
+   manager.Register(std::make_unique<screens::TooltipScreen>());
 }
 
 void afterGuiLogic(const agui::Gui* gui) {

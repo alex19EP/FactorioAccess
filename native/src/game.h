@@ -512,6 +512,10 @@ struct Layout {
    uint32_t guiStyleBoldRedLabel = 0;    // GuiStyle::_boldRedLabel, IntegratedStyle<LabelStyleSpecification>*
    uint32_t guiStyleBoldOrangeLabel = 0; // GuiStyle::_boldOrangeLabel, the same
    uint32_t integratedLabelStyleAgui = 0; // IntegratedStyle<LabelStyleSpecification>::agui, agui::LabelStyle
+   // The same for a slot button: a recipe tooltip's total raw draws a material the player lacks red.
+   uint32_t buttonStyleParent = 0;        // agui::Button::style.parent, agui::Style*
+   uint32_t guiStyleCompactRedSlot = 0;   // GuiStyle::_compactRedSlot, IntegratedStyle<ButtonStyleSpecification>*
+   uint32_t integratedButtonStyleAgui = 0; // IntegratedStyle<ButtonStyleSpecification>::agui, agui::ButtonStyle
 
    // The Lua 5.2 C API, linked into the game.
    uintptr_t luaCreateTable = 0;

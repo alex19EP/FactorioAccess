@@ -147,6 +147,7 @@ add_library(fa_native SHARED
   src/screens/AlertsScreen.cpp
   src/screens/ConsoleScreen.cpp
   src/screens/FilterSelectScreen.cpp
+  src/screens/TooltipScreen.cpp
   src/parts.cpp
   src/ui.cpp
   src/world.cpp

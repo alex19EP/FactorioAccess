@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "GuiDump.hpp"
+#include "TooltipScreen.hpp"
 #include "blueprints.h"
 #include "game.h"
 #include "log.h"
@@ -295,7 +296,13 @@ void SetTooltip(graph::NodeVtable& vtable, std::vector<const Widget*> widgets)
 {
     if (ToolTipsOf(widgets).empty())
         return;
-    vtable.OnTooltip = [widgets = std::move(widgets)]() { speech::say(ToolTipsOf(widgets), true); };
+    vtable.OnTooltip = [widgets = std::move(widgets)]()
+    {
+        std::vector<TooltipLine> lines;
+        for (std::string& line : Lines(ToolTipsOf(widgets)))
+            lines.push_back({std::move(line)});
+        ReadTooltip(std::move(lines));
+    };
 }
 
 // A table's cells in order, blanks included: an EmptyWidget holds its place in the grid.
@@ -892,37 +899,135 @@ std::string ToneWord(const Widget* label, const Widget* tooltip)
     return tone == agui::LabelTone::Red ? vocab::kMissing : vocab::kFromIntermediates;
 }
 
+std::string WithTone(const std::string& word, std::string line)
+{
+    return word.empty() ? line : std::format("{}, {}", word, line);
+}
+
+// A row of texts only (an ingredient's count and name) is one line.
+bool IsLabelRow(const std::vector<const Widget*>& children)
+{
+    return children.size() > 1
+        && std::ranges::all_of(children, [](const Widget* child) { return KindOf(child) == Kind::Label; });
+}
+
+// A table of slots only (a recipe's total raw, its trash) shows its items by their icons alone.
+bool IsSlotTable(const Widget* widget, const std::vector<const Widget*>& children)
+{
+    return agui::derivesFrom(widget, "agui::Table") && !children.empty()
+        && std::ranges::all_of(children, [](const Widget* child) { return agui::isSlotButton(child); });
+}
+
+// A slot as a tooltip shows it: its item, and its number when one is drawn on it.
+std::string TooltipSlotText(const Widget* slot)
+{
+    agui::SlotButton button = agui::slotButton(slot);
+    if (button.name.empty())
+        return {};
+    std::string text;
+    if (button.count != 0)
+        text = SlotText(slot);
+    else if (button.quality.empty())
+        text = std::string(button.name);
+    else
+        text = std::format("{} {}", button.quality, button.name);
+    return agui::redSlot(slot) ? std::format("{}, {}", std::string(vocab::kMissing), text) : text;
+}
+
+class TooltipWalker
+{
+public:
+    explicit TooltipWalker(const Widget* tooltip) : _tooltip(tooltip) {}
+
+    std::vector<TooltipLine> Walk()
+    {
+        // The tooltip itself stays hidden until the Gui places it; its content shows already.
+        ForEachChild(_tooltip, [&](const Widget* child, const std::string&) { Visit(child, 0); });
+        return std::move(_lines);
+    }
+
+private:
+    void Add(std::string text)
+    {
+        if (text.empty())
+            return;
+        _lines.push_back({std::move(text), _section});
+        _section = false;
+    }
+
+    void Visit(const Widget* widget, int depth)
+    {
+        if (depth > kMaxDepth)
+            return;
+        // The game draws a line between a tooltip's sections.
+        if (agui::visible(widget) && agui::derivesFrom(widget, "agui::Line"))
+        {
+            _section = !_lines.empty();
+            return;
+        }
+        if (!Shows(widget))
+            return;
+        if (KindOf(widget) == Kind::Label)
+        {
+            std::string word = ToneWord(widget, _tooltip);
+            for (std::string& line : Lines(TextOf(widget)))
+            {
+                Add(WithTone(word, std::move(line)));
+                word.clear();
+            }
+            return;
+        }
+        // A slot beside its texts is an icon; one with a number drawn on it says the number.
+        if (agui::isSlotButton(widget))
+        {
+            if (agui::slotButton(widget).count != 0)
+                Add(TooltipSlotText(widget));
+            return;
+        }
+        std::vector<const Widget*> children = VisibleChildren(widget);
+        if (IsSlotTable(widget, children))
+        {
+            for (const Widget* slot : children)
+                Add(TooltipSlotText(slot));
+            return;
+        }
+        if (agui::derivesFrom(widget, "agui::HorizontalFlow") && IsLabelRow(children))
+        {
+            std::string word;
+            std::string line;
+            for (const Widget* label : children)
+            {
+                if (word.empty())
+                    word = ToneWord(label, _tooltip);
+                if (std::string phrase = Phrase(label); !phrase.empty())
+                    line += (line.empty() ? "" : " ") + phrase;
+            }
+            Add(WithTone(word, std::move(line)));
+            return;
+        }
+        ForEachChild(widget, [&](const Widget* child, const std::string&) { Visit(child, depth + 1); });
+    }
+
+    const Widget* _tooltip;
+    std::vector<TooltipLine> _lines;
+    bool _section = false;
+};
+
 } // namespace
 
-std::string TooltipText(const Widget* tooltip)
-{
-    std::string text;
-    // The tooltip itself stays hidden until the Gui places it; its content shows already.
-    ForEachChild(tooltip,
-        [&](const Widget* child, const std::string&)
-        {
-            for (const Widget* label : FindAll(child, "agui::Label"))
-                if (std::string line = LabelText(label); !line.empty())
-                {
-                    if (std::string word = ToneWord(label, tooltip); !word.empty())
-                        line = std::format("{}, {}", word, line);
-                    text += (text.empty() ? "" : "\n") + line;
-                }
-        });
-    return text;
-}
+std::vector<TooltipLine> TooltipLines(const Widget* tooltip) { return TooltipWalker(tooltip).Walk(); }
 
 void SpeakGameTooltip(const Widget* widget)
 {
     bool created = false;
     const Widget* tooltip = agui::showTooltip(widget, created);
-    std::string text = tooltip ? TooltipText(tooltip) : std::string();
-    if (text.empty())
+    std::vector<TooltipLine> lines = tooltip ? TooltipLines(tooltip) : std::vector<TooltipLine>();
+    if (lines.empty())
         log::info("No tooltip text on {}: {}", agui::className(widget),
             tooltip ? DescribeTree(tooltip) : std::string("none created"));
     if (created)
         agui::removeTooltip(widget);
-    speech::say(text.empty() ? std::string(vocab::kNoTooltip) : text, true);
+    ReadTooltip(std::move(lines));
 }
 
 namespace
@@ -1227,9 +1332,9 @@ graph::NodeVtable LinkNode(const Widget* label, std::size_t section, std::string
     vtable.OnTooltip = [label, section]()
     {
         const Widget* tooltip = agui::hoverRichTextLink(label, section);
-        std::string text = tooltip ? TooltipText(tooltip) : std::string();
+        std::vector<TooltipLine> lines = tooltip ? TooltipLines(tooltip) : std::vector<TooltipLine>();
         agui::clearRichTextHover(label);
-        speech::say(text.empty() ? std::string(vocab::kNoTooltip) : text, true);
+        ReadTooltip(std::move(lines));
     };
     return vtable;
 }
