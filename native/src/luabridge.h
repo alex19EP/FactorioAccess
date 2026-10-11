@@ -9,7 +9,13 @@
 //   fa_native.release_cursor(player_index)         the game cursor follows the mouse again
 //   fa_native.speak(player_index, message)         says a LocalisedString through the screen
 //                                                  reader, interrupting, if it is for this client
+#include "stub/stub-api.h"
+
 namespace fa::luabridge {
+
+// Hands each fa_native function to the stub, which gives Lua a function of its own that calls it,
+// so the Lua states the game keeps across a reload never hold this core's code.
+void bind(stub::LuaFunction (*bindLua)(const char* name, stub::LuaFunction target));
 
 // MinHook detour for LuaHelper::initLuaState, and where MinHook keeps the original.
 void* initLuaStateDetour();

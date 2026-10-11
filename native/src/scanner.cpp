@@ -481,6 +481,15 @@ public:
       return true;
    }
 
+   // Before the core unloads, while the world may be moving: the links stay linked, where they are,
+   // in memory nothing frees (the CRT allocates from the process heap, which outlives the core), and
+   // the game unlinks each as its entity goes. Their vtable is the game's.
+   void abandon() {
+      if (targeters_.empty()) return;
+      new std::deque<Targeter>(std::move(targeters_));
+      targeters_.clear();
+   }
+
 private:
    void release() {
       if (targeters_.empty()) return;
@@ -836,12 +845,24 @@ public:
       done_.wait(lock, [&] { return remaining_ == 0; });
    }
 
+   // Ends the threads; no run may be under way.
+   void stop() {
+      {
+         std::scoped_lock lock(mutex_);
+         stopping_ = true;
+      }
+      wake_.notify_all();
+      for (std::thread& worker : workers_) worker.join();
+      workers_.clear();
+   }
+
 private:
    void serve(unsigned index) {
       uint64_t seen = 0;
       std::unique_lock lock(mutex_);
       for (;;) {
-         wake_.wait(lock, [&] { return round_ != seen; });
+         wake_.wait(lock, [&] { return round_ != seen || stopping_; });
+         if (stopping_) return;
          seen = round_;
          if (index > helpers_) continue;
          const auto* task = task_;
@@ -861,10 +882,11 @@ private:
    unsigned helpers_ = 0;
    unsigned remaining_ = 0;
    uint64_t round_ = 0;
+   bool stopping_ = false;
 };
 
-// Never destroyed: its threads wait for work until the process ends, as joining them while the DLL
-// unloads could hang.
+// Never destroyed: scanner::stop ends its threads before the core unloads, as joining them while the
+// DLL unloads (under the loader lock) could hang.
 Pool& pool() {
    static Pool& instance = *new Pool;
    return instance;
@@ -2136,6 +2158,30 @@ Cursor carried(const List& fresh) {
 // The links of lists put out of use, dropped a slice at a time. Only on the game's update thread.
 std::deque<Links> g_retired;
 
+// The threads dropping old lists, each joined once done, and all by stop(). Under g_mutex.
+struct Dropper {
+   std::thread thread;
+   std::shared_ptr<std::atomic<bool>> done;
+};
+std::vector<Dropper> g_droppers;
+
+// Drops `old` on a thread of its own: a big list takes a while to go.
+void dropApart(List old) {
+   std::erase_if(g_droppers, [](Dropper& dropper) {
+      if (!dropper.done->load()) return false;
+      dropper.thread.join();
+      return true;
+   });
+   auto done = std::make_shared<std::atomic<bool>>(false);
+   g_droppers.push_back({std::thread([old = std::move(old), done]() mutable {
+                            {
+                               List gone = std::move(old);
+                            }
+                            done->store(true);
+                         }),
+                         done});
+}
+
 // Drops retired links until `deadline`. Only while the world stands still.
 void dropRetired(Clock::time_point deadline) {
    while (!g_retired.empty() && g_retired.front().releaseUntil(deadline)) g_retired.pop_front();
@@ -2157,7 +2203,7 @@ void install(Job& job, bool keep) {
       List old = std::exchange(g_list, std::move(list));
       g_cursor = cursor;
       g_retired.push_back(std::move(old.links));
-      std::thread([old = std::move(old)] {}).detach();
+      dropApart(std::move(old));
    }
    job.installMs = stopwatch.lap();
 }
@@ -2276,6 +2322,22 @@ bool tick(int playerIndex, uint32_t surfaceIndex) {
    // One that cannot start is not tried again every tick.
    g_nextTry = now + kCycleInterval;
    return true;
+}
+
+void stop() {
+   if (g_job) {
+      if (g_job->assembler.joinable()) g_job->assembler.join();
+      g_job->links.abandon();
+      if (g_job->list) g_job->list->links.abandon();
+      g_job.reset();
+   }
+   for (Links& links : g_retired) links.abandon();
+   g_retired.clear();
+   std::scoped_lock lock(g_mutex);
+   g_list.links.abandon();
+   for (Dropper& dropper : g_droppers) dropper.thread.join();
+   g_droppers.clear();
+   pool().stop();
 }
 
 void setModUiOpen(int playerIndex, bool open) {

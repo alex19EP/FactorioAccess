@@ -28,6 +28,8 @@ std::mutex g_mutex;
 std::condition_variable g_wake;
 std::deque<Utterance> g_queue;
 std::atomic<bool> g_enabled = false;
+bool g_stopping = false;
+std::thread g_thread;
 
 void PRISM_CALL onPrismLog(void*, PrismLogLevel level, const char* source, const char* message) {
    // Prism's own logging thread; fa::log is thread-safe.
@@ -70,7 +72,8 @@ void run() {
       Utterance next;
       {
          std::unique_lock lock(g_mutex);
-         g_wake.wait(lock, [] { return !g_queue.empty(); });
+         g_wake.wait(lock, [] { return !g_queue.empty() || g_stopping; });
+         if (g_stopping) break;
          next = std::move(g_queue.front());
          g_queue.pop_front();
       }
@@ -85,6 +88,14 @@ void run() {
          if (error != PRISM_OK) log::error("Speech failed after rebinding: {}", prism_error_string(error));
       }
    }
+   if (backend) {
+      (void)prism_backend_stop(backend);
+      prism_backend_free(backend);
+   }
+   prism_shutdown(context);
+   // Prism's log thread outlives its contexts; it holds the core loaded until it ends.
+   prism_log_shutdown();
+   CoUninitialize();
 }
 
 } // namespace
@@ -102,8 +113,19 @@ void start() {
       return;
    }
    g_enabled = true;
-   // Never joined: the thread lives until the process exits.
-   std::thread(run).detach();
+   g_thread = std::thread(run);
+}
+
+void stop() {
+   if (!g_thread.joinable()) return;
+   g_enabled = false;
+   {
+      std::scoped_lock lock(g_mutex);
+      g_stopping = true;
+      g_queue.clear();
+   }
+   g_wake.notify_one();
+   g_thread.join();
 }
 
 void say(std::string text, bool interrupt) {

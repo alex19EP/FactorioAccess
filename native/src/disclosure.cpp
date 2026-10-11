@@ -8,7 +8,6 @@
 #include <windows.h>
 
 #include <cstddef>
-#include <cwchar>
 #include <string>
 #include <string_view>
 
@@ -20,9 +19,9 @@ using game::layout;
 
 // The version and the log line name the DLL to Wube, so they read the same in every language.
 const std::string kVersionSuffix = " with FactorioAccess native " FA_NATIVE_VERSION;
-constexpr const char* kLogLine =
-   "FactorioAccess native " FA_NATIVE_VERSION " is loaded as winmm.dll. Crash log uploading is off; report crashes at "
-   "https://github.com/Factorio-Access/FactorioAccess/issues";
+constexpr const char* kLogLine = "FactorioAccess native " FA_NATIVE_VERSION
+                                 " is loaded through winmm.dll. Crash log uploading is off; report crashes at "
+                                 "https://github.com/Factorio-Access/FactorioAccess/issues";
 
 // LogLevel::Notice: printed without level or source file, like the game's own version line.
 constexpr int kLogNotice = 7;
@@ -73,13 +72,6 @@ void* versionForDisplay(const void* version, void* out) {
 }
 
 } // namespace
-
-void blockLogUploader() {
-   // The crashed game starts the uploader with ShellExecute and never reads its exit code, so this
-   // one only tells whoever looks that the block worked.
-   constexpr UINT kBlockedExitCode = 0xFA;
-   if (std::wcsstr(GetCommandLineW(), L"--upload-log-file")) TerminateProcess(GetCurrentProcess(), kBlockedExitCode);
-}
 
 void tick() {
    std::byte* settings = otherSettings();

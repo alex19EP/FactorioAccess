@@ -6,7 +6,8 @@
 
 namespace fa::log {
 
-void open(const std::filesystem::path& file);
+// Starts the log afresh, or adds to it when `append` (a reloaded core, after the one before it).
+void open(const std::filesystem::path& file, bool append = false);
 
 // The directory of the opened log file, where other diagnostics go too; empty before open().
 const std::filesystem::path& directory();

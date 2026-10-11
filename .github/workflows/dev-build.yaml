@@ -41,13 +41,13 @@ jobs:
       - name: Graph tests
         run: ctest --test-dir native/build -C RelWithDebInfo --output-on-failure
 
-      # Laid out as the game folder, so players extract it there: the DLL lands in bin/x64 and the
+      # Laid out as the game folder, so players extract it there: the DLLs land in bin/x64 and the
       # keys script beside config-path.cfg, where it finds the game's config.ini.
       - name: Package
         shell: bash
         run: |
           mkdir -p stage/bin/x64
-          cp native/build/RelWithDebInfo/winmm.dll native/build/RelWithDebInfo/winmm.pdb stage/bin/x64/
+          cp native/build/RelWithDebInfo/{winmm,fa_native}.{dll,pdb} stage/bin/x64/
           cp helper-scripts/factorio-access-keys.cmd helper-scripts/factorio-access-keys.ps1 stage/
           cd stage && 7z a ../FactorioAccess-native.zip .
 

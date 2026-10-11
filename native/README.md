@@ -36,10 +36,20 @@ Windows only.
 
 ## How it loads
 
-The build produces `winmm.dll`. `factorio.exe` imports winmm, and winmm is not a KnownDLL, so a
-copy in `bin/x64` is loaded instead of the system one. Every winmm export forwards to
-`System32\winmm.dll` by absolute path, so the game and anything else using winmm keep working.
-`version.dll` is left alone for the achievement enabler.
+The build produces two DLLs:
+
+- `winmm.dll`, a small stub. `factorio.exe` imports winmm, and winmm is not a KnownDLL, so a
+  copy in `bin/x64` is loaded instead of the system one. Every winmm export forwards to
+  `System32\winmm.dll` by absolute path, so the game and anything else using winmm keep working.
+  The stub then loads the core beside it. `version.dll` is left alone for the achievement enabler.
+- `fa_native.dll`, the core: everything this README describes.
+
+The game keeps winmm.dll until it exits, but the core can be replaced while it runs. With the dev
+server's marker (see "Diagnostics"), the stub loads a copy of the core, `fa_native.live-<n>.dll`,
+and watches `fa_native.dll`. When a build replaces it, the stub stops the old core, unloads it and
+loads the new one, in about a second, without restarting the game. The mod's Lua keeps working
+across it: the `fa_native` functions Lua holds belong to the stub, which passes each call to the
+core loaded at the time. A reloaded core starts fresh (the scanner's list, the cursor's state).
 
 Nothing is hard-coded per Factorio build. Function addresses, class layouts and virtual slots
 come from `factorio.pdb`, which ships next to the executable, read with
@@ -57,6 +67,8 @@ Players install the DLL from a release, as the root README's
 ```
 bin/x64/winmm.dll
 bin/x64/winmm.pdb
+bin/x64/fa_native.dll
+bin/x64/fa_native.pdb
 factorio-access-keys.cmd
 factorio-access-keys.ps1
 ```
@@ -96,8 +108,10 @@ cmake --build --preset default
 ctest --test-dir build -C RelWithDebInfo --output-on-failure
 ```
 
-With `FA_FACTORIO_BIN` set, each build copies `winmm.dll` and its PDB there. Without it, copy
-them by hand. To uninstall, delete `winmm.dll` and `winmm.pdb` from `bin/x64`.
+With `FA_FACTORIO_BIN` set, each build copies both DLLs and their PDBs there. Without it, copy
+them by hand. While the game runs, winmm.dll can't be replaced, but fa_native.dll can, and with
+the dev marker the game loads it at once (`just reload`). To uninstall, delete `winmm.dll`,
+`winmm.pdb`, `fa_native.dll` and `fa_native.pdb` from `bin/x64`.
 
 `-DFA_BUILD_ID=<id>` appends `+<id>` to the version the game shows and the log writes, so a build
 can be told apart. Local builds leave it empty.
@@ -116,7 +130,8 @@ build without running the game. Run it after every Factorio update.
 
 ## Source
 
-- `src/`: the DLL.
+- `src/`: the core, fa_native.dll.
+- `src/stub/`: winmm.dll, the stub that loads and reloads it.
 - `tests/`: the graph kernel's conformance suite, which runs without the game.
 - `tools/`: the symbol checker.
 - `vendor/`: Prism, MinHook and raw_pdb as git submodules.

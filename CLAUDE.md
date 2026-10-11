@@ -164,7 +164,7 @@ Modern graph-based architecture:
 - Explicit re-render is not possible because the UI does not have a painting step and is really a description of how to say things.  Controls which change values often say their new value.
 
 ### Native DLL (required)
-The mod requires the native DLL in `native/` (deployed as `winmm.dll`). There is no Lua-only mode to keep working.
+The mod requires the native DLL in `native/` (deployed as `winmm.dll`, a stub, and `fa_native.dll`, the core it loads). There is no Lua-only mode to keep working. With the dev marker, `just reload` loads a rebuilt core and the mod's Lua (`/fareload`, `game.reload_mods`) into the running game.
 
 - When the game knows something the Lua API cannot read (engine flying text such as "Cannot reach", console messages other than player chat, vanilla GUI text, why an action failed), read it at the source in the native layer.
 - Don't write Lua that guesses what happened from indirect events, and don't add Lua fallbacks for when the DLL is missing. Existing Lua guesses are to be replaced by native reads.

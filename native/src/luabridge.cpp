@@ -748,12 +748,16 @@ constexpr Function kFunctions[] = {
 using InitLuaState = void (*)(lua_State*);
 InitLuaState g_original = nullptr;
 
+// What Lua gets for each of kFunctions: the stub's function, which outlives this core.
+lua_CFunction g_bound[std::size(kFunctions)] = {};
+
 void detour(lua_State* L) {
    g_original(L);
    createTable(L, 0, static_cast<int>(std::size(kFunctions)));
-   for (const Function& entry : kFunctions) {
-      pushCClosure(L, entry.function, 0);
-      setField(L, -2, entry.name);
+   for (size_t i = 0; i < std::size(kFunctions); ++i) {
+      if (!g_bound[i]) continue;
+      pushCClosure(L, g_bound[i], 0);
+      setField(L, -2, kFunctions[i].name);
    }
    setGlobal(L, "fa_native");
    log::info("fa_native added to a Lua state");
@@ -762,6 +766,15 @@ void detour(lua_State* L) {
 }
 
 } // namespace
+
+void bind(stub::LuaFunction (*bindLua)(const char* name, stub::LuaFunction target)) {
+   for (size_t i = 0; i < std::size(kFunctions); ++i) {
+      // The stub's lua_State is this file's: both are the game's, declared by name only.
+      auto target = reinterpret_cast<stub::LuaFunction>(kFunctions[i].function);
+      g_bound[i] = reinterpret_cast<lua_CFunction>(bindLua(kFunctions[i].name, target));
+      if (!g_bound[i]) log::error("fa_native.{} has no Lua slot in the stub", kFunctions[i].name);
+   }
+}
 
 void* initLuaStateDetour() { return reinterpret_cast<void*>(&detour); }
 

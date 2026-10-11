@@ -23,7 +23,7 @@ dotenv parser treats backslashes in unquoted or double-quoted values as escapes.
 
 | Variable | What it is | Used by |
 | --- | --- | --- |
-| `FACTORIO_STEAM_DIR` | The Steam Factorio folder, the one holding `bin\x64\factorio.exe` | `deploy`, `run`, `symbols`, `log`, `dev-on` |
+| `FACTORIO_STEAM_DIR` | The Steam Factorio folder, the one holding `bin\x64\factorio.exe` | `deploy`, `run`, `reload`, `symbols`, `log`, `dev-on` |
 | `FACTORIO_USER_DIR` | The Steam game's write-data folder, usually `%APPDATA%\Factorio` | `link-mod`, `game-log` |
 | `VCVARS64` | Full path to `vcvars64.bat` from the Visual Studio install | `configure`, `build` and all that build |
 | `FACTORIO_SANDBOX_DIR` | Optional. A zip Factorio install whose `mods\FactorioAccess` is a junction to this checkout | `test-mod`, `symbols` |
@@ -39,11 +39,22 @@ describes.
 
 ```
 just link-mod   # junction from the Steam game's mods folder to this checkout
-just run        # build the DLL, copy it next to the Steam factorio.exe, start the game
+just dev-on     # arm the dev server, which also lets the game reload the DLL
+just run        # build the DLLs, copy them next to the Steam factorio.exe, start the game
 ```
 
-`just stop` closes the game, `just undeploy` removes the DLL, and `just unlink-mod` removes the
+`just stop` closes the game, `just undeploy` removes the DLLs, and `just unlink-mod` removes the
 junction.
+
+## Changing code while the game runs
+
+With the dev server armed, `just reload` rebuilds, puts the new `fa_native.dll` into the running
+game (the game swaps it in within about a second, keeping the save running), then types
+`/fareload`, which runs `game.reload_mods()`: every mod's Lua runs again from the files on disk,
+with `storage` kept, as after a save and load. Restart the game instead after changing `winmm.dll`
+(`native/src/stub/`, which `just reload` warns about), locale files, or the data stage. The
+reloaded Lua comes from the mods folder, so from the checkout `just link-mod` linked, whatever
+worktree the DLL was built in. `/fareload` does nothing in multiplayer.
 
 ## Main recipes
 
@@ -57,7 +68,8 @@ junction.
 | `just build` / `just test` | build the DLL, run the graph kernel tests |
 | `just symbols` | check the DLL's symbols against the installed Factorio builds |
 | `just run` / `just start` / `just stop` | deploy and start, start only, close the game |
-| `just loaded` | whether the running game loaded this checkout's DLL |
+| `just reload` | build, load the new core and the mods' Lua into the running game |
+| `just loaded` | whether the running game loaded this checkout's DLLs |
 | `just dev-on` / `just dev-off` | arm or disarm the loopback dev server for the next start |
 | `just log` / `just game-log` | the end of the DLL's log and of the game's log |
 | `just package` | the mod portal zip, as the publish workflow builds it |

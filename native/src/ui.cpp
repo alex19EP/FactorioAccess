@@ -101,7 +101,7 @@ bool guardedTick(const agui::Gui* gui) {
    }
 }
 
-// "winmm.dll+0x1234": the module an address lies in and how far into it.
+// "fa_native.dll+0x1234": the module an address lies in and how far into it.
 std::string whereIs(uintptr_t address) {
    HMODULE module = nullptr;
    if (!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,

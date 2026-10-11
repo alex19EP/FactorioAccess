@@ -57,6 +57,10 @@ void refresh(const Refresh& request);
 // false for another client's player.
 bool tick(int playerIndex, uint32_t surfaceIndex);
 
+// Before the core unloads, with no Lua call or hook under way: ends the scanner's threads and
+// leaves its entity links to the game.
+void stop();
+
 // Whether the mod's own UI has the keys, so the scanner keys are not the scanner's. From Lua.
 void setModUiOpen(int playerIndex, bool open);
 

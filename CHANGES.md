@@ -1,7 +1,7 @@
 # 0.17.0 (in development)
 
 - Factorio 2.1.
-- The launcher is replaced by a native DLL, `winmm.dll` in the game's `bin/x64`, which the mod requires. It speaks through any screen reader Prism supports.
+- The launcher is replaced by a native DLL, `winmm.dll` and `fa_native.dll` in the game's `bin/x64`, which the mod requires. It speaks through any screen reader Prism supports.
 - The game's own windows, menus and HUD are read and used from the keyboard: the main menu, the character screen, entity windows, the technology screen, Factoriopedia, the quickbar, the shortcut bar, alerts, the crafting queue and others.
 - Flying text, console lines and pop-ups are spoken as they appear.
 - The DLL plays the mod's own sounds (radars, health bar, inserters, crafting machines, vehicles), from the mod's audio folder, zipped or not.

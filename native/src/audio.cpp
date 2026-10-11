@@ -11,6 +11,7 @@
 #include <cmath>
 #include <condition_variable>
 #include <deque>
+#include <memory>
 #include <mutex>
 #include <numbers>
 #include <thread>
@@ -163,7 +164,14 @@ public:
       }
       rate_ = ma_engine_get_sample_rate(&engine_);
       log::info("Audio: {} Hz", rate_);
+      initialized_ = true;
       return true;
+   }
+
+   ~Engine() {
+      // Sounds belong to the engine and go first.
+      sounds_.clear();
+      if (initialized_) ma_engine_uninit(&engine_);
    }
 
    void run(const Command& command) {
@@ -308,6 +316,7 @@ private:
    }
 
    ma_engine engine_{};
+   bool initialized_ = false;
    ma_uint32 rate_ = 0;
    std::unordered_map<std::string, std::unique_ptr<Sound>> sounds_;
 };
@@ -316,10 +325,11 @@ std::mutex g_mutex;
 std::condition_variable g_wake;
 std::deque<std::vector<Command>> g_queue;
 std::atomic<bool> g_enabled = false;
+bool g_stopping = false;
+std::thread g_thread;
 
 void run() {
-   // Never destroyed: the thread and the device live until the process exits.
-   auto* engine = new Engine;
+   auto engine = std::make_unique<Engine>();
    if (!engine->init()) {
       g_enabled = false;
       return;
@@ -329,7 +339,8 @@ void run() {
       {
          std::unique_lock lock(g_mutex);
          // Parameters move every 10 ms; a command wakes the thread at once.
-         g_wake.wait_for(lock, std::chrono::milliseconds(10), [] { return !g_queue.empty(); });
+         g_wake.wait_for(lock, std::chrono::milliseconds(10), [] { return !g_queue.empty() || g_stopping; });
+         if (g_stopping) break;
          batches.swap(g_queue);
       }
       for (const auto& batch : batches)
@@ -343,7 +354,19 @@ void run() {
 void start() {
    if (!speech::hasPlayer()) return;
    g_enabled = true;
-   std::thread(run).detach();
+   g_thread = std::thread(run);
+}
+
+void stop() {
+   if (!g_thread.joinable()) return;
+   g_enabled = false;
+   {
+      std::scoped_lock lock(g_mutex);
+      g_stopping = true;
+      g_queue.clear();
+   }
+   g_wake.notify_one();
+   g_thread.join();
 }
 
 void submit(std::vector<Command> commands) {

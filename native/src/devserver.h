@@ -20,6 +20,9 @@ namespace fa::dev {
 // Reads the gate and, when it is open, starts the server thread. `directory` is the DLL's.
 void start(const std::filesystem::path& directory);
 
+// Closes the port and ends the server thread; before the core unloads.
+void stop();
+
 // Once per frame on the game thread: runs the requests that read the game.
 void pump();
 

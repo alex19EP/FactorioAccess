@@ -66,6 +66,9 @@ using Command = std::variant<Patch, Stop, StopAll>;
 // none, and commands to it are dropped.
 void start();
 
+// Ends the audio thread, every sound and the device; before the core unloads.
+void stop();
+
 // Queues commands to run together, in order.
 void submit(std::vector<Command> commands);
 

@@ -172,9 +172,7 @@ add_library(fa_native SHARED
   src/bindings.cpp
   src/chart.cpp
   src/scanner.cpp
-  "${CMAKE_CURRENT_BINARY_DIR}/winmm_forwarders.cpp"
 )
-set_target_properties(fa_native PROPERTIES OUTPUT_NAME winmm)
 # Shown in the game's version text and log (src/disclosure.cpp).
 set(FA_NATIVE_VERSION "${PROJECT_VERSION}")
 if(FA_BUILD_ID)
@@ -183,6 +181,18 @@ endif()
 target_compile_definitions(fa_native PRIVATE FA_NATIVE_VERSION="${FA_NATIVE_VERSION}")
 # dbghelp only for UnDecorateSymbolName on RTTI names; symbol lookup goes through raw_pdb.
 target_link_libraries(fa_native PRIVATE fa_core minhook prism fa_miniaudio dbghelp ws2_32)
+
+# winmm.dll, what the game loads: the forwarders and the loader of fa_native.dll, which it can
+# unload and load again while the game runs (src/stub/stub.cpp). Nothing else, so it rarely changes.
+add_library(fa_stub SHARED
+  src/stub/stub.cpp
+  "${CMAKE_CURRENT_BINARY_DIR}/winmm_forwarders.cpp"
+)
+set_target_properties(fa_stub PROPERTIES OUTPUT_NAME winmm)
+target_include_directories(fa_stub PRIVATE src)
+target_compile_definitions(fa_stub PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX UNICODE _UNICODE)
+target_compile_options(fa_stub PRIVATE /W4 /permissive- /utf-8 /EHsc)
+add_dependencies(fa_native fa_stub)
 
 add_executable(fa_symbols_check tools/check_symbols.cpp)
 target_link_libraries(fa_symbols_check PRIVATE fa_core)
@@ -227,9 +237,16 @@ target_compile_options(fa_logic_tests PRIVATE /W4 /permissive- /utf-8 /EHsc)
 add_test(NAME logic COMMAND fa_logic_tests)
 
 if(FA_FACTORIO_BIN)
+  # The game holds winmm.dll while it runs, so that copy only works with the game closed; a running
+  # game with the dev marker loads the new fa_native.dll by itself.
   add_custom_command(TARGET fa_native POST_BUILD
     COMMAND "${CMAKE_COMMAND}" -E copy_if_different
             "$<TARGET_FILE:fa_native>" "$<TARGET_PDB_FILE:fa_native>" "${FA_FACTORIO_BIN}"
+    COMMENT "Copying fa_native.dll to ${FA_FACTORIO_BIN}"
+  )
+  add_custom_command(TARGET fa_stub POST_BUILD
+    COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+            "$<TARGET_FILE:fa_stub>" "$<TARGET_PDB_FILE:fa_stub>" "${FA_FACTORIO_BIN}"
     COMMENT "Copying winmm.dll to ${FA_FACTORIO_BIN}"
   )
 endif()

@@ -7,7 +7,7 @@ We have had players successfully build post-endgame bases with it in a reasonabl
 
 The mod tries to support multiplayer but game limitations mean that your experience will be laggy and kind of terrible. We cannot do anything about this.  We also have limited ability to do anything about bugs, because that would require two mod developers playing at the same time.
 
-The mod needs Factorio 2.1 on Windows. It comes with a DLL, `winmm.dll`, that the game loads from its own folder. The DLL reads the game's screens and speaks through your screen reader. [The DLL's README](native/README.md) says what it does, how it loads, and how to build it. An antivirus may flag it, because it hooks into the game. We build it from source in a GitHub Actions runner, so we are confident that our build is clean. If you need to, add your Factorio folder as an exception in Windows Defender.
+The mod needs Factorio 2.1 on Windows. It comes with two DLLs: `winmm.dll`, which the game loads from its own folder, and `fa_native.dll`, which `winmm.dll` loads beside it. The DLL reads the game's screens and speaks through your screen reader. [The DLL's README](native/README.md) says what it does, how it loads, and how to build it. An antivirus may flag it, because it hooks into the game. We build it from source in a GitHub Actions runner, so we are confident that our build is clean. If you need to, add your Factorio folder as an exception in Windows Defender.
 
 The DLL turns off the game's automatic crash log upload. Please report crashes to us, not to Wube, because a game with the DLL loaded is not vanilla.
 
@@ -51,7 +51,7 @@ The game can be purchased from Factorio.com or from Steam. Any purchase gives ac
 The mod comes in two parts, and you need both. Both are attached to each release on [the releases page](../../releases).
 
 - `FactorioAccess_<version>.zip` is the mod itself. It goes in the mods folder as it is, without extracting it.
-- `FactorioAccess-native.zip` holds the DLL, `bin\x64\winmm.dll`, and the keys script, `factorio-access-keys.cmd`. It is extracted into the game folder.
+- `FactorioAccess-native.zip` holds the DLLs, `bin\x64\winmm.dll` and `bin\x64\fa_native.dll`, and the keys script, `factorio-access-keys.cmd`. It is extracted into the game folder.
 
 The same steps work for the zip, Steam and regular Windows versions of the game.
 
@@ -62,7 +62,7 @@ The same steps work for the zip, Steam and regular Windows versions of the game.
    - Zip version: the folder you extracted the game into.
    - Steam: in your Steam Library, open the "Manage" menu for Factorio and select "Browse local files". This is usually `C:\Program Files (x86)\Steam\steamapps\common\Factorio`.
    - Regular Windows version: usually `C:\Program Files\Factorio`. Windows asks for administrator permission to change files there.
-1. Extract `FactorioAccess-native.zip` into the game folder, and replace the files if asked. `winmm.dll` and `winmm.pdb` land in `bin\x64`, next to `factorio.exe`, and `factorio-access-keys.cmd` and `factorio-access-keys.ps1` land in the game folder itself.
+1. Extract `FactorioAccess-native.zip` into the game folder, and replace the files if asked. `winmm.dll`, `fa_native.dll` and their `.pdb` files land in `bin\x64`, next to `factorio.exe`, and `factorio-access-keys.cmd` and `factorio-access-keys.ps1` land in the game folder itself.
 1. Find your mods folder.
    - Zip version: the folder `mods` inside the game folder.
    - Steam and regular Windows version: `%AppData%\Factorio\mods`. You can paste this path into the address bar of File Explorer. The full path is something like `C:\Users\Your_User_Name_Here\AppData\Roaming\Factorio\mods`.
@@ -74,7 +74,7 @@ The same steps work for the zip, Steam and regular Windows versions of the game.
 
 To update, close the game, extract the new `FactorioAccess-native.zip` into the game folder and replace the mod zip in the mods folder. Always update both parts together. A DLL and a mod from different releases may not work together. Then start the game once, exit it, and run `factorio-access-keys.cmd` again, so new controls get their keys too.
 
-To uninstall the DLL, delete `winmm.dll` and `winmm.pdb` from `bin\x64`. The mod does not work without it.
+To uninstall the DLL, delete `winmm.dll`, `winmm.pdb`, `fa_native.dll` and `fa_native.pdb` from `bin\x64`. The mod does not work without them.
 
 ## Keys
 
@@ -93,7 +93,7 @@ To undo the changes, run it with `-Revert` from a command prompt in the game fol
 ## Troubleshooting
 
 - The DLL writes `factorio-access-native.log` next to itself in `bin\x64`. When something goes wrong, send us that file and `factorio-current.log`. That log is in the game folder for the zip version, otherwise in `%AppData%\Factorio`.
-- If the game starts with no speech, check that `winmm.dll` is in `bin\x64` and not in `bin` or the game folder.
+- If the game starts with no speech, check that `winmm.dll` and `fa_native.dll` are both in `bin\x64` and not in `bin` or the game folder. If the DLL says it does not match its winmm.dll, the two come from different releases: extract `FactorioAccess-native.zip` again.
 - If the DLL says that it does not support this Factorio version, a game update changed something the DLL needs. Wait for a new release of the DLL.
 
 # Mod Documentation

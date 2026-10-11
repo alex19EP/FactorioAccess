@@ -1,26 +1,25 @@
-// FactorioAccess native: loaded into factorio.exe as a winmm.dll proxy (see CMakeLists.txt).
+// FactorioAccess native core: fa_native.dll, loaded by the winmm.dll stub (src/stub/stub.cpp),
+// which may unload it and load a rebuilt one while the game runs.
 
 #include "audio.h"
 #include "devserver.h"
-#include "disclosure.h"
 #include "game.h"
 #include "hooks.h"
 #include "input.h"
 #include "log.h"
+#include "luabridge.h"
 #include "scanner.h"
 #include "speech.h"
+#include "stub/stub-api.h"
 #include "symbols.h"
 #include "ui.h"
 
 #include <windows.h>
 
 #include <chrono>
-#include <cwchar>
 #include <filesystem>
 
 namespace {
-
-HMODULE g_module = nullptr;
 
 std::filesystem::path modulePath(HMODULE module) {
    wchar_t buffer[MAX_PATH];
@@ -28,20 +27,19 @@ std::filesystem::path modulePath(HMODULE module) {
    return std::filesystem::path(std::wstring(buffer, length));
 }
 
-// Runs under the loader lock, so it sticks to plain Win32 calls.
-bool hostIsFactorio() {
-   wchar_t buffer[MAX_PATH];
-   DWORD length = GetModuleFileNameW(nullptr, buffer, MAX_PATH);
-   if (length == 0 || length == MAX_PATH) return false;
-   const wchar_t* name = std::wcsrchr(buffer, L'\\');
-   return _wcsicmp(name ? name + 1 : buffer, L"factorio.exe") == 0;
-}
+} // namespace
 
-DWORD WINAPI initialize(void*) {
+extern "C" __declspec(dllexport) bool fa_core_start(const fa::stub::Api* api) {
    using namespace fa;
-   auto directory = modulePath(g_module).parent_path();
-   log::open(directory / "factorio-access-native.log");
-   log::info("Loaded into {}", modulePath(nullptr).string());
+   const std::filesystem::path directory(api->directory);
+   // A reload keeps the log of the run so far.
+   log::open(directory / "factorio-access-native.log", api->generation > 0);
+   if (api->version != stub::kApiVersion) {
+      log::error("winmm.dll speaks stub API {}, this core {}; deploy both", api->version, stub::kApiVersion);
+      speech::say("FactorioAccess native does not match its winmm.dll", false);
+      return false;
+   }
+   log::info("Loaded into {} (generation {})", modulePath(nullptr).string(), api->generation);
    speech::start();
    audio::start();
    dev::start(directory);
@@ -57,28 +55,28 @@ DWORD WINAPI initialize(void*) {
    // Fail closed: with any name or layout missing, nothing touches the game.
    if (!resolved) {
       speech::say("FactorioAccess native does not support this Factorio version", false);
-      return 0;
+      return false;
    }
    ui::start();
    input::setKeyObserver(&scanner::observeKey);
+   luabridge::bind(api->bindLua);
    if (!hooks::install()) {
       speech::say("FactorioAccess native could not hook the game", false);
-      return 0;
+      return false;
    }
-   speech::say("FactorioAccess native ready", false);
-   return 0;
+   speech::say(api->generation > 0 ? "FactorioAccess native reloaded" : "FactorioAccess native ready", false);
+   return true;
 }
 
-} // namespace
-
-BOOL APIENTRY DllMain(HMODULE module, DWORD reason, LPVOID) {
-   if (reason != DLL_PROCESS_ATTACH) return TRUE;
-   DisableThreadLibraryCalls(module);
-   g_module = module;
-   // Any other process that picks up this winmm.dll only gets the forwarded exports.
-   if (!hostIsFactorio()) return TRUE;
-   fa::disclosure::blockLogUploader();
-   // The thread starts once the loader lock is released, while the game carries on starting up.
-   if (HANDLE thread = CreateThread(nullptr, 0, &initialize, nullptr, 0, nullptr)) CloseHandle(thread);
-   return TRUE;
+// Everything the core started ends here, before the stub unloads it: no hook may lead into it and no
+// thread of its own may still run.
+extern "C" __declspec(dllexport) void fa_core_stop() {
+   using namespace fa;
+   log::info("Stopping for a reload");
+   hooks::uninstall();
+   scanner::stop();
+   dev::stop();
+   audio::stop();
+   speech::stop();
+   log::info("Stopped");
 }

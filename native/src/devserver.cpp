@@ -41,6 +41,8 @@ constexpr DWORD kGameWaitMs = 3000;
 
 std::atomic<bool> g_running{false};
 std::atomic<uint64_t> g_frames{0};
+std::vector<SOCKET> g_listeners;
+std::thread g_thread;
 
 // ---- speech ring ----
 
@@ -84,8 +86,10 @@ std::string onGameThread(std::function<std::string()> work) {
    job->work = std::move(work);
    std::unique_lock lock(g_jobMutex);
    g_jobs.push_back(job);
-   // The navigator off after a fault, or a game that is not ticking, never runs it.
-   if (!g_jobDone.wait_for(lock, std::chrono::milliseconds(kGameWaitMs), [&] { return job->done; })) {
+   // The navigator off after a fault, or a game that is not ticking, never runs it; nor does a core
+   // being stopped for a reload.
+   if (!g_jobDone.wait_for(lock, std::chrono::milliseconds(kGameWaitMs), [&] { return job->done || !g_running; }) ||
+       !job->done) {
       std::erase(g_jobs, job);
       return "[timeout] the game thread did not run the request\n";
    }
@@ -95,7 +99,7 @@ std::string onGameThread(std::function<std::string()> work) {
 void waitFrames(uint64_t count) {
    uint64_t target = g_frames + count;
    ULONGLONG deadline = GetTickCount64() + std::max<ULONGLONG>(kGameWaitMs, count * 50);
-   while (g_frames < target && GetTickCount64() < deadline) Sleep(5);
+   while (g_running && g_frames < target && GetTickCount64() < deadline) Sleep(5);
 }
 
 // ---- keys ----
@@ -453,7 +457,8 @@ void serve(std::vector<SOCKET> listeners) {
       FD_ZERO(&ready);
       for (SOCKET s : listeners) FD_SET(s, &ready);
       if (select(0, &ready, nullptr, nullptr, nullptr) == SOCKET_ERROR) {
-         log::error("Dev server stopped: select failed ({})", WSAGetLastError());
+         // stop() closes the sockets under it.
+         if (g_running) log::error("Dev server stopped: select failed ({})", WSAGetLastError());
          return;
       }
       for (SOCKET s : listeners)
@@ -497,8 +502,25 @@ void start(const std::filesystem::path& directory) {
       return;
    }
    g_running = true;
-   std::thread(serve, std::move(listeners)).detach();
+   g_listeners = listeners;
+   g_thread = std::thread(serve, std::move(listeners));
    log::info("Dev server on http://localhost:{} (/health /speech /screen /key /dump /cursor)", port);
+}
+
+void stop() {
+   if (!g_thread.joinable()) return;
+   {
+      // Under the job lock, so a request about to wait sees it.
+      std::scoped_lock lock(g_jobMutex);
+      g_running = false;
+   }
+   // A request waiting on the game gives up at once; one being answered finishes first.
+   g_jobDone.notify_all();
+   for (SOCKET s : g_listeners) closesocket(s);
+   g_listeners.clear();
+   g_thread.join();
+   WSACleanup();
+   log::info("Dev server stopped");
 }
 
 void pump() {

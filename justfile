@@ -36,7 +36,7 @@ default:
 configure: _require-vcvars
     @cmd.exe /c '{{VCVARS}} >nul 2>&1 && cmake -S {{NATIVE}} --preset default'
 
-# Build winmm.dll, the graph tests and the symbol checker (RelWithDebInfo)
+# Build winmm.dll, fa_native.dll, the native tests and the symbol checker (RelWithDebInfo)
 build: _ensure-configured _require-vcvars
     @cmd.exe /c '{{VCVARS}} >nul 2>&1 && cmake --build {{BUILD_DIR}} --config RelWithDebInfo'
 
@@ -117,20 +117,53 @@ package:
 # --- deploying ----------------------------------------------------------------
 
 # factorio.exe imports winmm and it is not a KnownDLL, so the copy in bin\x64
-# is the one the loader picks.  The pdb goes along for crash symbols.
+# is the one the loader picks; it loads fa_native.dll, the core, beside it.
+# The pdbs go along for crash symbols.
 
-# Build, then copy winmm.dll next to the Steam factorio.exe
+# Build, then copy winmm.dll and fa_native.dll next to the Steam factorio.exe
 deploy: build _require-steam _require-not-running
     @$ErrorActionPreference = 'Stop'; \
-     Copy-Item -Force '{{BIN_DIR}}/winmm.dll', '{{BIN_DIR}}/winmm.pdb' '{{STEAM_DIR}}\bin\x64\'; \
-     Write-Host '[just] deployed winmm.dll + winmm.pdb into {{STEAM_DIR}}\bin\x64'
+     Copy-Item -Force '{{BIN_DIR}}/winmm.dll', '{{BIN_DIR}}/winmm.pdb', '{{BIN_DIR}}/fa_native.dll', '{{BIN_DIR}}/fa_native.pdb' '{{STEAM_DIR}}\bin\x64\'; \
+     Write-Host '[just] deployed winmm.dll + fa_native.dll and their pdbs into {{STEAM_DIR}}\bin\x64'
 
-# Remove the DLL from the Steam install; the game runs vanilla again
+# Remove the DLLs from the Steam install; the game runs vanilla again
 undeploy: _require-steam _require-not-running
-    @foreach ($f in 'winmm.dll', 'winmm.pdb') { \
+    @foreach ($f in 'winmm.dll', 'winmm.pdb', 'fa_native.dll', 'fa_native.pdb') { \
          Remove-Item -Force -ErrorAction SilentlyContinue "{{STEAM_DIR}}\bin\x64\$f" \
      }; \
-     Write-Host '[just] removed winmm.dll + winmm.pdb from {{STEAM_DIR}}\bin\x64'
+     Remove-Item -Force -ErrorAction SilentlyContinue '{{STEAM_DIR}}\bin\x64\fa_native.live-*.dll'; \
+     Write-Host '[just] removed winmm.dll + fa_native.dll and their pdbs from {{STEAM_DIR}}\bin\x64'
+
+# With the dev marker, the stub (native/src/stub/stub.cpp) loads a copy of
+# fa_native.dll and loads the new one whenever the file changes, so the core
+# can be replaced while the game runs.  winmm.dll itself only loads at a start.
+# /fareload (scripts/fa-commands.lua) then runs game.reload_mods: every mod's
+# control stage again, from the mods folder (the main checkout's junction).
+# Locale and data stage changes still need a restart.
+
+# Build, then load the new fa_native.dll and the mod's Lua into the running game
+reload: build _require-steam
+    @$ErrorActionPreference = 'Stop'; \
+     $bin = '{{STEAM_DIR}}\bin\x64'; \
+     if (-not (Get-Process factorio -ErrorAction SilentlyContinue)) { Write-Error '[just] Factorio is not running; `just run` starts it'; exit 1 }; \
+     if (-not (Test-Path "$bin\factorio-access-dev.enable")) { Write-Error '[just] the dev marker is off, so the game holds fa_native.dll itself; `just dev-on`, then restart the game'; exit 1 }; \
+     $same = { param($f) (Test-Path "$bin\$f") -and (Get-FileHash "{{BIN_DIR}}/$f").Hash -eq (Get-FileHash "$bin\$f").Hash }; \
+     if (-not (& $same 'winmm.dll')) { Write-Warning '[just] winmm.dll changed too; the game loads it only at its next start (`just stop`, `just run`)' }; \
+     if (& $same 'fa_native.dll') { Write-Host '[just] fa_native.dll unchanged' } else { \
+         $log = "$bin\factorio-access-native.log"; \
+         $count = { @(Select-String -Path $log -Pattern '\[stub\] Reload took').Count }; \
+         $before = & $count; \
+         Copy-Item -Force '{{BIN_DIR}}/fa_native.dll', '{{BIN_DIR}}/fa_native.pdb' "$bin\"; \
+         $deadline = (Get-Date).AddSeconds(15); \
+         while ((& $count) -eq $before) { \
+             if ((Get-Date) -gt $deadline) { Write-Error '[just] the game did not load the new fa_native.dll; see `just log`'; exit 1 }; \
+             Start-Sleep -Milliseconds 250 \
+         }; \
+         Write-Host '[just] fa_native.dll reloaded' \
+     }; \
+     $port = if ($env:FA_DEV_PORT) { $env:FA_DEV_PORT } else { '8773' }; \
+     curl.exe -s --data 'grave text=/fareload enter' "http://localhost:$port/key" | Out-Null; \
+     Write-Host '[just] /fareload sent: the mods reload their Lua'
 
 # A junction rather than a copy, so edits in this repo go live on the next game
 # start without recopying anything.  Needs no elevation.
@@ -180,13 +213,14 @@ stop:
      $p | Stop-Process; $p | Wait-Process -Timeout 30 -ErrorAction SilentlyContinue; \
      Write-Host '[just] Factorio stopped'
 
-# Report whether our winmm.dll is the one loaded in the running game
+# Report whether our winmm.dll and its core are loaded in the running game
 loaded:
     @$p = Get-Process factorio -ErrorAction SilentlyContinue; \
      if (-not $p) { Write-Host '[just] Factorio is not running'; exit 0 }; \
      $m = $p.Modules | Where-Object { $_.FileName -like '*\bin\x64\winmm.dll' } | Select-Object -First 1; \
      if ($m) { Write-Host "[just] LOADED: $($m.FileName)" } \
-     else { Write-Host '[just] our winmm.dll is NOT loaded (only the system one, if any)' }
+     else { Write-Host '[just] our winmm.dll is NOT loaded (only the system one, if any)' }; \
+     $p.Modules | Where-Object { $_.ModuleName -like 'fa_native*' } | ForEach-Object { Write-Host "[just] LOADED: $($_.FileName)" }
 
 # The dev server (native/src/devserver.h) starts only when this marker sits next
 # to the DLL, so a player's install never has it.
@@ -201,7 +235,7 @@ dev-off: _require-steam
     @Remove-Item -Force -ErrorAction SilentlyContinue '{{STEAM_DIR}}\bin\x64\factorio-access-dev.enable'; \
      Write-Host '[just] dev server disarmed'
 
-# Show the end of the native DLL's log (written next to the DLL, fresh per run)
+# Show the end of the native DLL's log (written next to the DLL, fresh per game start)
 log lines="60": _require-steam
     @Get-Content -Tail {{lines}} '{{STEAM_DIR}}\bin\x64\factorio-access-native.log'
 

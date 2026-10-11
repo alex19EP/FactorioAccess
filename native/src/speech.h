@@ -14,6 +14,9 @@ bool hasPlayer();
 // player (a benchmark, a dedicated server, save creation) gets no thread and no Prism.
 void start();
 
+// Ends the speech thread and Prism with it, dropping what is still queued; before the core unloads.
+void stop();
+
 // Queues text for the screen reader. `interrupt` cuts off whatever is being said and drops
 // anything still queued.
 void say(std::string text, bool interrupt);

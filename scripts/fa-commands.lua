@@ -188,6 +188,24 @@ local function cmd_tutorial_transcript(cmd)
    end
 end
 
+--[[
+/fareload
+
+Runs every mod's control stage again from the files on disk (game.reload_mods), as a save and
+load would, so edited Lua goes live without restarting. Unlike /c it leaves achievements alone, so
+`just reload` can type it into any game. The game ignores it in multiplayer.
+]]
+---@param cmd CustomCommandData
+local function cmd_reload(cmd)
+   local pindex = cmd.player_index
+   if game.is_multiplayer() then
+      Speech.speak(pindex, { "fa.cmd-reload-single-player" })
+      return
+   end
+   Speech.speak(pindex, { "fa.cmd-reloading-mods" })
+   game.reload_mods()
+end
+
 mod.COMMANDS = {
    fac = {
       help = "See commands.lua",
@@ -200,6 +218,10 @@ mod.COMMANDS = {
    railtable = {
       help = "Generate rail extension data table",
       handler = cmd_railtable,
+   },
+   fareload = {
+      help = "Reload every mod's Lua from disk (single player)",
+      handler = cmd_reload,
    },
    ["fa-tutorial-transcript"] = {
       help = "Generate tutorial transcript to script-output/tutorial-transcript.md",

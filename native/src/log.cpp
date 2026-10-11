@@ -13,9 +13,11 @@ std::ofstream g_file;
 std::filesystem::path g_directory;
 } // namespace
 
-void open(const std::filesystem::path& file) {
+void open(const std::filesystem::path& file, bool append) {
    std::scoped_lock lock(g_mutex);
-   g_file.open(file, std::ios::out | std::ios::trunc | std::ios::binary);
+   if (!append) std::ofstream(file, std::ios::out | std::ios::trunc | std::ios::binary);
+   // Always at the end, as the stub writes its own lines in between.
+   g_file.open(file, std::ios::out | std::ios::app | std::ios::binary);
    g_directory = file.parent_path();
 }
 

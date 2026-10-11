@@ -20,6 +20,7 @@
 #include "zoom.h"
 
 #include <MinHook.h>
+#include <windows.h>
 
 namespace fa::hooks {
 
@@ -29,6 +30,10 @@ namespace {
 // arguments of a plain function.
 using GuiLogic = void (*)(agui::Gui* gui, bool argument);
 GuiLogic g_originalGuiLogic = nullptr;
+
+bool g_installed = false;
+// How long uninstall waits for calls already inside a detour.
+constexpr DWORD kDrainMs = 250;
 
 void detourGuiLogic(agui::Gui* gui, bool argument) {
    g_originalGuiLogic(gui, argument);
@@ -60,8 +65,22 @@ bool install() {
       MH_Uninitialize();
       return false;
    }
+   g_installed = true;
    log::info("Hooks installed");
    return true;
+}
+
+void uninstall() {
+   if (!g_installed) return;
+   // MinHook suspends every other thread while it patches, and moves any thread it finds inside a
+   // patched prologue out of it, so after this no new call reaches a detour.
+   check(MH_DisableHook(MH_ALL_HOOKS), "Disabling hooks");
+   // A call that entered a detour before that still runs our code. Detours never block (they copy
+   // what they need and return), so they are all done well within this.
+   Sleep(kDrainMs);
+   check(MH_Uninitialize(), "MH_Uninitialize");
+   g_installed = false;
+   log::info("Hooks removed");
 }
 
 } // namespace fa::hooks

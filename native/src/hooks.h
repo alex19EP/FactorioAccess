@@ -6,4 +6,8 @@ namespace fa::hooks {
 // if any of them could not be installed.
 bool install();
 
+// Before the core is unloaded: puts every hooked function back and waits until no call that
+// entered a detour can still be running in it.
+void uninstall();
+
 } // namespace fa::hooks

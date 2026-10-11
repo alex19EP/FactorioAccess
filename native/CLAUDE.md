@@ -1,7 +1,8 @@
 # FactorioAccess native DLL: guide for LLMs
 
-The mod requires this DLL (see the root `CLAUDE.md`, "Native DLL (required)"). It is loaded
-into `factorio.exe` as a `winmm.dll` proxy. It reads the game's own state and GUI (`agui` widgets,
+The mod requires this DLL (see the root `CLAUDE.md`, "Native DLL (required)"). It is two DLLs:
+`winmm.dll`, a stub that `factorio.exe` loads as a winmm proxy (`src/stub/`), and `fa_native.dll`,
+the core, which the stub loads and can replace while the game runs. The core reads the game's own state and GUI (`agui` widgets,
 the world, flying text) and speaks it through Prism. It also gives the mod's Lua a `fa_native`
 table. Anything the Lua API cannot read is read here, at the source. Don't write Lua guesses or
 Lua fallbacks.
@@ -15,8 +16,9 @@ The raw commands are given as well.
 just build      # cmake --build native/build --config RelWithDebInfo
 just test       # ctest --test-dir native/build -C RelWithDebInfo --output-on-failure (graph kernel and pure logic suites)
 just symbols    # fa_symbols_check <factorio.exe>: resolve every symbol and layout against a build
-just deploy     # copy winmm.dll + winmm.pdb into the Steam bin/x64 (the game must not be running)
+just deploy     # copy both DLLs and their PDBs into the Steam bin/x64 (the game must not be running)
 just run        # deploy, then start Factorio through Steam
+just reload     # build, load the new fa_native.dll into the running game, then /fareload the mods' Lua
 just log        # tail factorio-access-native.log beside the DLL
 just dev-on     # enable the loopback dev server on the next start (see below)
 ```
@@ -63,6 +65,15 @@ already do. Switching generators needs a fresh tree: `just clean` first.
 - Game hooks (simulation, latency, input handlers) can run on other threads and at other times. In
   a hook, copy what you need and hand it off. `speech::say` already queues.
 - Never call into Lua from a hook. Lua runs only when the game runs it.
+- The core can be unloaded while the game runs (`fa_core_stop` in `dllmain.cpp`, then the stub's
+  FreeLibrary):
+  - Every thread the core starts is joined in a `stop()` that `fa_core_stop` calls. Never detach
+    one: a thread made with the CRT holds the core loaded, and a joined-in-a-destructor one hangs
+    under the loader lock.
+  - Nothing the game keeps may point into the core's code. Lua gets the stub's functions
+    (`luabridge::bind`); hooks are removed in `hooks::uninstall`. Memory the game links into (the
+    scanner's entity targeters) is left to it at stop (`Links::abandon`), never freed.
+  - State starts fresh in a reloaded core. Don't rely on it surviving.
 - Never change game state differently on one client: that desyncs multiplayer. Lua must not
   branch on native-only data in ways that write `storage`.
 
@@ -138,7 +149,8 @@ The GUI layer follows the graph-a11y spec, `E:\Games\modding\WH40KRTAccess\docs\
 ## Testing in game
 
 Run `just run` and turn on the dev server (`just dev-on`) to check behaviour without asking the
-user:
+user. With the dev server's marker on, `just reload` puts a rebuilt core and the mod's Lua into the
+running game without a restart; a changed winmm.dll, locale or data stage still needs one.
 
 ```
 curl -s localhost:8773/screen                   # live screens, focus, every node
