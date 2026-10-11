@@ -1,6 +1,7 @@
 #include "luabridge.h"
 
 #include "audio.h"
+#include "cues.h"
 #include "cursor.h"
 #include "game.h"
 #include "log.h"
@@ -188,8 +189,8 @@ int speak(lua_State* L) {
    return 0;
 }
 
-// fa_native.cursor_mode(pindex, vanilla, keys, anchored, rulers), every tick, the rulers' tiles as
-// a flat array x1, y1, x2, y2...: see cursor::setMode.
+// fa_native.cursor_mode(pindex, vanilla, keys, anchored, rulers, next_machine_sound), every tick, the
+// rulers' tiles as a flat array x1, y1, x2, y2...: see cursor::setMode and cues::setNextMachine.
 int cursorMode(lua_State* L) {
    std::vector<cursor::Tile> rulers;
    if (type(L, 5) == kTable) {
@@ -204,8 +205,9 @@ int cursorMode(lua_State* L) {
          setTop(L, top);
       }
    }
-   cursor::setMode(static_cast<int>(checkInteger(L, 1)), toBoolean(L, 2), toBoolean(L, 3), toBoolean(L, 4),
-                   std::move(rulers));
+   const int playerIndex = static_cast<int>(checkInteger(L, 1));
+   cursor::setMode(playerIndex, toBoolean(L, 2), toBoolean(L, 3), toBoolean(L, 4), std::move(rulers));
+   if (world::mayBeLocalPlayer(playerIndex)) cues::setNextMachine(toBoolean(L, 6));
    return 0;
 }
 

@@ -32,6 +32,9 @@ struct Drawn {
 // the thread that runs the game's Lua, while the game state stands still.
 std::optional<Drawn> read(const void* entity);
 
+// The same with other render parameters (a RenderParameters*): a blueprint picture's own.
+std::optional<Drawn> read(const void* entity, const void* renderParameters);
+
 // MinHook detours for Entity::drawAlert and DrawQueue::drawInfoIcon, and where MinHook keeps the
 // originals.
 void* drawAlertDetour();

@@ -119,8 +119,9 @@ end
 ---@param keys boolean The movement and skip keys move the cursor
 ---@param anchored boolean The cursor goes back to the character when the screen leaves it
 ---@param rulers integer[] The tiles of the player's audio rulers as x1, y1, x2, y2..., where skips stop
-function mod.report_mode(pindex, vanilla, keys, anchored, rulers)
-   if native then native.cursor_mode(pindex, vanilla, keys, anchored, rulers) end
+---@param next_machine_sound boolean The DLL's own screens sound the next machine of a row, as a step does
+function mod.report_mode(pindex, vanilla, keys, anchored, rulers, next_machine_sound)
+   if native then native.cursor_mode(pindex, vanilla, keys, anchored, rulers, next_machine_sound) end
 end
 
 return mod

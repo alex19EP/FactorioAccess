@@ -2,9 +2,10 @@
 
 // A blueprint's picture as a canvas node (graph NodeVtable::OnMoveWithin): a cursor over the
 // blueprint's tiles, read as the game draws each one (see preview.h). The arrows and WASD move it a
-// tile, Shift with them to the next tile that reads differently, Home and End to the ends of the
-// row; at the picture's edge the arrow moves the focus on. Enter is the game's left click on the
-// tile (restore), ] its right click (remove), Shift+Enter its Shift click (the grid position).
+// tile, sounding the next machine of a row alike as the map cursor does; Shift with them skips as
+// the map cursor's skip does (preview::skipFrom), saying how far; Home and End go to the ends of
+// the row; at the picture's edge the arrow moves the focus on. Enter is the game's left click on
+// the tile (restore), ] its right click (remove), Shift+Enter its Shift click (the grid position).
 // The read-coordinates key says the tile's place, counted from the top left corner.
 //
 // The game keeps no cursor in the picture, only the mouse; this one is the screen's own and holds
@@ -38,6 +39,8 @@ private:
     int _y = 0;
     // Shift+Enter set the grid position: its next feedback is that position rather than the tile.
     bool _gridSet = false;
+    // How far the last skip went, said before the tile it reached; empty after any other move.
+    std::string _skipped;
 };
 
 } // namespace fa::screens

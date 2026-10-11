@@ -5,7 +5,9 @@
 #include <optional>
 #include <utility>
 
+#include "cues.h"
 #include "preview.h"
+#include "vocab.h"
 
 namespace fa::screens
 {
@@ -25,6 +27,7 @@ void PreviewCanvas::Add(graph::GraphBuilder& builder, const agui::Widget* pictur
         _x = box.left;
         _y = box.top;
         _gridSet = false;
+        _skipped.clear();
     }
     _x = std::clamp(_x, box.left, box.right - 1);
     _y = std::clamp(_y, box.top, box.bottom - 1);
@@ -35,25 +38,35 @@ void PreviewCanvas::Add(graph::GraphBuilder& builder, const agui::Widget* pictur
     vtable.HostTag = picture;
     vtable.SpeaksOwnPosition = true;
     vtable.Announcements.emplace_back(
-        [this, picture]() { return preview::describe(picture, _x, _y); }, true, graph::AnnouncementKinds::Label);
-    vtable.OnMoveWithin = [this, picture, inside](graph::GraphDir dir, bool skip)
+        [this, picture]()
+        {
+            std::string tile = preview::describe(picture, _x, _y);
+            return _skipped.empty() ? tile : _skipped + ", " + tile;
+        },
+        true, graph::AnnouncementKinds::Label);
+    vtable.OnMoveWithin = [this, picture, inside](graph::GraphDir dir, bool skipping)
     {
         int dx = dir == graph::GraphDir::Left ? -1 : dir == graph::GraphDir::Right ? 1 : 0;
         int dy = dir == graph::GraphDir::Up ? -1 : dir == graph::GraphDir::Down ? 1 : 0;
+        _skipped.clear();
+        if (skipping)
+        {
+            const skip::Result found = preview::skipFrom(picture, _x, _y, dx, dy);
+            if (found.tiles == 0)
+                return false;
+            // A skip of a tile reads as a step.
+            if (found.tiles > 1)
+                _skipped = vocab::kSkipped(found.tiles);
+            _x = found.x;
+            _y = found.y;
+            return true;
+        }
         int x = _x + dx;
         int y = _y + dy;
         if (!inside(x, y))
             return false;
-        // As the map cursor skips: on to the first tile that reads differently, or the edge.
-        if (skip)
-        {
-            std::string from = preview::describe(picture, _x, _y);
-            while (inside(x + dx, y + dy) && preview::describe(picture, x, y) == from)
-            {
-                x += dx;
-                y += dy;
-            }
-        }
+        if (preview::nextOfKind(picture, _x, _y, x, y))
+            cues::nextMachine();
         _x = x;
         _y = y;
         return true;
@@ -64,6 +77,7 @@ void PreviewCanvas::Add(graph::GraphBuilder& builder, const agui::Widget* pictur
         if (x == _x)
             return false;
         _x = x;
+        _skipped.clear();
         return true;
     };
     vtable.PositionText = [this, box]() { return std::format("{}, {}", _x - box.left + 1, _y - box.top + 1); };

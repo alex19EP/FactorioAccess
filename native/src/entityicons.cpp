@@ -177,6 +177,10 @@ const std::byte* mainRenderParameters() {
 std::optional<Drawn> read(const void* entity) {
    const std::byte* parameters = mainRenderParameters();
    if (!parameters) return std::nullopt;
+   return read(entity, parameters);
+}
+
+std::optional<Drawn> read(const void* entity, const void* parameters) {
    if (!g_queue) {
       g_queue = static_cast<std::byte*>(::operator new(layout.drawQueueSize, std::align_val_t{16}));
       reinterpret_cast<void* (*)(void*, const void*)>(layout.drawQueueConstruct)(g_queue, parameters);

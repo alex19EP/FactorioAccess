@@ -219,22 +219,15 @@ inline constexpr Word kTilesToward{"fa.native-tiles-toward"};
 // The mod's own key for the sixteen directions, north 0 clockwise.
 inline constexpr Word kDirection{"fa.direction"};
 
-// A blueprint's picture, tile by tile: what the game draws on an entity. Items to be delivered to
-// it ("with 2 speed module"), its filters, which way an underground belt or loader faces, a
-// splitter's priorities, a combinator's operation and output, a recipe not unlocked yet.
+// A blueprint's picture, tile by tile: what the game draws on an entity besides its icons. Items to
+// be delivered to it ("with 2 speed module"), which way a loader faces, a combinator's operation
+// and output, a recipe not unlocked yet, and the floor under it ("on refined concrete").
 inline constexpr Word kWith{"fa.native-with"};
-inline constexpr Word kFilter{"fa.native-filter"};
-inline constexpr Word kBlacklist{"fa.native-blacklist"};
-inline constexpr Word kBlacklistOf{"fa.native-blacklist-of"};
 inline constexpr Word kInput{"fa.native-input"};
 inline constexpr Word kOutput{"fa.native-output"};
 inline constexpr Word kOutputSignal{"fa.native-output-signal"};
-inline constexpr Word kLeftLane{"fa.native-left-lane"};
-inline constexpr Word kRightLane{"fa.native-right-lane"};
-inline constexpr Word kInputPriority{"fa.native-input-priority"};
-inline constexpr Word kOutputPriority{"fa.native-output-priority"};
-inline constexpr Word kFilterToward{"fa.native-filter-toward"};
-inline constexpr Word kLockedRecipe{"fa.native-locked-recipe"};
+inline constexpr Word kRecipeLocked{"fa.native-recipe-locked"};
+inline constexpr Word kOnFloor{"fa.native-on-floor"};
 // ArithmeticCombinatorParameters::Operation, Comparison and SelectorCombinatorParameters::Operation
 // in the game's order. A selector's Select is said with its maximum or minimum.
 inline constexpr Word kArithmetic[11] = {

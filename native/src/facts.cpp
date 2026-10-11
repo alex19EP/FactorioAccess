@@ -6,6 +6,7 @@
 #include "prototypes.h"
 #include "railkinds.h"
 #include "text.h"
+#include "undergroundrules.h"
 #include "vocab.h"
 
 #include <algorithm>
@@ -127,6 +128,24 @@ struct Belt {
    }
 };
 
+// The way items flow through an underground belt: an entrance's facing, an exit's opposite.
+uint8_t flowOf(Belt belt) { return belt.isUndergroundExit() ? opposite(belt.direction()) : belt.direction(); }
+
+// The underground belt `belt` pairs with: in the world its own link; in a blueprint, which leaves
+// them unpaired, the one the game would pair it with once built (undergroundrules.h).
+Belt partnerOf(Belt belt, const Lookup* lookup) {
+   if (!lookup || !belt.isUnderground()) return belt.partner();
+   const std::byte* prototype = prototypeOf(belt.entity);
+   const auto sameKindAt = [&](int32_t x, int32_t y) {
+      constexpr int32_t scale = game::kMapPositionScale;
+      const auto* found = static_cast<const std::byte*>((*lookup)(x * scale + scale / 2, y * scale + scale / 2));
+      return Belt{found && prototypeOf(found) == prototype ? found : nullptr};
+   };
+   const Position position = at<Position>(belt.entity, layout.entityPosition);
+   return undergroundrules::partner<Belt>(position.x >> 8, position.y >> 8, flowOf(belt),
+                                          at<uint8_t>(prototype, layout.undergroundMaxDistance), sameKindAt, flowOf);
+}
+
 // Lua's belt_neighbours: the belts on each side that feed this one, and the one it feeds.
 struct Neighbours {
    Belt inputs[8];
@@ -173,7 +192,7 @@ struct Parents {
    Belt right;
 };
 
-Parents parentsOf(Belt belt, const Neighbours& neighbours) {
+Parents parentsOf(Belt belt, const Neighbours& neighbours, const Lookup* lookup) {
    Parents out;
    if (!belt.isTransportBelt() && !belt.isUnderground()) return out;
    const uint8_t outgoing = belt.direction();
@@ -191,20 +210,20 @@ Parents parentsOf(Belt belt, const Neighbours& neighbours) {
             out.right = input;
       }
    }
-   if (belt.isUndergroundExit()) out.behind = belt.partner();
+   if (belt.isUndergroundExit()) out.behind = partnerOf(belt, lookup);
    return out;
 }
 
 // The words for a transport belt's or an underground belt's shape (scripts/transport-belts.lua,
 // Node:get_shape_info).
-std::vector<std::string> beltShape(Belt belt) {
+std::vector<std::string> beltShape(Belt belt, const Lookup* lookup) {
    const Neighbours neighbours = neighboursOf(belt);
    const uint8_t outgoing = belt.direction();
-   const auto [behind, left, right] = parentsOf(belt, neighbours);
+   const auto [behind, left, right] = parentsOf(belt, neighbours, lookup);
 
    // An entrance feeds its exit.
    Belt child = neighbours.outputCount > 0 ? neighbours.outputs[0] : Belt{};
-   if (!child && belt.isUnderground() && !belt.isUndergroundExit()) child = belt.partner();
+   if (!child && belt.isUnderground() && !belt.isUndergroundExit()) child = partnerOf(belt, lookup);
 
    const bool hasInput = behind || left || right;
    const bool hasOutput = static_cast<bool>(child);
@@ -241,8 +260,8 @@ std::vector<std::string> beltShape(Belt belt) {
 }
 
 // Where an underground belt's partner is: straight ahead or behind, so one of four directions.
-std::string undergroundConnection(Belt belt) {
-   const Belt partner = belt.partner();
+std::string undergroundConnection(Belt belt, const Lookup* lookup) {
+   const Belt partner = partnerOf(belt, lookup);
    if (!partner) return vocab::kUndergroundNotConnected;
    const Position from = at<Position>(belt.entity, layout.entityPosition);
    const Position to = at<Position>(partner.entity, layout.entityPosition);
@@ -1166,9 +1185,20 @@ uint8_t wayOf(double dx, double dy) {
    return dy > 0 ? turned(kSouth, 1) : turned(kNorth, -1);
 }
 
+// What is at the end of an inserter's hand or a drill's chute, `dx`, `dy` tiles from `entity`: in
+// the world its own link, `linked`; in a blueprint, whose entities keep none, what lies there.
+const std::byte* reachedAt(const std::byte* entity, double dx, double dy, const std::byte* linked,
+                           const Lookup* lookup) {
+   if (!lookup) return linked;
+   const Position position = at<Position>(entity, layout.entityPosition);
+   constexpr double scale = game::kMapPositionScale;
+   return static_cast<const std::byte*>((*lookup)(position.x + static_cast<int32_t>(std::lround(dx * scale)),
+                                                  position.y + static_cast<int32_t>(std::lround(dy * scale))));
+}
+
 // What an inserter holds, and where it picks up and drops: the entity there or the ground, how
 // many tiles and which way.
-std::string inserterState(const std::byte* inserter) {
+std::string inserterState(const std::byte* entity, const std::byte* inserter, const Lookup* lookup) {
    std::vector<std::string> words;
    const std::byte* held = inserter + layout.inserterHeldStack;
    const uint32_t count = at<uint32_t>(held, layout.itemStackCount);
@@ -1177,10 +1207,11 @@ std::string inserterState(const std::byte* inserter) {
       words.push_back(vocab::kInserterHolding(item ? localisedName(item) : std::string()));
       if (count > 1) words.push_back(vocab::kInserterHoldingCount(count));
    }
-   auto reach = [&](const vocab::Word& word, const std::byte* target, uint32_t vector) {
+   auto reach = [&](const vocab::Word& word, const std::byte* linked, uint32_t vector) {
       const double dx = at<double>(inserter, vector);
       const double dy = at<double>(inserter, vector + static_cast<uint32_t>(sizeof(double)));
       const auto tiles = static_cast<int64_t>(std::lround(std::sqrt(dx * dx + dy * dy)));
+      const std::byte* target = reachedAt(entity, dx, dy, linked, lookup);
       words.push_back(word(targetName(target), tiles, directionName(wayOf(dx, dy))));
    };
    reach(vocab::kInserterPicksUp, at<const std::byte*>(inserter, layout.inserterPickupTarget),
@@ -1267,11 +1298,12 @@ uint32_t copperNetwork(const std::byte* entity, uint32_t id) {
    return network ? at<uint32_t>(network, layout.electricNetworkIndex) + 1 : 0;
 }
 
-// On or off, and the electric networks on each side.
-std::vector<std::string> powerSwitchState(const std::byte* entity) {
+// On or off, and, `live` in the world, the electric networks on each side.
+std::vector<std::string> powerSwitchState(const std::byte* entity, bool live) {
    const uint8_t state = at<uint8_t>(entity, layout.powerSwitchState);
    const bool on = state == layout.powerSwitchOn || state == layout.powerSwitchTurningOn;
    std::vector<std::string> items{on ? vocab::kPowerSwitchOn : vocab::kPowerSwitchOff};
+   if (!live) return items;
    const uint32_t left = copperNetwork(entity, layout.connectorSwitchLeft);
    const uint32_t right = copperNetwork(entity, layout.connectorSwitchRight);
    if (left && right)
@@ -1947,15 +1979,20 @@ SelectionBox selectionBox(const void* entity) {
    return {box.leftTop.x, box.leftTop.y, box.rightBottom.x, box.rightBottom.y};
 }
 
-std::vector<std::string> describe(const void* object, int32_t tileX, int32_t tileY) {
-   const auto* entity = static_cast<const std::byte*>(object);
+namespace {
+
+// The facts describe says, or with `lookup` those of a blueprint's entity: its design only, with
+// what it reaches found in the blueprint.
+std::vector<std::string> factsOf(const std::byte* entity, Position tile, const Lookup* lookup) {
+   const bool live = !lookup;
+   const int32_t tileX = tile.x, tileY = tile.y;
    const Belt candidate{entity};
    const Belt belt = candidate.isTransportBelt() || candidate.isUnderground() ? candidate : Belt{};
 
    // One list item, as the mod's Lua said them: facing, an underground belt's end, a belt's shape,
    // what a belt carries.
    const std::string_view type = typeName(prototypeOf(entity));
-   const std::byte* train = isRollingStock(type) ? trainOf(entity) : nullptr;
+   const std::byte* train = live && isRollingStock(type) ? trainOf(entity) : nullptr;
    std::vector<std::string> first;
    // Rolling stock is named by its train, unless the title says that name already.
    if (train) {
@@ -1967,22 +2004,22 @@ std::vector<std::string> describe(const void* object, int32_t tileX, int32_t til
    if (belt && belt.isUnderground())
       first.emplace_back(belt.isUndergroundExit() ? vocab::kUndergroundExit : vocab::kUndergroundEntrance);
    if (belt)
-      for (std::string& word : beltShape(belt)) first.push_back(std::move(word));
-   if (belt && belt.isTransportBelt()) first.push_back(beltContents(belt));
+      for (std::string& word : beltShape(belt, lookup)) first.push_back(std::move(word));
+   if (live && belt && belt.isTransportBelt()) first.push_back(beltContents(belt));
    first.push_back(combinatorDescription(entity));
 
    std::vector<std::string> parts{joined(first)};
-   if (const std::byte* spider = agui::objectAsBase(entity, ".?AVSpiderVehicle@@"))
+   if (const std::byte* spider = live ? agui::objectAsBase(entity, ".?AVSpiderVehicle@@") : nullptr)
       for (std::string& item : spiderState(spider)) parts.push_back(std::move(item));
-   if (isRailOrRailGhost(entity))
+   if (live && isRailOrRailGhost(entity))
       parts.push_back(railsOnTile(at<const std::byte*>(entity, layout.entitySurface), entity, Position{tileX, tileY}));
-   if (belt && belt.isUnderground()) parts.push_back(undergroundConnection(belt));
+   if (belt && belt.isUnderground()) parts.push_back(undergroundConnection(belt, lookup));
    if (candidate.type() == "splitter") parts.push_back(splitterState(candidate));
    if (isPole(entity)) {
       parts.push_back(poleWires(entity));
-      parts.push_back(poleSupply(entity));
+      if (live) parts.push_back(poleSupply(entity));
    }
-   if (type == "logistic-container") parts.push_back(logisticNetwork(entity));
+   if (live && type == "logistic-container") parts.push_back(logisticNetwork(entity));
    if (type == "infinity-container")
       for (std::string& item : infinityChestState(entity)) parts.push_back(std::move(item));
    if (type == "infinity-pipe" && !at<uint16_t>(entity, layout.infinityPipeFluid))
@@ -1990,41 +2027,64 @@ std::vector<std::string> describe(const void* object, int32_t tileX, int32_t til
    if (isPipe(entity)) parts.push_back(pipeShape(entity));
    for (std::string& item : fluidConnections(entity, Position{tileX, tileY})) parts.push_back(std::move(item));
    if (type == "mining-drill" && isDrillOutput(entity, Position{tileX, tileY})) parts.emplace_back(vocab::kDrillOutput);
-   if (const std::byte* signal = agui::objectAsBase(entity, ".?AVRailSignalBase@@"))
+   if (const std::byte* signal = live ? agui::objectAsBase(entity, ".?AVRailSignalBase@@") : nullptr)
       parts.push_back(
          signalState(type == "rail-chain-signal" ? agui::objectAsBase(entity, ".?AVRailChainSignal@@") : signal, type));
    if (const std::byte* wall = agui::objectAsBase(entity, ".?AVWall@@"))
       if (at<const void*>(wall, layout.wallControlBehavior)) parts.emplace_back(vocab::kGateCircuit);
-   if (reinterpret_cast<bool (*)(const void*)>(layout.entityToBeUpgraded)(entity))
+   if (live && reinterpret_cast<bool (*)(const void*)>(layout.entityToBeUpgraded)(entity))
       parts.emplace_back(vocab::kMarkedForUpgrade);
    if (const std::byte* powerSwitch = agui::objectAsBase(entity, ".?AVPowerSwitch@@"))
-      for (std::string& item : powerSwitchState(powerSwitch)) parts.push_back(std::move(item));
-   if (const std::byte* roboport = agui::objectAsBase(entity, ".?AVRoboport@@"))
+      for (std::string& item : powerSwitchState(powerSwitch, live)) parts.push_back(std::move(item));
+   if (const std::byte* roboport = live ? agui::objectAsBase(entity, ".?AVRoboport@@") : nullptr)
       for (std::string& item : roboportState(roboport)) parts.push_back(std::move(item));
    if (const std::byte* turret = agui::objectAsBase(entity, ".?AVTurret@@")) parts.push_back(turretPriorities(turret));
    if (const std::byte* inserter = agui::objectAsBase(entity, ".?AVInserter@@"))
-      parts.push_back(inserterState(inserter));
-   if (type == "resource")
+      parts.push_back(inserterState(entity, inserter, lookup));
+   if (live && type == "resource")
       if (std::string look = oreLook(entity); !look.empty()) parts.push_back(std::move(look));
    if (type == "mining-drill") {
       // The ground around the drill shows what it mines.
       std::vector<std::string> resources;
-      for (const void* resource : drillResources(entity))
-         resources.push_back(localisedName(static_cast<const std::byte*>(resource)));
+      if (live)
+         for (const void* resource : drillResources(entity))
+            resources.push_back(localisedName(static_cast<const std::byte*>(resource)));
       if (!resources.empty()) parts.push_back(vocab::kDrillMining(joined(resources, ", ")));
-      if (const std::byte* target = dropTargetOf(entity)) parts.push_back(vocab::kDrillOutputsTo(targetName(target)));
+      const std::byte* target = live ? dropTargetOf(entity) : nullptr;
+      if (lookup) {
+         using DropPosition = const Position* (*)(const void* entity, Position* out);
+         Position drop{};
+         virtualAt<DropPosition>(entity, layout.entityDropPosition)(entity, &drop);
+         target = static_cast<const std::byte*>((*lookup)(drop.x, drop.y));
+      }
+      if (target) parts.push_back(vocab::kDrillOutputsTo(targetName(target)));
    }
-   for (std::string& item : reactorState(entity)) parts.push_back(std::move(item));
+   if (live)
+      for (std::string& item : reactorState(entity)) parts.push_back(std::move(item));
    if (isHeatPipe(entity)) parts.push_back(heatPipeShape(entity));
    parts.push_back(heatConnections(entity, Position{tileX, tileY}));
-   for (std::string& item : circuitNetworks(entity, type)) parts.push_back(std::move(item));
+   if (live)
+      for (std::string& item : circuitNetworks(entity, type)) parts.push_back(std::move(item));
    if (train) parts.push_back(trainState(train));
    return parts;
 }
 
-std::vector<std::string> drawnIcons(const void* object) {
+} // namespace
+
+std::vector<std::string> describe(const void* entity, int32_t tileX, int32_t tileY) {
+   return factsOf(static_cast<const std::byte*>(entity), Position{tileX, tileY}, nullptr);
+}
+
+std::vector<std::string> describeDesign(const void* entity, int32_t tileX, int32_t tileY, const Lookup& lookup) {
+   return factsOf(static_cast<const std::byte*>(entity), Position{tileX, tileY}, &lookup);
+}
+
+std::vector<std::string> drawnIcons(const void* entity) { return drawnIcons(entity, nullptr); }
+
+std::vector<std::string> drawnIcons(const void* object, const void* renderParameters) {
    const auto* entity = static_cast<const std::byte*>(object);
-   const std::optional<entityicons::Drawn> drawn = entityicons::read(entity);
+   const std::optional<entityicons::Drawn> drawn =
+      renderParameters ? entityicons::read(entity, renderParameters) : entityicons::read(entity);
    if (!drawn || drawn->icons.empty()) return {};
    const std::vector<entityicons::Icon>& icons = drawn->icons;
    const std::string_view type = typeName(prototypeOf(entity));
@@ -2170,13 +2230,22 @@ bool skipsOver(const void* entity) {
    return type == "logistic-robot" || type == "construction-robot" || type == "combat-robot" || type == "corpse";
 }
 
-std::optional<UndergroundEnd> undergroundEnd(const void* object, uint8_t direction) {
+bool nextOfKind(const void* left, const void* entered) {
+   if (!left || !entered || left == entered) return false;
+   const Likeness was = likenessOf(left);
+   const Likeness is = likenessOf(entered);
+   if (was.prototype != is.prototype || was.ghost != is.ghost) return false;
+   const Box box = selectionBoxOf(static_cast<const std::byte*>(entered));
+   return box.rightBottom.x - box.leftTop.x > kScale || box.rightBottom.y - box.leftTop.y > kScale;
+}
+
+std::optional<UndergroundEnd> undergroundEnd(const void* object, uint8_t direction, const Lookup* lookup) {
    const auto* entity = static_cast<const std::byte*>(object);
    const std::string_view type = typeName(prototypeOf(entity));
    const Position from = at<Position>(entity, layout.entityPosition);
    const std::byte* partner = nullptr;
    if (type == "underground-belt") {
-      partner = Belt{entity}.partner().entity;
+      partner = partnerOf(Belt{entity}, lookup).entity;
    } else if (type == "pipe-to-ground") {
       const std::vector<const std::byte*> boxes = fluidBoxesOf(entity);
       if (boxes.empty()) return std::nullopt;

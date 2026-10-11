@@ -626,6 +626,7 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.pictureParameters, "BlueprintWidget", "blueprintParameters");
    offset(layout.pictureSelection, "BlueprintWidget", "blueprintSelection");
    offset(layout.pictureEditEnabled, "BlueprintWidget", "editEnabled");
+   offset(layout.pictureRenderParameters, "BlueprintWidget", "renderParameters");
    offset(layout.pictureScale, "BlueprintWidget", "renderParameters.scale");
    offset(layout.pictureViewLeftTop, "BlueprintWidget", "renderParameters.boundingBox.leftTop");
    offset(layout.picturePlayer, "BlueprintWidget", "context.player");
@@ -639,6 +640,10 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.selectionIndex, "BlueprintSelectionResult", "index");
    offset(layout.parametersEntities, "SetupBlueprintParameters", "entitiesData");
    offset(layout.parametersTiles, "SetupBlueprintParameters", "tilesData");
+   offset(layout.parametersIncludeTiles, "SetupBlueprintParameters", "includeTiles");
+   offset(layout.blueprintTiles, "Blueprint", "tiles");
+   address(layout.blueprintTileAt, "?selectionFromPosition@BlueprintTiles@@QEBA?AVBlueprintSelectionResult@@"
+                                   "AEBVMapPosition@@@Z");
    offset(layout.blueprintEntityList, "Blueprint", "entities.data");
    size(layout.entityDataSize, "BlueprintEntities::EntityData");
    offset(layout.entityDataInsertPlan, "BlueprintEntities::EntityData", "insertPlan.data.data");
@@ -661,12 +666,8 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.recipeEnabled, "Recipe", "enabled");
    size(layout.itemFilterSize, "IDWithQualityFilter<ID<ItemPrototype,unsigned short> >");
    offset(layout.itemFilterId, "IDWithQualityFilter<ID<ItemPrototype,unsigned short> >", "baseID");
-   offset(layout.itemFilterQuality, "IDWithQualityFilter<ID<ItemPrototype,unsigned short> >",
-          "qualityCondition.qualityID");
    offset(layout.inserterFilters, "Inserter", "filter");
-   offset(layout.inserterFlags, "Inserter", "flags");
    offset(layout.splitterLogic, "Splitter", "leftLogic");
-   offset(layout.laneSplitterLogic, "LaneSplitter", "logic");
    offset(layout.splitterInputLocked, "SplitterLogic", "inputLocked");
    offset(layout.splitterOutputLocked, "SplitterLogic", "outputLocked");
    offset(layout.splitterTakeFrom, "SplitterLogic", "takeNextItemFrom");
@@ -674,14 +675,11 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.splitterFilter, "SplitterLogic", "filter");
    enumerator(layout.splitterRight, "SplitterDirection", "Right");
    offset(layout.loaderFilters, "Loader", "filter");
-   offset(layout.loaderFilterMode, "Loader", "filterMode");
    offset(layout.loaderType, "Loader", "type");
-   offset(layout.loaderPerLane, "LoaderPrototype", "perLaneFilters");
-   enumerator(layout.loaderWhitelist, "Loader::FilterMode", "Whitelist");
-   enumerator(layout.loaderBlacklist, "Loader::FilterMode", "Blacklist");
    enumerator(layout.loaderOutput, "LoaderType", "Output");
    offset(layout.undergroundType, "UndergroundBelt", "type");
    enumerator(layout.undergroundOutput, "UndergroundBeltType", "Output");
+   offset(layout.undergroundMaxDistance, "UndergroundBeltPrototype", "maxDistance");
    offset(layout.showCombinatorSettings, "InterfaceSettings", "showCombinatorSettingsWhenDetailedInfoIsOn.value");
    offset(layout.arithmeticParameters, "ArithmeticCombinator", "controlBehavior.parameters");
    offset(layout.arithmeticFirst, "ArithmeticCombinatorParameters", "first");
@@ -702,8 +700,6 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.selectorMax, "SelectorCombinatorParameters", "selectMax");
    offset(layout.selectorIndexSignal, "SelectorCombinatorParameters", "index.signal");
    offset(layout.selectorCountSignal, "SelectorCombinatorParameters", "countSignalID");
-   offset(layout.constantSignals, "ConstantCombinator", "controlBehavior.sections.compiled");
-   size(layout.compiledFilterSize, "CompiledLogisticFilter");
    {
       const char* arithmetic[] = {"Multiply",  "Divide",     "Add", "Subtract", "Modulo", "Power",
                                   "LeftShift", "RightShift", "AND", "OR",       "XOR"};
@@ -721,7 +717,6 @@ bool resolve(pdb::SymbolTable& symbols) {
    enumerator(layout.selectorCount, "SelectorCombinatorParameters::Operation", "Count");
    offset(layout.signalQuality, "IDWithQuality<SignalIDBase>", "qualityID");
    address(layout.signalPrototype, "?getPrototypeSafe@SignalIDBase@@QEBAPEBVPrototypeBase@@XZ");
-   offset(layout.pumpFilter, "Pump", "fluidBox.buffer.filter.fluidID");
    offset(layout.collectorFilters, "AsteroidCollector", "chunkFilters");
    offset(layout.panelIcon, "DisplayPanel", "icon");
    offset(layout.panelText, "DisplayPanel", "text");

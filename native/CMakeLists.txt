@@ -152,6 +152,7 @@ add_library(fa_native SHARED
   src/ui.cpp
   src/world.cpp
   src/cursor.cpp
+  src/cues.cpp
   src/skip.cpp
   src/mappicture.cpp
   src/reader.cpp
@@ -232,6 +233,7 @@ add_executable(fa_logic_tests
   tests/cursor/SkipRulesTests.cpp
   tests/cursor/CycleStopsTests.cpp
   tests/cursor/MapColoursTests.cpp
+  tests/cursor/UndergroundRulesTests.cpp
 )
 target_include_directories(fa_logic_tests PRIVATE src tests/graph)
 target_compile_options(fa_logic_tests PRIVATE /W4 /permissive- /utf-8 /EHsc)

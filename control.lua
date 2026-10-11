@@ -195,7 +195,8 @@ local function report_cursor_modes()
             VanillaMode.is_enabled(pindex),
             not UiRouter.get_router(pindex):is_ui_open() and not Combat.is_combat_mode(pindex),
             Viewpoint.get_viewpoint(pindex):get_cursor_anchored(),
-            Rulers.ruler_tiles(pindex)
+            Rulers.ruler_tiles(pindex),
+            player.mod_settings[SETTING_NAMES.NEXT_MACHINE_SOUND].value --[[@as boolean]]
          )
       end
    end

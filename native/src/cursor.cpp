@@ -233,14 +233,8 @@ void record(Position position, Step step, int tiles = 1, bool nextOfKind = false
 // Whether a step from `from` to `to` leaves an entity bigger than a tile for another of its kind,
 // by what the mouse selects on each tile. In the game's input handling.
 bool nextOfKind(Position from, Position to) {
-   const void* left = reader::selectedAt(tileOf(from.x), tileOf(from.y));
-   const void* entered = reader::selectedAt(tileOf(to.x), tileOf(to.y));
-   if (!left || !entered || left == entered) return false;
-   const facts::Likeness was = facts::likenessOf(left);
-   const facts::Likeness is = facts::likenessOf(entered);
-   if (was.prototype != is.prototype || was.ghost != is.ghost) return false;
-   const facts::SelectionBox box = facts::selectionBox(entered);
-   return box.right - box.left > kScale || box.bottom - box.top > kScale;
+   return facts::nextOfKind(reader::selectedAt(tileOf(from.x), tileOf(from.y)),
+                            reader::selectedAt(tileOf(to.x), tileOf(to.y)));
 }
 
 std::optional<Position> currentCursor() {

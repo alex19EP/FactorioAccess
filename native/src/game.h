@@ -883,6 +883,7 @@ struct Layout {
    uint32_t pictureParameters = 0;     // ::blueprintParameters, SetupBlueprintParameters
    uint32_t pictureSelection = 0;      // ::blueprintSelection, BlueprintSelectionResult
    uint32_t pictureEditEnabled = 0;    // ::editEnabled, bool
+   uint32_t pictureRenderParameters = 0; // ::renderParameters, RenderParameters
    uint32_t pictureScale = 0;          // ::renderParameters.scale, double
    uint32_t pictureViewLeftTop = 0;    // ::renderParameters.boundingBox.leftTop, MapPosition
    // Alt mode, as the paint reads it: bool GameAdapter::getShowEntityInfo() const, a virtual slot,
@@ -901,6 +902,12 @@ struct Layout {
    // the last ones were never touched.
    uint32_t parametersEntities = 0;    // SetupBlueprintParameters::entitiesData
    uint32_t parametersTiles = 0;       // ::tilesData
+   // The floor under an entity, which the picture draws beneath it while the tiles are included:
+   // BlueprintSelectionResult BlueprintTiles::selectionFromPosition(MapPosition const&) const on
+   // the blueprint's tiles.
+   uint32_t parametersIncludeTiles = 0; // SetupBlueprintParameters::includeTiles, bool
+   uint32_t blueprintTiles = 0;        // Blueprint::tiles, BlueprintTiles
+   uintptr_t blueprintTileAt = 0;
    // The blueprint's entities, std::vector<BlueprintEntities::EntityData>: each an Entity* the
    // picture draws and the items to be delivered to it (InsertPlan, a FlatMap from an item
    // IDWithQuality to its ItemInventoryPositions: a grid count and the stacks it goes into, each
@@ -935,11 +942,8 @@ struct Layout {
    // Item filters, IDWithQualityFilter: an item ID and a QualityCondition (quality, comparison).
    uint32_t itemFilterSize = 0;
    uint32_t itemFilterId = 0;          // ::baseID, ID<ItemPrototype>
-   uint32_t itemFilterQuality = 0;     // ::qualityCondition.qualityID, 0 for any quality
    uint32_t inserterFilters = 0;       // Inserter::filter, std::array of 5
-   uint32_t inserterFlags = 0;         // Inserter::flags, InserterFlags
    uint32_t splitterLogic = 0;         // Splitter::leftLogic, SplitterLogic
-   uint32_t laneSplitterLogic = 0;     // LaneSplitter::logic
    uint32_t splitterInputLocked = 0;   // SplitterLogic::inputLocked, bool
    uint32_t splitterOutputLocked = 0;  // ::outputLocked, bool
    uint32_t splitterTakeFrom = 0;      // ::takeNextItemFrom, SplitterDirection
@@ -947,14 +951,14 @@ struct Layout {
    uint32_t splitterFilter = 0;        // ::filter
    uint32_t splitterRight = 0;         // SplitterDirection Right
    uint32_t loaderFilters = 0;         // Loader::filter, std::array of 5
-   uint32_t loaderFilterMode = 0;      // Loader::filterMode, Loader::FilterMode
    uint32_t loaderType = 0;            // Loader::type, LoaderType
-   uint32_t loaderPerLane = 0;         // LoaderPrototype::perLaneFilters, bool
-   uint32_t loaderWhitelist = 0;       // Loader::FilterMode Whitelist
-   uint32_t loaderBlacklist = 0;       // Loader::FilterMode Blacklist
    uint32_t loaderOutput = 0;          // LoaderType Output
    uint32_t undergroundType = 0;       // UndergroundBelt::type, UndergroundBeltType
    uint32_t undergroundOutput = 0;     // UndergroundBeltType Output
+   // A blueprint leaves its underground belts unpaired (no TransportBeltConnectable::blueprintSetup
+   // pairs them): facts.cpp pairs them as UndergroundBelt::findConnectionCandidateOrBlocker would,
+   // up to the prototype's reach.
+   uint32_t undergroundMaxDistance = 0; // UndergroundBeltPrototype::maxDistance, uint8
    // Combinators. Their operation shows on their display always; the signals only with alt mode
    // and the interface setting "show combinator settings" on.
    uint32_t showCombinatorSettings = 0; // InterfaceSettings::showCombinatorSettingsWhenDetailedInfoIsOn.value
@@ -977,8 +981,6 @@ struct Layout {
    uint32_t selectorMax = 0;           // ::selectMax, bool
    uint32_t selectorIndexSignal = 0;   // ::index.signal, SignalID
    uint32_t selectorCountSignal = 0;   // ::countSignalID
-   uint32_t constantSignals = 0;       // ConstantCombinator::controlBehavior.sections.compiled
-   uint32_t compiledFilterSize = 0;    // CompiledLogisticFilter, its SignalFilter first
    // The enumerators of the operations, in the order vocab names them.
    uint32_t arithmeticOperations[11] = {};
    uint32_t comparisons[6] = {};
@@ -989,7 +991,6 @@ struct Layout {
    // PrototypeBase const* SignalIDBase::getPrototypeSafe() const resolves it, or null.
    uint32_t signalQuality = 0;         // IDWithQuality<SignalIDBase>::qualityID
    uintptr_t signalPrototype = 0;
-   uint32_t pumpFilter = 0;            // Pump::fluidBox.buffer.filter.fluidID, ID<FluidPrototype>
    uint32_t collectorFilters = 0;      // AsteroidCollector::chunkFilters, std::vector<ID<AsteroidChunkPrototype>>
    uint32_t panelIcon = 0;             // DisplayPanel::icon, SignalID
    uint32_t panelText = 0;             // DisplayPanel::text, std::string
