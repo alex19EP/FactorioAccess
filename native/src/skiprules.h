@@ -6,14 +6,30 @@
 #include <concepts>
 #include <cstdint>
 #include <optional>
+#include <span>
 
 namespace fa::skip {
 
-// The player's audio ruler, a tile.
+// One of the player's audio rulers, a tile.
 struct Ruler {
    int32_t x;
    int32_t y;
 };
+
+// How strongly a tile lies in line with the rulers: one for each ruler whose row or column holds
+// it, and far more for each ruler on the tile itself. A skip stops where this rises from one tile
+// to the next, never where it falls, so it stops coming into line, at a crossing line and on a
+// ruler, and goes along a line or off it freely (upstream issue #242).
+inline uint32_t rulerWeight(std::span<const Ruler> rulers, int32_t x, int32_t y) {
+   uint32_t weight = 0;
+   for (const Ruler& ruler : rulers) {
+      if (ruler.x == x && ruler.y == y)
+         weight += 0x10000;
+      else if (ruler.x == x || ruler.y == y)
+         ++weight;
+   }
+   return weight;
+}
 
 struct Result {
    enum class Kind {
@@ -58,17 +74,21 @@ inline uint8_t directionOf(int32_t dx, int32_t dy) {
 // tiles, onto tiles `allowed(x, y)` lets the cursor go to.
 template <SkipWorld World, typename Allowed>
 Result find(const World& world, int32_t x, int32_t y, int32_t dx, int32_t dy, int limit, const Allowed& allowed,
-            std::optional<Ruler> ruler) {
+            std::span<const Ruler> rulers) {
    struct Tile {
       int32_t x;
       int32_t y;
    };
    using Entity = typename World::Entity;
    const Tile origin{x, y};
-   // In line with the ruler: on its row or column (Rulers.is_any_ruler_aligned).
-   auto aligned = [&](Tile tile) { return ruler && (tile.x == ruler->x || tile.y == ruler->y); };
-   auto atRuler = [&](Tile tile) { return ruler && tile.x == ruler->x && tile.y == ruler->y; };
-   auto rulerStops = [&](Tile tile) { return aligned(tile) != aligned(origin) || atRuler(tile); };
+   // Each tile is asked once, in order, so the weight of the tile before it is kept here.
+   uint32_t lastWeight = rulerWeight(rulers, x, y);
+   auto rulerStops = [&](Tile tile) {
+      const uint32_t weight = rulerWeight(rulers, tile.x, tile.y);
+      const bool rises = weight > lastWeight;
+      lastWeight = weight;
+      return rises;
+   };
    auto next = [&](Tile tile) { return Tile{tile.x + dx, tile.y + dy}; };
    auto may = [&](Tile tile) { return allowed(tile.x, tile.y); };
    // The tile's entity as the skip sees it: robots and corpses are not there.

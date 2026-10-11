@@ -161,13 +161,6 @@ data:extend({
 
    {
       type = "custom-input",
-      name = "fa-as-b",
-      key_sequence = "SHIFT + ALT + B",
-      consuming = "none",
-   },
-
-   {
-      type = "custom-input",
       name = "fa-cas-b",
       key_sequence = "CONTROL + SHIFT + ALT + B",
       consuming = "none",
@@ -768,6 +761,24 @@ data:extend({
       name = "access-config-version2-DO-NOT-EDIT",
       key_sequence = "A",
       consuming = "none",
+   },
+
+   -- A click and a Shift+click with the audio ruler in hand, on whatever keys the player gave the
+   -- game's select and alternative select.
+   {
+      name = "fa-audio-ruler-place",
+      type = "custom-input",
+      linked_game_control = "select-for-blueprint",
+      consuming = "none",
+      key_sequence = "",
+   },
+
+   {
+      name = "fa-audio-ruler-remove",
+      type = "custom-input",
+      linked_game_control = "select-for-cancel-deconstruct",
+      consuming = "none",
+      key_sequence = "",
    },
 
    {

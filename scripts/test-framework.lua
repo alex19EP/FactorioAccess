@@ -63,6 +63,7 @@ local test_files = {
    "map-overlays-test", -- Test what the map's overlays say over a map cell
    "setting-toggle-test", -- Test the keys that toggle per-player settings
    "daytime-test", -- Test the time of day read by T
+   "audio-ruler-test", -- Test the audio ruler tool: placing, removing and drawing rulers
 }
 
 -- Test execution state

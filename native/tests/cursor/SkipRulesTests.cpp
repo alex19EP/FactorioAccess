@@ -7,6 +7,7 @@
 #include <optional>
 #include <ostream>
 #include <utility>
+#include <vector>
 
 #include "skiprules.h"
 #include "TestHarness.hpp"
@@ -98,9 +99,9 @@ const auto kAnywhere = [](int32_t, int32_t) { return true; };
 
 Result Found(int32_t x, int32_t y, int tiles) { return {Result::Kind::Found, x, y, tiles}; }
 
-Result SkipEast(const World& world, std::optional<Ruler> ruler = std::nullopt)
+Result SkipEast(const World& world, std::vector<Ruler> rulers = {})
 {
-    return find(world, 0, 0, 1, 0, kLimit, kAnywhere, ruler);
+    return find(world, 0, 0, 1, 0, kLimit, kAnywhere, rulers);
 }
 
 constexpr int kBelt = 1;
@@ -127,9 +128,9 @@ TEST(Skip_EveryDirectionGoesItsWay)
     world.Put(-3, 0, chest);
     world.Put(0, -4, chest);
     world.Put(0, 2, chest);
-    CHECK_EQ(Found(-3, 0, 3), find(world, 0, 0, -1, 0, kLimit, kAnywhere, std::nullopt));
-    CHECK_EQ(Found(0, -4, 4), find(world, 0, 0, 0, -1, kLimit, kAnywhere, std::nullopt));
-    CHECK_EQ(Found(0, 2, 2), find(world, 0, 0, 0, 1, kLimit, kAnywhere, std::nullopt));
+    CHECK_EQ(Found(-3, 0, 3), find(world, 0, 0, -1, 0, kLimit, kAnywhere, {}));
+    CHECK_EQ(Found(0, -4, 4), find(world, 0, 0, 0, -1, kLimit, kAnywhere, {}));
+    CHECK_EQ(Found(0, 2, 2), find(world, 0, 0, 0, 1, kLimit, kAnywhere, {}));
 }
 
 TEST(Skip_AlikeEntitiesArePassedTillOneFacesElsewhere)
@@ -224,22 +225,36 @@ TEST(Skip_UndergroundJumpsToItsOtherEnd)
     CHECK_EQ(Found(6, 0, 6), SkipEast(world));
 
     // Only the way the other end lies: going back it is an ordinary entity.
-    CHECK_EQ(Found(-1, 0, 1), find(world, 0, 0, -1, 0, kLimit, kAnywhere, std::nullopt));
+    CHECK_EQ(Found(-1, 0, 1), find(world, 0, 0, -1, 0, kLimit, kAnywhere, {}));
 
     // An end off the screen keeps the cursor where it is.
     const auto nearby = [](int32_t x, int32_t) { return x < 5; };
-    CHECK_EQ((Result{Result::Kind::Edge, 0, 0, 0}), find(world, 0, 0, 1, 0, kLimit, nearby, std::nullopt));
+    CHECK_EQ((Result{Result::Kind::Edge, 0, 0, 0}), find(world, 0, 0, 1, 0, kLimit, nearby, {}));
 }
 
 TEST(Skip_RulerStopsWhereItsLinesAreCrossed)
 {
     World world;
     // Coming into line with the ruler's column.
-    CHECK_EQ(Found(4, 0, 4), SkipEast(world, Ruler{4, 10}));
+    CHECK_EQ(Found(4, 0, 4), SkipEast(world, {Ruler{4, 10}}));
     // Along the ruler's row, only at the ruler itself.
-    CHECK_EQ(Found(7, 10, 7), find(world, 0, 10, 1, 0, kLimit, kAnywhere, Ruler{7, 10}));
-    // Leaving its column.
-    CHECK_EQ(Found(1, 0, 1), SkipEast(world, Ruler{0, 10}));
+    const std::vector<Ruler> onRow{Ruler{7, 10}};
+    CHECK_EQ(Found(7, 10, 7), find(world, 0, 10, 1, 0, kLimit, kAnywhere, onRow));
+    // Leaving its column goes on.
+    CHECK_EQ((Result{Result::Kind::Limit, kLimit, 0, kLimit}), SkipEast(world, {Ruler{0, 10}}));
+    // Past the ruler along its row goes on too.
+    CHECK_EQ((Result{Result::Kind::Limit, 7 + kLimit, 10, kLimit}), find(world, 7, 10, 1, 0, kLimit, kAnywhere, onRow));
+}
+
+TEST(Skip_RulersStopWhereMoreOfThemAreInLine)
+{
+    World world;
+    // Along one ruler's row, at the next ruler's column.
+    CHECK_EQ(Found(5, 0, 5), SkipEast(world, {Ruler{-3, 0}, Ruler{5, 20}}));
+    // From where two lines cross, along one of them, at the next crossing line.
+    CHECK_EQ(Found(6, 0, 6), SkipEast(world, {Ruler{0, -2}, Ruler{-4, 0}, Ruler{6, 9}}));
+    // Along one ruler's row, on another ruler's own tile.
+    CHECK_EQ(Found(4, 0, 4), SkipEast(world, {Ruler{-3, 0}, Ruler{4, 0}}));
 }
 
 TEST(Skip_FogGoesByThePictureItShows)
@@ -266,18 +281,18 @@ TEST(Skip_StopsAtTheEdgeOfTheScreen)
 {
     World world;
     const auto onScreen = [](int32_t x, int32_t) { return x <= 3; };
-    CHECK_EQ((Result{Result::Kind::Edge, 3, 0, 3}), find(world, 0, 0, 1, 0, kLimit, onScreen, std::nullopt));
-    CHECK_EQ((Result{Result::Kind::Edge, 3, 0, 0}), find(world, 3, 0, 1, 0, kLimit, onScreen, std::nullopt));
+    CHECK_EQ((Result{Result::Kind::Edge, 3, 0, 3}), find(world, 0, 0, 1, 0, kLimit, onScreen, {}));
+    CHECK_EQ((Result{Result::Kind::Edge, 3, 0, 0}), find(world, 3, 0, 1, 0, kLimit, onScreen, {}));
 }
 
 TEST(Skip_GivesUpAtTheLimit)
 {
     World world;
-    CHECK_EQ((Result{Result::Kind::Limit, 10, 0, 10}), find(world, 0, 0, 1, 0, 10, kAnywhere, std::nullopt));
+    CHECK_EQ((Result{Result::Kind::Limit, 10, 0, 10}), find(world, 0, 0, 1, 0, 10, kAnywhere, {}));
     World lake;
     for (int x = 0; x <= 20; ++x)
     {
         lake.Water(x, 0);
     }
-    CHECK_EQ((Result{Result::Kind::Limit, 10, 0, 10}), find(lake, 0, 0, 1, 0, 10, kAnywhere, std::nullopt));
+    CHECK_EQ((Result{Result::Kind::Limit, 10, 0, 10}), find(lake, 0, 0, 1, 0, 10, kAnywhere, {}));
 }

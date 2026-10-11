@@ -66,11 +66,11 @@ The mod supports a couple of lightweight features for orienting yourself.
 
 Rulers are a cross shape which play audio notifications whenever you cross one of the arms of the cross.
 
-To set a ruler, press control alt b.
+To get the audio ruler tool, press control alt b, or use its button on the shortcut bar.  With the tool in hand, left bracket places a ruler on the cursor's tile.  You can place as many as you like.
 
 Once set, walk around and move your cursor to get a feel for how it works.
 
-To clear the ruler, use control shift b.
+To remove a ruler, put the cursor on one of its lines and press shift left bracket with the tool in hand.  The nearest ruler on that line goes.
 
 To build a line, hold left bracket and move the cursor.  The game builds along the line as it does when the mouse button is held and dragged, and poles go as far apart as their wires reach.
 

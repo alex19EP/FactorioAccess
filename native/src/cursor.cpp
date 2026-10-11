@@ -210,7 +210,7 @@ bool g_modeKnown = false;
 bool g_vanilla = false;
 bool g_keys = false;
 bool g_anchored = false;
-std::optional<skip::Ruler> g_ruler;
+std::vector<skip::Ruler> g_rulers;
 // The mod jumped the cursor: the next frame opens remote view if the screen does not hold it.
 bool g_jumped = false;
 
@@ -258,12 +258,12 @@ void skipForKey(const MoveKey& key, const View& view, Position cursor) {
       record(target, Step::Read);
       return;
    }
-   std::optional<skip::Ruler> ruler;
+   std::vector<skip::Ruler> rulers;
    {
       std::scoped_lock lock(g_mutex);
-      ruler = g_ruler;
+      rulers = g_rulers;
    }
-   const skip::Result found = skip::find(fromX, fromY, key.dx, key.dy, kSkipLimit, allowed, ruler);
+   const skip::Result found = skip::find(fromX, fromY, key.dx, key.dy, kSkipLimit, allowed, rulers);
    const Position target = tileCentre(found.x, found.y);
    place(target);
    if (found.kind == skip::Result::Kind::Edge) {
@@ -532,7 +532,7 @@ void detourRenderState(void* source) {
 
 } // namespace
 
-void setMode(int playerIndex, bool vanilla, bool keys, bool anchored, std::optional<Tile> ruler) {
+void setMode(int playerIndex, bool vanilla, bool keys, bool anchored, std::vector<Tile> rulers) {
    if (!isLocalPlayer(playerIndex)) return;
    {
       std::scoped_lock lock(g_mutex);
@@ -540,7 +540,8 @@ void setMode(int playerIndex, bool vanilla, bool keys, bool anchored, std::optio
       g_vanilla = vanilla;
       g_keys = keys && !vanilla;
       g_anchored = anchored;
-      g_ruler = ruler ? std::optional<skip::Ruler>(skip::Ruler{ruler->x, ruler->y}) : std::nullopt;
+      g_rulers.clear();
+      for (const Tile& ruler : rulers) g_rulers.push_back({ruler.x, ruler.y});
    }
    if (vanilla) world::releaseCursor(playerIndex);
 }

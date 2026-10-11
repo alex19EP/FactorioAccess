@@ -195,7 +195,7 @@ local function report_cursor_modes()
             VanillaMode.is_enabled(pindex),
             not UiRouter.get_router(pindex):is_ui_open() and not Combat.is_combat_mode(pindex),
             Viewpoint.get_viewpoint(pindex):get_cursor_anchored(),
-            Rulers.ruler_tile(pindex)
+            Rulers.ruler_tiles(pindex)
          )
       end
    end
@@ -429,6 +429,7 @@ EventManager.on_event(
    function(event, pindex)
       -- Skip if suppressed (e.g., during rail building hand swaps)
       if not HandMonitor.is_enabled(pindex) then return end
+      if Rulers.tool_away(pindex) then return end
 
       CursorChanges.on_cursor_stack_changed(event, pindex, read_hand)
       VirtualTrainDriving.on_cursor_stack_changed(event)
@@ -1203,29 +1204,35 @@ EventManager.on_event(
    end
 )
 
----@param event EventData.CustomInputEvent
-local function kb_ca_b(event)
-   local pindex = event.player_index
-   local pos = Cursor.tile(pindex)
-   Rulers.upsert_ruler(pindex, pos.x, pos.y)
-   Speech.speak(pindex, { "fa.ruler-saved-at", tostring(math.floor(pos.x)), tostring(math.floor(pos.y)) })
-   sounds.play_close_inventory(pindex)
-end
-
 EventManager.on_event(
    "fa-ca-b",
    ---@param event EventData.CustomInputEvent
    function(event, pindex)
-      kb_ca_b(event)
+      Rulers.give_tool(pindex)
    end
 )
 
 EventManager.on_event(
-   "fa-as-b",
+   defines.events.on_lua_shortcut,
+   ---@param event EventData.on_lua_shortcut
+   function(event, pindex)
+      if event.prototype_name == Rulers.TOOL then Rulers.give_tool(pindex) end
+   end
+)
+
+EventManager.on_event(
+   "fa-audio-ruler-place",
    ---@param event EventData.CustomInputEvent
    function(event, pindex)
-      Rulers.clear_rulers(pindex)
-      Speech.speak(pindex, { "fa.rulers-cleared" })
+      Rulers.place(pindex)
+   end
+)
+
+EventManager.on_event(
+   "fa-audio-ruler-remove",
+   ---@param event EventData.CustomInputEvent
+   function(event, pindex)
+      Rulers.remove(pindex)
    end
 )
 

@@ -188,13 +188,24 @@ int speak(lua_State* L) {
    return 0;
 }
 
-// fa_native.cursor_mode(pindex, vanilla, keys, anchored, ruler_x, ruler_y), every tick, the ruler's
-// tile nil without one: see cursor::setMode.
+// fa_native.cursor_mode(pindex, vanilla, keys, anchored, rulers), every tick, the rulers' tiles as
+// a flat array x1, y1, x2, y2...: see cursor::setMode.
 int cursorMode(lua_State* L) {
-   std::optional<cursor::Tile> ruler;
-   if (type(L, 5) == kNumber && type(L, 6) == kNumber)
-      ruler = cursor::Tile{static_cast<int>(std::floor(toNumber(L, 5))), static_cast<int>(std::floor(toNumber(L, 6)))};
-   cursor::setMode(static_cast<int>(checkInteger(L, 1)), toBoolean(L, 2), toBoolean(L, 3), toBoolean(L, 4), ruler);
+   std::vector<cursor::Tile> rulers;
+   if (type(L, 5) == kTable) {
+      const int top = getTop(L);
+      const size_t count = rawLen(L, 5) / 2;
+      rulers.reserve(count);
+      for (size_t i = 0; i < count; ++i) {
+         rawGetI(L, 5, static_cast<int>(2 * i + 1));
+         rawGetI(L, 5, static_cast<int>(2 * i + 2));
+         rulers.push_back(
+            {static_cast<int>(std::floor(toNumber(L, -2))), static_cast<int>(std::floor(toNumber(L, -1)))});
+         setTop(L, top);
+      }
+   }
+   cursor::setMode(static_cast<int>(checkInteger(L, 1)), toBoolean(L, 2), toBoolean(L, 3), toBoolean(L, 4),
+                   std::move(rulers));
    return 0;
 }
 

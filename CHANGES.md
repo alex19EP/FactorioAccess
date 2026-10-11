@@ -8,6 +8,7 @@
 - The prototype lister no longer copies names to the clipboard.
 - Building, mining and selection tools act where the FA cursor is. Selection tools work with two presses, as on a gamepad.
 - The spidertron remote is the game's own: select spidertrons with two presses of left bracket (shift adds, control removes), send them with right bracket, queue a waypoint with shift right bracket. FA says how many are selected and what each order did, and the cursor says whether a spidertron is selected, what it follows and where it walks. FA's spidertron menus, its remote cycling on m and dot, and its clear keys are gone.
+- Audio rulers are a tool: Ctrl+Alt+B or the new shortcut bar button puts it in hand, a click (left bracket) places a ruler, a shift click on a ruler's line removes the nearest one. A player may have any number of rulers, each on its own surface. They are drawn on the ground for everyone, 100 tiles along each arm, and work with the mouse too. Skipping stops where the cursor comes into line with more rulers than before (upstream #242), so it no longer stops leaving a line. Alt+Shift+B is gone.
 
 # 0.16.57 (2026-03-04))
 

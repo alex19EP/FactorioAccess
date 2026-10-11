@@ -14,9 +14,9 @@ Return the cursor to your character: `j`
 
 Enter cursor coordinates and jump to them: `shift + c`
 
-Place the audio ruler: `ctrl + alt + b`
+Take the audio ruler tool: `ctrl + alt + b`, or its shortcut bar button
 
-Clear the audio ruler: `alt + shift + b`
+With the tool in hand, place a ruler: `left bracket`; remove the nearest ruler on the cursor's line: `shift + left bracket`
 
 Increase the size of the cursor: `shift + i`
 
@@ -176,7 +176,11 @@ To build a line while walking, press `i` so the cursor stays one tile in front o
 
 ### The Ruler
 
-The ruler is for alignment.  You place it with `ctrl + alt + b` and it forms an audio cross.  When your cursor or character crosses it, it plays a tone.  Clear it with `alt + shift + b`.
+The ruler is for alignment.  `ctrl + alt + b`, or the audio ruler button on the shortcut bar, puts the audio ruler tool in hand.  Click a tile with it (`left bracket`) and a ruler forms an audio cross there.  When your cursor or character crosses it, it plays a tone.  You can place as many rulers as you like; `shift + left bracket` on a ruler's line removes the nearest one on it.
+
+Cursor skipping stops where the cursor comes into line with more rulers than before: entering a line, a crossing line, or a ruler's own tile.  It does not stop going along a line or off it.
+
+Each ruler is drawn on the ground, 100 tiles along each arm, in its owner's colour, so sighted players see it too.  The tool works with the mouse as well: click to place, shift click to remove.
 
 You can use rulers to quickly place large numbers of items.  For example, to place a belt going east, find where you want it to end, arrow a few tiles north, and place your ruler.  Then, you can hold `left bracket` and run in a straight line until your character hits the ruler, like hitting a wall.  IMPORTANT: the line does not stop itself at the ruler, these are still separate features.
 

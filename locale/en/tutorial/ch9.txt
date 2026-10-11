@@ -22,13 +22,13 @@ If you do this right, then you now have a power setup that will run until the dr
 
 You probably care about precision.  There are two tools to help with this, one from vanilla and one from the mod.
 
-The mod offers audio rulers.  You place the audio ruler with control alt b, and clear it with alt shift b.
+The mod offers audio rulers.  Control alt b puts the audio ruler tool in your hand, as does its button on the shortcut bar.  With the tool in hand, left bracket places a ruler on the cursor's tile, and shift left bracket on one of a ruler's lines removes it.  Sighted players see each ruler drawn on the ground.
 
 When your cursor lines up with the audio ruler, you hear a tone.  The two low tones indicate that you are within one tile of the line, and the high tone indicates perfect alignment.  The actual point itself makes a click instead.
 
 You should take a moment to place an audio ruler and to move around to see what shape it projects.  It specifically forms a cross going to infinity in all directions.
 
-The audio ruler works with cursor skipping. When cursor skipping, your cursor will stop at the audio ruler instead of continuing past it.
+The audio ruler works with cursor skipping. When cursor skipping, your cursor will stop where it comes into line with a ruler, and on the ruler itself, instead of continuing past it.  Skipping along a ruler's line or off it does not stop, and with several rulers the cursor also stops where another line crosses.
 
 It also works with your character.  Your character walking through a ruler also plays the tones.
 

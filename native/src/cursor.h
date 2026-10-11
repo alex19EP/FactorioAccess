@@ -2,6 +2,7 @@
 
 #include <optional>
 #include <string>
+#include <vector>
 
 // The FA cursor: the tile the blind player points at, which this client alone owns. The game reads
 // it wherever it reads the mouse (world.h), so hover selection, building and every mod key's
@@ -24,13 +25,13 @@ namespace fa::cursor {
 // From the mod's Lua every tick, for this client's player: whether the mod is in vanilla mode (the
 // mouse is the cursor), whether the movement and skip keys move the cursor (no mod menu has them
 // and combat mode does not aim with them), whether the cursor is anchored to the character (it goes
-// back to the character, not to the screen's edge, when the screen leaves it behind), and the tile
-// of the player's audio ruler, where skips stop (skip.h).
+// back to the character, not to the screen's edge, when the screen leaves it behind), and the tiles
+// of the player's audio rulers on the surface in view, where skips stop (skip.h).
 struct Tile {
    int x;
    int y;
 };
-void setMode(int playerIndex, bool vanilla, bool keys, bool anchored, std::optional<Tile> ruler);
+void setMode(int playerIndex, bool vanilla, bool keys, bool anchored, std::vector<Tile> rulers);
 
 // The mod moves the cursor to the tile holding (x, y): its own jumps, such as to an alert or a
 // scanner entry. A tile off the screen in the character or god view opens remote view there.

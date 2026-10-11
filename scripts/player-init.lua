@@ -73,7 +73,6 @@ function mod.initialize(player)
    faplayer.move_state = faplayer.move_state or {}
    faplayer.remote_view = faplayer.remote_view or false
    faplayer.remote_view_tiles = faplayer.remote_view_tiles or 0
-   faplayer.ruler = faplayer.ruler or nil
    faplayer.inventory = faplayer.inventory
       or {
          index = 1,

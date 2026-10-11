@@ -127,7 +127,9 @@ gh issue list -R factorio-access/FactorioAccess --state closed --limit 1000 --js
   [#305](https://github.com/factorio-access/FactorioAccess/issues/305) (np) train station tree and
   filters: a native screen for the game's Trains window comes first; its search may cover #305.
 - [#257](https://github.com/factorio-access/FactorioAccess/issues/257) drawing audio rulers on the
-  ground: not done. It fits mirroring the sighted view and is small Lua rendering work.
+  ground: done with the audio ruler tool (scripts/rulers.lua): 100 tiles along each arm for every
+  player, and a short stretch where the character crosses a line further out. The tool also gives
+  several rulers per player, which skips stop at by #242's rising-edge rule.
 
 # Open, no plan
 

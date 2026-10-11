@@ -335,3 +335,5 @@ data:extend({
 
 --New custom input events--
 require("data.input")
+
+require("data.audio-ruler")

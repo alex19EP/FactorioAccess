@@ -1,259 +1,328 @@
 --[[
 Audio rulers.
 
-A ruler triggers when the cursor touches or crosses its boundaries and plays a
-sound.  Right now there is one ruler per player.  The DLL's cursor skip stops
-where it comes into or out of line with the ruler (native/src/skip.h), from the
-tile the mod reports every tick.  For the sake of the prototype,
-players place a ruler with alt+b and clear with alt+shift+b.  If they want to
-also have a bookmark there, we make them do so themselves.
+A ruler is a cross through a tile: the tile's row and column, without end. When the cursor or the
+character comes onto a new tile in line with one of the player's rulers, a tone plays: a low one a
+tile off the line, a high one on it, a click on the ruler's own tile. The DLL's skips stop where
+they come into line with more of the player's rulers than the tile before (native/src/skiprules.h).
 
-We return an opaque handle which may safely be stored in storage, and we (for
-now) use that ourselves.  The long term plan as of 2024-08-02 is to integrate
-this functionality with fast travel, so in future a handle will simply go live
-over there with fast travel points.
+Rulers are placed with the audio ruler tool (data/audio-ruler.lua), which the shortcut bar and
+Ctrl+Alt+B put in hand. As with Kruise Kontrol's spaghetti planner, the tool is held only for its
+clicks: a click puts a ruler on the clicked tile, a Shift+click removes the nearest ruler in line
+with it. A player may have any number of rulers, each on the surface it was placed on.
+
+Each ruler is drawn on the ground, REACH tiles along each arm, for every player to see, in its
+owner's colour. Where the character crosses a line further out, a short stretch of it shows for a
+moment.
 ]]
-local StorageManager = require("scripts.storage-manager")
-local uid = require("scripts.uid").uid
 local Cursor = require("scripts.cursor")
 local MovementHistory = require("scripts.movement-history")
+local StorageManager = require("scripts.storage-manager")
 local VanillaMode = require("scripts.vanilla-mode")
 
 local mod = {}
 
+mod.TOOL = "fa-audio-ruler"
+
+-- How far each arm is drawn from the ruler's tile.
+local REACH = 100
+
+-- How far either way of the character a line crossed beyond REACH is drawn, and for how long.
+local REVEAL_REACH = 10
+local REVEAL_TICKS = 180
+
+-- Line width in pixels, 32 to the tile.
+local LINE_WIDTH = 3
+
 ---@class fa.Ruler
----@field x number
----@field y number
+---@field surface_index integer
+---@field x integer
+---@field y integer
+---@field drawings LuaRenderObject[]
 
----@class fa.RulerStorageState
+---@class fa.RulerState
 ---@field rulers fa.Ruler[]
----@field handle fa.RulerHandle? temporary, see comments below on how handles work.
+---@field give_back_tick integer? The tool was taken from the hand after a click, to go back on this tick
 
--- How far from the ruler do we give the boundary sound?
-local RULER_SIDE_DIST = 1
-
---- When using a handle to a ruler which was deleted, this message is thrown.
-local DELETED_MSG = "Attempt to use a ruler handle which was previously deleted"
-
----@type table<number, fa.RulerStorageState>
-local module_state = StorageManager.declare_storage_module("rulers", {
-   -- For now only ever holds one; this is future proofing.
+---@type table<integer, fa.RulerState>
+local ruler_storage = StorageManager.declare_storage_module("rulers", {
    rulers = {},
+}, {
+   ephemeral_state_version = 2,
 })
+
+-- Saves from before the tool hold a ruler handle with this metatable until the version above clears
+-- it.
+script.register_metatable("RulerHandle", {})
 
 -- The cursor tile each player's rulers last sounded for. Only the client with the DLL knows the
 -- cursor, so this stays out of storage: it only decides when to play a sound.
 ---@type table<integer, fa.Point>
 local last_cursor_tiles = {}
 
---[[
-As promised in uid.lua, an explanation of the handle:
+-- For the DLL's skips, every tick: each player's rulers on one surface as x1, y1, x2, y2... Rebuilt
+-- when the rulers or the surface change.
+---@type table<integer, { surface_index: integer, tiles: integer[] }>
+local tile_lists = {}
 
-- Rulers are in a table<number, Ruler>
-- Handles hold a pindex (so we know which player it was for), the reference to
-  the table (so that we need not take the overhead of looking it up, and so that
-  code is simpler) and this unique id.
-- When deleting, the handle clears out it's table reference, then uses the
-  unique id to go   delete the ruler from storage.
-- Then the ruler handle switches itself off effectively by just asserting that
-  the table reference is still there.  This gives users of the API a clear
-  message if they are trying to use rulers they deleted by throwing an error,
-  rather than let them hold a reference this module knows nothing about.
-
-For now this is a demonstrational prototype, which means that all handles do is
-delete.  Once they get integrated into fast travel, however, they will need to
-support being reconfigured--functions on this "class" is where that belongs.
-
-In practice right now it is one ruler per player; the handle is stashed in the
-`handle` field of our stored per-player state.
-
-You can think of this like a Java class except with some ceremony that lets it
-live in storage.
-]]
----@class fa.RulerHandle
----@field pindex number
----@field id number
----@field ruler fa.Ruler?  Nil if deleted already.
-local handle_class = {}
-local handle_meta = { __index = handle_class }
-
-script.register_metatable("RulerHandle", handle_meta)
-
-function handle_class:delete()
-   assert(self.ruler, DELETED_MSG)
-   module_state[self.pindex].rulers[self.id] = nil
-   self.ruler = nil
-end
-
--- Return the manhattan distance from a point.
---
--- Imagine a right triangle.  The manhattan distance between the two non-right
--- angles is the length of the other two sides. E.g. "3 blocks east and 2 blocks
--- north".
---
--- This, slightly cleaned up and more clearly explained, is also a good function
--- for a math helper module in future.  It solves a great number of alignment
--- problems which we have been solving using extremely complex if trees.
---
----@param pos_x number
----@param pos_y number
----@param ruler_x number
----@param ruler_y number
----@returns number, numbre
-local function manhattan(pos_x, pos_y, ruler_x, ruler_y)
-   return ruler_x - pos_x, ruler_y - pos_y
-end
-
----@enum fa.RulerAlignmentResult
+---@enum fa.RulerAlignment
 local ALIGNMENT = {
-   NOT_ALIGNED = 0,
+   NONE = 0,
+   -- Within a tile of a line.
    CLOSE = 1,
-
-   -- The player is on the centerline.
-   CENTERED = 2,
-
-   -- The player is at the point which defines the ruler.
-   AT_DEFINITION = 3,
-
-   -- The cursor is on a corner around the center where the two alignments meet.
-   ON_AMBIGUOUS_CORNER = 4,
+   -- On a line.
+   ON_LINE = 2,
+   -- On the ruler's own tile.
+   AT_RULER = 3,
 }
 
----@returns fa.RulerAlignmentResult
-local function determine_alignment(pos_x, pos_y, ruler_x, ruler_y)
-   local m_x, m_y = manhattan(pos_x, pos_y, ruler_x, ruler_y)
+local ALIGNMENT_SOUNDS = {
+   [ALIGNMENT.AT_RULER] = { path = "audio-ruler-at-definition" },
+   [ALIGNMENT.ON_LINE] = { path = "audio-ruler-aligned" },
+   [ALIGNMENT.CLOSE] = { path = "audio-ruler-close" },
+}
 
-   local x_aligned = math.abs(m_x) <= RULER_SIDE_DIST
-   local y_aligned = math.abs(m_y) <= RULER_SIDE_DIST
-
-   -- Easy and common case first. This helps performance in future when we look
-   -- at cursor skipping modes, since it executes over 99% of the time.
-   if not (x_aligned or y_aligned) then return ALIGNMENT.NOT_ALIGNED end
-
-   -- While the next-most common case is the edges, we are at the point where we
-   -- do not need to care about that since the above is the 99% case.  First we
-   -- will determine if the player is at the center.
-   if m_x == 0 and m_y == 0 then return ALIGNMENT.AT_DEFINITION end
-
-   -- We may use an un-aligned direction to determine which part of the ruler
-   -- the player is on.  If both are aligned and nonzero, then it's an ambiguous
-   -- corner.
-   if x_aligned and y_aligned and m_x > 0 and m_y > 0 then return ALIGNMENT.ON_AMBIGUOUS_CORNER end
-
-   if m_x == 0 or m_y == 0 then return ALIGNMENT.CENTERED end
-
+---@param x integer
+---@param y integer
+---@param ruler fa.Ruler
+---@return fa.RulerAlignment
+local function alignment_with(x, y, ruler)
+   local dx = math.abs(ruler.x - x)
+   local dy = math.abs(ruler.y - y)
+   if dx > 1 and dy > 1 then return ALIGNMENT.NONE end
+   if dx == 0 and dy == 0 then return ALIGNMENT.AT_RULER end
+   if dx == 0 or dy == 0 then return ALIGNMENT.ON_LINE end
    return ALIGNMENT.CLOSE
 end
 
--- Settings for which sounds to use for each alignment type. Nil means don't
--- play anything (e.g. just leave it out of the table)
-local ALIGNMENT_SOUNDS = {
-   [ALIGNMENT.AT_DEFINITION] = {
-      path = "audio-ruler-at-definition",
-   },
-   [ALIGNMENT.ON_AMBIGUOUS_CORNER] = {
-      path = "audio-ruler-close",
-   },
-   [ALIGNMENT.CLOSE] = {
-      path = "audio-ruler-close",
-   },
-   [ALIGNMENT.CENTERED] = {
-      path = "audio-ruler-aligned",
-   },
-}
-
-local function play_ruler_alignment(pindex, alignment)
-   local s = ALIGNMENT_SOUNDS[alignment]
-   local p = game.get_player(pindex)
-   if not p then error("No player with pindex " .. tonumber(pindex)) end
-
-   -- Nothing to do, not aligned.
-   if not s then return end
-
-   p.play_sound(s)
+---The strongest alignment of the tile with any of the player's rulers on the surface.
+---@param pindex integer
+---@param surface_index integer
+---@param x integer
+---@param y integer
+---@return fa.RulerAlignment
+local function best_alignment(pindex, surface_index, x, y)
+   local best = ALIGNMENT.NONE
+   for _, ruler in ipairs(ruler_storage[pindex].rulers) do
+      if ruler.surface_index == surface_index then
+         local alignment = alignment_with(x, y, ruler)
+         if alignment > best then best = alignment end
+      end
+   end
+   return best
 end
 
--- If a ruler is present for this player, destroy it.  Then make a new one.
----@param pindex number
----@param x number
----@param y number
----@returns fa.RulerHandle
-function mod.upsert_ruler(pindex, x, y)
-   x = math.floor(x)
-   y = math.floor(y)
+---@param pindex integer
+---@param surface_index integer
+---@param x integer
+---@param y integer
+local function sound_tile(pindex, surface_index, x, y)
+   local sound = ALIGNMENT_SOUNDS[best_alignment(pindex, surface_index, x, y)]
+   if sound then game.get_player(pindex).play_sound(sound) end
+end
 
-   local state = module_state[pindex]
-   if state.handle ~= nil then state.handle:delete() end
-   assert(not next(module_state[pindex].rulers), "The ruler did not delete for player " .. tonumber(pindex))
-   local id = uid()
-   state.rulers[id] = {
-      x = x,
-      y = y,
+---@param player LuaPlayer
+---@return Color
+local function line_colour(player)
+   local c = player.color
+   -- Rendering takes premultiplied alpha.
+   local a = 0.8
+   return { r = c.r * a, g = c.g * a, b = c.b * a, a = a }
+end
+
+---@param player LuaPlayer
+---@param ruler fa.Ruler
+local function draw(player, ruler)
+   local colour = line_colour(player)
+   local cx = ruler.x + 0.5
+   local cy = ruler.y + 0.5
+   local function line(from, to)
+      return rendering.draw_line({
+         color = colour,
+         width = LINE_WIDTH,
+         from = from,
+         to = to,
+         surface = ruler.surface_index,
+         draw_on_ground = true,
+      })
+   end
+   ruler.drawings = {
+      line({ cx - REACH, cy }, { cx + REACH, cy }),
+      line({ cx, cy - REACH }, { cx, cy + REACH }),
+      rendering.draw_rectangle({
+         color = colour,
+         width = LINE_WIDTH,
+         filled = false,
+         left_top = { ruler.x, ruler.y },
+         right_bottom = { ruler.x + 1, ruler.y + 1 },
+         surface = ruler.surface_index,
+         draw_on_ground = true,
+      }),
    }
-
-   local handle = {
-      pindex = pindex,
-      id = id,
-      ruler = state.rulers[id],
-   }
-
-   setmetatable(handle, handle_meta)
-   state.handle = handle
-   return handle
 end
 
--- Called every time the player moves their viewpoint.
-function handle_class:play_if_needed(x, y)
-   assert(self.ruler, DELETED_MSG)
-
-   x = math.floor(x)
-   y = math.floor(y)
-
-   local alignment = determine_alignment(x, y, self.ruler.x, self.ruler.y)
-   play_ruler_alignment(self.pindex, alignment)
-end
-
--- Must be called every time the "viewpoint" for a player moves, e.g. cursor,
--- walking, whatever.  Should be passed the coords of the tile.  Arguments are floored.
-function mod.on_viewpoint_moved(pindex, x, y)
-   -- For now we just tell the ruler handle to play if it has to.
-   if module_state[pindex].handle then module_state[pindex].handle:play_if_needed(x, y) end
-end
-
-function mod.clear_rulers(pindex)
-   local state = module_state[pindex]
-   if state.handle then
-      state.handle:delete()
-      state.handle = nil
-      assert(not next(state.rulers), "The ruler failed to delete for " .. pindex)
+---@param ruler fa.Ruler
+local function erase(ruler)
+   for _, drawing in ipairs(ruler.drawings) do
+      if drawing.valid then drawing.destroy() end
    end
 end
 
----The tile of the player's ruler, nil without one: the DLL's skip keys stop by it.
+---Draws a short stretch of each line the character's tile lies on beyond the drawn arms.
 ---@param pindex integer
----@return fa.Point?
-function mod.ruler_tile(pindex)
-   local handle = module_state[pindex].handle
-   if not handle then return nil end
-   return { x = handle.ruler.x, y = handle.ruler.y }
+---@param surface_index integer
+---@param x integer
+---@param y integer
+local function reveal_far_lines(pindex, surface_index, x, y)
+   local player = game.get_player(pindex)
+   for _, ruler in ipairs(ruler_storage[pindex].rulers) do
+      if ruler.surface_index == surface_index then
+         local from, to
+         if x == ruler.x and math.abs(y - ruler.y) > REACH then
+            from = { x + 0.5, y + 0.5 - REVEAL_REACH }
+            to = { x + 0.5, y + 0.5 + REVEAL_REACH }
+         elseif y == ruler.y and math.abs(x - ruler.x) > REACH then
+            from = { x + 0.5 - REVEAL_REACH, y + 0.5 }
+            to = { x + 0.5 + REVEAL_REACH, y + 0.5 }
+         end
+         if from then
+            rendering.draw_line({
+               color = line_colour(player),
+               width = LINE_WIDTH,
+               from = from,
+               to = to,
+               surface = surface_index,
+               draw_on_ground = true,
+               time_to_live = REVEAL_TICKS,
+            })
+         end
+      end
+   end
 end
 
----Update ruler checks for a single player based on movement history
----Checks both walking and cursor movement, triggers on tile crossings
----@param pindex number
-local function update_player(pindex)
-   local state = module_state[pindex]
-   if not state.handle then return end
+---@param player LuaPlayer
+---@param text LocalisedString
+local function tell(player, text)
+   player.create_local_flying_text({ text = text, create_at_cursor = true })
+end
 
+---@param player LuaPlayer
+---@return boolean
+local function holds_tool(player)
+   local stack = player.cursor_stack
+   return stack ~= nil and stack.valid_for_read and stack.name == mod.TOOL
+end
+
+-- A click with the tool also starts the game's selection, which the DLL holds open until the next
+-- press, as a gamepad's. An empty hand ends it with no action, but only if the hand is still empty
+-- when the game next looks, before the next tick, so the tool goes back then: the click's own tick
+-- runs on_tick after its input events. The hand's handler ignores the swap (mod.tool_away).
+---@param player LuaPlayer
+local function end_selection(player)
+   player.clear_cursor()
+   ruler_storage[player.index].give_back_tick = game.tick + 1
+end
+
+---Whether the tool is out of the player's hand for a click and goes back next tick: the hand
+---changes then are not the player's own.
+---@param pindex integer
+---@return boolean
+function mod.tool_away(pindex)
+   return ruler_storage[pindex].give_back_tick ~= nil
+end
+
+---Puts the audio ruler tool in the player's hand, from the shortcut bar or Ctrl+Alt+B.
+---@param pindex integer
+function mod.give_tool(pindex)
+   local player = game.get_player(pindex)
+   player.clear_cursor()
+   local stack = player.cursor_stack
+   -- A hand the inventory had no room for stays as it is.
+   if stack.valid_for_read then return end
+   stack.set_stack({ name = mod.TOOL })
+end
+
+---A click with the tool: a ruler on the clicked tile.
+---@param pindex integer
+function mod.place(pindex)
+   local player = game.get_player(pindex)
+   if not holds_tool(player) then return end
+   end_selection(player)
+   local tile = Cursor.tile(pindex)
+   local surface_index = player.surface_index
+   local rulers = ruler_storage[pindex].rulers
+   for _, ruler in ipairs(rulers) do
+      if ruler.surface_index == surface_index and ruler.x == tile.x and ruler.y == tile.y then
+         tell(player, { "fa.ruler-exists", tile.x, tile.y })
+         return
+      end
+   end
+   ---@type fa.Ruler
+   local ruler = { surface_index = surface_index, x = tile.x, y = tile.y, drawings = {} }
+   draw(player, ruler)
+   table.insert(rulers, ruler)
+   tile_lists[pindex] = nil
+   tell(player, { "fa.ruler-placed", tile.x, tile.y })
+end
+
+---A Shift+click with the tool: removes the nearest ruler whose row or column holds the clicked tile.
+---@param pindex integer
+function mod.remove(pindex)
+   local player = game.get_player(pindex)
+   if not holds_tool(player) then return end
+   end_selection(player)
+   local tile = Cursor.tile(pindex)
+   local surface_index = player.surface_index
+   local rulers = ruler_storage[pindex].rulers
+   local nearest, nearest_distance
+   for i, ruler in ipairs(rulers) do
+      if ruler.surface_index == surface_index and (ruler.x == tile.x or ruler.y == tile.y) then
+         local distance = math.abs(ruler.x - tile.x) + math.abs(ruler.y - tile.y)
+         if not nearest or distance < nearest_distance then
+            nearest, nearest_distance = i, distance
+         end
+      end
+   end
+   if not nearest then
+      tell(player, { "fa.ruler-none-in-line" })
+      return
+   end
+   local ruler = table.remove(rulers, nearest)
+   erase(ruler)
+   tile_lists[pindex] = nil
+   tell(player, { "fa.ruler-removed", ruler.x, ruler.y })
+end
+
+---The player's rulers on the surface the player views, as x1, y1, x2, y2...: the DLL's skips stop
+---by them. The same table each tick until the rulers or the surface change.
+---@param pindex integer
+---@return integer[]
+function mod.ruler_tiles(pindex)
+   local surface_index = game.get_player(pindex).surface_index
+   local list = tile_lists[pindex]
+   if list and list.surface_index == surface_index then return list.tiles end
+   local tiles = {}
+   for _, ruler in ipairs(ruler_storage[pindex].rulers) do
+      if ruler.surface_index == surface_index then
+         table.insert(tiles, ruler.x)
+         table.insert(tiles, ruler.y)
+      end
+   end
+   tile_lists[pindex] = { surface_index = surface_index, tiles = tiles }
+   return tiles
+end
+
+---Plays the tones for the tiles the character and the cursor came onto this tick.
+---@param pindex integer
+local function update_player(pindex)
+   if not next(ruler_storage[pindex].rulers) then return end
+   -- Storage outlives a player removed from the game.
    local player = game.get_player(pindex)
    if not player then return end
 
-   -- Check walking movement using movement history
    local reader = MovementHistory.get_movement_history_reader(pindex)
    local current_entry = reader:get(0)
    local prev_entry = reader:get(1)
-
-   -- If currently walking or driving, check if we crossed a tile
    if
       current_entry
       and prev_entry
@@ -262,37 +331,36 @@ local function update_player(pindex)
          or current_entry.kind == MovementHistory.MOVEMENT_KINDS.DRIVING
       )
    then
-      local current_tile = {
-         x = math.floor(current_entry.position.x),
-         y = math.floor(current_entry.position.y),
-      }
-      local prev_tile = {
-         x = math.floor(prev_entry.position.x),
-         y = math.floor(prev_entry.position.y),
-      }
-
-      -- Check if we crossed a tile boundary
-      if current_tile.x ~= prev_tile.x or current_tile.y ~= prev_tile.y then
-         mod.on_viewpoint_moved(pindex, current_tile.x, current_tile.y)
+      local x = math.floor(current_entry.position.x)
+      local y = math.floor(current_entry.position.y)
+      if x ~= math.floor(prev_entry.position.x) or y ~= math.floor(prev_entry.position.y) then
+         sound_tile(pindex, player.physical_surface_index, x, y)
+         reveal_far_lines(pindex, player.physical_surface_index, x, y)
       end
    end
 
-   -- Check cursor movement
+   -- Only this client knows the cursor: sounds only from here on.
    local cursor_tile = Cursor.speech_tile(pindex)
    if not cursor_tile then return end
-
-   -- Trigger if no previous cursor tile OR crossed tile boundary
    local last = last_cursor_tiles[pindex]
    if not last or cursor_tile.x ~= last.x or cursor_tile.y ~= last.y then
-      mod.on_viewpoint_moved(pindex, cursor_tile.x, cursor_tile.y)
+      sound_tile(pindex, player.surface_index, cursor_tile.x, cursor_tile.y)
       last_cursor_tiles[pindex] = cursor_tile
    end
 end
 
----Update ruler checks for all players
----Should be called from on_tick in control.lua
+---Called from on_tick.
 function mod.update_all_players()
    for pindex, _ in pairs(storage.players) do
+      local state = ruler_storage[pindex]
+      if state.give_back_tick and game.tick >= state.give_back_tick then
+         state.give_back_tick = nil
+         -- Storage outlives a player removed from the game.
+         local player = game.get_player(pindex)
+         if player and player.cursor_stack and not player.cursor_stack.valid_for_read then
+            player.cursor_stack.set_stack({ name = mod.TOOL })
+         end
+      end
       if not VanillaMode.is_enabled(pindex) then update_player(pindex) end
    end
 end

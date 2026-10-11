@@ -26,6 +26,12 @@ local VANILLA_MODE_WHITELIST = {
    [defines.events.on_player_cursor_stack_changed] = true,
    [defines.events.on_player_main_inventory_changed] = true,
 
+   -- The audio ruler tool, as vanilla's planners work in vanilla mode
+   ["fa-ca-b"] = true,
+   ["fa-audio-ruler-place"] = true,
+   ["fa-audio-ruler-remove"] = true,
+   [defines.events.on_lua_shortcut] = true,
+
    -- GUI and game state
    [defines.events.on_gui_opened] = true,
    [defines.events.on_gui_closed] = true,

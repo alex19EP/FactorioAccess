@@ -117,9 +117,9 @@ end
 ---@param vanilla boolean The mouse is the cursor
 ---@param keys boolean The movement and skip keys move the cursor
 ---@param anchored boolean The cursor goes back to the character when the screen leaves it
----@param ruler fa.Point? The tile of the player's audio ruler, where skips stop
-function mod.report_mode(pindex, vanilla, keys, anchored, ruler)
-   if native then native.cursor_mode(pindex, vanilla, keys, anchored, ruler and ruler.x, ruler and ruler.y) end
+---@param rulers integer[] The tiles of the player's audio rulers as x1, y1, x2, y2..., where skips stop
+function mod.report_mode(pindex, vanilla, keys, anchored, rulers)
+   if native then native.cursor_mode(pindex, vanilla, keys, anchored, rulers) end
 end
 
 return mod

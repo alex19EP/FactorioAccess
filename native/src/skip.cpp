@@ -23,8 +23,8 @@ struct GameWorld {
 } // namespace
 
 Result find(int32_t x, int32_t y, int32_t dx, int32_t dy, int limit,
-            const std::function<bool(int32_t, int32_t)>& allowed, std::optional<Ruler> ruler) {
-   return skip::find(GameWorld{}, x, y, dx, dy, limit, allowed, ruler);
+            const std::function<bool(int32_t, int32_t)>& allowed, std::span<const Ruler> rulers) {
+   return skip::find(GameWorld{}, x, y, dx, dy, limit, allowed, rulers);
 }
 
 } // namespace fa::skip
