@@ -145,7 +145,6 @@ end
 function mod.do_refresh(pindex, direction_filter)
    local player = game.get_player(pindex)
    ---@cast player LuaPlayer
-   player.play_sound({ path = "scanner-pulse" })
    if native then refresh(player, { direction = direction_filter }) end
    if direction_filter then
       Speech.speak(pindex, { "fa.scanner-refreshed-directional", FaUtils.direction_lookup(direction_filter) })

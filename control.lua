@@ -792,8 +792,9 @@ local function cursor_skip(pindex, event)
 
    local p = game.get_player(pindex)
    local cursor_pos = Cursor.tile(pindex)
-   -- A skip of more than a tile, or one that found no change, rolls
-   if step == "skipped" and tiles ~= 1 then
+   if step == "skipped" then
+      -- A skip of more than a tile, or one that found no change, rolls; one of a tile is a step
+      if tiles == 1 then return end
       if storage.players[pindex].remote_view then
          sounds.play_sound_at_position({ path = "inventory-wrap-around", volume_modifier = 1 }, cursor_pos)
       else

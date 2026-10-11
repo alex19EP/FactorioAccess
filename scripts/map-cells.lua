@@ -35,7 +35,6 @@ function mod.read(pindex, size)
    message:fragment(FaInfo.area_scan_summary_info(pindex, left_top, right_bottom, skip))
    if overlays then MapOverlays.describe(message, player, left_top, right_bottom, overlays) end
    Speech.speak(pindex, message:build())
-   player.play_sound({ path = "Close-Inventory-Sound", position = player.position, volume_modifier = 0.75 })
 end
 
 return mod

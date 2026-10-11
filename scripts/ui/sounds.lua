@@ -100,11 +100,6 @@ function mod.play_change_menu_tab(pindex)
    play_sound_internal(pindex, { path = "Change-Menu-Tab-Sound" })
 end
 
--- Scanner sounds
-function mod.play_scanner_pulse(pindex)
-   play_sound_internal(pindex, { path = "scanner-pulse" })
-end
-
 -- Player movement/action sounds
 function mod.play_player_walk(pindex)
    play_sound_internal(pindex, { path = "player-walk" })
