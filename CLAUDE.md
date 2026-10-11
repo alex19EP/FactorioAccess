@@ -56,9 +56,15 @@ just lint-locale
 
 # Everything CI checks, plus the native and mod tests
 just check
+
+# Put a rebuilt fa_native.dll and the mod's Lua into the running game, no restart
+# (needs the dev marker, `just dev-on`, at the game's start)
+just reload
 ```
 
 `just` with no arguments lists every recipe.
+
+After changing Lua or the native core, prefer `just reload` to restarting the game: it swaps the core in about half a second and runs `/fareload` (`game.reload_mods()`), keeping the save running. Restart instead for changes to `native/src/stub/` (winmm.dll), locale files or the data stage, which a reload does not pick up. See `devdocs/dev-setup.md`.
 
 ### Architecture Overview
 
