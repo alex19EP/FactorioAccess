@@ -597,7 +597,8 @@ void frame(void* source) {
    const int playerIndex = at<uint16_t>(view->player, layout.playerIndex) + 1;
    checkPin(*view, playerIndex);
    sayDragTurn(playerIndex);
-   scanner::frame(playerIndex, at<uint32_t>(view->view, layout.gameViewSurfaceIndex));
+   // The scanner keeps LuaSurface::index, the engine's index + 1.
+   scanner::frame(playerIndex, at<uint32_t>(view->view, layout.gameViewSurfaceIndex) + 1);
    // A building in hand builds from the tile's centre, wherever the cycle key left the cursor in it.
    if (const std::optional<Position> cursor = currentCursor();
        cursor && *cursor != tileCentre(*cursor) && buildFollowsCursor(playerIndex))
@@ -769,6 +770,7 @@ std::string describe() {
    const char* controller = view->controller == layout.controllerCharacter ? "character"
                             : view->controller == layout.controllerGod     ? "god"
                             : view->controller == layout.controllerRemote  ? "remote"
+                            : view->controller == layout.controllerEditor  ? "editor"
                                                                            : "other";
    const Screen tiles = screen(*view);
    std::string out = std::format(
