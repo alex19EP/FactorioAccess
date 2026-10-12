@@ -229,7 +229,7 @@ _mute-for-agent: _require-steam
      if ($flag -and $flag.LastWriteTime -gt (Get-Date).AddMinutes(-15)) { \
          New-Item -Force -ItemType File $marker | Out-Null; \
          Write-Host '[just] launched by Claude, so the game starts muted; just unmute lets its speech through' \
-     } else { Remove-Item -Force -ErrorAction SilentlyContinue $marker }
+     } elseif (Test-Path $marker) { Remove-Item -Force $marker }
 
 # Keep the running game's speech off the screen reader (log and dev server only)
 mute:
