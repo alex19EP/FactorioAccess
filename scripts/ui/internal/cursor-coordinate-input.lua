@@ -61,11 +61,12 @@ function cursor_coordinate_ui:on_child_result(pindex, result, context, controlle
       return
    end
 
-   -- Set cursor position
-   Cursor.jump(pindex, { x = x, y = y })
-
-   -- Announce success
-   Speech.speak(pindex, { "fa.cursor-moved" })
+   -- The text box's result comes from a GUI event, not a key, so the tile is named for the read
+   local position = { x = x, y = y }
+   Cursor.jump(pindex, position)
+   Cursor.at(pindex, position, function()
+      Cursor.read(pindex, { "fa.cursor-moved" })
+   end)
 
    -- Close this UI
    controller:close()
