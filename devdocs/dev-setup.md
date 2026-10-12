@@ -49,6 +49,15 @@ just run        # build the DLLs, copy them next to the Steam factorio.exe, star
 `just stop` closes the game, `just undeploy` removes the DLLs, and `just unlink-mod` removes the
 junction.
 
+## Worktrees
+
+Claude Code's worktrees (EnterWorktree, `claude --worktree`) go through the repo's
+`WorktreeCreate` and `WorktreeRemove` hooks, `.claude/hooks/worktree.ps1`. A new worktree,
+`.claude/worktrees/<name>` on branch `<name>`, gets junctions to the main checkout's
+`native/vendor` submodules and `.tools`, and a hard link to its `.env`, so every recipe works in
+it. Removing unlinks them first and keeps a worktree with uncommitted work. For a worktree made
+with `git worktree add`, run `pwsh .claude/hooks/worktree.ps1 setup <path>`.
+
 ## Changing code while the game runs
 
 With the dev server armed, `just reload` rebuilds, puts the new `fa_native.dll` into the running

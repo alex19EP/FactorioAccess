@@ -66,6 +66,10 @@ just reload
 
 After changing Lua or the native core, prefer `just reload` to restarting the game: it swaps the core in about half a second and runs `/fareload` (`game.reload_mods()`), keeping the save running. Restart instead for changes to `native/src/stub/` (winmm.dll), locale files or the data stage, which a reload does not pick up. See `devdocs/dev-setup.md`.
 
+### Worktrees
+
+Make worktrees with the EnterWorktree tool (or `claude --worktree`), not a plain `git worktree add`. The repo's `WorktreeCreate` hook (`.claude/hooks/worktree.ps1`, registered in `.claude/settings.json`) makes `.claude/worktrees/<name>` on branch `<name>` from the session's HEAD and links in what git leaves out: the `native/vendor` submodules, `.tools` and `.env`, so `just` builds and lints there at once. ExitWorktree's remove runs the `WorktreeRemove` hook, which unlinks those before removing, refuses a worktree with uncommitted work, and deletes the branch once it is merged. After a plain `git worktree add`, run `pwsh .claude/hooks/worktree.ps1 setup <path>`. Never delete a worktree folder recursively by hand: its links point into the main checkout.
+
 ### Lint: EmmyLua
 
 `just lint` runs `emmylua_check` (about a second) with `.emmyrc.json`, against the Factorio API library in `.tools/`. `just setup-tools` installs both, pinned, and generates the library from the Steam game's `doc-html` with FMTK; rerun it after a game update. Warnings fail the lint. The same `.emmyrc.json` serves an editor's or Claude Code's `emmylua_ls`. `need-check-nil` and `strict.arrayIndex` are off: the project lets a missing value crash.
