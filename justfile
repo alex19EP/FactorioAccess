@@ -207,14 +207,36 @@ uninstall: undeploy unlink-mod
 # player has them, and applies the Launch Options from the game's Properties.
 
 # Deploy the fresh DLL, then launch Factorio through Steam
-run: deploy
+run: deploy _mute-for-agent
     @Start-Process 'steam://run/{{STEAM_APPID}}'; \
      Write-Host '[just] launched Factorio via Steam (app {{STEAM_APPID}}); `just loaded` once it is up'
 
 # Launch through Steam without rebuilding or redeploying
-start: _require-not-running
+start: _require-not-running _mute-for-agent
     @Start-Process 'steam://run/{{STEAM_APPID}}'; \
      Write-Host '[just] launched Factorio via Steam (app {{STEAM_APPID}})'
+
+# A game an AI agent launches starts muted: its speech reaches the log and the dev server's /speech
+# but not the screen reader of the developer at the same desk. Claude Code's tool calls carry
+# AI_AGENT ending in `_agent`; a command the developer runs (`! just run`) does not. The DLL deletes
+# the marker as it starts, so only that launch is muted (native/src/speech.h), and a launch of the
+# developer's own removes one an agent's failed launch left behind.
+_mute-for-agent: _require-steam
+    @$marker = '{{STEAM_DIR}}\bin\x64\factorio-access-mute.once'; \
+     if ($env:AI_AGENT -like '*_agent') { \
+         New-Item -Force -ItemType File $marker | Out-Null; \
+         Write-Host '[just] launched by an agent, so the game starts muted; just unmute lets its speech through' \
+     } else { Remove-Item -Force -ErrorAction SilentlyContinue $marker }
+
+# Keep the running game's speech off the screen reader (log and dev server only)
+mute:
+    @$port = if ($env:FA_DEV_PORT) { $env:FA_DEV_PORT } else { '8773' }; \
+     curl.exe -s "http://localhost:$port/mute?on=1"
+
+# Let the running game's speech through to the screen reader again
+unmute:
+    @$port = if ($env:FA_DEV_PORT) { $env:FA_DEV_PORT } else { '8773' }; \
+     curl.exe -s "http://localhost:$port/mute?on=0"
 
 # Close the running game (unsaved progress is lost)
 stop:

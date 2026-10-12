@@ -166,6 +166,12 @@ cursor), the fog of war. Run it after changing `cursor.cpp`, the reader, the ski
 keys. Its docstring says what game it needs. A DRM-free copy with FA's keys set and its own dev port
 (`FA_DEV=1`, `FA_DEV_PORT=8775`) keeps it off the shared Steam game.
 
+A game you launch is muted: `just run` and `just start` leave a one-launch marker when an agent
+runs them (Claude Code's tool calls carry `AI_AGENT` ending in `_agent`), and a game started
+straight from your shell sees that variable itself. Its speech reaches the log and `/speech` but
+not the user's screen reader. `just unmute` and `just mute` (`/mute?on=0|1`) switch a running game;
+the choice survives `just reload`. The user's own launches (`! just run`, Steam) speak.
+
 Rules for starting the game and using the dev server:
 - Don't poll the dev server while the game starts or loads a save. Watch `factorio-current.log`
   instead: "Factorio initialised" after a start, "Checksum for script __FactorioAccess__" after a

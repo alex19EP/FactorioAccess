@@ -40,7 +40,7 @@ extern "C" __declspec(dllexport) bool fa_core_start(const fa::stub::Api* api) {
       return false;
    }
    log::info("Loaded into {} (generation {})", modulePath(nullptr).string(), api->generation);
-   speech::start();
+   speech::start(directory);
    audio::start();
    dev::start(directory);
 

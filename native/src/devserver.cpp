@@ -6,6 +6,7 @@
 #include "log.h"
 #include "navigator/ScreenManager.hpp"
 #include "screens/GuiDump.hpp"
+#include "speech.h"
 
 #include <winsock2.h>
 #include <ws2tcpip.h>
@@ -330,7 +331,14 @@ std::string queryParam(std::string_view query, std::string_view name) {
 }
 
 std::pair<int, std::string> route(const Request& request) {
-   if (request.path == "/health") return {200, std::format("ok\nframes={}\n", g_frames.load())};
+   if (request.path == "/health")
+      return {200, std::format("ok\nframes={}\nmuted={}\n", g_frames.load(), speech::muted() ? 1 : 0)};
+
+   if (request.path == "/mute") {
+      std::string on = queryParam(request.query, "on");
+      if (on == "1" || on == "0") speech::setMuted(on == "1");
+      return {200, std::format("muted={}\n", speech::muted() ? 1 : 0)};
+   }
 
    if (request.path == "/speech") {
       uint64_t since = 0;
@@ -353,7 +361,7 @@ std::pair<int, std::string> route(const Request& request) {
 
    if (request.path == "/cursor") return {200, onGameThread(cursor::describe)};
 
-   return {404, "endpoints: /health /speech?since=N /screen /key /dump /cursor\n"};
+   return {404, "endpoints: /health /speech?since=N /mute?on=1|0 /screen /key /dump /cursor\n"};
 }
 
 bool readRequest(SOCKET client, Request& request) {
@@ -504,7 +512,7 @@ void start(const std::filesystem::path& directory) {
    g_running = true;
    g_listeners = listeners;
    g_thread = std::thread(serve, std::move(listeners));
-   log::info("Dev server on http://localhost:{} (/health /speech /screen /key /dump /cursor)", port);
+   log::info("Dev server on http://localhost:{} (/health /speech /mute /screen /key /dump /cursor)", port);
 }
 
 void stop() {
