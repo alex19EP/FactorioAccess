@@ -478,6 +478,25 @@ struct Layout {
    uint32_t drawQueueRenderParameters = 0; // DrawQueue::renderParameters, RenderParameters const*
    uintptr_t drawQueueConstruct = 0;
    uintptr_t drawQueueClear = 0;
+   // What an entity's draw queued, to tell whether the view shows it at all: DrawQueue::sprites is
+   // an array of SpriteDrawOrderVector by render layer, up to gradientLights; a remnant's decay goes
+   // in decayingCorpses; special draw orders in the others vectors (std::vector<DrawOrder*>).
+   uint32_t drawQueueSprites = 0;          // DrawQueue::sprites
+   uint32_t drawQueueSpritesEnd = 0;       // DrawQueue::gradientLights, just past the array
+   uint32_t drawQueueCorpses = 0;          // DrawQueue::decayingCorpses
+   uint32_t drawQueueOthers = 0;           // DrawQueue::others
+   uint32_t drawQueueOthersUnder = 0;      // DrawQueue::othersUnderEntities
+   uint32_t drawQueueOthersAbove = 0;      // DrawQueue::othersAbove
+   uint32_t spriteOrdersSize = 0;          // sizeof(SpriteDrawOrderVector)
+   uint32_t spriteOrdersUsed = 0;          // SpriteDrawOrderVector::used_size, uint32
+   // SpriteDrawOrderVector::stored_data: Pair<uint64, SpriteDrawOrder*>[used_size]. An order's
+   // source rectangle is in the sprite's pixels: the empty sprite mods draw invisible helpers with
+   // (__core__/graphics/empty.png) is 1 by 1.
+   uint32_t spriteOrdersData = 0;
+   uint32_t spriteOrderPairSize = 0;       // sizeof(Pair<unsigned __int64,SpriteDrawOrder *>)
+   uint32_t spriteOrderPairOrder = 0;      // Pair::second, SpriteDrawOrder*
+   uint32_t spriteOrderWidth = 0;          // SpriteDrawOrder::sourceWidth, float
+   uint32_t spriteOrderHeight = 0;         // SpriteDrawOrder::sourceHeight, float
    uint32_t entityDraw = 0;                // virtual slot of Entity::draw
    // Status icons: void Entity::drawAlert(DrawQueue&, Sprite const&, MapPosition const&, bool
    // blinking) const draws each (no power, no fuel, no ammo ...), when ShowStatusIcons is on; the

@@ -5,6 +5,7 @@
 #include <functional>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 // FA's own facts about an entity, which the game's tooltip lacks: which way it faces, a belt's
@@ -58,6 +59,11 @@ Likeness likenessOf(const void* entity);
 // Whether the skip keys pass over `entity` as if it were not there: robots and corpses, which lie
 // on or fly over what is built. A character's corpse stays.
 bool skipsOver(const void* entity);
+
+// Whether entities of the type are effects the view shows for a moment or hangs on something else:
+// what is shot, blows up, smokes or strikes, stickers, beams, spider legs, the markers and proxies
+// over buildings. Neither the cursor nor the scanner reads them; everything else the view draws, they do.
+bool isFleeting(std::string_view type);
 
 // Whether a step from the tile where the mouse selects `left` onto the one where it selects
 // `entered` (either may be null) goes from an entity bigger than a tile onto another of its kind:

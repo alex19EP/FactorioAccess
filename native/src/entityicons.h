@@ -26,6 +26,10 @@ struct Drawn {
    // Utility sprite names of the status icons, in drawing order ("electricity_icon").
    std::vector<std::string> status;
    std::vector<Icon> icons;
+   // How much the draw queued: sprites, decaying corpses and special draw orders, leaving out the
+   // empty 1 by 1 sprite. None for an entity the view does not show, such as the invisible helpers
+   // mods place.
+   size_t orders = 0;
 };
 
 // Draws `entity` (an Entity*) and returns what it showed. Nothing outside a game with a view. On
@@ -34,6 +38,10 @@ std::optional<Drawn> read(const void* entity);
 
 // The same with other render parameters (a RenderParameters*): a blueprint picture's own.
 std::optional<Drawn> read(const void* entity, const void* renderParameters);
+
+// Whether the view shows `entity` at all: its draw queues something. True outside a game with a
+// view, where nothing can be drawn to tell. Where read() may run.
+bool draws(const void* entity);
 
 // MinHook detours for Entity::drawAlert and DrawQueue::drawInfoIcon, and where MinHook keeps the
 // originals.

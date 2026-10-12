@@ -164,6 +164,34 @@ void detourDrawInfoIcon(void* drawQueue, const void* sprite, uint16_t quality, c
 // The queue entities are drawn into to read them. Nothing renders it; it is cleared after each read.
 std::byte* g_queue = nullptr;
 
+// How many sprites in the SpriteDrawOrderVector at `vector` show more than the empty 1 by 1 one.
+size_t seenSprites(const std::byte* vector) {
+   const auto* pairs = at<const std::byte*>(vector, layout.spriteOrdersData);
+   const auto used = at<uint32_t>(vector, layout.spriteOrdersUsed);
+   size_t count = 0;
+   for (uint32_t i = 0; i < used; ++i) {
+      const auto* order =
+         at<const std::byte*>(pairs + size_t{i} * layout.spriteOrderPairSize, layout.spriteOrderPairOrder);
+      if (order && (at<float>(order, layout.spriteOrderWidth) > 1 || at<float>(order, layout.spriteOrderHeight) > 1))
+         ++count;
+   }
+   return count;
+}
+
+// How many sprites, decaying corpses and special draw orders `queue` holds, but for empty sprites.
+size_t queued(const std::byte* queue) {
+   size_t count = 0;
+   for (uint32_t offset = layout.drawQueueSprites; offset < layout.drawQueueSpritesEnd;
+        offset += layout.spriteOrdersSize)
+      count += seenSprites(queue + offset);
+   count += seenSprites(queue + layout.drawQueueCorpses);
+   for (uint32_t others : {layout.drawQueueOthers, layout.drawQueueOthersUnder, layout.drawQueueOthersAbove}) {
+      const auto orders = at<MsvcVector<const void*>>(queue, others);
+      count += static_cast<size_t>(orders.last - orders.first);
+   }
+   return count;
+}
+
 const std::byte* mainRenderParameters() {
    auto* context = *reinterpret_cast<const std::byte* const*>(layout.globalContext);
    auto* game = context ? at<const std::byte*>(context, layout.globalGame) : nullptr;
@@ -191,8 +219,14 @@ std::optional<Drawn> read(const void* entity, const void* parameters) {
    t_drawn = &drawn;
    virtualAt<void (*)(const void*, void*)>(entity, layout.entityDraw)(entity, g_queue);
    t_drawn = nullptr;
+   drawn.orders = queued(g_queue);
    reinterpret_cast<void (*)(void*)>(layout.drawQueueClear)(g_queue);
    return drawn;
+}
+
+bool draws(const void* entity) {
+   const std::optional<Drawn> drawn = read(entity);
+   return !drawn || drawn->orders > 0;
 }
 
 void* drawAlertDetour() { return reinterpret_cast<void*>(&detourDrawAlert); }

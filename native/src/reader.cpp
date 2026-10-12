@@ -1,6 +1,7 @@
 #include "reader.h"
 
 #include "agui.h"
+#include "entityicons.h"
 #include "facts.h"
 #include "game.h"
 #include "mappicture.h"
@@ -145,11 +146,11 @@ std::string_view typeName(const std::byte* prototype) {
    return virtualAt<const char* (*)(const void*)>(prototype, layout.prototypeGetType)(prototype);
 }
 
-// With a blueprint in hand the mouse selects nothing, the item in the cursor ruling every entity
-// out, yet the view still shows what is built there: the entity whose box holds `position` that
-// the game's own priority puts on top (EntitySelector::selectPriorityLess), as an empty hand would
-// select it.
-const std::byte* underBlueprint(const std::byte* surface, Position position) {
+// Of the entities whose box holds `position` and that `wanted` takes, the one the game's own
+// priority puts on top (EntitySelector::selectPriorityLess), as the mouse would select it. One with
+// no box is held by its own tile.
+template <class Wanted>
+const std::byte* topmostAt(const std::byte* surface, Position position, Wanted&& wanted) {
    alignas(8) std::byte context[32]{};
    if (layout.selectionContextSize > sizeof(context)) return nullptr;
    std::memcpy(context + layout.selectionContextPosition, &position, sizeof(position));
@@ -161,18 +162,41 @@ const std::byte* underBlueprint(const std::byte* surface, Position position) {
    for (const void* found : facts::entitiesIn(surface, position.x - kScale, position.y - kScale, position.x + kScale,
                                               position.y + kScale)) {
       const auto* entity = static_cast<const std::byte*>(found);
-      const auto* prototype = at<const std::byte*>(entity, layout.entityPrototypeOf);
-      if (at<uint32_t>(prototype, layout.entityPrototypeFlags) & game::kEntityNotSelectable) continue;
+      if (!wanted(entity)) continue;
       const facts::SelectionBox box = facts::selectionBox(entity);
-      if (position.x < box.left || position.x >= box.right || position.y < box.top || position.y >= box.bottom)
+      if (box.left == box.right || box.top == box.bottom) {
+         const Position own = at<Position>(entity, layout.entityPosition);
+         if (own.x >> 8 != position.x >> 8 || own.y >> 8 != position.y >> 8) continue;
+      } else if (position.x < box.left || position.x >= box.right || position.y < box.top || position.y >= box.bottom) {
          continue;
+      }
       if (!best || less(best, entity, context)) best = entity;
    }
    return best;
 }
 
-// What the mouse at `position` selects, as the game finds it each frame for the local player; null
-// in a chunk the player's force does not see into while the view respects fog of war.
+// The player's own character as an Entity, or null.
+const std::byte* ownCharacter(const std::byte* player) {
+   const auto* character = reinterpret_cast<const std::byte* (*)(const void*)>(layout.playerGetCharacter)(player);
+   return character ? agui::objectAsBase(character, ".?AVEntity@@") : nullptr;
+}
+
+// What the view draws at `position` where the mouse selects nothing there: the cursor reads what a
+// sighted player sees. The mouse never selects a cliff or a building's remnants, nor fire, which has
+// no box, nor anything while a blueprint is in hand. Left out are effects that last a moment, what
+// draws nothing (the invisible helpers mods place), and the player's own character, which the
+// reader says apart.
+const std::byte* drawnAt(const std::byte* player, const std::byte* surface, Position position) {
+   const std::byte* self = ownCharacter(player);
+   return topmostAt(surface, position, [&](const std::byte* entity) {
+      return entity != self && !facts::isFleeting(typeName(at<const std::byte*>(entity, layout.entityPrototypeOf))) &&
+             entityicons::draws(entity);
+   });
+}
+
+// What the mouse at `position` selects, as the game finds it each frame for the local player, else
+// what the view still shows there (drawnAt); null in a chunk the player's force does not see into
+// while the view respects fog of war.
 const std::byte* entityAt(const std::byte* player, const std::byte* surface, Position position) {
    const std::byte* adapter = at<const std::byte*>(player, layout.playerLatencyAdapter);
    if (!adapter) adapter = player + layout.playerGameStateAdapter;
@@ -195,9 +219,7 @@ const std::byte* entityAt(const std::byte* player, const std::byte* surface, Pos
    const std::byte* selected = reinterpret_cast<Deduce>(layout.deduceSelectedEntity)(
       selector, surface, &position, false, at<void*>(player, layout.playerLatencyState), nullptr,
       layout.selectionModeNormal);
-   if (selected) return selected;
-   const auto held = world::heldBuild(at<uint16_t>(player, layout.playerIndex) + 1);
-   return held && held->blueprint ? underBlueprint(surface, position) : nullptr;
+   return selected ? selected : drawnAt(player, surface, position);
 }
 
 // The tooltip's labels of lines that read alike on every entity of a kind, as the game translates
@@ -634,8 +656,7 @@ std::optional<std::string> readTile(Position tile, std::optional<Position> where
    std::string text = entity ? describe(here->player, entity, tile) : tileName(here->surface, tile);
    // The view shows the player's own character standing on its tile, though the mouse never
    // selects it there: the character is said first, then what the mouse selects.
-   const auto* character = reinterpret_cast<const std::byte* (*)(const void*)>(layout.playerGetCharacter)(here->player);
-   const std::byte* self = character ? agui::objectAsBase(character, ".?AVEntity@@") : nullptr;
+   const std::byte* self = ownCharacter(here->player);
    if (self && at<const std::byte*>(self, layout.entitySurface) == here->surface) {
       const Position feet = at<Position>(self, layout.entityPosition);
       if (feet.x >> 8 == tile.x && feet.y >> 8 == tile.y) text = describe(here->player, self, tile) + ", " + text;

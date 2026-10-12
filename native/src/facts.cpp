@@ -2269,6 +2269,28 @@ bool skipsOver(const void* entity) {
    return type == "logistic-robot" || type == "construction-robot" || type == "combat-robot" || type == "corpse";
 }
 
+bool isFleeting(std::string_view type) {
+   static constexpr std::string_view kFleeting[] = {
+      "arrow",
+      "artillery-projectile",
+      "beam",
+      "deconstructible-tile-proxy",
+      "explosion",
+      "highlight-box",
+      "item-request-proxy",
+      "lightning",
+      "particle-source",
+      "projectile",
+      "rocket-silo-rocket-shadow",
+      "smoke-with-trigger",
+      "speech-bubble",
+      "spider-leg",
+      "sticker",
+      "stream",
+   };
+   return std::ranges::find(kFleeting, type) != std::end(kFleeting);
+}
+
 bool nextOfKind(const void* left, const void* entered) {
    if (!left || !entered || left == entered) return false;
    const Likeness was = likenessOf(left);

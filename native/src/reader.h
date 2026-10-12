@@ -12,9 +12,12 @@
 // read as the key is pressed, without waiting for the mod's Lua to hear of the key from the server;
 // the mod's own jumps are read when its Lua asks.
 //
-// It says what a sighted player sees on hovering there. The entity is the one the game selects
-// under the mouse (EntitySelector::deduceSelectedEntity, fog of war included), and what is said of
-// it comes from the game's own tooltip (the entity's addToDescription), less what the tooltip shows
+// It says what a sighted player sees there. The entity is the one the game selects under the mouse
+// (EntitySelector::deduceSelectedEntity, fog of war included); where the mouse selects nothing, what
+// the view still draws there, by the game's own selection priority: cliffs, remnants, fire, what is
+// built under a blueprint in hand. Effects that last a moment (facts::isFleeting) and what draws
+// nothing (entityicons::draws, the invisible helpers mods place) are left out. What is said of it
+// comes from the game's own tooltip (the entity's addToDescription), less what the tooltip shows
 // alike for every entity of the kind (the mod it comes from, its description, wire reach, maximum
 // consumption, the last player ...): its name, FA's own facts (facts.h), a status only when it
 // tells of a problem, health only when damaged, then the lines that tell of this entity's state and

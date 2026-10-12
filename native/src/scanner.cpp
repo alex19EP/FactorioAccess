@@ -2,6 +2,7 @@
 
 #include "bindings.h"
 #include "chart.h"
+#include "facts.h"
 #include "game.h"
 #include "log.h"
 #include "prototypes.h"
@@ -121,31 +122,11 @@ constexpr std::array<std::string_view, kCategoryCount> kCategoryKeys{
 };
 static_assert(!kCategoryKeys.back().empty(), "a category has no key");
 
-// Entity types that are no things on the map but effects and helpers: what is shot, burns, blows
-// up or hangs on something, the legs of a spider, the segments behind a demolisher's head, the
-// requests of a building, the rocket inside a silo. The scanner lists every other type; mods add
-// prototypes, never types.
-constexpr std::string_view kSkippedTypes[] = {
-   "arrow",
-   "artillery-projectile",
-   "beam",
-   "deconstructible-tile-proxy",
-   "explosion",
-   "fire",
-   "highlight-box",
-   "item-request-proxy",
-   "lightning",
-   "particle-source",
-   "projectile",
-   "rocket-silo-rocket",
-   "rocket-silo-rocket-shadow",
-   "segment",
-   "smoke-with-trigger",
-   "speech-bubble",
-   "spider-leg",
-   "sticker",
-   "stream",
-};
+// Entity types the scanner does not list: the effects neither it nor the cursor reads
+// (facts::isFleeting), and besides those what is part of something listed already or burns out
+// soon: fire, the segments behind a demolisher's head, the rocket inside a silo. The scanner lists
+// every other type; mods add prototypes, never types.
+constexpr std::string_view kSkippedTypes[] = {"fire", "rocket-silo-rocket", "segment"};
 
 // The category of each entity type the scanner lists one by one, but for Other, which takes the rest.
 // Trees, plants and resources are listed as forests and patches.
@@ -375,7 +356,12 @@ bool listed(const std::string_view (&types)[N], std::string_view type) {
 bool isTree(std::string_view type) { return type == "tree" || type == "plant"; }
 
 Rule ruleFor(const std::byte* prototype, std::string_view type, std::string_view name) {
-   if (listed(kSkippedTypes, type)) return {};
+   if (facts::isFleeting(type) || listed(kSkippedTypes, type)) return {};
+   // Hidden and never selected: how mods mark the invisible helpers their scripts place. The cursor
+   // tells them by drawing them (entityicons::draws), which the walk's threads cannot.
+   if (at<bool>(prototype, layout.prototypeHidden) &&
+       (at<uint32_t>(prototype, layout.entityPrototypeFlags) & game::kEntityNotSelectable))
+      return {};
    if (isTree(type)) {
       Rule rule{Listing::Tree, Resources};
       rule.onMap = true;
