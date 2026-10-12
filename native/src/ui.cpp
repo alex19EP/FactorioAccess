@@ -45,6 +45,7 @@
 #include "screens/ShortcutBarScreen.hpp"
 #include "screens/SideMenuScreen.hpp"
 #include "screens/MapViewOptionsScreen.hpp"
+#include "screens/EditorPanelScreen.hpp"
 #include "screens/SplitterScreen.hpp"
 #include "screens/StatusScreen.hpp"
 #include "screens/TechnologyScreen.hpp"
@@ -167,6 +168,8 @@ void start() {
    // The windows mods and the scenario put on the screen, while Ctrl+Tab has moved to them; it
    // also announces one that shows up.
    manager.Register(std::make_unique<screens::ModWindowsScreen>());
+   // The map editor's panel, the part after them.
+   manager.Register(std::make_unique<screens::EditorPanelScreen>());
    // The quickbar, the part after them.
    manager.Register(std::make_unique<screens::QuickBarScreen>());
    // The shortcut bar, the part after it.

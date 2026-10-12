@@ -9,6 +9,7 @@ namespace fa::parts {
 enum class Part {
    None, // back to what is open
    ModWindows, // only while a mod or the scenario shows a window on the screen
+   EditorPanel, // in the map editor only
    QuickBar,
    ShortcutBar,
    SideMenu,

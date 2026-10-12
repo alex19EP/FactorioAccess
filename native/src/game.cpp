@@ -985,6 +985,7 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.chartSearchPins, "ChartSearchResultGui", "pinButtonFlow");
    offset(layout.gameViewMapViewOptions, "GameView", "mapViewOptionsGui");
    offset(layout.globalMapViewSettings, "GlobalContext", "mapViewSettings.value");
+   offset(layout.mapEditorViewGui, "MapEditorView", "mapEditorGui");
    offset(layout.globalModManager, "GlobalContext", "modManager.value");
    address(layout.resolveResourcePath,
            "?resolveResourcePath@ModManager@@QEBA?AVPackagePath@@V?$basic_string_view@DU?$char_traits@D@std@@@std@@@Z");

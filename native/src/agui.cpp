@@ -1107,6 +1107,15 @@ ChartSearchResults chartSearchResults() {
 
 const Widget* mapViewOptions() { return shownMember(gameView(), layout.gameViewMapViewOptions); }
 
+const Widget* mapEditorPanel() {
+   const std::byte* view = gameView();
+   const auto* controllerView = view ? at<const Widget*>(view, layout.gameViewControllerView) : nullptr;
+   // Not a widget, but polymorphic: its RTTI names the view.
+   const std::byte* editorView = controllerView ? asBase(controllerView, ".?AVMapEditorView@@") : nullptr;
+   const Widget* panel = editorView ? at<const Widget*>(editorView, layout.mapEditorViewGui) : nullptr;
+   return panel && visible(panel) ? panel : nullptr;
+}
+
 const Widget* goalFrame() {
    const Widget* goal = shownMember(gameView(), layout.gameViewGoal);
    return goal ? member(goal, layout.goalInnerFrame) : nullptr;

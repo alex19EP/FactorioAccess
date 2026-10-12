@@ -138,6 +138,7 @@ add_library(fa_native SHARED
   src/screens/ShortcutBarScreen.cpp
   src/screens/SideMenuScreen.cpp
   src/screens/MapViewOptionsScreen.cpp
+  src/screens/EditorPanelScreen.cpp
   src/screens/StatusScreen.cpp
   src/screens/CraftingQueueScreen.cpp
   src/screens/SelectedInfoScreen.cpp

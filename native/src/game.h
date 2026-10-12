@@ -1400,6 +1400,10 @@ struct Layout {
    // SimpleConfigItem<bool>; every overlay but station names, player names and tags shows only while
    // showNonstandardMapInfo is also on, as MapViewOptionsGui::updateToggleState shows them.
    uint32_t globalMapViewSettings = 0;   // GlobalContext::mapViewSettings.value, MapViewSettings*
+   // The map editor's panel at the left (MapEditorGui, an agui Window), the editor's ControllerView
+   // (GameView::controllerView is a MapEditorView there): an Editors tab with a table of editor
+   // buttons (MapEditorsGui, IconButtons) over the active editor's tools, and a Settings tab.
+   uint32_t mapEditorViewGui = 0;        // MapEditorView::mapEditorGui, std::unique_ptr<MapEditorGui>
 
    // Files inside a mod, read as the game reads them whether the mod is a folder or a zip: the
    // ModManager turns "__mod__/path" into a PackagePath, which opens a ReadStream.

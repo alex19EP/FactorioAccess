@@ -140,6 +140,8 @@ inline constexpr Word kModWindowShown{"fa.native-mod-window-shown"};
 inline constexpr Word kUntitledModWindowShown{"fa.native-untitled-mod-window-shown"};
 // Remote view's panel of map overlay toggles and the add tag and add ping buttons.
 inline constexpr Word kMapViewOptions{"fa.native-map-view-options"};
+// The map editor's panel of editors and settings.
+inline constexpr Word kEditorPanel{"fa.native-editor-panel"};
 // The HUD's status: research, the alert categories, the scenario's goal and the bars.
 inline constexpr Word kStatus{"fa.native-status"};
 inline constexpr Word kAlerts{"fa.native-alerts"};
