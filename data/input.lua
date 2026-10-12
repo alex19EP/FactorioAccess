@@ -425,13 +425,6 @@ data:extend({
 
    {
       type = "custom-input",
-      name = "fa-g",
-      key_sequence = "G",
-      consuming = "none",
-   },
-
-   {
-      type = "custom-input",
       name = "fa-r",
       key_sequence = "R",
       linked_game_control = "rotate",

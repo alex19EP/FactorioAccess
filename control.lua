@@ -28,7 +28,6 @@ local Daytime = require("scripts.daytime")
 local Driving = require("scripts.driving")
 local HandMonitor = require("scripts.hand-monitor")
 local Electrical = require("scripts.electrical")
-local Equipment = require("scripts.equipment")
 local EventManager = require("scripts.event-manager")
 require("scripts.fa-commands") -- registers FA's console commands
 local FaInfo = require("scripts.fa-info")
@@ -1857,23 +1856,6 @@ EventManager.on_event(
    end
 )
 
----@param event EventData.CustomInputEvent
-local function kb_read_health_and_armor_stats(event)
-   local pindex = event.player_index
-   local p = game.get_player(pindex)
-
-   local mb = MessageBuilder.new()
-   Combat.notify_health_shields(pindex, mb)
-
-   -- For character, also add armor equipment stats
-   if not p.driving then
-      mb:list_item()
-      mb:fragment(Equipment.read_armor_stats(pindex, nil))
-   end
-
-   Speech.speak(pindex, mb:build())
-end
-
 EventManager.on_event(
    "fa-v",
    ---@param event EventData.CustomInputEvent
@@ -1887,14 +1869,6 @@ EventManager.on_event(
    ---@param event EventData.CustomInputEvent
    function(event, pindex)
       VehicleCycler.cycle_to_next_vehicle(pindex)
-   end
-)
-
-EventManager.on_event(
-   "fa-g",
-   ---@param event EventData.CustomInputEvent
-   function(event, pindex)
-      kb_read_health_and_armor_stats(event)
    end
 )
 
