@@ -6,6 +6,7 @@
 #include "facts.h"
 #include "footprint.h"
 #include "game.h"
+#include "railplanner.h"
 #include "reader.h"
 #include "scanner.h"
 #include "skip.h"
@@ -266,8 +267,15 @@ struct Pin {
    bool blueprint;
    int entity;
    uint32_t surface;
+   // The rail planner's goal: kept while planning goes on (railplanner.h).
+   bool rails;
 };
 std::optional<Pin> g_pin;
+
+bool pinnedRails() {
+   std::scoped_lock lock(g_mutex);
+   return g_pin && g_pin->rails;
+}
 
 // Whether the building or blueprint in hand goes where the cursor is: one is held and not pinned.
 bool buildFollowsCursor(int playerIndex) { return world::heldBuild(playerIndex) && !world::pinnedBuild(); }
@@ -284,8 +292,14 @@ void nudgeForKey(const MoveKey& key, const View& view, Position cursor, Position
    }
    world::pinBuild({target.x, target.y});
    const int eighth = key.dx > 0 ? 2 : key.dx < 0 ? 6 : key.dy > 0 ? 4 : 0;
-   speech::say(vocab::kNudged(vocab::direction(eighth)), true);
-   footprint::announce({}, tileOf(cursor.x), tileOf(cursor.y));
+   // A rail goal's route follows by itself once the game has searched it (railplanner.h).
+   if (pinnedRails()) {
+      speech::say(vocab::kRailGoalNudged(vocab::direction(eighth)), true);
+      railplanner::sayRoute();
+   } else {
+      speech::say(vocab::kNudged(vocab::direction(eighth)), true);
+      footprint::announce({}, tileOf(cursor.x), tileOf(cursor.y));
+   }
    record(cursor, Step::Read);
 }
 
@@ -489,10 +503,13 @@ void checkPin(const View& view, int playerIndex) {
       std::scoped_lock lock(g_mutex);
       pin = g_pin;
    }
-   const std::optional<world::HeldBuild> held = world::heldBuild(playerIndex);
-   if (pin && held && held->blueprint == pin->blueprint && held->entity == pin->entity &&
-       at<uint32_t>(view.view, layout.gameViewSurfaceIndex) == pin->surface)
-      return;
+   const bool sameSurface = pin && at<uint32_t>(view.view, layout.gameViewSurfaceIndex) == pin->surface;
+   if (pin && pin->rails) {
+      if (sameSurface && world::railPlanning(playerIndex)) return;
+   } else {
+      const std::optional<world::HeldBuild> held = world::heldBuild(playerIndex);
+      if (pin && held && held->blueprint == pin->blueprint && held->entity == pin->entity && sameSurface) return;
+   }
    unpin();
    speech::say(std::string(vocab::kAttachedCursor), false);
 }
@@ -750,9 +767,14 @@ void toggleDetach(int playerIndex) {
       reader::read(tileOf(pinned->x), tileOf(pinned->y), std::string(vocab::kAttachedCursor));
       return;
    }
-   const std::optional<world::HeldBuild> held = world::heldBuild(playerIndex);
-   if (!held) {
-      speech::say(std::string(vocab::kNothingToDetach), true);
+   // While planning rails, the route's goal stays where the cursor is: the start comes from the
+   // rail the cursor picks, so the planner pins nothing before.
+   const bool rails = world::railPlanning(playerIndex);
+   const std::optional<world::HeldBuild> held = rails ? std::nullopt : world::heldBuild(playerIndex);
+   if (!held && !rails) {
+      speech::say(
+         std::string(world::holdsRailPlanner(playerIndex) ? vocab::kRailDetachNotPlanning : vocab::kNothingToDetach),
+         true);
       return;
    }
    // The build goes on from the tile's centre, where it is built now.
@@ -760,10 +782,11 @@ void toggleDetach(int playerIndex) {
    world::pinBuild({corner.x, corner.y});
    {
       std::scoped_lock lock(g_mutex);
-      g_pin = Pin{held->blueprint, held->entity, at<uint32_t>(view->view, layout.gameViewSurfaceIndex)};
+      g_pin = Pin{held && held->blueprint, held ? held->entity : 0,
+                  at<uint32_t>(view->view, layout.gameViewSurfaceIndex), rails};
    }
    speech::say(std::string(vocab::kDetachedCursor), true);
-   footprint::announce({}, tileOf(corner.x), tileOf(corner.y));
+   if (!rails) footprint::announce({}, tileOf(corner.x), tileOf(corner.y));
 }
 
 void jump(int playerIndex, double x, double y) {

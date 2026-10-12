@@ -281,6 +281,14 @@ using BuildingModifierFunction = void* (*)(const void* blueprint, std::byte* out
 using TileBoxFunction = TileBox* (*)(const void* blueprint, TileBox* out);
 using BuildIdFunction = void* (*)(const void* player, std::byte* out);
 
+// Whether `player` holds the rail planner, which builds the route the game plans rather than a
+// piece at the cursor (railplanner.h).
+bool holdsRailPlanner(const void* player) {
+   alignas(8) std::byte id[game::kBuildIdCapacity];
+   reinterpret_cast<BuildIdFunction>(layout.playerBuildId)(player, id);
+   return at<bool>(id, layout.buildIdRailPlanner);
+}
+
 // The game state's adapter for `player`: the latency one while latency hiding runs, else the
 // player's own.
 const std::byte* stateAdapter(const std::byte* player) {
@@ -462,7 +470,7 @@ int detourPrepareBuilding(void* renderer, const void* player, const Position* cu
       ~Gathering() {
          if (at) footprint::end(at->x, at->y);
       }
-   } gathering(pin, entity == 0);
+   } gathering(holdsRailPlanner(player) ? std::nullopt : pin, entity == 0);
    if (entity == 0) {
       g_spokenPreview.reset();
       return g_prepareBuildingOriginal(renderer, player, position, drawQueue);
@@ -731,6 +739,17 @@ int buildDirection(int playerIndex) {
    if (!view) return -1;
    const uint8_t direction = at<uint8_t>(view, layout.gameViewBuildDirection);
    return direction < game::kDirectionCount ? direction : -1;
+}
+
+bool holdsRailPlanner(int playerIndex) {
+   const std::byte* game = gameOfLocalPlayer(playerIndex);
+   return game && at<const std::byte*>(game, layout.gameView) && holdsRailPlanner(localPlayer(game));
+}
+
+bool railPlanning(int playerIndex) {
+   const std::byte* game = gameOfLocalPlayer(playerIndex);
+   const std::byte* view = game ? at<const std::byte*>(game, layout.gameView) : nullptr;
+   return view && at<bool>(view, layout.gameViewRailPlannerActive) && holdsRailPlanner(localPlayer(game));
 }
 
 std::optional<HeldBuild> heldBuild(int playerIndex) {

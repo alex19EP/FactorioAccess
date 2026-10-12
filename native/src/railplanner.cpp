@@ -1,17 +1,21 @@
 #include "railplanner.h"
 
 #include "game.h"
+#include "reader.h"
 #include "speech.h"
 #include "text.h"
 #include "vocab.h"
 #include "world.h"
 
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <functional>
+#include <memory>
 #include <mutex>
 #include <optional>
 #include <string>
@@ -137,6 +141,9 @@ struct State {
    std::chrono::steady_clock::time_point seenSince;
 };
 State g_state;
+
+// Set by sayRoute: the next route is said even when it reads as the one before.
+std::atomic<bool> g_sayRoute{false};
 
 // The route drawn last, for the route key: written on the drawing thread, read from Lua.
 std::mutex g_routeMutex;
@@ -333,7 +340,8 @@ void update(const Drawn& drawn) {
    const bool snapped =
       search.goal.direction < kDirections && at<uint8_t>(gameViewObject, layout.gameViewBuildDirection) >= kDirections;
    std::string said = summary(drawn, search, snapped);
-   if (said == state.summary) return;
+   const bool asked = g_sayRoute.exchange(false);
+   if (said == state.summary && !asked) return;
    state.summary = said;
    speech::say(std::move(said), false);
 }
@@ -348,6 +356,24 @@ bool detourDrawPlan(const void* controller, const void* cursor, void* queue, uin
                     const void* planner, void* entityGetter, uint8_t selectionMode) {
    if (!world::drivesCursor() || t_drawn)
       return g_drawPlanOriginal(controller, cursor, queue, ghost, buildMode, planner, entityGetter, selectionMode);
+   // A goal pinned by the detach key (cursor.h): the route goes there, and snaps to the rail end
+   // there, not to the one the free cursor selects. The game takes the entity from the getter when
+   // it holds one, else from its selection; MSVC's std::function is the game's, and the callee
+   // destroys whichever it is given.
+   using Getter = std::function<const void*()>;
+   Getter pinnedGetter;
+   // A MapPosition: two fixed point ints.
+   struct Point {
+      int32_t x;
+      int32_t y;
+   } pinnedAt{};
+   if (const auto pin = world::pinnedBuild()) {
+      std::destroy_at(static_cast<Getter*>(entityGetter));
+      pinnedAt = {pin->x, pin->y};
+      pinnedGetter = [pinnedAt] { return reader::selectedAtPoint(pinnedAt.x, pinnedAt.y); };
+      entityGetter = &pinnedGetter;
+      cursor = &pinnedAt;
+   }
    Drawn drawn;
    struct Scope {
       explicit Scope(Drawn* drawn) { t_drawn = drawn; }
@@ -406,6 +432,8 @@ void* detourBestSolution(void* finder, void* plan) {
 } // namespace
 
 bool drawing() { return t_drawn != nullptr; }
+
+void sayRoute() { g_sayRoute = true; }
 
 std::optional<Route> route() {
    const std::lock_guard lock(g_routeMutex);

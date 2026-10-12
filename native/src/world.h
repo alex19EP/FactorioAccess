@@ -59,6 +59,12 @@ struct HeldBuild {
 // or blueprint: tiles, the rail planner and anything else.
 std::optional<HeldBuild> heldBuild(int playerIndex);
 
+// Whether `playerIndex`, this client's player, holds the rail planner.
+bool holdsRailPlanner(int playerIndex);
+// Whether `playerIndex`, this client's player, plans rails: the rail planner in hand and a route
+// started from a rail (railplanner.h). The detach key pins the route's goal then.
+bool railPlanning(int playerIndex);
+
 // The game's drag building while the build control is held, from its first build to the release.
 // A drag builds in a straight line. Rotate during a belt drag does not turn the belt in hand: the
 // game turns the line at the cursor's next step off it (`turnPending` until then), and `turns`

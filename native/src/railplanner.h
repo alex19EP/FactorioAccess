@@ -48,6 +48,10 @@ struct Route {
 // route.
 std::optional<Route> route();
 
+// The next route the game finds is said even when it reads as the one said before: after the
+// pinned goal moved (cursor.h), the player waits to hear where it leads now.
+void sayRoute();
+
 // Whether the rail planner is drawing on this thread: the pieces it draws are its route, not the
 // item in hand's preview.
 bool drawing();

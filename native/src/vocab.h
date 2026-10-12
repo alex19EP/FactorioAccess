@@ -538,6 +538,8 @@ inline constexpr Word kRailPlanJoins{"fa.native-rail-plan-joins"};
 inline constexpr Word kRailPlanGhosts{"fa.native-rail-plan-ghosts"};
 inline constexpr Word kRailPlanLayerElevated{"fa.native-rail-plan-layer-elevated"};
 inline constexpr Word kRailPlanLayerGround{"fa.native-rail-plan-layer-ground"};
+inline constexpr Word kRailGoalNudged{"fa.native-rail-goal-nudged"};
+inline constexpr Word kRailDetachNotPlanning{"fa.native-rail-detach-not-planning"};
 
 inline constexpr Word kNoTooltip{"fa.native-no-tooltip"};
 inline constexpr Word kNoAction{"fa.native-no-action"};
