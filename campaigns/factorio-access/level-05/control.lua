@@ -361,7 +361,7 @@ end)
 ---@param event EventData
 local function update(event)
    -- Nothing to check while the character is dead.
-   if player().character then story_update(storage.story, event) end
+   if player().character then story_update(storage.story, event, "level-06") end
 end
 
 script.on_event(defines.events.on_tick, function(event)

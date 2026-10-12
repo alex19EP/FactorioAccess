@@ -50,8 +50,6 @@ Fast transfer half stacks from the hand to the selected entity: `ctrl + right br
 
 Drop 1 item from the hand into an entity: `z`
 
-Open the offshore pump assist tool or set splitter filters to item in hand: `alt + left bracket`
-
 Skip the cursor up to 100 tiles or until the first change: `shift + wasd`
 
 Move the cursor by the size of the item in hand: `ctrl + wasd`
@@ -156,7 +154,7 @@ These are the game's own highlights, so modded entities read the same way.  Duri
 For a few items, the mod adds special behavior:
 
 - For underground belts, the underground belt will become an exit if it was going to match an entrance.
-- For the offshore pump, which has weird placement rules, you can get a menu of proposed locations with `alt + left bracket`.
+- For the offshore pump, which has weird placement rules, the scanner's build spots category lists every place within 30 tiles of your character where the pump in hand fits, nearest first.
 
 ### Drag Building
 
