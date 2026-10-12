@@ -130,6 +130,55 @@ void AddQueue(graph::GraphBuilder& builder, const Widget* window)
         builder.PopContext();
 }
 
+// The window's tabs (the map editor's Items, Infinity filters and Character), while it has more than
+// one; a SelectListGui's item group tabs are its own.
+void AddTabs(graph::GraphBuilder& builder, const Widget* window)
+{
+    std::vector<const Widget*> tabs;
+    for (const Widget* tab : FindAll(window, "agui::Tab"))
+        if (!agui::derivesFrom(tab, "ItemGroupTab"))
+            tabs.push_back(tab);
+    if (tabs.size() < 2)
+        return;
+    builder.BeginStop("tabs");
+    builder.StartRow("tabs");
+    for (std::size_t i = 0; i < tabs.size(); ++i)
+        builder.AddItem(graph::ControlId::Referenced(tabs[i], "tabs/" + std::to_string(i)), ControlNode(tabs[i]));
+    builder.EndRow();
+}
+
+// The map editor's item list (ItemSpawnGui, a SelectListGui of items), whose choice puts a stack of
+// it in the hand.
+void AddItemList(graph::GraphBuilder& builder, const Widget* widget)
+{
+    for (const Widget* child : VisibleChildren(widget))
+    {
+        if (!agui::derivesFromTemplate(child, "SelectListGui"))
+        {
+            AddItemList(builder, child);
+            continue;
+        }
+        builder.BeginStop("items");
+        std::string title = TitleAbove(child);
+        if (!title.empty())
+            builder.PushContext(title);
+        AddChoices(builder, "items/", child);
+        if (!title.empty())
+            builder.PopContext();
+        return;
+    }
+}
+
+// The map editor's infinity filters: what the editor's inventory keeps topped up or empties.
+void AddInfinityFilters(graph::GraphBuilder& builder, const Widget* window)
+{
+    const Widget* filters = FindDescendant(window, "InfinityEditorControllerFiltersGui");
+    if (!filters)
+        return;
+    builder.BeginStop("filters");
+    AddSubtree(builder, "filters", filters);
+}
+
 // The search field the game's focus-search control (Ctrl+F) opens over the window, while it shows.
 const Widget* SearchField(const Widget* window)
 {
@@ -168,8 +217,12 @@ void CharacterScreen::Build(graph::GraphBuilder& builder)
     std::vector<const Widget*> inventories = FindAll(_window, "InventoryGui");
     for (std::size_t i = 0; i < inventories.size(); ++i)
         AddInventory(builder, "inventory" + std::to_string(i), inventories[i]);
+    AddTabs(builder, _window);
     if (const Widget* crafting = FindDescendant(_window, "CraftingGui"))
         AddCrafting(builder, crafting);
+    else
+        AddItemList(builder, _window);
+    AddInfinityFilters(builder, _window);
     AddQueue(builder, _window);
 }
 
