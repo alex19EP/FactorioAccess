@@ -1657,6 +1657,7 @@ struct Layout {
    uint32_t controllerCharacter = 0;
    uint32_t controllerGod = 0;
    uint32_t controllerRemote = 0;
+   uint32_t controllerEditor = 0;
    // Input actions, which every client input becomes: InputAction (the action's data inline in a
    // union from `buffer`), sent with bool InputSource::process(InputAction&&), which checks the
    // permission group and hands it to the server. A sighted player's map drag moves the remote view

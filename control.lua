@@ -151,8 +151,9 @@ local function read_hand(pindex)
       return
    end
    -- Entering or leaving remote view changes the hand, and the view's announcement says it
-   if Zoom.view_pending(pindex) then return end
-   Speech.speak(pindex, Hand.describe(pindex) or { "fa.empty_cursor" })
+   local hand = Hand.describe(pindex)
+   if Zoom.hand_for_view(pindex, hand) then return end
+   Speech.speak(pindex, hand or { "fa.empty_cursor" })
 end
 
 --Checks if the storage players table has been created, and if the table entry for this player exists. Otherwise it is initialized.
@@ -237,7 +238,6 @@ function on_tick(event)
    SonifierTickHandler.on_tick()
    BattleNotice.on_tick()
    ForceGhostEnabler.on_tick()
-   Zoom.on_tick()
    SelectionResults.on_tick()
 
    -- Check alerts via AudioCues

@@ -1183,6 +1183,7 @@ bool resolve(pdb::SymbolTable& symbols) {
    enumerator(layout.controllerCharacter, "ControllerType", "Character");
    enumerator(layout.controllerGod, "ControllerType", "God");
    enumerator(layout.controllerRemote, "ControllerType", "Remote");
+   enumerator(layout.controllerEditor, "ControllerType", "Editor");
    size(layout.inputActionSize, "InputAction");
    offset(layout.inputActionType, "InputAction", "type");
    offset(layout.inputActionPlayer, "InputAction", "playerIndex");

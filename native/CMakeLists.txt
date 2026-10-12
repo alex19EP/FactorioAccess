@@ -235,6 +235,7 @@ add_executable(fa_logic_tests
   tests/cursor/CycleStopsTests.cpp
   tests/cursor/MapColoursTests.cpp
   tests/cursor/UndergroundRulesTests.cpp
+  tests/cursor/ViewAnnounceTests.cpp
 )
 target_include_directories(fa_logic_tests PRIVATE src tests/graph)
 target_compile_options(fa_logic_tests PRIVATE /W4 /permissive- /utf-8 /EHsc)

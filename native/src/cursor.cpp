@@ -7,11 +7,13 @@
 #include "reader.h"
 #include "skip.h"
 #include "speech.h"
+#include "viewannounce.h"
 #include "vocab.h"
 #include "world.h"
 
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -215,6 +217,14 @@ bool g_anchored = false;
 std::vector<skip::Ruler> g_rulers;
 // The mod jumped the cursor: the next frame opens remote view if the screen does not hold it.
 bool g_jumped = false;
+// When to say the zoom and a view the player entered, and what the mod says is in hand, to say with
+// that view.
+viewannounce::Announcer g_announcer;
+std::string g_hand;
+// When the view was last drawn. A view entered is said only while frames come, so that without
+// them (a game without graphics) the mod says the hand itself.
+std::chrono::steady_clock::time_point g_lastViewFrame{};
+constexpr auto kViewFramesGone = std::chrono::seconds(1);
 
 struct StepRecord {
    Position position;
@@ -518,6 +528,40 @@ void fixedFrame(void* source, const View& view, Position cursor, bool anchored, 
    place(cursormoves::pulledOnto(tiles, cursor, view.centre, anchored));
 }
 
+// The view's word, for the views the mod names as the player enters them.
+const vocab::Word* viewWord(uint8_t controller) {
+   if (controller == layout.controllerRemote) return &vocab::kViewRemote;
+   if (controller == layout.controllerCharacter) return &vocab::kViewCharacter;
+   if (controller == layout.controllerGod) return &vocab::kViewGod;
+   if (controller == layout.controllerEditor) return &vocab::kViewEditor;
+   return nullptr;
+}
+
+// Says the zoom once it holds still after a change, or the view the player entered with the zoom it
+// opens at and what is in hand. Followed in vanilla mode too, and said only outside it, as the mod
+// says nothing there.
+void announceView(const View& view, bool speak) {
+   viewannounce::Say say;
+   std::string hand;
+   {
+      std::scoped_lock lock(g_mutex);
+      g_lastViewFrame = std::chrono::steady_clock::now();
+      say = g_announcer.frame(view.tilesPerPixel);
+      if (say == viewannounce::Say::View) hand = std::exchange(g_hand, {});
+   }
+   if (say == viewannounce::Say::Nothing || !speak) return;
+   const int64_t tiles = std::llround(std::max(view.size.x, view.size.y) * view.tilesPerPixel);
+   const int32_t cell = cellSize(view);
+   const vocab::Word* word = say == viewannounce::Say::View ? viewWord(view.controller) : nullptr;
+   if (!word) {
+      speech::say(vocab::kZoomSet(tiles, cell), true);
+      return;
+   }
+   std::string text = (*word)(tiles, cell);
+   if (!hand.empty()) text += ", " + hand;
+   speech::say(std::move(text), true);
+}
+
 void frame(void* source) {
    bool known, vanilla, anchored;
    {
@@ -527,6 +571,7 @@ void frame(void* source) {
       anchored = g_anchored;
    }
    const std::optional<View> view = localView();
+   if (view) announceView(*view, known && !vanilla);
    if (!view || !known || vanilla) {
       // The mouse is the cursor in vanilla mode, and the build follows it.
       if (vanilla && world::pinnedBuild()) unpin();
@@ -622,6 +667,22 @@ void setMode(int playerIndex, bool vanilla, bool keys, bool anchored, std::vecto
       for (const Tile& ruler : rulers) g_rulers.push_back({ruler.x, ruler.y});
    }
    if (vanilla) world::releaseCursor(playerIndex);
+}
+
+void viewEntered(int playerIndex, std::string hand) {
+   if (!isLocalPlayer(playerIndex)) return;
+   std::scoped_lock lock(g_mutex);
+   if (std::chrono::steady_clock::now() - g_lastViewFrame > kViewFramesGone) return;
+   g_announcer.entered();
+   g_hand = std::move(hand);
+}
+
+bool viewHand(int playerIndex, std::string hand) {
+   if (!isLocalPlayer(playerIndex)) return false;
+   std::scoped_lock lock(g_mutex);
+   if (!g_announcer.viewPending()) return false;
+   g_hand = std::move(hand);
+   return true;
 }
 
 void toggleDetach(int playerIndex) {

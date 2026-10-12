@@ -68,6 +68,16 @@ std::optional<StepResult> step(int playerIndex, double x, double y);
 // play sounds by it, never change the game by it.
 std::optional<Tile> position(int playerIndex);
 
+// The view's zoom is said each time it changes, once it holds still (viewannounce.h). From the mod's
+// Lua as the player enters another view: the view is said in its place, with the zoom it opens at
+// and `hand`, what the mod says is in hand (empty for nothing). Frames, not ticks, drive both, so
+// they go on while the map is paused; with no frames drawn (a game without graphics) nothing waits
+// to be said.
+void viewEntered(int playerIndex, std::string hand);
+// While a view the player entered is still to be said, takes `hand` to say with it and returns
+// true; otherwise false, and the mod says the hand itself.
+bool viewHand(int playerIndex, std::string hand);
+
 // For the dev server's /cursor, on the main thread: this client's view (its controller, the
 // camera's centre and zoom, the tiles on the screen, the full map's cell size) and the cursor's
 // tile, a `name=value` a line.

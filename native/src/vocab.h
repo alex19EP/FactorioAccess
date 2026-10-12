@@ -220,6 +220,14 @@ inline constexpr Word kTilesToward{"fa.native-tiles-toward"};
 // The mod's own key for the sixteen directions, north 0 clockwise.
 inline constexpr Word kDirection{"fa.direction"};
 
+// The view's zoom in tiles across the screen and, on the full map, the cells the cursor moves by;
+// and the view the player entered, said with its zoom (locale/en/zoom.cfg).
+inline constexpr Word kZoomSet{"fa.zoom-set"};
+inline constexpr Word kViewRemote{"fa.zoom-view-remote"};
+inline constexpr Word kViewCharacter{"fa.zoom-view-character"};
+inline constexpr Word kViewGod{"fa.zoom-view-god"};
+inline constexpr Word kViewEditor{"fa.zoom-view-editor"};
+
 // A blueprint's picture, tile by tile: what the game draws on an entity besides its icons. Items to
 // be delivered to it ("with 2 speed module"), which way a loader faces, a combinator's operation
 // and output, a recipe not unlocked yet, and the floor under it ("on refined concrete").

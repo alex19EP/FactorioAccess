@@ -211,6 +211,28 @@ int cursorMode(lua_State* L) {
    return 0;
 }
 
+// The LocalisedString at `index` as speech says it, or empty for nil.
+std::string spoken(lua_State* L, int index) {
+   return type(L, index) == kNil ? std::string() : nameKeys(L, stripRichText(translate(L, index)));
+}
+
+// fa_native.view_entered(pindex, hand): the player entered another view; `hand` is the LocalisedString
+// the mod says for what is in hand, or nil. See cursor::viewEntered.
+int viewEntered(lua_State* L) {
+   const int playerIndex = static_cast<int>(checkInteger(L, 1));
+   if (!world::mayBeLocalPlayer(playerIndex)) return 0;
+   cursor::viewEntered(playerIndex, spoken(L, 2));
+   return 0;
+}
+
+// fa_native.view_hand(pindex, hand): true when the view the player entered is still to be said and
+// takes `hand` to say with it. For speech only: other clients say the hand themselves.
+int viewHand(lua_State* L) {
+   const int playerIndex = static_cast<int>(checkInteger(L, 1));
+   pushBoolean(L, world::mayBeLocalPlayer(playerIndex) && cursor::viewHand(playerIndex, spoken(L, 2)));
+   return 1;
+}
+
 // fa_native.cursor_jump(pindex, x, y): the mod's own cursor jumps.
 int cursorJump(lua_State* L) {
    cursor::jump(static_cast<int>(checkInteger(L, 1)), checkNumber(L, 2), checkNumber(L, 3));
@@ -715,6 +737,8 @@ struct Function {
 constexpr Function kFunctions[] = {
    {"cursor_mode", &cursorMode},
    {"cursor_jump", &cursorJump},
+   {"view_entered", &viewEntered},
+   {"view_hand", &viewHand},
    {"detach_build", &detachBuild},
    {"cursor_step", &cursorStep},
    {"cursor_read", &cursorRead},

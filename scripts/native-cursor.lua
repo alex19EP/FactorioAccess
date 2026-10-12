@@ -8,6 +8,8 @@ local mod = {}
 ---@class fa.Native
 ---@field cursor_mode fun(player_index: integer, vanilla: boolean, keys: boolean, anchored: boolean, rulers: integer[], next_machine_sound: boolean)
 ---@field cursor_jump fun(player_index: integer, x: number, y: number)
+---@field view_entered fun(player_index: integer, hand: LocalisedString?)
+---@field view_hand fun(player_index: integer, hand: LocalisedString?): boolean
 ---@field detach_build fun(player_index: integer)
 ---@field cursor_step fun(player_index: integer, x: number, y: number): ("read"|"moved"|"edge"|"skipped")?, integer?, boolean?
 ---@field cursor_read fun(player_index: integer, x: number, y: number, prefix: LocalisedString?)

@@ -2,36 +2,31 @@
 Zoom.
 
 The game's own zoom controls change the zoom (helper-scripts/factorio-access-keys.ps1 puts zoom in and
-zoom out on EQUALS and MINUS). This reads it as the number of tiles across the screen, speaks each
-change, and gives the area the sound model searches.
+zoom out on EQUALS and MINUS). This reads it as the number of tiles across the screen and gives the
+area the sound model searches.
+
+The DLL says each zoom change, and the view the player enters with what is in hand: it runs on
+frames, which go on while the map is paused (the map editor pauses it in single player), where
+ticks stop.
 ]]
 local Hand = require("scripts.hand")
 local SoundModel = require("scripts.sound-model")
-local Speech = require("scripts.speech")
+
+---@type fa.Native?
+local native = rawget(_G, "fa_native")
 
 local mod = {}
 
 -- The base pixels per tile at zoom=1.
 local base_pixels_per_tile = 32
 
--- The zoom each player last heard, so each change is spoken once. It only drives speech, so it may
--- differ between peers.
----@type table<integer, number>
-local spoken_zoom = {}
--- The zoom seen on the previous tick: a change is spoken once it has held for a tick, when the
--- render mode has caught up with it and a burst of wheel steps has ended.
----@type table<integer, number>
-local seen_zoom = {}
--- Views each player entered and has yet to hear, with the zoom they open at.
----@type table<integer, "remote"|"character"|"god">
-local entered_view = {}
-
--- The views spoken on entering them, by controller.
----@type table<defines.controllers, ("remote"|"character"|"god")?>
-local VIEW_NAMES = {
-   [defines.controllers.remote] = "remote",
-   [defines.controllers.character] = "character",
-   [defines.controllers.god] = "god",
+-- The views said on entering them, by controller.
+---@type table<defines.controllers, true?>
+local NAMED_VIEWS = {
+   [defines.controllers.remote] = true,
+   [defines.controllers.character] = true,
+   [defines.controllers.god] = true,
+   [defines.controllers.editor] = true,
 }
 
 ---Get the current zoom level in tiles.
@@ -71,48 +66,22 @@ function mod.append_zoom_info(pindex, mb)
    mb:fragment({ "fa.zoom-current", tiles })
 end
 
----Whether the player entered a view they have yet to hear about.
+---While the view the player entered is still to be said, gives the DLL the hand to say with it and
+---returns true; otherwise false, and the caller says the hand. For speech only.
 ---@param pindex integer
+---@param hand LocalisedString?
 ---@return boolean
-function mod.view_pending(pindex)
-   return entered_view[pindex] ~= nil
+function mod.hand_for_view(pindex, hand)
+   return native ~= nil and native.view_hand(pindex, hand)
 end
 
----Says the view the player entered, with the zoom it opens at and what is now in hand, once the zoom
----has settled.
+---The DLL says the view the player entered, with the zoom it opens at and what is now in hand, once
+---the zoom has settled.
 ---@param event EventData.on_player_controller_changed
 function mod.on_controller_changed(event)
-   local view = VIEW_NAMES[game.get_player(event.player_index).controller_type]
-   if view then entered_view[event.player_index] = view end
-end
-
----Speaks each player's zoom when it changed since they last heard it, and the view they entered. The
----first check after a load only records the zoom.
-function mod.on_tick()
-   for _, player in pairs(game.connected_players) do
-      local pindex = player.index
-      local zoom = player.zoom
-      local previous = seen_zoom[pindex]
-      seen_zoom[pindex] = zoom
-      local last = spoken_zoom[pindex]
-      if not last then spoken_zoom[pindex] = zoom end
-      local view = entered_view[pindex]
-      if previous == zoom and (view or last and math.abs(zoom - last) > 1e-6) then
-         spoken_zoom[pindex] = zoom
-         entered_view[pindex] = nil
-         local tiles = mod.get_current_zoom_tiles(pindex)
-         -- 0 off the full map
-         local cell_size = mod.get_map_cell_size(pindex) or 0
-         if view then
-            local message = Speech.MessageBuilder.new()
-            message:fragment({ "fa.zoom-view-" .. view, tiles, cell_size })
-            local hand = Hand.describe(pindex)
-            if hand then message:list_item_forced_comma(hand) end
-            Speech.speak(pindex, message:build())
-         else
-            Speech.speak(pindex, { "fa.zoom-set", tiles, cell_size })
-         end
-      end
+   local pindex = event.player_index
+   if native and NAMED_VIEWS[game.get_player(pindex).controller_type] then
+      native.view_entered(pindex, Hand.describe(pindex))
    end
 end
 

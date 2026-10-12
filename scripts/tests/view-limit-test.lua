@@ -1,7 +1,8 @@
 -- The DLL keeps the cursor on the screen and the remote view's camera on the cursor
 -- (native/src/cursor.h); a game without graphics runs no game view, so that is checked in game.
--- These tests cover the mod's side: the screen check for its own moves, the views it speaks, and
--- the map cells it reads.
+-- The DLL also says the view entered, with the hand, on frames; without them the mod says the hand
+-- itself. These tests cover the mod's side: the screen check for its own moves, the hand, and the
+-- map cells it reads.
 local TestRegistry = require("scripts.test-registry")
 local describe, it = TestRegistry.describe, TestRegistry.it
 local Cursor = require("scripts.cursor")
@@ -40,7 +41,7 @@ describe("Cursor limited to the screen", function()
       end)
    end)
 
-   it("says the view entered, with the ghost in hand", function(ctx)
+   it("says the hand on entering a view when no view is drawn", function(ctx)
       ---@type LuaPlayer
       local player
 
@@ -56,26 +57,13 @@ describe("Cursor limited to the screen", function()
       end)
 
       ctx:at_tick(5, function()
-         local said = Speech.stop_capture()
-         local found = false
-         for _, m in ipairs(said) do
-            if contains(m.message, "fa.zoom-view-remote") then
-               found = true
-               ctx:assert(contains(m.message, "fa.cursor-ghost-description"), "The ghost in hand is said with the view")
-            end
-         end
-         ctx:assert(found, "Entering remote view is said")
-         Speech.start_capture()
-         player.clear_cursor()
-         player.exit_remote_view()
-      end)
-
-      ctx:at_tick(9, function()
          local found = false
          for _, m in ipairs(Speech.stop_capture()) do
-            if contains(m.message, "fa.zoom-view-character") then found = true end
+            if contains(m.message, "fa.cursor-ghost-description") then found = true end
          end
-         ctx:assert(found, "Leaving remote view is said")
+         ctx:assert(found, "The ghost in hand is said")
+         player.clear_cursor()
+         player.exit_remote_view()
       end)
    end)
 
@@ -151,16 +139,10 @@ describe("Cursor limited to the screen", function()
 
       -- As the sandbox scenario leaves the player, without a character
       ctx:at_tick(1, function()
-         Speech.start_capture()
          player.set_controller({ type = defines.controllers.god })
       end)
 
       ctx:at_tick(5, function()
-         local found = false
-         for _, m in ipairs(Speech.stop_capture()) do
-            if contains(m.message, "fa.zoom-view-god") then found = true end
-         end
-         ctx:assert(found, "Entering god mode is said")
          ctx:assert_equals(defines.controllers.god, player.controller_type)
          local position = player.position --[[@as MapPosition.struct]]
          local x, y = math.floor(position.x), math.floor(position.y)
