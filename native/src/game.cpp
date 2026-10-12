@@ -1012,6 +1012,7 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.mapPausedState, "Map", "entityUpdatePausedState");
    offset(layout.pausedSetting, "EntityUpdatePausedState", "pausedSetting");
    offset(layout.pausedTicksToRun, "EntityUpdatePausedState", "ticksToRun");
+   offset(layout.mapEntityTick, "Map", "entityTick");
    offset(layout.mapExtraScriptData, "Map", "extraScriptData");
    offset(layout.scriptRectangles, "ExtraScriptData", "rectanglesBySurface");
    offset(layout.scriptPositions, "ExtraScriptData", "positionsBySurface");

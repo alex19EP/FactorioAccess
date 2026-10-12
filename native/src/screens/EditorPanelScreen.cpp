@@ -1,6 +1,8 @@
 #include "EditorPanelScreen.hpp"
 
+#include <cstddef>
 #include <string>
+#include <vector>
 
 #include "AguiNodes.hpp"
 #include "parts.h"
@@ -20,6 +22,19 @@ const Widget* FindPanel()
     if (!agui::inGame() || agui::menuStateWindow())
         return nullptr;
     return agui::mapEditorPanel();
+}
+
+// The active editor's palette of tiles, entities, resources and the rest: a SelectListGui<T> in the
+// panel, whose pick the editor builds with.
+void FindPalettes(const Widget* widget, std::vector<const Widget*>& found)
+{
+    for (const Widget* child : VisibleChildren(widget))
+    {
+        if (agui::derivesFromTemplate(child, "SelectListGui"))
+            found.push_back(child);
+        else
+            FindPalettes(child, found);
+    }
 }
 
 } // namespace
@@ -42,8 +57,16 @@ void EditorPanelScreen::Build(graph::GraphBuilder& builder)
 {
     if (!_panel || FindPanel() != _panel)
         return;
+    std::vector<const Widget*> palettes;
+    FindPalettes(_panel, palettes);
     builder.BeginStop("panel");
-    AddSubtree(builder, "panel", _panel);
+    AddSubtree(builder, "panel", _panel, palettes);
+    for (std::size_t i = 0; i < palettes.size(); ++i)
+    {
+        const std::string key = "palette" + std::to_string(i);
+        builder.BeginStop(key);
+        AddChoices(builder, key + "/", palettes[i]);
+    }
 }
 
 void EditorPanelScreen::OnEscape() { parts::close(); }

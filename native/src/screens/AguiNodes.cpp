@@ -1280,6 +1280,14 @@ graph::NodeVtable ChoiceNode(const Widget* choice)
                                           : std::format("{} {}", button.quality, button.name);
         },
         false, graph::AnnouncementKinds::Label);
+    // A list that keeps its pick (the map editor's palette) shows it toggled.
+    if (agui::derivesFrom(choice, "agui::Button"))
+    {
+        auto selected = [choice]()
+        { return agui::buttonToggled(choice) ? std::string(vocab::kSelected) : std::string(); };
+        vtable.Announcements.emplace_back(selected, true, graph::AnnouncementKinds::Value);
+        vtable.StateText = selected;
+    }
     return vtable;
 }
 

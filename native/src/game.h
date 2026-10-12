@@ -1428,6 +1428,9 @@ struct Layout {
    uint32_t mapPausedState = 0;          // Map::entityUpdatePausedState, unique_ptr<EntityUpdatePausedState>
    uint32_t pausedSetting = 0;           // EntityUpdatePausedState::pausedSetting, bool
    uint32_t pausedTicksToRun = 0;        // EntityUpdatePausedState::ticksToRun, uint32
+   // LuaGameScript::tick: the ticks the entities ran, which stand still while the map is paused.
+   // Map::updateTick goes on counting the editor's paused updates.
+   uint32_t mapEntityTick = 0;           // Map::entityTick, MapTick (uint64)
    // Scripting areas and positions by surface (ExtraScriptData::rectanglesBySurface and
    // positionsBySurface, std::map<SurfaceIndex, std::vector<std::unique_ptr<T>>>), each with a
    // name and an id (CommonScriptData).

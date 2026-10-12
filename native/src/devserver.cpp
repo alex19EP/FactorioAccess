@@ -144,6 +144,12 @@ std::optional<uint32_t> keyNamed(std::string_view name) {
       {"`", Grave},
       {"grave", Grave},
       {"lalt", LeftAlt}, // alone, as the game's alt mode key
+      // The numeric keypad: the map editor's time keys.
+      {"kp0", Keypad0},
+      {"kp.", KeypadPeriod},
+      {"kp+", KeypadPlus},
+      {"kp-", KeypadMinus},
+      {"kp*", KeypadMultiply},
    };
    for (const auto& [n, key] : named)
       if (n == name) return key;

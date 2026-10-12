@@ -136,12 +136,12 @@ void detourActionPerformed(void* handler, const std::byte* action, std::byte* co
    if (!map) return;
 
    const int playerIndex = at<uint16_t>(player, layout.playerIndex) + 1;
-   if (type == layout.editorTogglePause || type == layout.editorIncreaseSpeed ||
-       type == layout.editorDecreaseSpeed || type == layout.editorResetSpeed) {
+   if (type == layout.editorTogglePause || type == layout.editorIncreaseSpeed || type == layout.editorDecreaseSpeed ||
+       type == layout.editorResetSpeed) {
       speech::say(speedLine(map), true);
    } else if (type == layout.editorTickOnce) {
       std::scoped_lock lock(g_mutex);
-      g_tickFrom = at<uint64_t>(map, layout.mapUpdateTick);
+      g_tickFrom = at<uint64_t>(map, layout.mapEntityTick);
    } else if (type == layout.editorEntityVariation || type == layout.editorCliffVariation ||
               type == layout.editorResourceVariation || type == layout.editorTileVariation) {
       if (const std::optional<cursor::Tile> tile = cursor::position(playerIndex)) reader::read(tile->x, tile->y);
@@ -162,7 +162,7 @@ void detourActionPerformed(void* handler, const std::byte* action, std::byte* co
 void frame(const std::byte* player) {
    const auto* map = player ? at<const std::byte*>(player, layout.playerMap) : nullptr;
    if (!map) return;
-   const uint64_t tick = at<uint64_t>(map, layout.mapUpdateTick);
+   const uint64_t tick = at<uint64_t>(map, layout.mapEntityTick);
    {
       std::scoped_lock lock(g_mutex);
       if (!g_tickFrom || *g_tickFrom == tick) return;

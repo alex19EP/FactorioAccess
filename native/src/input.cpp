@@ -160,6 +160,11 @@ uint32_t scancode(uint32_t key) {
    case keys::Left: return 80;
    case keys::Down: return 81;
    case keys::Up: return 82;
+   case keys::KeypadMultiply: return 85;
+   case keys::KeypadMinus: return 86;
+   case keys::KeypadPlus: return 87;
+   case keys::Keypad0: return 98;
+   case keys::KeypadPeriod: return 99;
    default: return 0;
    }
 }
