@@ -9,7 +9,7 @@ local function add_access_radar()
    local access_radar = table.deepcopy(data.raw["radar"]["radar"])
    access_radar.icons = {
       {
-         icon = access_radar.icon,
+         icon = assert(access_radar.icon),
          icon_size = access_radar.icon_size,
          tint = ar_tint,
       },
@@ -30,7 +30,7 @@ local function add_access_radar()
    access_radar_item.place_result = "access-radar"
    access_radar_item.icons = {
       {
-         icon = access_radar_item.icon,
+         icon = assert(access_radar_item.icon),
          icon_size = access_radar_item.icon_size,
          tint = ar_tint,
       },

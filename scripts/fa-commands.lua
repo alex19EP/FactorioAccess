@@ -196,7 +196,8 @@ load would, so edited Lua goes live without restarting. Unlike /c it leaves achi
 ]]
 ---@param cmd CustomCommandData
 local function cmd_reload(cmd)
-   local pindex = cmd.player_index
+   -- Typed in a player's console, never the server's
+   local pindex = assert(cmd.player_index)
    if game.is_multiplayer() then
       Speech.speak(pindex, { "fa.cmd-reload-single-player" })
       return

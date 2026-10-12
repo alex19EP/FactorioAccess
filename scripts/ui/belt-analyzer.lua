@@ -15,7 +15,7 @@ local TransportBelts = require("scripts.transport-belts")
 local mod = {}
 
 ---@param entity LuaEntity
----@param lane 1|2 left or right, facing along the belt
+---@param lane integer 1 or 2, left or right, facing along the belt
 ---@return LocalisedString
 local function lane_name(entity, lane)
    local facing = entity.direction
@@ -25,7 +25,7 @@ end
 
 -- What one slot of a lane holds, then which slot it is.
 ---@param contents fa.TransportBelts.SlotBucket[][]
----@param lane 1|2
+---@param lane integer 1 or 2
 ---@param slot integer
 ---@return LocalisedString
 local function slot_cell(contents, lane, slot)

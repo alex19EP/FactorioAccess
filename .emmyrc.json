@@ -1,0 +1,24 @@
+{
+  "$schema": "https://raw.githubusercontent.com/EmmyLuaLs/emmylua-analyzer-rust/refs/heads/main/crates/emmylua_code_analysis/resources/schema.json",
+  "runtime": {
+    "version": "Lua5.2"
+  },
+  "workspace": {
+    "library": ["${workspaceFolder}/.tools/factorio-library/factorio/library"],
+    "ignoreGlobs": [
+      ".claude/**",
+      ".git/**",
+      ".tools/**",
+      ".vscode/**",
+      "llm-docs/**",
+      "native/**"
+    ]
+  },
+  "diagnostics": {
+    "globals": ["__DebugAdapter", "__Profiler"],
+    "disable": ["need-check-nil"]
+  },
+  "strict": {
+    "arrayIndex": false
+  }
+}

@@ -10,6 +10,9 @@ lines already.  This means that Factorio might return for example a point in `{
 
 ---@alias fa.Point { x: number, y: number }
 
+-- A tile's position: whole numbers, its north-west corner.
+---@alias fa.Tile { x: integer, y: integer }
+
 -- A Vector as the game provides it: always the {x, y} array form.
 ---@alias fa.VectorArray [number, number]
 

@@ -15,12 +15,13 @@ local MessageBuilder = Speech.MessageBuilder
 local mod = {}
 
 -- The entities a pipeline is made of rather than ones it reaches.
+---@type table<string, true?>
 local PIPES = { ["pipe"] = true, ["pipe-to-ground"] = true }
 
 -- Fluid boxes walked at most, so a base wide pipeline does not stall the game as the window opens.
 local WALK_LIMIT = 5000
 
----@type table<FluidFlowDirection, string>
+---@type table<FluidFlowDirection, string?>
 local FLOW_INTO_ENTITY = { ["input"] = "fa.fluid-views-flow-in", ["output"] = "fa.fluid-views-flow-out" }
 
 ---@type table<FluidFlowDirection, string>
@@ -32,10 +33,11 @@ local FLOW_FROM_PIPELINE = {
 
 -- Where the other end of an underground connection is, or nil while it has none.
 ---@param c PipeConnection
----@return MapPosition?
+---@return MapPosition.struct?
 local function underground_partner(c)
    if not c.target then return nil end
-   return c.target.get_fluid_box_pipe_connections(c.target_fluidbox_index)[c.target_pipe_connection_index].position
+   local partner = assert(c.target.get_fluid_box_pipe_connections(assert(c.target_fluidbox_index)))
+   return partner[assert(c.target_pipe_connection_index)].position --[[@as MapPosition.struct]]
 end
 
 -- The side of the entity a connection leaves from. An underground one that has no partner yet goes
@@ -44,12 +46,14 @@ end
 ---@param c PipeConnection
 ---@return defines.direction
 local function side_of(entity, c)
-   local to = c.target_position
+   ---@type MapPosition.struct?
+   local to = c.target_position --[[@as MapPosition.struct]]
    if c.connection_type ~= "normal" then
       to = underground_partner(c)
       if not to then return entity.direction end
    end
-   return FaUtils.direction_of_vector({ x = to.x - c.position.x, y = to.y - c.position.y })
+   local from = c.position --[[@as MapPosition.struct]]
+   return FaUtils.direction_of_vector({ x = to.x - from.x, y = to.y - from.y })
 end
 
 -- On a side longer than a tile, which end of it a connection is at: "west" on the north side.
@@ -108,7 +112,7 @@ function mod.connection_cells(entity)
       if shape then table.insert(cells, shape) end
    end
    for i = 1, entity.fluids_count do
-      for _, c in ipairs(entity.get_fluid_box_pipe_connections(i)) do
+      for _, c in ipairs(assert(entity.get_fluid_box_pipe_connections(i))) do
          table.insert(cells, connection_cell(entity, c))
       end
    end
@@ -128,7 +132,7 @@ end
 ---@param from LuaEntity
 ---@return FluidFlowDirection
 local function flow_with(building, index, from)
-   for _, c in ipairs(building.get_fluid_box_pipe_connections(index)) do
+   for _, c in ipairs(assert(building.get_fluid_box_pipe_connections(index))) do
       if c.target == from then return c.flow_direction end
    end
    return "input-output"
@@ -141,7 +145,9 @@ end
 ---@return { pipes: integer, reached: fa.FluidViews.Reached[], complete: boolean }
 function mod.walk_pipeline(entity)
    local segment = entity.get_fluid_segment_id(1)
+   ---@type table<string, true?>
    local seen_boxes = { [entity.unit_number .. ":1"] = true }
+   ---@type table<integer, true?>
    local seen_entities = { [entity.unit_number] = true }
    local pipes = PIPES[entity.type] and 1 or 0
    ---@type table<string, fa.FluidViews.Reached>
@@ -152,14 +158,16 @@ function mod.walk_pipeline(entity)
    while queue[head] and head <= WALK_LIMIT do
       local here = queue[head]
       head = head + 1
-      for _, n in ipairs(here.entity.get_fluid_box_neighbours(here.index)) do
-         local key = n.entity.unit_number .. ":" .. n.index
+      for _, n in ipairs(assert(here.entity.get_fluid_box_neighbours(here.index))) do
+         -- Every entity with a fluid box has a unit number
+         local unit_number = assert(n.entity.unit_number)
+         local key = unit_number .. ":" .. n.index
          if not seen_boxes[key] then
             seen_boxes[key] = true
             local joined = n.entity.has_fluid_segment(n.index) and n.entity.get_fluid_segment_id(n.index) == segment
             if joined then table.insert(queue, n) end
-            if not seen_entities[n.entity.unit_number] then
-               seen_entities[n.entity.unit_number] = true
+            if not seen_entities[unit_number] then
+               seen_entities[unit_number] = true
                if PIPES[n.entity.type] then
                   pipes = pipes + 1
                else

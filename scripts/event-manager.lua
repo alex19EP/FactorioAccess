@@ -209,8 +209,9 @@ function mod._dispatch_event(event_id, event)
    end
 
    -- A key's event carries the cursor: its handlers act there.
+   -- cursor_event implies pindex
    if cursor_event then
-      Cursor.begin_event(event --[[@as EventData.CustomInputEvent]], pindex)
+      Cursor.begin_event(event --[[@as EventData.CustomInputEvent]], pindex --[[@as integer]])
    end
 
    -- Run handlers in priority order: test → ui → world
@@ -227,7 +228,9 @@ function mod._dispatch_event(event_id, event)
       end
    end
 
-   if cursor_event then Cursor.end_event(pindex) end
+   if cursor_event then
+      Cursor.end_event(pindex --[[@as integer]])
+   end
 end
 
 ---Internal: Dispatch nth tick events

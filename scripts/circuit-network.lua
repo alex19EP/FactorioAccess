@@ -103,6 +103,7 @@ function mod.drag_wire_and_read(pindex, side)
    local p = game.get_player(pindex)
 
    -- Determine the position to use for dragging
+   ---@type fa.Point
    local drag_pos = Cursor.tile(pindex)
    local c_ent = p.selected
 

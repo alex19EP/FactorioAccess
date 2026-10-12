@@ -23,9 +23,9 @@ If you are going to use Claude Code (our "official" option, though other LLMs wi
 - Get Python 3.11, [just](https://github.com/casey/just) and PowerShell 7 on your path
 - Set up `.env` as `devdocs/dev-setup.md` describes. It also covers building the native DLL.
 - Do `just test-mod` to verify that the tests can run
-- Ask Claude Code to run linting.  This relies on your VSCode setup being right. You are looking to confirm that you
-  don't get tons of false positives about Factorio types.  The easiest to check for is `LocalisedString`.  If things are
-  working right you will *not* get `LocalisedString` warnings, if it's broken you will.
+- Do `just setup-tools`, then `just lint`. The lint is EmmyLua with the Factorio API library generated from your
+  game's `doc-html`, all in `.tools/`; it needs neither VSCode nor FMTK's editor extension. `.emmyrc.json` points an
+  editor's `emmylua_ls` at the same library.
 
 Primarily the reason Claude Code is "official" is that we maintain a CLAUDE.md.  If you try this with another LLM it
 needs to read this file before doing any development.
@@ -35,8 +35,7 @@ Be aware that a markdown-ified copy of the API documentation is contained in `ll
 
 You may need to help maintain the launcher script if doing anything but --run-tests.  Your LLM can do this for you.
 Indeed this code is not human maintained at all.  Because Factorio mod tooling is immature and Lua tooling in general is
-not super good, it does many hacks.  The most notable of these is reading .vscode/settings.json from your cloned version
-of the repository.  You must also run it with the working directory set to the root of the repo.
+not super good, it does many hacks.  You must run it with the working directory set to the root of the repo.
 
 You should also be aware of `lint_localisation.py`, which can check for many common localisation issues.
 
@@ -247,5 +246,5 @@ function MyClass:add(n)
 end
 ```
 
-Also note that we namespace types to `fa.`, because in LuaLS you can include periods in type names but there is
-otherwise no proper namespacing.
+Also note that we namespace types to `fa.`, because in Lua annotations you can include periods in type names but there
+is otherwise no proper namespacing.

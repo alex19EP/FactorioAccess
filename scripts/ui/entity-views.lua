@@ -82,7 +82,7 @@ local function add_view(player, source, index, view)
    local rows = 0
    local titled = false
    for _, column in ipairs(view.columns) do
-      if column.cells[1] then
+      if #column.cells > 0 then
          table.insert(columns, column)
          rows = math.max(rows, #column.cells)
          titled = titled or column.title ~= nil
@@ -118,9 +118,10 @@ end
 EventManager.on_event(
    defines.events.on_gui_opened,
    ---@param event EventData.on_gui_opened
-   ---@param pindex integer
-   function(event, pindex)
-      if event.gui_type == defines.gui_type.entity then mod.show(game.get_player(pindex), event.entity) end
+   function(event)
+      if event.gui_type == defines.gui_type.entity then
+         mod.show(assert(game.get_player(event.player_index)), assert(event.entity))
+      end
    end,
    EventManager.EVENT_KIND.UI
 )
@@ -128,9 +129,8 @@ EventManager.on_event(
 EventManager.on_event(
    defines.events.on_gui_closed,
    ---@param event EventData.on_gui_closed
-   ---@param pindex integer
-   function(event, pindex)
-      if event.gui_type == defines.gui_type.entity then mod.destroy(game.get_player(pindex)) end
+   function(event)
+      if event.gui_type == defines.gui_type.entity then mod.destroy(assert(game.get_player(event.player_index))) end
    end,
    EventManager.EVENT_KIND.UI
 )

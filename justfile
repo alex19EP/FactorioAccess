@@ -89,9 +89,13 @@ format:
 format-check:
     @python launch_factorio.py --format-check
 
-# Run the LuaLS linter
+# Run the Lua linter (emmylua_check)
 lint:
     @python launch_factorio.py --lint
+
+# Install emmylua_check, emmylua_ls and the Steam game's API library into .tools\ (again after a game update)
+setup-tools: _require-steam
+    @python launch_factorio.py --factorio-path '{{STEAM_DIR}}\bin\x64\factorio.exe' --setup-tools; exit $LASTEXITCODE
 
 # Check for unused and missing locale keys
 lint-locale:

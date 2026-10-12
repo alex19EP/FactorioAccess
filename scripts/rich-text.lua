@@ -70,7 +70,8 @@ end
 ---@param mb fa.MessageBuilder
 ---@param literal string
 local function add_literal(mb, literal)
-   local trimmed = literal:match("^%s*(.-)%s*$")
+   -- The pattern matches any string
+   local trimmed = literal:match("^%s*(.-)%s*$") --[[@as string]]
    if trimmed ~= "" then mb:fragment(trimmed) end
 end
 

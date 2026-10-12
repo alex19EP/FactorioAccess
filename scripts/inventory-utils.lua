@@ -39,6 +39,7 @@ end
 ---@return integer
 ---@private
 function Deductor:_get_available(name)
+   ---@type integer
    local total = self._player.get_main_inventory().get_item_count(name)
 
    -- Cursor

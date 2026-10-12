@@ -5,9 +5,11 @@ local SC = require("scripts.scanner.scanner-consts")
 
 ---Makes a 4 by 4 pond near the player and returns the tiles it replaced, to put back.
 ---@param player LuaPlayer
+---@return Tile[]
 local function make_pond(player)
-   local left = math.floor(player.position.x) + 6
-   local top = math.floor(player.position.y) + 6
+   local position = player.position --[[@as MapPosition.struct]]
+   local left = math.floor(position.x) + 6
+   local top = math.floor(position.y) + 6
    local old = {}
    local water = {}
    for x = left, left + 3 do
@@ -30,10 +32,11 @@ local STEPS = {
 
 describe("Offshore pump build spots", function()
    it("lists land tiles facing the water while a pump is in hand", function(ctx)
+      ---@type LuaPlayer, Tile[]
       local player, old
 
       ctx:init(function()
-         player = game.get_player(1)
+         player = assert(game.get_player(1))
          old = make_pond(player)
          player.cursor_stack.set_stack({ name = "offshore-pump", count = 1 })
       end)
@@ -45,7 +48,8 @@ describe("Offshore pump build spots", function()
          local seen = {}
          for _, spot in ipairs(spots) do
             ctx:assert_equals(SC.CATEGORIES.BUILD_SPOTS, spot.category)
-            local x, y = math.floor(spot.position.x), math.floor(spot.position.y)
+            local position = spot.position --[[@as MapPosition.struct]]
+            local x, y = math.floor(position.x), math.floor(position.y)
             local key = x .. "," .. y
             ctx:assert_nil(seen[key], "Each land tile is listed once")
             seen[key] = true
@@ -58,7 +62,8 @@ describe("Offshore pump build spots", function()
 
          -- Each spot faces water: the direction it reads is toward a water tile.
          for _, spot in ipairs(spots) do
-            local x, y = math.floor(spot.position.x), math.floor(spot.position.y)
+            local position = spot.position --[[@as MapPosition.struct]]
+            local x, y = math.floor(position.x), math.floor(position.y)
             local faces_water = false
             for _, step in pairs(STEPS) do
                if player.surface.get_tile(x + step.x, y + step.y).name == "water" then faces_water = true end

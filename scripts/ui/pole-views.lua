@@ -85,7 +85,7 @@ local ROLE_ORDER = { uses = 1, produces = 2, stores = 3 }
 ---@return fa.PoleViews.Supplied[]
 function mod.supplied(pole)
    local reach = pole.prototype.get_supply_area_distance(pole.quality)
-   local p = pole.position
+   local p = pole.position --[[@as MapPosition.struct]]
    local area = { { p.x - reach, p.y - reach }, { p.x + reach, p.y + reach } }
    ---@type table<string, fa.PoleViews.Supplied>
    local groups = {}

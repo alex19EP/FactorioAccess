@@ -18,12 +18,13 @@ local native = rawget(_G, "fa_native")
 
 -- The cursor's tile while each player's key event, or a mod.at call, is being handled. Never kept
 -- past it.
----@type table<integer, fa.Point>
+---@type table<integer, fa.Tile?>
 local tiles = {}
 
 ---@param position MapPosition
----@return fa.Point
+---@return fa.Tile
 local function tile_of(position)
+   ---@cast position MapPosition.struct
    return { x = math.floor(position.x), y = math.floor(position.y) }
 end
 
@@ -42,7 +43,7 @@ end
 
 ---The cursor's tile while a key event or a mod.at call is handled.
 ---@param pindex integer
----@return fa.Point
+---@return fa.Tile
 function mod.tile(pindex)
    local tile = assert(tiles[pindex], "the cursor is known only while a key event is handled")
    return { x = tile.x, y = tile.y }
@@ -72,6 +73,7 @@ end
 ---@param pindex integer
 ---@param position MapPosition
 function mod.jump(pindex, position)
+   ---@cast position MapPosition.struct
    if tiles[pindex] then tiles[pindex] = tile_of(position) end
    if native then native.cursor_jump(pindex, position.x, position.y) end
 end
@@ -89,7 +91,8 @@ end
 ---@return ("read"|"moved"|"edge"|"skipped")?, integer?, boolean?
 function mod.step(pindex, event)
    if not native then return nil end
-   return native.cursor_step(pindex, event.cursor_position.x, event.cursor_position.y)
+   local position = event.cursor_position --[[@as MapPosition.struct]]
+   return native.cursor_step(pindex, position.x, position.y)
 end
 
 ---The DLL reads the cursor's tile as a movement key's step reads it (native/src/reader.h), after
@@ -104,12 +107,12 @@ end
 ---The cursor's tile at any time, for sounds and speech only: only this client knows it, so never
 ---change the game by it. Nil without the DLL.
 ---@param pindex integer
----@return fa.Point?
+---@return fa.Tile?
 function mod.speech_tile(pindex)
    if tiles[pindex] then return mod.tile(pindex) end
    if not native then return nil end
    local x, y = native.cursor_position(pindex)
-   if not x then return nil end
+   if not x or not y then return nil end
    return { x = x, y = y }
 end
 

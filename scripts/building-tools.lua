@@ -69,7 +69,7 @@ local function held_connections(prototype, held)
             or connection.connection_type == "underground" and "underground"
          if kind then
             -- positions holds the connecting tile for each of the four directions the entity faces
-            local position = connection.positions[turns + 1]
+            local position = connection.positions[turns + 1] --[[@as MapPosition.struct]]
             local _, _, direction = turn_clockwise(0, 0, connection.direction, turns)
             add_connection(connections, held, kind, position.x, position.y, direction)
          end
@@ -108,7 +108,7 @@ function mod.read_held_build(pindex, stack)
       if held.flip_vertical then message:list_item({ "fa.held-build-flipped-vertical" }) end
    else
       if held.mirrored then message:list_item({ "fa.held-build-mirrored" }) end
-      local connections = held_connections(stack.prototype.place_result, held)
+      local connections = held_connections(assert(stack.prototype.place_result), held)
       for _, kind in ipairs(CONNECTION_KINDS) do
          local first = true
          for _, connection in ipairs(connections) do
@@ -140,7 +140,8 @@ function mod.rotate_item_in_hand(event)
    local p = game.get_player(pindex)
    if not check_for_player(pindex) then return end
 
-   local stack = p.cursor_stack
+   -- Rotating the hand needs a hand
+   local stack = assert(p.cursor_stack)
 
    -- Check if item in hand can rotate
    if mod.can_rotate_item(stack) then
@@ -180,7 +181,9 @@ function mod.speak_drag_turn(pindex)
    heard_drag_turns[pindex] = drag.turns
    if not heard or heard == drag.turns then return end
    local direction = NativeCursor.build_direction(pindex)
-   if direction then Speech.speak(pindex, { "fa.drag-turned", { "fa.direction", direction } }) end
+   if direction then
+      Speech.speak(pindex, { "fa.drag-turned", { "fa.direction", direction } } --[[@as LocalisedString]])
+   end
 end
 
 --Reads the result of rotating an entity on the map (called from on_player_rotated_entity event)

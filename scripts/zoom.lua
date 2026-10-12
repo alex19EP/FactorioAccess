@@ -27,6 +27,7 @@ local seen_zoom = {}
 local entered_view = {}
 
 -- The views spoken on entering them, by controller.
+---@type table<defines.controllers, ("remote"|"character"|"god")?>
 local VIEW_NAMES = {
    [defines.controllers.remote] = "remote",
    [defines.controllers.character] = "character",
@@ -48,7 +49,7 @@ local CELLS_PER_SCREEN = 30
 
 ---The size in tiles of a map cell on a screen `tiles` across.
 ---@param tiles number
----@return integer
+---@return number A power of two, below 1 on a screen narrower than CELLS_PER_SCREEN tiles
 function mod.map_cell_size_for(tiles)
    return 2 ^ math.floor(math.log(tiles / CELLS_PER_SCREEN, 2) + 0.5)
 end
@@ -58,7 +59,8 @@ end
 ---@return integer?
 function mod.get_map_cell_size(pindex)
    if game.get_player(pindex).render_mode ~= defines.render_mode.chart then return nil end
-   return mod.map_cell_size_for(mod.get_current_zoom_tiles(pindex))
+   -- The full map spans over 200 tiles, so a cell is at least 8
+   return mod.map_cell_size_for(mod.get_current_zoom_tiles(pindex)) --[[@as integer]]
 end
 
 ---Append zoom info to a MessageBuilder

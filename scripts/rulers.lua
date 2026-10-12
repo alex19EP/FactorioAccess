@@ -57,7 +57,7 @@ script.register_metatable("RulerHandle", {})
 
 -- The cursor tile each player's rulers last sounded for. Only the client with the DLL knows the
 -- cursor, so this stays out of storage: it only decides when to play a sound.
----@type table<integer, fa.Point>
+---@type table<integer, fa.Tile?>
 local last_cursor_tiles = {}
 
 -- For the DLL's skips, every tick: each player's rulers on one surface as x1, y1, x2, y2... Rebuilt
@@ -76,6 +76,7 @@ local ALIGNMENT = {
    AT_RULER = 3,
 }
 
+---@type table<fa.RulerAlignment, PlaySoundSpecification?>
 local ALIGNMENT_SOUNDS = {
    [ALIGNMENT.AT_RULER] = { path = "audio-ruler-at-definition" },
    [ALIGNMENT.ON_LINE] = { path = "audio-ruler-aligned" },
@@ -174,9 +175,10 @@ end
 ---@param x integer
 ---@param y integer
 local function reveal_far_lines(pindex, surface_index, x, y)
-   local player = game.get_player(pindex)
+   local player = assert(game.get_player(pindex))
    for _, ruler in ipairs(ruler_storage[pindex].rulers) do
       if ruler.surface_index == surface_index then
+         ---@type MapPosition?, MapPosition?
          local from, to
          if x == ruler.x and math.abs(y - ruler.y) > REACH then
             from = { x + 0.5, y + 0.5 - REVEAL_REACH }
@@ -185,7 +187,7 @@ local function reveal_far_lines(pindex, surface_index, x, y)
             from = { x + 0.5 - REVEAL_REACH, y + 0.5 }
             to = { x + 0.5 + REVEAL_REACH, y + 0.5 }
          end
-         if from then
+         if from and to then
             rendering.draw_line({
                color = line_colour(player),
                width = LINE_WIDTH,
@@ -234,7 +236,7 @@ end
 ---Puts the audio ruler tool in the player's hand, from the shortcut bar or Ctrl+Alt+B.
 ---@param pindex integer
 function mod.give_tool(pindex)
-   local player = game.get_player(pindex)
+   local player = assert(game.get_player(pindex))
    player.clear_cursor()
    local stack = player.cursor_stack
    -- A hand the inventory had no room for stays as it is.
@@ -245,7 +247,7 @@ end
 ---A click with the tool: a ruler on the clicked tile.
 ---@param pindex integer
 function mod.place(pindex)
-   local player = game.get_player(pindex)
+   local player = assert(game.get_player(pindex))
    if not holds_tool(player) then return end
    end_selection(player)
    local tile = Cursor.tile(pindex)
@@ -268,7 +270,7 @@ end
 ---A Shift+click with the tool: removes the nearest ruler whose row or column holds the clicked tile.
 ---@param pindex integer
 function mod.remove(pindex)
-   local player = game.get_player(pindex)
+   local player = assert(game.get_player(pindex))
    if not holds_tool(player) then return end
    end_selection(player)
    local tile = Cursor.tile(pindex)
@@ -317,7 +319,7 @@ end
 local function update_player(pindex)
    if not next(ruler_storage[pindex].rulers) then return end
    -- Storage outlives a player removed from the game.
-   local player = game.get_player(pindex)
+   local player = assert(game.get_player(pindex))
    if not player then return end
 
    local reader = MovementHistory.get_movement_history_reader(pindex)
@@ -356,7 +358,7 @@ function mod.update_all_players()
       if state.give_back_tick and game.tick >= state.give_back_tick then
          state.give_back_tick = nil
          -- Storage outlives a player removed from the game.
-         local player = game.get_player(pindex)
+         local player = assert(game.get_player(pindex))
          if player and player.cursor_stack and not player.cursor_stack.valid_for_read then
             player.cursor_stack.set_stack({ name = mod.TOOL })
          end

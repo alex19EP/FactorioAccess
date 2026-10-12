@@ -12,8 +12,10 @@ recipes. The recipes call the Python helpers (`launch_factorio.py`, `lint_locali
 - For the DLL: Visual Studio 2026 or its Build Tools with the C++ workload, CMake 3.28 or newer,
   and Ninja. See `native/README.md`.
 - For formatting: stylua 2.3.0 built with `--features lua52`, and clang-format 20 or newer.
-- For `just lint`: lua-language-server and the FMTK type stubs, found through
-  `.vscode/settings.json` (see `CONTRIBUTING.md`).
+- For `just lint`: `just setup-tools` once, which needs Node.js (`npx`) and the network. It puts
+  pinned EmmyLua releases (`emmylua_check`, `emmylua_ls`) and the Factorio API library, which FMTK
+  generates from the Steam game's `doc-html`, into `.tools\` (ignored by git). Run it again after
+  a game update.
 
 ## `.env`
 
@@ -38,6 +40,7 @@ describes.
 ## First run
 
 ```
+just setup-tools  # the Lua lint and language server, into .tools\
 just link-mod   # junction from the Steam game's mods folder to this checkout
 just dev-on     # arm the dev server, which also lets the game reload the DLL
 just run        # build the DLLs, copy them next to the Steam factorio.exe, start the game
@@ -62,7 +65,8 @@ worktree the DLL was built in. `/fareload` does nothing in multiplayer.
 | --- | --- |
 | `just format` | stylua and clang-format, required before committing |
 | `just check` | everything CI checks, plus the graph tests and the mod's test suite |
-| `just lint` / `just lint-locale` | LuaLS, and unused or missing locale keys |
+| `just lint` / `just lint-locale` | EmmyLua (about a second), and unused or missing locale keys |
+| `just setup-tools` | install or update EmmyLua and the Factorio API library in `.tools\` |
 | `just test-mod [timeout]` | the mod's in-game test suite, headless |
 | `just message-lists` | regenerate the message-list locale files, then format |
 | `just build` / `just test` | build the DLL, run the graph kernel tests |

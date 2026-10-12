@@ -5,8 +5,9 @@ local MapOverlays = require("scripts.map-overlays")
 local Speech = require("scripts.speech")
 
 ---Every localised string of `message` with its key, so a test can find one by key.
----@param message LocalisedString
+---@param message any
 ---@param found table<string, any[]>
+---@return table<string, any[]>
 local function keys_in(message, found)
    if type(message) ~= "table" then return found end
    if type(message[1]) == "string" and message[1] ~= "" then found[message[1]] = { table.unpack(message, 2) } end
@@ -19,9 +20,15 @@ end
 ---Builds, in the 16 tile cell east of the player, a small pole, a gun turret, an assembler making
 ---gears, a pipe of water and a roboport. Returns the cell's corners and everything built.
 ---@param player LuaPlayer
+---@return fa.Point, fa.Point, LuaEntity[]
 local function build(player)
-   local left = math.floor(player.position.x / 16) * 16 + 32
-   local top = math.floor(player.position.y / 16) * 16
+   local position = player.position --[[@as MapPosition.struct]]
+   local left = math.floor(position.x / 16) * 16 + 32
+   local top = math.floor(position.y / 16) * 16
+   ---@param name string
+   ---@param x number
+   ---@param y number
+   ---@return LuaEntity
    local function create(name, x, y)
       local e = player.surface.create_entity({ name = name, position = { left + x, top + y }, force = player.force })
       assert(e, name .. " not built")
@@ -41,10 +48,11 @@ end
 
 describe("Map overlays", function()
    it("says what the overlays that are on show over a cell", function(ctx)
+      ---@type LuaPlayer, fa.Point, fa.Point, LuaEntity[]
       local player, left_top, right_bottom, built
 
       ctx:init(function()
-         player = game.get_player(1)
+         player = assert(game.get_player(1))
          left_top, right_bottom, built = build(player)
       end)
 
@@ -74,17 +82,19 @@ describe("Map overlays", function()
    end)
 
    it("leaves worker robots out of a cell's count when asked", function(ctx)
-      local player, left_top, right_bottom, robot
+      ---@type fa.Point, fa.Point, LuaEntity
+      local left_top, right_bottom, robot
 
       ctx:init(function()
-         player = game.get_player(1)
-         left_top = { x = math.floor(player.position.x / 16) * 16 + 64, y = math.floor(player.position.y / 16) * 16 }
+         local player = assert(game.get_player(1))
+         local position = player.position --[[@as MapPosition.struct]]
+         left_top = { x = math.floor(position.x / 16) * 16 + 64, y = math.floor(position.y / 16) * 16 }
          right_bottom = { x = left_top.x + 16, y = left_top.y + 16 }
-         robot = player.surface.create_entity({
+         robot = assert(player.surface.create_entity({
             name = "construction-robot",
             position = { left_top.x + 8, left_top.y + 8 },
             force = player.force,
-         })
+         }))
       end)
 
       ctx:at_tick(2, function()
@@ -98,10 +108,11 @@ describe("Map overlays", function()
    end)
 
    it("says nothing while every overlay is off", function(ctx)
+      ---@type LuaPlayer, fa.Point, fa.Point, LuaEntity[]
       local player, left_top, right_bottom, built
 
       ctx:init(function()
-         player = game.get_player(1)
+         player = assert(game.get_player(1))
          left_top, right_bottom, built = build(player)
       end)
 

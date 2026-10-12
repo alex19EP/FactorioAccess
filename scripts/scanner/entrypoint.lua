@@ -139,7 +139,7 @@ local function refresh(player, fields)
 end
 
 -- Lists the player's surface again at once, from where the player is.
----@param pindex number
+---@param pindex integer
 ---@param direction_filter defines.direction?
 function mod.do_refresh(pindex, direction_filter)
    local player = game.get_player(pindex)

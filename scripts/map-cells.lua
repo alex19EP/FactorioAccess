@@ -28,7 +28,7 @@ function mod.read(pindex, size)
 
    local left_top = { x = left, y = top }
    local right_bottom = { x = left + size, y = top + size }
-   local player = game.get_player(pindex)
+   local player = assert(game.get_player(pindex))
    local message = Speech.MessageBuilder.new()
    local overlays = native and native.map_overlays(pindex)
    local skip = overlays and not overlays.worker_robots and MapOverlays.WORKER_ROBOT_TYPES or nil

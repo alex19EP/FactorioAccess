@@ -30,9 +30,10 @@ end
 
 describe("Audio ruler", function()
    it("is put in hand by its key and its shortcut", function(ctx)
+      ---@type LuaPlayer
       local player
       ctx:init(function()
-         player = game.get_player(pindex)
+         player = assert(game.get_player(pindex))
          player.clear_cursor()
       end)
 
@@ -50,9 +51,10 @@ describe("Audio ruler", function()
    end)
 
    it("places rulers with clicks and removes the nearest in line", function(ctx)
+      ---@type LuaPlayer, integer
       local player, before
       ctx:init(function()
-         player = game.get_player(pindex)
+         player = assert(game.get_player(pindex))
          player.clear_cursor()
          before = drawings()
       end)

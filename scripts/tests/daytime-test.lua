@@ -7,7 +7,9 @@ local it = TestRegistry.it
 
 describe("Time of day", function()
    it("should name the part of the day the surface's daytime is in", function(ctx)
+      ---@type LuaSurface
       local surface
+      ---@type { freeze: boolean, daytime: number }
       local saved
 
       ctx:init(function()

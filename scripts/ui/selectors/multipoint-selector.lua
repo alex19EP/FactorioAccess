@@ -97,6 +97,7 @@ function MultipointSelector:is_overlay()
    return true
 end
 
+---@param pindex integer
 function MultipointSelector:get_binds(pindex, parameters)
    if self.declaration.get_binds then return self.declaration.get_binds(pindex, parameters) end
    return {} -- No binds, but valid state

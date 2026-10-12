@@ -24,7 +24,7 @@ local mod = {}
 function mod.pipe_shape(ent)
    local shape_info = Fluids.get_pipe_shape(ent)
    local s, d = shape_info.shape, shape_info.direction
-   local conns = ent.get_fluid_box_pipe_connections(1)
+   local conns = assert(ent.get_fluid_box_pipe_connections(1))
    local pipe_conn_count = 0
    for _, c in pairs(conns) do
       if c.target then pipe_conn_count = pipe_conn_count + 1 end

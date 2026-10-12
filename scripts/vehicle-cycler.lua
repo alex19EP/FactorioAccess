@@ -70,7 +70,7 @@ function mod.cycle_to_next_vehicle(pindex)
       return
    end
 
-   local vehicles = get_sorted_vehicles(player.surface, character.position)
+   local vehicles = get_sorted_vehicles(player.surface, character.position --[[@as MapPosition.struct]])
 
    if #vehicles == 0 then
       Speech.speak(pindex, { "fa.vehicle-cycle-none-found" })

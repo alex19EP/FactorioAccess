@@ -11,17 +11,19 @@ local it = TestRegistry.it
 describe("WASD Event Tests", function()
    it("leaves reading the tile to the DLL", function(ctx)
       local pindex = 1
-      local player, chest, tile
+      ---@type LuaEntity, fa.Tile
+      local chest, tile
 
       ctx:init(function()
-         player = game.get_player(pindex)
-         local x, y = math.floor(player.position.x), math.floor(player.position.y)
+         local player = assert(game.get_player(pindex))
+         local position = player.position --[[@as MapPosition.struct]]
+         local x, y = math.floor(position.x), math.floor(position.y)
          tile = { x = x + 3, y = y }
-         chest = player.surface.create_entity({
+         chest = assert(player.surface.create_entity({
             name = "wooden-chest",
             position = { tile.x + 0.5, tile.y + 0.5 },
             force = player.force,
-         })
+         }))
       end)
 
       ctx:at_tick(1, function()

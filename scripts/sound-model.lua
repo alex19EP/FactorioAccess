@@ -62,7 +62,7 @@ function mod.get_reference_position(pindex)
    -- Default to the camera, where the game hears its own sounds from: in remote view it follows the
    -- cursor. The cursor itself is known only to the client with the DLL, and the sonifiers that ask
    -- this keep state and draw random numbers that every peer must share.
-   local pos = player.position
+   local pos = player.position --[[@as MapPosition.struct]]
    return { x = pos.x, y = pos.y }
 end
 

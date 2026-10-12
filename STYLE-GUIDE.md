@@ -253,8 +253,8 @@ Speech.speak(pindex, "Building: " .. entity.name)  -- DO NOT DO THIS
 
 ## 5. Documentation
 
-### LuaLS Annotations
-- **Always** add LuaLS type annotations for function parameters
+### Type Annotations
+- **Always** add type annotations (EmmyLua `---@` form) for function parameters
 - Document return types
 - Use proper type names from Factorio API
 

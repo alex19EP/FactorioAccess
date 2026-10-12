@@ -20,6 +20,7 @@ local mod = {}
 local PIXELS_PER_TILE = 32
 
 -- Controllers whose camera stays on the player's own position.
+---@type table<defines.controllers, true?>
 local FIXED_CAMERA = {
    [defines.controllers.character] = true,
    [defines.controllers.god] = true,
@@ -48,7 +49,7 @@ end
 ---@param position fa.Point
 ---@return boolean
 function mod.allows(pindex, position)
-   local left, top, right, bottom = screen_tiles(game.get_player(pindex))
+   local left, top, right, bottom = screen_tiles(assert(game.get_player(pindex)))
    if not left then return true end
    local x, y = math.floor(position.x), math.floor(position.y)
    return x >= left and x <= right and y >= top and y <= bottom

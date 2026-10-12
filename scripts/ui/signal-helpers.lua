@@ -188,7 +188,7 @@ function mod.add_item_signals(builder, root, unlocked_only, force, result_conver
 
       -- Always-show items
       for name, item_proto in pairs(prototypes.item) do
-         if item_proto.flags and item_proto.flags["always-show"] then unlocked_items[name] = true end
+         if item_proto.has_flag("always-show") then unlocked_items[name] = true end
       end
 
       -- Items from researched technologies
@@ -222,8 +222,9 @@ function mod.add_item_signals(builder, root, unlocked_only, force, result_conver
          if entity_proto.resource_category then
             local loot = entity_proto.loot
             if loot then
+               -- Loot is only ever items
                for _, loot_item in ipairs(loot) do
-                  if loot_item.type == "item" then unlocked_items[loot_item.name] = true end
+                  unlocked_items[loot_item.name] = true
                end
             end
 

@@ -7,10 +7,14 @@ local PoleViews = require("scripts.ui.pole-views")
 ---@param player LuaPlayer
 ---@return LuaEntity[]
 local function build(player)
-   local x = math.floor(player.position.x) + 6
-   local y = math.floor(player.position.y) + 6
-   local function create(name, position)
-      local e = player.surface.create_entity({ name = name, position = position, force = player.force })
+   local position = player.position --[[@as MapPosition.struct]]
+   local x = math.floor(position.x) + 6
+   local y = math.floor(position.y) + 6
+   ---@param name string
+   ---@param at MapPosition
+   ---@return LuaEntity
+   local function create(name, at)
+      local e = player.surface.create_entity({ name = name, position = at, force = player.force })
       assert(e, name .. " not built")
       return e
    end
@@ -18,16 +22,17 @@ local function build(player)
    local second = create("small-electric-pole", { x + 5.5, y + 0.5 })
    local machine = create("assembling-machine-1", { x - 1.5, y + 0.5 })
    local id = defines.wire_connector_id.pole_copper
-   first.get_wire_connector(id, true).connect_to(second.get_wire_connector(id, true), false)
+   assert(first.get_wire_connector(id, true)).connect_to(assert(second.get_wire_connector(id, true)), false)
    return { first, second, machine }
 end
 
 describe("Pole views", function()
    it("lists what the pole is wired to", function(ctx)
+      ---@type LuaEntity[]
       local built
 
       ctx:init(function()
-         built = build(game.get_player(1))
+         built = build(assert(game.get_player(1)))
       end)
 
       ctx:at_tick(2, function()
@@ -46,10 +51,11 @@ describe("Pole views", function()
    end)
 
    it("counts the electric buildings in the supply area", function(ctx)
+      ---@type LuaEntity[]
       local built
 
       ctx:init(function()
-         built = build(game.get_player(1))
+         built = build(assert(game.get_player(1)))
       end)
 
       ctx:at_tick(2, function()
@@ -70,11 +76,13 @@ describe("Pole views", function()
    end)
 
    it("attaches the views to the pole's window while it is open", function(ctx)
+      ---@type LuaEntity[]
       local built
+      ---@type LuaPlayer
       local player
 
       ctx:init(function()
-         player = game.get_player(1)
+         player = assert(game.get_player(1))
          built = build(player)
       end)
 

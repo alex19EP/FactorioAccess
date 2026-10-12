@@ -4,11 +4,12 @@ local GameNotices = require("scripts.game-notices")
 
 describe("Game notices", function()
    it("speaks the goal window once for each new text, and not when it closes", function(ctx)
+      ---@type LuaPlayer
       local player
       local first, repeated, changed, closed, reopened
 
       ctx:init(function()
-         player = game.get_player(1)
+         player = assert(game.get_player(1))
          player.set_goal_description("", true)
          GameNotices.check_goal(1)
       end)

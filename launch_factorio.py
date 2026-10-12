@@ -29,6 +29,16 @@ import glob
 DEFAULT_TIMEOUT = 300
 LUA_EXE = "lua52.exe"
 
+# The Lua lint and language server live in .tools/ (gitignored), installed by --setup-tools: pinned EmmyLua
+# releases, and the Factorio API library fmtk generates from the game's own doc-html JSON. .emmyrc.json at the
+# root points both the lint and an editor's emmylua_ls at that library.
+TOOLS_DIR = Path(__file__).parent / ".tools"
+EMMYLUA_VERSION = "0.25.1"
+EMMYLUA_DIR = TOOLS_DIR / "emmylua"
+EMMYLUA_CHECK_EXE = EMMYLUA_DIR / "emmylua_check.exe"
+FMTK_VERSION = "2.1.9"
+FACTORIO_LIBRARY_DIR = TOOLS_DIR / "factorio-library"
+
 # By default the mod is checked out as mods/FactorioAccess inside a Factorio install.
 # --factorio-path overrides this in main().
 factorio_exe_path = (Path(__file__).parent / "../../bin/x64/factorio.exe").resolve()
@@ -192,124 +202,59 @@ def launch_factorio(
     return stream_process_output(cmd, timeout, capture_output)
 
 
-def find_factorio_type_definitions() -> Optional[str]:
-    """Find Factorio type definitions for lua-language-server."""
-    # First, try to read from .vscode/settings.json
-    vscode_settings_path = Path(".vscode/settings.json")
-    if vscode_settings_path.exists():
-        try:
-            with open(vscode_settings_path, "r") as f:
-                settings = json.load(f)
-            user_third_party = settings.get("Lua.workspace.userThirdParty", [])
-            if user_third_party:
-                # userThirdParty points to sumneko-3rd, we need factorio/library inside it
-                lib_path = Path(user_third_party[0]) / "factorio" / "library"
-                if lib_path.exists():
-                    return str(lib_path)
-        except (json.JSONDecodeError, IOError):
-            pass  # Fall through to glob approach
+def setup_tools() -> int:
+    """Install the Lua lint and language server into .tools/: emmylua_check and emmylua_ls (pinned releases), and
+    the Factorio API library fmtk generates from this install's doc-html. Rerun after a Factorio update."""
+    import urllib.request
+    import zipfile
 
-    # Fallback: glob for workspace storage
-    search_paths = [
-        # VSCode on Windows
-        os.path.expanduser(
-            "~\\AppData\\Roaming\\Code\\User\\workspaceStorage\\*\\justarandomgeek.factoriomod-debug\\sumneko-3rd\\factorio\\library"
-        ),
-        # Manual installation
-        "C:\\factorio-lua-types\\library",
-        os.path.expanduser("~\\factorio-lua-types\\library"),
-    ]
-
-    for pattern in search_paths:
-        expanded = os.path.expanduser(pattern)
-        matches = glob.glob(expanded)
-        if matches:
-            return matches[0]
-
-    return None
-
-
-def create_or_update_luarc(config_path: str) -> None:
-    """Create .luarc.json configuration for lua-language-server."""
-    luarc_path = Path(config_path)
-    factorio_lib = find_factorio_type_definitions()
-
-    config = {
-        "$schema": "https://raw.githubusercontent.com/sumneko/vscode-lua/master/setting/schema.json",
-        "runtime": {
-            "version": "Lua 5.2",
-            "path": ["?.lua", "?/init.lua", "scripts/?.lua"],
-            "pathStrict": False,
-        },
-        "workspace": {
-            "library": [],
-            "checkThirdParty": False,
-            # .claude holds worktrees: whole second copies of the mod, whose duplicate
-            # definitions would fail the real files too.
-            "ignoreDir": [".vscode", ".git", ".claude"],
-        },
-        "diagnostics": {
-            "enable": True,
-            "workspaceDelay": 1,
-            "globals": [
-                # Custom mod globals
-                "players",
-                "printout",
-                "get_selected_ent",
-                "direction_lookup",
-                "cursor_highlight",
-                "sync_build_cursor_graphics",
-                "get_direction_of_that_from_this",
-                "clear_obstacles_in_rectangle",
-                "ENT_TYPES_YOU_CAN_BUILD_OVER",
-            ],
-            "disable": [
-                "lowercase-global",
-                "need-check-nil",
-                "redefined-local",
-            ],
-            "severity": {
-                "unused-local": "Information",
-                "undefined-global": "Warning",
-                "undefined-field": "Warning",
-                "redundant-parameter": "Information",
-                "cast-local-type": "Warning",
-                "assign-type-mismatch": "Warning",
-                "deprecated": "Warning",
-            },
-        },
-        "completion": { "enable": False },
-        "codeLens": { "enable": False },
-        "format": {"enable": False},
-        "telemetry": {"enable": False},
-        "hint": {"enable": False, "setType": False},
-        "type": {
-            "weakNilCheck": True,
-            "weakUnionCheck": True,
-        }
-    }
-
-    if factorio_lib:
-        config["workspace"]["library"].append(factorio_lib)
-        print(f"[INFO] Found Factorio type definitions at: {factorio_lib}")
-    else:
-        print(
-            "[WARNING] Factorio type definitions not found. Some API completions may be missing."
+    TOOLS_DIR.mkdir(exist_ok=True)
+    for tool in ("emmylua_check", "emmylua_ls"):
+        if (EMMYLUA_DIR / f"{tool}.exe").exists():
+            continue
+        print(f"[INFO] Downloading {tool} {EMMYLUA_VERSION}")
+        zip_path = TOOLS_DIR / f"{tool}.zip"
+        urllib.request.urlretrieve(
+            f"https://github.com/EmmyLuaLs/emmylua-analyzer-rust/releases/download/{EMMYLUA_VERSION}/{tool}-win32-x64.zip",
+            zip_path,
         )
-        print(
-            "[HINT] Install the factoriomod-debug VSCode extension for better type checking."
-        )
+        with zipfile.ZipFile(zip_path) as z:
+            z.extractall(EMMYLUA_DIR)
+        zip_path.unlink()
+    print(f"[INFO] EmmyLua {EMMYLUA_VERSION}: {EMMYLUA_DIR}")
 
-    with open(luarc_path, "w") as f:
-        json.dump(config, f, indent=2)
+    docs = get_factorio_dir() / "doc-html"
+    print(f"[INFO] Generating the Factorio API library with fmtk {FMTK_VERSION} from {docs}")
+    if FACTORIO_LIBRARY_DIR.exists():
+        shutil.rmtree(FACTORIO_LIBRARY_DIR)
+    result = subprocess.run(
+        f'npx --yes factoriomod-debug@{FMTK_VERSION} luals-addon -d "{docs / "runtime-api.json"}" '
+        f'-p "{docs / "prototype-api.json"}" "{FACTORIO_LIBRARY_DIR}"',
+        shell=True,
+    )
+    if result.returncode != 0:
+        print("[ERROR] fmtk failed", file=sys.stderr)
+        return result.returncode
+    # EmmyLua 0.25.1 reads an index field keyed by an alias of integer (`---@field [uint] LuaItemStack`) as nil, so
+    # every `inventory[i]` would be nil. uint is `---@alias uint integer`, so `integer` is the same type.
+    for path in factorio_library().rglob("*.lua"):
+        text = path.read_text(encoding="utf-8")
+        if "---@field [uint] " in text:
+            path.write_text(text.replace("---@field [uint] ", "---@field [integer] "), encoding="utf-8")
+    print(f"[INFO] Factorio library: {factorio_library()}")
+    return 0
 
-    print(f"[INFO] Updated {luarc_path}")
-    
+
+def factorio_library() -> Path:
+    """The Factorio API library --setup-tools generates; .emmyrc.json names the same folder."""
+    return FACTORIO_LIBRARY_DIR / "factorio" / "library"
+
+
 
 
 def check_lua_annotations() -> Tuple[int, List[str]]:
     """
-    Check for incorrect LuaLS annotation formats.
+    Check for incorrect annotation formats.
 
     Correct format: ---@
     Incorrect formats: -- @, --- @, --@, etc.
@@ -421,117 +366,28 @@ def check_non_top_level_requires() -> Tuple[int, List[str]]:
     return (1 if errors else 0, errors)
 
 
-def filter_luals_output(output: str) -> str:
-    """Filter out lua-language-server progress lines.
+def run_lua_linter(emmylua_path: Optional[str] = None) -> int:
+    """Run emmylua_check on the mod with .emmyrc.json. Warnings and errors fail the lint; hints are not shown.
 
-    LuaLS outputs progress lines like:
-        Initializing ...
-        >=================== 001/274
-        >>================== 014/274
-        >>>>>=============== 066/274 [Found 1 problems in 1 files]
-        Diagnosis completed, no problems found
-
-    It also outputs lines that are just whitespace (from progress bar overwrites).
-
-    We want to keep only the meaningful diagnostic output.
-    """
-    # Pattern matches progress lines: optional >, =, spaces, and NNN/NNN format
-    # Also matches "Initializing ..." and similar status lines
-    progress_pattern = re.compile(
-        r"^\s*[>= ]*\d{3}/\d{3}.*$|"  # Progress bars like ">====== 001/274" or with "[Found X problems...]"
-        r"^\s*Initializing\s*\.{3}\s*$|"  # "Initializing ..."
-        r"^\s+$"  # Lines that are only whitespace
-    )
-
-    lines = output.splitlines()
-    filtered_lines = []
-
-    for line in lines:
-        # Skip progress lines and whitespace-only lines
-        if progress_pattern.match(line):
-            continue
-        filtered_lines.append(line)
-
-    return "\n".join(filtered_lines)
-
-
-def run_lua_linter(lua_ls_path: Optional[str] = None) -> int:
-    """Run lua-language-server on the mod files.
-
-    Captures output, filters progress lines, and displays meaningful diagnostics.
-    Returns exit code (0 = success, -1 = timeout/error).
+    Returns exit code (0 = success, -1 = missing tools or error).
     """
     mod_path = Path(__file__).parent.resolve()
-
-    if lua_ls_path is None:
-        # Try to find lua-language-server
-        possible_paths = [
-            "lua-language-server.exe",
-            os.path.expanduser(
-                "~\\.vscode\\extensions\\sumneko.lua-*\\server\\bin\\lua-language-server.exe"
-            ),
-            os.path.expanduser(
-                "~\\AppData\\Roaming\\Code\\User\\globalStorage\\sumneko.lua\\server\\bin\\lua-language-server.exe"
-            ),
-        ]
-
-        for pattern in possible_paths:
-            if pattern == "lua-language-server.exe":
-                # Use the full path: --check spawns worker copies of itself via argv[0]
-                found = shutil.which(pattern)
-                if found:
-                    lua_ls_path = found
-                    break
-            else:
-                matches = glob.glob(pattern)
-                if matches:
-                    lua_ls_path = matches[0]
-                    break
-
-    if not lua_ls_path:
-        print("lua-language-server not found. Install the sumneko.lua VSCode extension.", file=sys.stderr)
+    exe = emmylua_path or (str(EMMYLUA_CHECK_EXE) if EMMYLUA_CHECK_EXE.exists() else None)
+    if not exe or not factorio_library().exists():
+        print("emmylua_check or the Factorio library is missing. Run: just setup-tools", file=sys.stderr)
         return -1
 
-    # Create temporary .luarc.json config (don't pollute the mod directory)
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as tmp:
-        config_file = tmp.name
-        create_or_update_luarc(config_file)
-
-    # Run lua-language-server with temp config, capturing output
-    cmd = [lua_ls_path, "--check", mod_path, "--configpath", config_file]
-
+    cmd = [exe, str(mod_path), "--config", str(mod_path / ".emmyrc.json"), "--severity", "warn", "--warnings-as-errors"]
     try:
-        result = subprocess.run(
-            cmd,
-            cwd=str(mod_path),
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-        )
-
-        # Filter and display stdout
-        if result.stdout:
-            filtered_stdout = filter_luals_output(result.stdout)
-            if filtered_stdout.strip():
-                print(filtered_stdout)
-
-        # Filter and display stderr
-        if result.stderr:
-            filtered_stderr = filter_luals_output(result.stderr)
-            if filtered_stderr.strip():
-                print(filtered_stderr, file=sys.stderr)
-
-        return result.returncode
+        result = subprocess.run(cmd, cwd=str(mod_path), capture_output=True, text=True, encoding="utf-8", errors="replace")
     except Exception as e:
-        print(f"Error running lua-language-server: {e}", file=sys.stderr)
+        print(f"Error running emmylua_check: {e}", file=sys.stderr)
         return -1
-    finally:
-        # Clean up temp config file
-        try:
-            os.unlink(config_file)
-        except:
-            pass
+    if result.stdout.strip():
+        print(result.stdout.rstrip())
+    if result.stderr.strip():
+        print(result.stderr.rstrip(), file=sys.stderr)
+    return result.returncode
 
 
 def run_stylua(
@@ -907,6 +763,11 @@ def parse_factorio_args() -> argparse.Namespace:
     )
     commands.add_argument("--lint", action="store_true", help="Run Lua linter")
     commands.add_argument(
+        "--setup-tools",
+        action="store_true",
+        help="Install emmylua_check, emmylua_ls and the Factorio API library into .tools/",
+    )
+    commands.add_argument(
         "--format",
         action="store_true",
         help="Apply code formatting with stylua and clang-format",
@@ -918,7 +779,7 @@ def parse_factorio_args() -> argparse.Namespace:
 
     # Tool paths
     tools = parser.add_argument_group("tool paths")
-    tools.add_argument("--lua-ls-path", help="Path to lua-language-server executable")
+    tools.add_argument("--emmylua-path", help="Path to emmylua_check executable")
     tools.add_argument("--stylua-path", help="Path to stylua executable")
     tools.add_argument("--clang-format-path", help="Path to clang-format executable")
 
@@ -982,7 +843,7 @@ def main():
     global factorio_exe_path
 
     # Console code pages (e.g. cp1251) can't encode every character in Factorio and
-    # lua-language-server output; print a replacement instead of crashing.
+    # emmylua_check output; print a replacement instead of crashing.
     for stream in (sys.stdout, sys.stderr):
         stream.reconfigure(errors="replace")
 
@@ -1052,12 +913,15 @@ def main():
 
         return 0
 
+    if args.setup_tools:
+        return setup_tools()
+
     # Handle linting
     if args.lint:
         mod_path = Path(__file__).parent.resolve()
 
         # First check annotations
-        print(f"[INFO] Checking LuaLS annotations in {mod_path}")
+        print(f"[INFO] Checking annotations in {mod_path}")
         ann_exit_code, ann_errors = check_lua_annotations()
         if ann_errors:
             print(f"Found {len(ann_errors) // 2} incorrect annotation(s):")
@@ -1072,9 +936,8 @@ def main():
             for error in req_errors:
                 print(error)
 
-        # Then run lua-language-server
-        print(f"\n[INFO] Running lua-language-server on {mod_path}")
-        exit_code = run_lua_linter(args.lua_ls_path)
+        print(f"\n[INFO] Running emmylua_check on {mod_path}")
+        exit_code = run_lua_linter(args.emmylua_path)
 
         # Return failure if any check failed (can't use max() since -1 means timeout)
         if ann_exit_code != 0:

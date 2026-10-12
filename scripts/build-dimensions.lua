@@ -98,9 +98,12 @@ function mod.get_stack_build_dimensions(stack, direction)
    if stack.is_blueprint_book then
       -- Blueprint books: get dimensions from active blueprint
       local book_inv = stack.get_inventory(defines.inventory.item_main)
+      -- integer, not the API's uint32: EmmyLua does not resolve an alias used as an index key
+      ---@type integer?
+      local active_index = stack.active_index
       -- An empty book still has an active index, past its empty inventory
-      if book_inv and stack.active_index and stack.active_index <= #book_inv then
-         local active_bp = book_inv[stack.active_index]
+      if book_inv and active_index and active_index <= #book_inv then
+         local active_bp = book_inv[active_index]
          if active_bp and active_bp.valid_for_read and active_bp.is_blueprint then
             return analyze_blueprint_base_dimensions(active_bp)
          end

@@ -7,10 +7,11 @@ local Viewpoint = require("scripts.viewpoint")
 
 describe("God mode", function()
    it("places from the god's inventory", function(ctx)
+      ---@type LuaPlayer, LuaEntity?
       local player, character
 
       ctx:init(function()
-         player = game.get_player(1)
+         player = assert(game.get_player(1))
          character = player.character
       end)
 
@@ -33,21 +34,23 @@ describe("God mode", function()
    end)
 
    it("walks with the anchored cursor one tile ahead", function(ctx)
+      ---@type LuaPlayer, LuaEntity?, MapPosition.struct, fun(pindex: integer, position: MapPosition), fa.Tile?
       local player, character, start, jump, jumped
 
       ctx:init(function()
-         player = game.get_player(1)
+         player = assert(game.get_player(1))
          character = player.character
       end)
 
       ctx:at_tick(1, function()
          player.set_controller({ type = defines.controllers.god })
          Viewpoint.get_viewpoint(1):set_cursor_anchored(true)
-         start = player.physical_position
+         start = player.physical_position --[[@as MapPosition.struct]]
          -- The cursor itself is the DLL's; see where walking sends it
          jump = Cursor.jump
          ---@diagnostic disable-next-line: duplicate-set-field
          Cursor.jump = function(pindex, position)
+            ---@cast position MapPosition.struct
             jumped = { x = math.floor(position.x), y = math.floor(position.y) }
             jump(pindex, position)
          end
@@ -69,8 +72,9 @@ describe("God mode", function()
 
       ctx:at_tick(24, function()
          Cursor.jump = jump
-         local pos = player.physical_position
+         local pos = player.physical_position --[[@as MapPosition.struct]]
          ctx:assert_not_nil(jumped, "Walking moves the anchored cursor")
+         ---@cast jumped fa.Tile
          ctx:assert_equals(math.floor(pos.x) + 1, jumped.x, "The anchored cursor is a tile ahead")
          ctx:assert_equals(math.floor(pos.y), jumped.y, "on the god's row")
          Viewpoint.get_viewpoint(1):set_cursor_anchored(false)

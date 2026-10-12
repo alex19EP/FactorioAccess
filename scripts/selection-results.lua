@@ -15,7 +15,7 @@ local mod = {}
 ---@type fa.SelectionResults.Kind[]
 local KINDS = { "deconstruct", "cancel-deconstruct", "upgrade", "cancel-upgrade" }
 
----@type table<integer, table<fa.SelectionResults.Kind, integer>>
+---@type table<integer, table<fa.SelectionResults.Kind, integer?>>
 local pending = {}
 
 ---@param kind fa.SelectionResults.Kind

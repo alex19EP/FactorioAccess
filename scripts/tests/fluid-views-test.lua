@@ -7,8 +7,9 @@ local FluidViews = require("scripts.ui.fluid-views")
 ---@param player LuaPlayer
 ---@return LuaEntity[], LuaEntity
 local function build_line(player)
-   local x = math.floor(player.position.x) + 4
-   local y = math.floor(player.position.y) + 4
+   local position = player.position --[[@as MapPosition.struct]]
+   local x = math.floor(position.x) + 4
+   local y = math.floor(position.y) + 4
    local pipes = {}
    for i = 0, 2 do
       local pipe = player.surface.create_entity({
@@ -31,10 +32,11 @@ end
 
 describe("Fluid views", function()
    it("walks the pipeline and counts the buildings it reaches", function(ctx)
+      ---@type LuaEntity[], LuaEntity
       local pipes, pump
 
       ctx:init(function()
-         pipes, pump = build_line(game.get_player(1))
+         pipes, pump = build_line(assert(game.get_player(1)))
       end)
 
       ctx:at_tick(2, function()
@@ -56,10 +58,11 @@ describe("Fluid views", function()
    end)
 
    it("names a pipe's shape before its connections", function(ctx)
+      ---@type LuaEntity[], LuaEntity
       local pipes, pump
 
       ctx:init(function()
-         pipes, pump = build_line(game.get_player(1))
+         pipes, pump = build_line(assert(game.get_player(1)))
       end)
 
       ctx:at_tick(2, function()

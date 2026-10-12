@@ -490,11 +490,13 @@ function TabList:_cycle(pindex, direction, controller)
    end
 end
 
+---@param pindex integer
 function TabList:on_next_tab(pindex, modifiers, controller)
    -- Tab navigation doesn't use modifiers, but we pass controller through
    self:_cycle(pindex, 1, controller)
 end
 
+---@param pindex integer
 function TabList:on_previous_tab(pindex, modifiers, controller)
    -- Tab navigation doesn't use modifiers, but we pass controller through
    self:_cycle(pindex, -1, controller)
@@ -571,14 +573,25 @@ function TabList:_cycle_section(pindex, direction, controller)
    end
 end
 
+---@param pindex integer
 function TabList:on_next_section(pindex, modifiers, controller)
    -- Section navigation doesn't use modifiers, but we pass controller through
    self:_cycle_section(pindex, 1, controller)
 end
 
+---@param pindex integer
 function TabList:on_previous_section(pindex, modifiers, controller)
    -- Section navigation doesn't use modifiers, but we pass controller through
    self:_cycle_section(pindex, -1, controller)
+end
+
+---This tab list's state for the player if it is open, else nil. Re-rendering can close it.
+---@param pindex integer
+---@return fa.ui.TabListStorageState?
+function TabList:_open_state(pindex)
+   local tl = tablist_storage[pindex][self.ui_name]
+   if tl and tl.currently_open then return tl end
+   return nil
 end
 
 ---@param controller fa.ui.RouterController

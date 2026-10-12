@@ -12,8 +12,8 @@ local it = TestRegistry.it
 ---@type fun(pindex: integer)?
 local on_key
 
-EventManager.on_event("fa-d", function(_, pindex)
-   if on_key then on_key(pindex) end
+EventManager.on_event("fa-d", function(event)
+   if on_key then on_key(event.player_index) end
 end, EventManager.EVENT_KIND.TEST)
 
 ---@param position MapPosition
@@ -27,6 +27,7 @@ end
 describe("Cursor", function()
    it("gives a key's handlers the tile its cursor_position is on", function(ctx)
       ctx:at_tick(1, function()
+         ---@type { first: fa.Tile, again: fa.Tile }, boolean
          local seen, known_inside
          press({ x = -2.5, y = 7.25 }, function(pindex)
             known_inside = Cursor.known(pindex)

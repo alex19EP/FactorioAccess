@@ -11,10 +11,11 @@ local SETTING = SettingDecls.SETTING_NAMES.SONIFICATION_INSERTER
 describe("Setting toggle keys", function()
    it("should toggle the player's own setting each press", function(ctx)
       local pindex = 1
+      ---@type PlayerModSettings
       local mod_settings
 
       ctx:init(function()
-         mod_settings = game.get_player(pindex).mod_settings
+         mod_settings = assert(game.get_player(pindex)).mod_settings
          mod_settings[SETTING] = { value = true }
       end)
 

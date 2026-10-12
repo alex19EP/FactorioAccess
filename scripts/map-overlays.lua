@@ -25,6 +25,7 @@ local PIPELINE_TYPES = { "pipe", "pipe-to-ground", "pump", "storage-tank" }
 ---@param reach fun(proto: LuaEntityPrototype): number?
 ---@return number
 local function farthest(types, reach)
+   ---@type number
    local most = 0
    for _, proto in pairs(prototypes.get_entity_filtered({ { filter = "type", type = types } })) do
       most = math.max(most, reach(proto) or 0)
@@ -59,6 +60,7 @@ local function circle_overlaps(position, radius, left_top, right_bottom)
 end
 
 ---@param set table<any, true>
+---@return integer
 local function count(set)
    local n = 0
    for _ in pairs(set) do
@@ -112,6 +114,7 @@ local function turrets_in_range(surface, force, left_top, right_bottom)
    local reach = farthest(TURRET_TYPES, function(proto)
       return proto.turret_range
    end)
+   ---@type integer
    local n = 0
    for _, turret in
       pairs(surface.find_entities_filtered({
@@ -197,7 +200,7 @@ local SIGNAL_STATES = {
 ---@param player LuaPlayer
 ---@param left_top MapPosition
 ---@param right_bottom MapPosition
----@param overlays table<string, true> The overlays that are on, as fa_native.map_overlays gives them
+---@param overlays table<string, true?> The overlays that are on, as fa_native.map_overlays gives them
 function mod.describe(message, player, left_top, right_bottom, overlays)
    local surface = player.surface
    local force = player.force
@@ -231,7 +234,11 @@ function mod.describe(message, player, left_top, right_bottom, overlays)
 
    if overlays.station_names then
       for _, stop in pairs(surface.find_entities_filtered({ type = "train-stop", area = area })) do
-         message:list_item({ "fa.map-overlay-station", stop.backer_name })
+         -- Train stops always have a name
+         message:list_item({
+            "fa.map-overlay-station",
+            stop.backer_name --[[@as string]],
+         })
       end
    end
 
@@ -254,7 +261,10 @@ function mod.describe(message, player, left_top, right_bottom, overlays)
    if overlays.tags then
       for _, tag in pairs(force.find_chart_tags(surface, area)) do
          local name = tag.text
-         if name == "" and tag.icon then name = tag.icon.name end
+         -- A tag's icon always names its signal
+         if name == "" and tag.icon then
+            name = tag.icon.name --[[@as string]]
+         end
          message:list_item({ "fa.map-overlay-tag", name })
       end
    end
@@ -265,6 +275,7 @@ function mod.describe(message, player, left_top, right_bottom, overlays)
          force = force,
          area = area,
       })
+      ---@type table<defines.signal_state, integer?>
       local states = {}
       for _, signal in pairs(signals) do
          states[signal.signal_state] = (states[signal.signal_state] or 0) + 1

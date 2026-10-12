@@ -26,7 +26,7 @@ This guide helps LLMs (particularly Claude) work effectively on the FactorioAcce
    -- RIGHT: Speech.speak(pindex, "user message")  -- Goes to screen reader
    ```
 
-4. **LuaLS annotations: Use three dashes**
+4. **Type annotations: Use three dashes**
    ```lua
    ---@param pindex integer   -- CORRECT
    -- @param pindex integer   -- WRONG (linter will fail)
@@ -65,6 +65,21 @@ just reload
 `just` with no arguments lists every recipe.
 
 After changing Lua or the native core, prefer `just reload` to restarting the game: it swaps the core in about half a second and runs `/fareload` (`game.reload_mods()`), keeping the save running. Restart instead for changes to `native/src/stub/` (winmm.dll), locale files or the data stage, which a reload does not pick up. See `devdocs/dev-setup.md`.
+
+### Lint: EmmyLua
+
+`just lint` runs `emmylua_check` (about a second) with `.emmyrc.json`, against the Factorio API library in `.tools/`. `just setup-tools` installs both, pinned, and generates the library from the Steam game's `doc-html` with FMTK; rerun it after a game update. Warnings fail the lint. The same `.emmyrc.json` serves an editor's or Claude Code's `emmylua_ls`. `need-check-nil` and `strict.arrayIndex` are off: the project lets a missing value crash.
+
+Type-checker habits that keep the lint clean:
+
+- Integers are `integer` (indices, counts, `pindex`); Factorio's `uint32` and friends are aliases of it. EmmyLua reads a table indexed by a `uint32` value as nil: copy the index into a local typed `integer?` first.
+- A local initialised with `0` and later given fractions needs `---@type number`. A function returning a count needs `---@return integer`, or the type checker takes it for the literal 0.
+- A local assigned inside a different closure (tests' `ctx:init`) needs its type declared (`---@type LuaPlayer`), or it reads as nil.
+- An API value typed maybe-nil that cannot be nil here gets `assert(...)` where it enters (`assert(game.get_player(pindex))`), never an `if` that skips.
+- Positions the game returns are typed "struct or array" but are always the struct: cast where they enter, `entity.position --[[@as MapPosition.struct]]`. A tile position is `fa.Tile`, any point `fa.Point`.
+- A lookup table whose missing keys mean "no" is typed with an optional value (`table<string, true?>`), or every lookup reads as always true.
+- `MessageBuilder:build()` returns `""` for an empty message; use `build_or_nil()` when the caller needs to know.
+- Casts are `--[[@as T]]`; a deliberate exception is `---@diagnostic disable-next-line: <code>` with the reason above it.
 
 ### Architecture Overview
 

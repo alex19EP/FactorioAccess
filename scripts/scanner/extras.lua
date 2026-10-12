@@ -59,7 +59,10 @@ end
 ---@param pin LuaPin
 ---@return integer?
 local function pin_surface_index(pin)
+   -- Typed uint32, but nil for a pin bound to an entity rather than a position
+   ---@diagnostic disable-next-line: unnecessary-if
    if pin.surface_index then return pin.surface_index end
+   ---@type LuaEntity?
    local target = pin.targets[1]
    if target then return target.surface_index end
    local tag = pin.chart_tag
@@ -92,7 +95,7 @@ end
 ---@param pin LuaPin
 local function describe_target(message, pin)
    local targets = pin.targets
-   if targets[1] then
+   if #targets > 0 then
       describe_resource_patch(message, targets)
       return
    end

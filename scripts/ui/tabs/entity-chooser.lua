@@ -144,33 +144,6 @@ local function build_entity_tree(ctx)
       end
    end
 
-   -- Add ungrouped entities
-   if #ungrouped > 0 then
-      builder:add_node("entity-ungrouped", TreeChooser.ROOT, {
-         label = function(lctx)
-            lctx.message:fragment({ "fa.ungrouped-entities" })
-         end,
-      })
-
-      table.sort(ungrouped, function(a, b)
-         if a.order ~= b.order then return a.order < b.order end
-         return a.name < b.name
-      end)
-
-      for _, proto in ipairs(ungrouped) do
-         local entity_key = "entity-" .. proto.name
-
-         builder:add_node(entity_key, "entity-ungrouped", {
-            label = function(lctx)
-               lctx.message:fragment(Localising.get_localised_name_with_fallback(proto))
-            end,
-            on_click = function(click_ctx)
-               click_ctx.controller:close_with_result(proto.name)
-            end,
-         })
-      end
-   end
-
    return builder:build()
 end
 

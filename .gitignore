@@ -9,3 +9,4 @@ claude-prompt.md
 factorio_crash_*
 /native/build*/
 /.env
+/.tools/

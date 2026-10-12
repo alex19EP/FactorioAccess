@@ -62,7 +62,7 @@ function mod.read_remarks()
             end
          end
          state.spoken = spoken
-         local built = message:build()
+         local built = message:build_or_nil()
          if built then Speech.speak(pindex, built) end
       end
    end
