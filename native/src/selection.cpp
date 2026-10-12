@@ -43,10 +43,20 @@ std::mutex g_countsMutex;
 CountsKind g_countsKind = CountsKind::Build;
 std::vector<std::string> g_counts;
 
+// Whether the local player's controller applies a planner's selection at once rather than marking
+// (Controller::getInstantDeconstruction or getInstantUpgrading at `slot`): the map editor's settings.
+bool instant(std::byte* view, uint32_t slot) {
+   const auto* player = at<const std::byte*>(view, layout.gameViewPlayer);
+   const auto* controller = player ? at<const std::byte*>(player, layout.playerController) : nullptr;
+   if (!controller) return false;
+   using Getter = bool (*)(const void*);
+   return (*reinterpret_cast<const Getter* const*>(controller))[slot](controller);
+}
+
 // Says what a deconstruction or upgrade planner's finished selection did, then the counts it showed
 // last; nothing for a selection that took in nothing. A copy or blueprint's result is said where it
-// lands: the item in hand, the blueprint's window.
-void sayFinished(int32_t mode) {
+// lands: the item in hand, the blueprint's window. `view` is the GameView it was open in.
+void sayFinished(std::byte* view, int32_t mode) {
    CountsKind kind;
    std::vector<std::string> counts;
    {
@@ -58,11 +68,13 @@ void sayFinished(int32_t mode) {
    if (counts.empty()) return;
    const vocab::Word* action = nullptr;
    if (kind == CountsKind::Deconstruction && mode == kSelect)
-      action = &vocab::kSelectionDeconstruct;
+      action = instant(view, layout.controllerInstantDeconstruction) ? &vocab::kSelectionDeconstructed
+                                                                     : &vocab::kSelectionDeconstruct;
    else if (kind == CountsKind::Deconstruction && mode == kAlternativeSelect)
       action = &vocab::kSelectionCancelDeconstruct;
    else if (kind == CountsKind::Upgrade && (mode == kSelect || mode == kReverseSelect))
-      action = &vocab::kSelectionUpgrade;
+      action =
+         instant(view, layout.controllerInstantUpgrading) ? &vocab::kSelectionUpgraded : &vocab::kSelectionUpgrade;
    else if (kind == CountsKind::Upgrade && mode == kAlternativeSelect)
       action = &vocab::kSelectionCancelUpgrade;
    if (!action) return;
@@ -120,7 +132,7 @@ bool detourSelectionTool(void* source, int32_t mode, int32_t customMode) {
    if (std::byte* view = openSelection()) {
       const int32_t open = selectionMode(view);
       reinterpret_cast<FinishSelectionFunction>(layout.finishSelection)(source);
-      sayFinished(open);
+      sayFinished(view, open);
       return true;
    }
    return g_selectionToolOriginal(source, mode, customMode);
@@ -134,7 +146,7 @@ bool detourDeselection(void* source) {
    if (std::byte* view = openSelection()) {
       const int32_t open = selectionMode(view);
       reinterpret_cast<FinishSelectionFunction>(layout.finishSelection)(source);
-      sayFinished(open);
+      sayFinished(view, open);
       return true;
    }
    return g_deselectionOriginal(source);

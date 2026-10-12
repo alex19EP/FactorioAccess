@@ -1184,6 +1184,8 @@ bool resolve(pdb::SymbolTable& symbols) {
    enumerator(layout.controllerGod, "ControllerType", "God");
    enumerator(layout.controllerRemote, "ControllerType", "Remote");
    enumerator(layout.controllerEditor, "ControllerType", "Editor");
+   classSlot(layout.controllerInstantDeconstruction, "Controller", "getInstantDeconstruction");
+   classSlot(layout.controllerInstantUpgrading, "Controller", "getInstantUpgrading");
    size(layout.inputActionSize, "InputAction");
    offset(layout.inputActionType, "InputAction", "type");
    offset(layout.inputActionPlayer, "InputAction", "playerIndex");

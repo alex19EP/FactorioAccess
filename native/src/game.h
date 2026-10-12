@@ -1658,6 +1658,11 @@ struct Layout {
    uint32_t controllerGod = 0;
    uint32_t controllerRemote = 0;
    uint32_t controllerEditor = 0;
+   // Slots of bool Controller::getInstantDeconstruction() const and getInstantUpgrading() const: the
+   // map editor's settings (and remote view's from it) that apply a planner's selection at once
+   // rather than marking.
+   uint32_t controllerInstantDeconstruction = 0;
+   uint32_t controllerInstantUpgrading = 0;
    // Input actions, which every client input becomes: InputAction (the action's data inline in a
    // union from `buffer`), sent with bool InputSource::process(InputAction&&), which checks the
    // permission group and hands it to the server. A sighted player's map drag moves the remote view
