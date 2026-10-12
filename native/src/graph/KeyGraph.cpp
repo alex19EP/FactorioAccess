@@ -104,12 +104,19 @@ void KeyGraph::Reconcile(GraphRender& render, GraphState& state)
         }
     }
 
-    // Nothing matched (or first render): the start node — but prefer the SELECTED member of its
-    // stop (initial focus lands on the checked radio/tab, not the top of a long list).
+    // Nothing matched (or first render): the start node — but prefer its stop's landing node, then
+    // the SELECTED member of its stop (initial focus lands on the checked radio/tab, not the top of
+    // a long list).
     if (!resolved.IsValid())
     {
         GraphNode* startNode = render.NodeAt(render.StartKey);
-        GraphNode* sel = startNode ? SelectedNodeInStop(render, startNode->StopKey) : nullptr;
+        GraphNode* sel = nullptr;
+        if (startNode)
+        {
+            sel = FixedLandingInStop(render, startNode->StopKey);
+            if (!sel)
+                sel = SelectedNodeInStop(render, startNode->StopKey);
+        }
         resolved = sel ? sel->Id : (startNode ? startNode->Id : render.StartKey);
     }
 
@@ -385,6 +392,8 @@ GraphNode* KeyGraph::StopLanding(const std::string& stopKey) { return StopLandin
 
 GraphNode* KeyGraph::StopLandingIn(const GraphRender& render, const GraphState& state, const std::string& stopKey)
 {
+    if (GraphNode* fixed = FixedLandingInStop(render, stopKey))
+        return fixed;
     auto remembered = state.StopMemory.find(stopKey);
     if (remembered != state.StopMemory.end())
     {
@@ -411,6 +420,17 @@ GraphNode* KeyGraph::StopLandingIn(const GraphRender& render, const GraphState& 
     }
     for (GraphNode* n : render.Order)
         if (n->StopKey == stopKey)
+            return n;
+    return nullptr;
+}
+
+GraphNode* KeyGraph::FixedLandingInStop(const GraphRender& render, const std::string& stopKey)
+{
+    auto landing = render.StopLandings.find(stopKey);
+    if (landing == render.StopLandings.end())
+        return nullptr;
+    for (GraphNode* n : render.Order)
+        if (n->StopKey == stopKey && n->Id.ReferenceMatches(landing->second))
             return n;
     return nullptr;
 }

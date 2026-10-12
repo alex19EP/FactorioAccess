@@ -106,10 +106,13 @@ public:
     /// there. True if focus changed nodes.
     bool FocusByReference(const void* reference);
 
-    /// Where focus lands when entering a stop with no active cursor: the remembered position,
-    /// else the SELECTED member (a radio/tab/list item currently checked — a boon on long lists),
-    /// else the stop's first node.
+    /// Where focus lands when entering a stop with no active cursor: the stop's fixed landing node
+    /// (GraphBuilder::LandOn), else the remembered position, else the SELECTED member (a
+    /// radio/tab/list item currently checked — a boon on long lists), else the stop's first node.
     GraphNode* StopLanding(const std::string& stopKey);
+
+    /// The node a stop is always entered on (GraphBuilder::LandOn), or null.
+    static GraphNode* FixedLandingInStop(const GraphRender& render, const std::string& stopKey);
 
     /// The first node in a stop that reads as SELECTED — carries a non-empty selected-kind
     /// announcement part — or null.

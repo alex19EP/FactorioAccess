@@ -463,11 +463,26 @@ const Widget* member(const Widget* owner, uint32_t offset) {
 
 const Widget* pointerMember(const Widget* owner, uint32_t offset) { return at<const Widget*>(owner, offset); }
 
-const Widget* dialogButtons(const Widget* window) {
+namespace {
+
+// The Dialog<Result> part of a window, or null for other windows.
+const std::byte* dialogBase(const Widget* window) {
    // Dialog is a template, so its instantiations share only the prefix of their decorated name.
    for (const auto& [base, displacement] : classInfo(window).bases)
-      if (base.starts_with(".?AV?$Dialog@")) return member(window, displacement + layout.dialogButtons);
+      if (base.starts_with(".?AV?$Dialog@")) return reinterpret_cast<const std::byte*>(window) + displacement;
    return nullptr;
+}
+
+} // namespace
+
+const Widget* dialogButtons(const Widget* window) {
+   const std::byte* dialog = dialogBase(window);
+   return dialog ? reinterpret_cast<const Widget*>(dialog + layout.dialogButtons) : nullptr;
+}
+
+const Widget* dialogRightButtons(const Widget* window) {
+   const std::byte* dialog = dialogBase(window);
+   return dialog ? reinterpret_cast<const Widget*>(dialog + layout.dialogRightButtons) : nullptr;
 }
 
 MenuParts menuParts(const Widget* window) {
@@ -553,6 +568,27 @@ std::optional<uint16_t> mapKeyOf(const std::byte* map, const Widget* button) {
 }
 
 } // namespace
+
+const Widget* dialogConfirmButton(const Widget* window) {
+   const std::byte* dialog = dialogBase(window);
+   if (!dialog) return nullptr;
+   // Every Result is an enum; 0 is its Nothing.
+   int32_t confirm = at<int32_t>(dialog, layout.dialogConfirmValue);
+   if (confirm == 0) return nullptr;
+   // As Dialog<>::getResultButtonByResult: a std::map<agui::TextButton*, Result>.
+   const MapNode* head = at<const MapNode*>(dialog, layout.dialogResultMapping);
+   std::vector<const MapNode*> pending{head->parent};
+   while (!pending.empty()) {
+      const MapNode* node = pending.back();
+      pending.pop_back();
+      if (node->isNil) continue;
+      auto* value = reinterpret_cast<const std::byte*>(node) + kMapValue;
+      if (at<int32_t>(value, 8) == confirm) return at<const Widget*>(value, 0);
+      pending.push_back(node->left);
+      pending.push_back(node->right);
+   }
+   return nullptr;
+}
 
 SlotItem slotItem(const Widget* slot) {
    const std::byte* self = asBaseChecked(slot, ".?AVInventoryGuiSlot@@");

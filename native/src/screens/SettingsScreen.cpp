@@ -37,6 +37,8 @@ void AddSettingsButtons(graph::GraphBuilder& builder, const Widget* window)
     for (std::size_t i = 0; i < buttons.size(); ++i)
         AddControl(builder, "buttons/" + std::to_string(i), buttons[i]);
     builder.EndRow();
+    if (const Widget* confirm = DialogConfirm(window))
+        builder.LandOn(confirm);
 }
 
 bool SettingsScreen::Handles(const Widget* window) const

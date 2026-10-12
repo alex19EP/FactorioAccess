@@ -1472,6 +1472,17 @@ std::vector<const Widget*> FindAll(const Widget* widget, std::string_view classN
 
 std::string LabelText(const Widget* label) { return Phrase(label); }
 
+const Widget* DialogConfirm(const Widget* window)
+{
+    if (const Widget* confirm = agui::dialogConfirmButton(window))
+        return confirm;
+    const Widget* right = agui::dialogRightButtons(window);
+    if (!right)
+        return nullptr;
+    std::vector<const Widget*> buttons = FindAll(right, "agui::Button");
+    return buttons.empty() ? nullptr : buttons.back();
+}
+
 bool Contains(const Widget* ancestor, const Widget* widget)
 {
     for (; widget; widget = agui::parent(widget))

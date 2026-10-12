@@ -581,6 +581,57 @@ TEST(TabIntoLandOnLastStopLandsOnTheStartOfItsLastRow)
     CHECK_EQ(Id("b2"), r.To->Id); // the line, not its link
 }
 
+TEST(TabIntoLandOnStopLandsOnItsNodeEvenWithMemory)
+{
+    static const int back = 0;
+    static const int confirm = 0;
+    GraphState state;
+    KeyGraph g(
+        []()
+        {
+            return GraphBuilder()
+                .AddItem(Id("a1"), Vt("A1"))
+                .BeginStop()
+                .StartRow()
+                .AddItem(ControlId::Referenced(&back, "back"), Vt("Back"))
+                .AddItem(ControlId::Referenced(&confirm, "confirm"), Vt("Confirm"))
+                .EndRow()
+                .LandOn(&confirm)
+                .Build();
+        },
+        &state);
+
+    MoveResult r = g.MoveStop(+1, /*wrap*/ false);
+    CHECK(r.Moved);
+    CHECK_EQ(Id("confirm"), r.To->Id); // not back, the first
+
+    g.Move(GraphDir::Left);         // back
+    g.MoveStop(-1, /*wrap*/ false); // to stop 1
+    r = g.MoveStop(+1, /*wrap*/ false);
+    CHECK_EQ(Id("confirm"), r.To->Id); // the landing beats memory
+}
+
+TEST(InitialFocusOnALandOnStopLandsOnItsNode)
+{
+    static const int confirm = 0;
+    GraphState state;
+    KeyGraph g(
+        []()
+        {
+            return GraphBuilder()
+                .StartRow()
+                .AddItem(Id("back"), Vt("Back"))
+                .AddItem(ControlId::Referenced(&confirm, "confirm"), Vt("Confirm"))
+                .EndRow()
+                .LandOn(&confirm)
+                .Build();
+        },
+        &state);
+
+    CHECK(g.Rerender());
+    CHECK_EQ(Id("confirm"), state.CurKey);
+}
+
 TEST(RawBlockBetweenMenuRowsStaysReachable)
 {
     // Menu row, raw block (its own internal wiring), menu row — all one stop. Menu wiring must

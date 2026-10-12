@@ -91,6 +91,8 @@ void MapGeneratorScreen::BuildWindow(graph::GraphBuilder& builder, const Widget*
 
     builder.BeginStop("buttons");
     AddSubtree(builder, "buttons", agui::member(window, layout.mapGenButtons));
+    if (const Widget* confirm = DialogConfirm(window))
+        builder.LandOn(confirm);
 }
 
 } // namespace fa::screens

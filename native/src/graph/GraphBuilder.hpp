@@ -54,6 +54,11 @@ public:
     /// whose newest line is at the bottom), instead of its first: the first node of its last row.
     GraphBuilder& LandOnLast();
 
+    /// The current stop is always entered on the node whose id references `reference` (a dialog's
+    /// confirm button), whatever position the stop remembers; first focus on the stop lands there
+    /// too. No effect when no node of the stop references it.
+    GraphBuilder& LandOn(const void* reference);
+
     /// Tag nodes added from here with a region (Ctrl+arrow jump target) within the current stop;
     /// empty clears. Region keys must be stable across rebuilds.
     GraphBuilder& SetRegion(std::string key);
@@ -248,6 +253,7 @@ private:
     int _stopAuto = 1;
     std::string _regionKey;
     std::unordered_set<std::string> _landLast;
+    std::unordered_map<std::string, const void*> _landOn;
 
     std::vector<ParentFrame> _parents;
     bool _built = false;

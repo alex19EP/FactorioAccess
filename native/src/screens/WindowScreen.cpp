@@ -92,6 +92,8 @@ void WindowScreen::AddFooter(graph::GraphBuilder& builder, const agui::Widget* w
         return;
     builder.BeginStop("buttons");
     AddSubtree(builder, "buttons", footer);
+    if (const agui::Widget* confirm = DialogConfirm(window))
+        builder.LandOn(confirm);
 }
 
 bool WindowScreen::TypingIn(const graph::GraphNode& node)

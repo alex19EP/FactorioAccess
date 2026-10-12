@@ -27,6 +27,12 @@ GraphBuilder& GraphBuilder::LandOnLast()
     return *this;
 }
 
+GraphBuilder& GraphBuilder::LandOn(const void* reference)
+{
+    _landOn[_stopKey] = reference;
+    return *this;
+}
+
 GraphBuilder& GraphBuilder::SetRegion(std::string key)
 {
     _regionKey = std::move(key);
@@ -315,6 +321,7 @@ std::unique_ptr<GraphRender> GraphBuilder::Build()
     StampPositions();
 
     render->LandLastStops = std::move(_landLast);
+    render->StopLandings = std::move(_landOn);
     render->Pool = std::move(_pool);
     return render;
 }

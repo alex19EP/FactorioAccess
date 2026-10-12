@@ -322,6 +322,9 @@ struct GraphRender
     /// Stops entered on their last line when they have no remembered position (LandOnLast).
     std::unordered_set<std::string> LandLastStops;
 
+    /// Stops always entered on the node referencing the given object (LandOn), memory or not.
+    std::unordered_map<std::string, const void*> StopLandings;
+
     std::vector<std::unique_ptr<GraphNode>> Pool;
 
     GraphNode* NodeAt(const ControlId& key) const

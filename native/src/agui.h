@@ -153,6 +153,12 @@ const Widget* pointerMember(const Widget* owner, uint32_t offset);
 
 // The footer of a Dialog window (back, confirm and the like), or null for other windows.
 const Widget* dialogButtons(const Widget* window);
+// The footer button E presses in a Dialog window (Dialog<>::confirm), the one the game paints
+// green; null for other windows and for dialogs E does not confirm.
+const Widget* dialogConfirmButton(const Widget* window);
+// The right-hand group of a Dialog window's footer, where the game puts its confirm buttons (the
+// left holds Back), or null for other windows.
+const Widget* dialogRightButtons(const Widget* window);
 
 // The parts of a MenuGui window (the main menu, single player, the game menu, ...), or all null
 // for any other window: the highlighted buttons on top (Continue), the main buttons, the bottom

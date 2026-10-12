@@ -48,7 +48,8 @@ protected:
     /// Declares the window's stops, inside the window title's context.
     virtual void BuildWindow(graph::GraphBuilder& builder, const agui::Widget* window) = 0;
 
-    /// The footer of a dialog window (Back, Confirm, ...) as a stop of its own, a row.
+    /// The footer of a dialog window (Back, Confirm, ...) as a stop of its own, a row, entered on
+    /// the button E presses.
     static void AddFooter(graph::GraphBuilder& builder, const agui::Widget* window);
 
     /// The window this screen is reading; valid during Build and the hooks after it.

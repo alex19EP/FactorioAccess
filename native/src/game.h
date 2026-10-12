@@ -743,6 +743,12 @@ struct Layout {
 
    // Members of the game's windows the screens read by name.
    uint32_t dialogButtons = 0;        // GuiTemplate (Dialog<>) bottomButtonsFlow, the footer
+   // Dialog<>::confirmValue, the result E gives (0, Nothing, for none), and resultMapping, a
+   // std::map<agui::TextButton*, Result> of the footer's buttons: Dialog<>::confirm presses the
+   // button mapped to confirmValue.
+   uint32_t dialogConfirmValue = 0;
+   uint32_t dialogResultMapping = 0;
+   uint32_t dialogRightButtons = 0;   // Dialog<>::rightButtons, the footer's confirm side
    // MenuGui<Result> (the main menu, single player, the game menu, ...): the frame of highlighted
    // buttons on top (Continue), the main buttons, and the bottom row (Exit, Back). Every
    // instantiation lays them out alike.
@@ -757,6 +763,10 @@ struct Layout {
    uint32_t loadMapList = 0;          // LoadMapGui::packageListGui
    uint32_t loadMapInfo = 0;          // LoadMapGui::mapInfo
    uint32_t mapInfoDelete = 0;        // MapInfoGui::deleteSaveButton
+   uint32_t saveMapLeftPart = 0;      // SaveMapGui::leftPart, FrameWithSubheader
+   uint32_t saveMapNameField = 0;     // SaveMapGui::mapNameField, TextFieldWithChatIconSelector
+   uint32_t saveMapList = 0;          // SaveMapGui::packageListGui, PackageListGui*
+   uint32_t saveMapInfo = 0;          // SaveMapGui::mapInfoGui
    uint32_t modsTabs = 0;             // ModsGui::tabs
    uint32_t modsManageTab = 0;        // ModsGui::manageTab
    uint32_t modsManagePane = 0;       // ModsGui::manageTabContents

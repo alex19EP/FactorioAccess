@@ -513,6 +513,9 @@ bool resolve(pdb::SymbolTable& symbols) {
 
    // Every Dialog<Result> instantiation lays its members out alike.
    offset(layout.dialogButtons, "GuiTemplate", "Dialog<enum ConfirmCancelResult>.bottomButtonsFlow");
+   offset(layout.dialogConfirmValue, "GuiTemplate", "Dialog<enum ConfirmCancelResult>.confirmValue");
+   offset(layout.dialogResultMapping, "GuiTemplate", "Dialog<enum ConfirmCancelResult>.resultMapping");
+   offset(layout.dialogRightButtons, "GuiTemplate", "Dialog<enum ConfirmCancelResult>.rightButtons");
    offset(layout.menuTop, "MainMenuGui", "MenuGui<enum MainMenuResult>.topButtonsFrame");
    offset(layout.menuMain, "MainMenuGui", "MenuGui<enum MainMenuResult>.mainButtonsFrame");
    offset(layout.menuBottom, "MainMenuGui", "MenuGui<enum MainMenuResult>.bottomPart");
@@ -523,6 +526,10 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.loadMapList, "LoadMapGui", "packageListGui");
    offset(layout.loadMapInfo, "LoadMapGui", "mapInfo");
    offset(layout.mapInfoDelete, "MapInfoGui", "deleteSaveButton");
+   offset(layout.saveMapLeftPart, "SaveMapGui", "leftPart");
+   offset(layout.saveMapNameField, "SaveMapGui", "mapNameField");
+   offset(layout.saveMapList, "SaveMapGui", "packageListGui");
+   offset(layout.saveMapInfo, "SaveMapGui", "mapInfoGui");
    offset(layout.modsTabs, "ModsGui", "tabs");
    offset(layout.modsManageTab, "ModsGui", "manageTab");
    offset(layout.modsManagePane, "ModsGui", "manageTabContents");

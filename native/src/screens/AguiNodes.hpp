@@ -145,6 +145,12 @@ std::vector<const agui::Widget*> FindAll(const agui::Widget* widget, std::string
 /// A label's (or read-only text box's) text as one phrase, exactly as shown, its lines joined.
 std::string LabelText(const agui::Widget* label);
 
+/// The footer button a dialog window's button row is entered on, or null: the one E presses, as
+/// a sighted player's eye goes to the green one; for a dialog E does not confirm (loading over
+/// changed mods), the last of the footer's right-hand group, where the game puts its confirm
+/// buttons, the main one last.
+const agui::Widget* DialogConfirm(const agui::Widget* window);
+
 /// Whether `widget` is `ancestor` or lies inside it.
 bool Contains(const agui::Widget* ancestor, const agui::Widget* widget);
 
