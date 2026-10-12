@@ -14,6 +14,8 @@
    X(sourceCursorPosition, world::sourceCursorDetour(), world::sourceCursorOriginal(),                                 \
      "PlayerInputSource::getCursorMapPosition")                                                                        \
    X(gameViewMapPosition, world::mapPositionDetour(), world::mapPositionOriginal(), "GameView::getMapPosition")        \
+   X(entitySelectionUpdate, world::selectionUpdateDetour(), world::selectionUpdateOriginal(),                          \
+     "EntitySelector::checkIfEntitySelectionUpdateShouldBeCreated")                                                    \
    X(processCustomInput, cursor::customInputDetour(), cursor::customInputOriginal(),                                   \
      "PlayerInputSource::processCustomInput")                                                                          \
    X(sendRenderStateChanges, cursor::renderStateDetour(), cursor::renderStateOriginal(),                               \
@@ -63,6 +65,8 @@
    X(drawRailPlanArrow, railplanner::drawArrowDetour(), railplanner::drawArrowOriginal(),                              \
      "BuildingRenderer::drawRailPlanArrow")                                                                            \
    X(drawItemCounts, railplanner::drawCountsDetour(), railplanner::drawCountsOriginal(), "RenderUtil::drawItemCounts") \
+   X(railPlanBestSolution, railplanner::bestSolutionDetour(), railplanner::bestSolutionOriginal(),                     \
+     "RailPlanFinder::getBestSolution")                                                                                \
    X(entityDrawAlert, entityicons::drawAlertDetour(), entityicons::drawAlertOriginal(), "Entity::drawAlert")           \
    X(drawInfoIcon, entityicons::drawInfoIconDetour(), entityicons::drawInfoIconOriginal(), "DrawQueue::drawInfoIcon")  \
    X(initLuaState, luabridge::initLuaStateDetour(), luabridge::initLuaStateOriginal(), "LuaHelper::initLuaState")      \

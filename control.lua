@@ -51,6 +51,7 @@ local MovementHistory = require("scripts.movement-history")
 local PlayerInit = require("scripts.player-init")
 local PlayerMiningTools = require("scripts.player-mining-tools")
 require("scripts.rich-text") -- registers rich text processor with speech.lua
+local RailRoute = require("scripts.rails.rail-route")
 local Rulers = require("scripts.rulers")
 local ScannerEntrypoint = require("scripts.scanner.entrypoint")
 local ScannerLegacy = require("scripts.scanner.legacy")
@@ -1029,8 +1030,12 @@ local function read_coords(pindex, start_phrase)
       local stack = game.get_player(pindex).cursor_stack
       local p_width, p_height = BuildDimensions.get_stack_build_dimensions(stack, NativeCursor.build_direction(pindex))
 
+      --While planning rails, the route the game draws to the cursor
+      local rail_route = NativeCursor.rail_route(pindex)
+      if rail_route then
+         message:list_item(RailRoute.describe(rail_route))
       -- Tiles are always 1x1, so tile case still triggers.
-      if p_width and p_height and (p_width > 1 or p_height > 1) then
+      elseif p_width and p_height and (p_width > 1 or p_height > 1) then
          message:fragment({ "fa.build-preview-dimensions", tostring(p_width), tostring(p_height) })
       end
       Speech.speak(pindex, message:build())

@@ -8,6 +8,7 @@
 #include "modfiles.h"
 #include "movement.h"
 #include "parts.h"
+#include "railplanner.h"
 #include "reader.h"
 #include "scanner.h"
 #include "selectedinfo.h"
@@ -729,6 +730,40 @@ int scannerCategory(lua_State* L) {
    return 1;
 }
 
+void pushRoutePoint(lua_State* L, const railplanner::RoutePoint& point) {
+   pushNumber(L, static_cast<double>(point.x) / game::kMapPositionScale);
+   setField(L, -2, "x");
+   pushNumber(L, static_cast<double>(point.y) / game::kMapPositionScale);
+   setField(L, -2, "y");
+   pushInt(L, point.direction);
+   setField(L, -2, "direction");
+   pushBoolean(L, point.elevated);
+   setField(L, -2, "elevated");
+}
+
+// fa_native.rail_route(pindex): the route the rail planner draws while this client plans, as
+// {start = point, pieces = {{type = prototype type, x, y, direction, elevated}...}}, each point the
+// end a rail leads on from, in tiles; nil when it does not plan. For speech only.
+int railRoute(lua_State* L) {
+   if (!world::mayBeLocalPlayer(static_cast<int>(checkInteger(L, 1)))) return 0;
+   const auto route = railplanner::route();
+   if (!route) return 0;
+   createTable(L, 0, 2);
+   createTable(L, 0, 4);
+   pushRoutePoint(L, route->start);
+   setField(L, -2, "start");
+   createTable(L, static_cast<int>(route->pieces.size()), 0);
+   for (size_t i = 0; i < route->pieces.size(); ++i) {
+      createTable(L, 0, 5);
+      pushString(L, route->pieces[i].type);
+      setField(L, -2, "type");
+      pushRoutePoint(L, route->pieces[i].end);
+      rawSetI(L, -2, static_cast<int>(i + 1));
+   }
+   setField(L, -2, "pieces");
+   return 1;
+}
+
 struct Function {
    const char* name;
    lua_CFunction function;
@@ -758,6 +793,7 @@ constexpr Function kFunctions[] = {
    {"scanner_mod_ui", &scannerModUi},
    {"scanner_entry", &scannerEntry},
    {"scanner_category", &scannerCategory},
+   {"rail_route", &railRoute},
 };
 
 using InitLuaState = void (*)(lua_State*);

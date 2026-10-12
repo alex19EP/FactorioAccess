@@ -102,6 +102,10 @@ void* sourceCursorDetour();
 void** sourceCursorOriginal();
 void* mapPositionDetour();
 void** mapPositionOriginal();
+// MinHook detour for EntitySelector::checkIfEntitySelectionUpdateShouldBeCreated: the cursor
+// selects while the OS mouse is outside the game's window.
+void* selectionUpdateDetour();
+void** selectionUpdateOriginal();
 void* dragUpdateDetour();
 void** dragUpdateOriginal();
 void* isActiveDetour();

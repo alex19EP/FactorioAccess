@@ -1557,6 +1557,18 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.railPlanFinderStepCount, "RailPlanFinder", "stepCount");
    offset(layout.railPlanFinderGoal, "RailPlanFinder", "goalLocation");
    offset(layout.railPlanFinderGhostMode, "RailPlanFinder", "ghostMode");
+   offset(layout.gameViewRailLayer, "GameView", "railLayer");
+   address(layout.railPlanBestSolution, "?getBestSolution@RailPlanFinder@@QEAA?AVRailBuildPlan@@XZ");
+   offset(layout.railBuildPlanStart, "RailBuildPlan", "startLocation");
+   offset(layout.railBuildPlanRails, "RailBuildPlan", "rails");
+   offset(layout.locatedEntityId, "LocatedEntity", "entityID");
+   offset(layout.locatedEntityPosition, "LocatedEntity", "position");
+   offset(layout.locatedEntityDirection, "LocatedEntity", "direction");
+   size(layout.locatedEntitySize, "LocatedEntity");
+   address(layout.entitySelectionUpdate,
+           "?checkIfEntitySelectionUpdateShouldBeCreated@EntitySelector@@QEAAXAEAVSurface@@AEBVMapPosition@@V?$"
+           "NamedBool@VAllowToSelectMyCharacterTag@@@@PEAVLatencyState@@PEAVEntity@@@Z");
+   offset(layout.inputStateMouseInWindow, "InputState", "mouseIsInWindow");
    offset(layout.boundingLeftTop, "BoundingBox", "leftTop");
    offset(layout.boundingRightBottom, "BoundingBox", "rightBottom");
 

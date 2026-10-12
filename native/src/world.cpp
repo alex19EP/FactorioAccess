@@ -168,6 +168,26 @@ Position* detourMapPosition(const void* view, Position* out, Pixel pixel) {
    return g_mapPositionOriginal(view, out, pixel);
 }
 
+using SelectionUpdateFunction = void (*)(void* selector, void* surface, const void* position, uint8_t allowCharacter,
+                                         void* latency, void* selected);
+SelectionUpdateFunction g_selectionUpdateOriginal = nullptr;
+
+// The game selects nothing while the OS mouse is outside its window. While the mod drives the
+// cursor the mouse is not what points, so the cursor selects wherever the mouse is: without this, a
+// windowed game could neither open, mine nor start a rail plan with the mouse left elsewhere.
+void detourSelectionUpdate(void* selector, void* surface, const void* position, uint8_t allowCharacter, void* latency,
+                           void* selected) {
+   auto* context = *reinterpret_cast<std::byte* const*>(layout.globalContext);
+   auto* input = context ? at<std::byte*>(context, layout.globalInputState) : nullptr;
+   if (!input || at<bool>(input, layout.inputStateMouseInWindow) || !drivesCursor()) {
+      g_selectionUpdateOriginal(selector, surface, position, allowCharacter, latency, selected);
+      return;
+   }
+   *reinterpret_cast<bool*>(input + layout.inputStateMouseInWindow) = true;
+   g_selectionUpdateOriginal(selector, surface, position, allowCharacter, latency, selected);
+   *reinterpret_cast<bool*>(input + layout.inputStateMouseInWindow) = false;
+}
+
 // NamedBool<Tag> is a one-byte struct, passed by value like a uint8_t.
 using IsActiveFunction = bool (*)(const void* control, bool, uint8_t, bool, uint8_t);
 IsActiveFunction g_isActiveOriginal = nullptr;
@@ -773,6 +793,8 @@ void* sourceCursorDetour() { return reinterpret_cast<void*>(&sourceDetour); }
 void** sourceCursorOriginal() { return reinterpret_cast<void**>(&g_sourceOriginal); }
 void* mapPositionDetour() { return reinterpret_cast<void*>(&detourMapPosition); }
 void** mapPositionOriginal() { return reinterpret_cast<void**>(&g_mapPositionOriginal); }
+void* selectionUpdateDetour() { return reinterpret_cast<void*>(&detourSelectionUpdate); }
+void** selectionUpdateOriginal() { return reinterpret_cast<void**>(&g_selectionUpdateOriginal); }
 void* dragUpdateDetour() { return reinterpret_cast<void*>(&detourDragUpdate); }
 void** dragUpdateOriginal() { return reinterpret_cast<void**>(&g_dragUpdateOriginal); }
 void* isActiveDetour() { return reinterpret_cast<void*>(&detourIsActive); }

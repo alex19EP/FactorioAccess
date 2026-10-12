@@ -23,6 +23,20 @@ local mod = {}
 ---@field walking_step fun(player_index: integer): ("full"|"partial"|"none")?, integer?
 ---@field open_selected_info fun(player_index: integer)
 ---@field audio fun(player_index: integer, command: fa.LauncherAudio.Command)
+---@field rail_route fun(player_index: integer): fa.NativeRailRoute?
+
+---@class fa.NativeRailPoint
+---@field x number Tiles
+---@field y number Tiles
+---@field direction integer The way the route leads on from here, 0 to 15
+---@field elevated boolean
+
+---@class fa.NativeRailPiece: fa.NativeRailPoint The rail's end the route leads on from
+---@field type string The rail's prototype type, such as "straight-rail", "curved-rail-a" or "rail-ramp"
+
+---@class fa.NativeRailRoute
+---@field start fa.NativeRailPoint
+---@field pieces fa.NativeRailPiece[] In order from the start; empty when there is no route
 
 ---@class fa.NativeHeldBuild
 ---@field blueprint boolean
@@ -90,6 +104,14 @@ end
 ---@return fa.NativeDragBuild?
 function mod.drag_build(pindex)
    return native and native.drag_build(pindex)
+end
+
+---The route the game's rail planner draws while the player plans, rail by rail; nil when not
+---planning. Only this client knows it: speak it, never change the game by it.
+---@param pindex integer
+---@return fa.NativeRailRoute?
+function mod.rail_route(pindex)
+   return native and native.rail_route(pindex)
 end
 
 return mod

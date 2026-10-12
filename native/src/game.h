@@ -2184,7 +2184,25 @@ struct Layout {
    uint32_t railPlanFinderStepCount = 0;
    uint32_t railPlanFinderGoal = 0;
    uint32_t railPlanFinderGhostMode = 0;
-   uint32_t boundingLeftTop = 0;           // BoundingBox::leftTop
+   // GameView::railLayer (RailLayer, one byte, 0 ground): the layer the planner builds on, which the
+   // toggle-rail-layer control flips while planning.
+   uint32_t gameViewRailLayer = 0;
+   // RailBuildPlan RailPlanFinder::getBestSolution() gives the route drawn: RailBuildPlan::
+   // startLocation (a RailLocation) and ::rails (std::vector<LocatedEntity>, in order from the start).
+   // LocatedEntity::entityID (an ID<EntityPrototype>, uint16), ::position, ::direction (uint8).
+   uintptr_t railPlanBestSolution = 0;
+   uint32_t railBuildPlanStart = 0;
+   uint32_t railBuildPlanRails = 0;
+   uint32_t locatedEntityId = 0;
+   uint32_t locatedEntityPosition = 0;
+   uint32_t locatedEntityDirection = 0;
+   uint32_t locatedEntitySize = 0;
+   // void EntitySelector::checkIfEntitySelectionUpdateShouldBeCreated(Surface&, MapPosition const&,
+   // NamedBool<AllowToSelectMyCharacterTag>, LatencyState*, Entity*) selects nothing while
+   // InputState::mouseIsInWindow (bool) is false, unless the input method is a game controller.
+   uintptr_t entitySelectionUpdate = 0;
+   uint32_t inputStateMouseInWindow = 0;
+   uint32_t boundingLeftTop = 0;          // BoundingBox::leftTop
    uint32_t boundingRightBottom = 0;       // BoundingBox::rightBottom
 };
 

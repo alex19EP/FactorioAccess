@@ -531,6 +531,13 @@ inline constexpr Word kRailPlanEnded{"fa.native-rail-plan-ended"};
 inline constexpr Word kRailPlanNoRoute{"fa.native-rail-plan-no-route"};
 inline constexpr Word kRailPlanEnds{"fa.rail-end-direction"};
 inline constexpr Word kRailPlanShort{"fa.native-rail-plan-short"};
+inline constexpr Word kRailPlanStartElevated{"fa.native-rail-plan-start-elevated"};
+inline constexpr Word kRailPlanBuiltElevated{"fa.native-rail-plan-built-elevated"};
+inline constexpr Word kRailPlanEndsElevated{"fa.native-rail-plan-ends-elevated"};
+inline constexpr Word kRailPlanJoins{"fa.native-rail-plan-joins"};
+inline constexpr Word kRailPlanGhosts{"fa.native-rail-plan-ghosts"};
+inline constexpr Word kRailPlanLayerElevated{"fa.native-rail-plan-layer-elevated"};
+inline constexpr Word kRailPlanLayerGround{"fa.native-rail-plan-layer-ground"};
 
 inline constexpr Word kNoTooltip{"fa.native-no-tooltip"};
 inline constexpr Word kNoAction{"fa.native-no-action"};
