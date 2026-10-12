@@ -457,6 +457,9 @@ std::string nameOf(const std::byte* entity, const std::byte* description) {
        reinterpret_cast<const MsvcString*>(qualityPrototype + layout.prototypeName)->view() != "normal")
       name += " (" + localisedName(qualityPrototype) + ")";
    const std::byte* prototype = at<const std::byte*>(entity, layout.entityPrototypeOf);
+   // The game describes nothing the mouse cannot select, such as cliffs; the scanner still lists them
+   // as the view shows them, by name.
+   if (name.empty()) name = localisedName(prototype);
    if (typeName(prototype) == "entity-ghost")
       return vocab::translate("fa.ent-info-ghost", {localisedName(prototype), name});
    return name;
