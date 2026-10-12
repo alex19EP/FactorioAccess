@@ -13,6 +13,7 @@
 #include <windows.h>
 
 #include <algorithm>
+#include <array>
 #include <atomic>
 #include <cctype>
 #include <charconv>
@@ -42,8 +43,17 @@ constexpr DWORD kGameWaitMs = 3000;
 
 std::atomic<bool> g_running{false};
 std::atomic<uint64_t> g_frames{0};
-std::vector<SOCKET> g_listeners;
 std::thread g_thread;
+// The listening sockets, which stop() closes under the server thread; the mutex keeps that from
+// racing the thread while it is still binding them.
+std::mutex g_listenMutex;
+std::vector<SOCKET> g_listeners;
+std::condition_variable g_stopping;
+
+// A game restarting itself (the Mods window's Confirm) starts while the old one still listens on
+// the port, so a start waits for it a while.
+constexpr auto kBindWait = std::chrono::seconds(30);
+constexpr auto kBindRetry = std::chrono::milliseconds(500);
 
 // ---- speech ring ----
 
@@ -481,6 +491,40 @@ void serve(std::vector<SOCKET> listeners) {
    }
 }
 
+// Binds both loopbacks, as two sockets, never a dual-mode wildcard that would listen on every
+// interface (`localhost` resolves to ::1 first), then serves. While another process holds the port
+// it tries again until kBindWait is up, then serves on whichever loopback it got, if any.
+void run(uint16_t port) {
+   constexpr std::array kFamilies{AF_INET6, AF_INET};
+   const auto deadline = std::chrono::steady_clock::now() + kBindWait;
+   std::vector<SOCKET> listeners;
+   for (bool waiting = false;;) {
+      for (int family : kFamilies)
+         if (SOCKET s = listenOn(family, port); s != INVALID_SOCKET) listeners.push_back(s);
+      if (listeners.size() == kFamilies.size() || std::chrono::steady_clock::now() >= deadline) break;
+      for (SOCKET s : listeners) closesocket(s);
+      listeners.clear();
+      if (!waiting) log::info("Dev server: port {} is in use; waiting for it", port);
+      waiting = true;
+      std::unique_lock lock(g_listenMutex);
+      if (g_stopping.wait_for(lock, kBindRetry, [] { return !g_running; })) return;
+   }
+   if (listeners.empty()) {
+      log::error("Dev server: could not listen on loopback port {} ({})", port, WSAGetLastError());
+      return;
+   }
+   {
+      std::scoped_lock lock(g_listenMutex);
+      if (!g_running) {
+         for (SOCKET s : listeners) closesocket(s);
+         return;
+      }
+      g_listeners = listeners;
+   }
+   log::info("Dev server on http://localhost:{} (/health /speech /mute /screen /key /dump /cursor)", port);
+   serve(std::move(listeners));
+}
+
 std::string environment(const char* name) {
    char value[64];
    DWORD length = GetEnvironmentVariableA(name, value, sizeof(value));
@@ -506,19 +550,8 @@ void start(const std::filesystem::path& directory) {
       log::error("Dev server: WSAStartup failed");
       return;
    }
-   // Both loopbacks as two sockets, never a dual-mode wildcard that would listen on every
-   // interface. `localhost` resolves to ::1 first.
-   std::vector<SOCKET> listeners;
-   for (int family : {AF_INET6, AF_INET})
-      if (SOCKET s = listenOn(family, port); s != INVALID_SOCKET) listeners.push_back(s);
-   if (listeners.empty()) {
-      log::error("Dev server: could not listen on loopback port {} ({})", port, WSAGetLastError());
-      return;
-   }
    g_running = true;
-   g_listeners = listeners;
-   g_thread = std::thread(serve, std::move(listeners));
-   log::info("Dev server on http://localhost:{} (/health /speech /mute /screen /key /dump /cursor)", port);
+   g_thread = std::thread(run, port);
 }
 
 void stop() {
@@ -530,8 +563,13 @@ void stop() {
    }
    // A request waiting on the game gives up at once; one being answered finishes first.
    g_jobDone.notify_all();
-   for (SOCKET s : g_listeners) closesocket(s);
-   g_listeners.clear();
+   {
+      std::scoped_lock lock(g_listenMutex);
+      for (SOCKET s : g_listeners) closesocket(s);
+      g_listeners.clear();
+   }
+   // A thread still waiting for the port gives up.
+   g_stopping.notify_all();
    g_thread.join();
    WSACleanup();
    log::info("Dev server stopped");
