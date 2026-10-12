@@ -136,8 +136,13 @@ std::optional<View> localView() {
    return result;
 }
 
-bool fixedCamera(uint8_t controller) {
-   return controller == layout.controllerCharacter || controller == layout.controllerGod;
+// The character view: its camera stays on the character, so the cursor stays on the screen.
+bool fixedCamera(uint8_t controller) { return controller == layout.controllerCharacter; }
+
+// The map editor and the god (the sandbox), whose camera is where they are: the mod's Lua moves
+// them onto the cursor's tile after each key, as a sighted player flies them there.
+bool followsCursor(uint8_t controller) {
+   return controller == layout.controllerEditor || controller == layout.controllerGod;
 }
 
 Screen screen(const View& view) { return cursormoves::screenOf(view.centre, view.size, view.tilesPerPixel); }
@@ -420,10 +425,10 @@ void moveForKey(const void* event, const void* context) {
 // MoveOnPan, which the server applies some ticks later. Positions panned to and not yet reached.
 std::deque<Position> g_pans;
 constexpr size_t kMaxPans = 32;
-// The map editor's camera, kept on the cursor by the mod's Lua, which moves the editor onto the
-// cursor's tile after each key: the game ignores MoveOnPan there (Controller::canUseCursorToMove).
-// The tiles the cursor stood on that the camera may yet reach.
-std::deque<std::pair<int32_t, int32_t>> g_editorTiles;
+// The map editor's and the god's camera, kept on the cursor by the mod's Lua, which moves them onto
+// the cursor's tile after each key (the game ignores MoveOnPan in the editor,
+// Controller::canUseCursorToMove). The tiles the cursor stood on that the camera may yet reach.
+std::deque<std::pair<int32_t, int32_t>> g_followTiles;
 
 alignas(16) std::byte g_actionBuffer[256];
 
@@ -529,7 +534,7 @@ void reset() {
    g_lastController.reset();
    g_landedTile.reset();
    g_pans.clear();
-   g_editorTiles.clear();
+   g_followTiles.clear();
    g_settling = 0;
    g_awaitingRemote = 0;
 }
@@ -549,22 +554,22 @@ void remoteFrame(void* source, const View& view, Position cursor) {
    if (!settled) pan(source, view, cursor);
 }
 
-void editorFrame(const View& view, Position cursor) {
+void followFrame(const View& view, Position cursor) {
    const std::pair cursorTile{tileOf(cursor.x), tileOf(cursor.y)};
-   if (g_editorTiles.empty() || g_editorTiles.back() != cursorTile) {
-      g_editorTiles.push_back(cursorTile);
-      if (g_editorTiles.size() > kMaxPans) g_editorTiles.pop_front();
+   if (g_followTiles.empty() || g_followTiles.back() != cursorTile) {
+      g_followTiles.push_back(cursorTile);
+      if (g_followTiles.size() > kMaxPans) g_followTiles.pop_front();
    }
    if (view.centre == g_lastCentre) return;
    const std::pair centreTile{tileOf(view.centre.x), tileOf(view.centre.y)};
-   auto ours = std::find(g_editorTiles.begin(), g_editorTiles.end(), centreTile);
-   if (ours == g_editorTiles.end()) {
-      // The arrows fly the editor, or the game moved it: a search result, a surface switch.
-      g_editorTiles.clear();
+   auto ours = std::find(g_followTiles.begin(), g_followTiles.end(), centreTile);
+   if (ours == g_followTiles.end()) {
+      // The keys fly the editor or the god, or the game moved it: a search result, a surface switch.
+      g_followTiles.clear();
       place(tileCentre(view.centre));
       return;
    }
-   g_editorTiles.erase(g_editorTiles.begin(), ours);
+   g_followTiles.erase(g_followTiles.begin(), ours);
 }
 
 void fixedFrame(void* source, const View& view, Position cursor, bool anchored, bool jumped) {
@@ -667,11 +672,12 @@ void frame(void* source) {
    }
 
    if (view->controller != g_lastController) {
-      if (view->controller == layout.controllerRemote && g_lastController && fixedCamera(*g_lastController))
+      if (view->controller == layout.controllerRemote && g_lastController &&
+          (fixedCamera(*g_lastController) || *g_lastController == layout.controllerGod))
          g_fixedCentre = g_lastCentre;
       g_lastController = view->controller;
       g_pans.clear();
-      g_editorTiles.clear();
+      g_followTiles.clear();
       g_settling = kSettleFrames;
    }
    if (g_settling > 0 && --g_settling == 0) {
@@ -684,9 +690,9 @@ void frame(void* source) {
          // left, where the game selects and builds.
          if (g_awaitingRemote > 0) zoomTo(source, g_jumpZoom);
          g_awaitingRemote = 0;
-      } else if (fixedCamera(view->controller) || view->controller == layout.controllerEditor) {
-         // Leaving remote view brings the cursor back to the character, as the camera comes back;
-         // the map editor opens with the cursor on its camera, which then follows it.
+      } else if (fixedCamera(view->controller) || followsCursor(view->controller)) {
+         // Leaving remote view brings the cursor back to the character or god, as the camera comes
+         // back; the map editor opens with the cursor on its camera, which then follows it.
          place(tileCentre(view->centre));
       }
    }
@@ -701,8 +707,8 @@ void frame(void* source) {
          remoteFrame(source, *view, cursor);
       else if (fixedCamera(view->controller))
          fixedFrame(source, *view, cursor, anchored, jumped);
-      else if (view->controller == layout.controllerEditor)
-         editorFrame(*view, cursor);
+      else if (followsCursor(view->controller))
+         followFrame(*view, cursor);
    }
    g_lastCentre = view->centre;
 }

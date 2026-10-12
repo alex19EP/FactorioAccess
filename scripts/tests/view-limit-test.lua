@@ -128,7 +128,7 @@ describe("Cursor limited to the screen", function()
       end)
    end)
 
-   it("limits the cursor in god mode as in the character view", function(ctx)
+   it("flies the god after the cursor in god mode", function(ctx)
       ---@type LuaPlayer, LuaEntity?
       local player, character
 
@@ -146,8 +146,11 @@ describe("Cursor limited to the screen", function()
          ctx:assert_equals(defines.controllers.god, player.controller_type)
          local position = player.position --[[@as MapPosition.struct]]
          local x, y = math.floor(position.x), math.floor(position.y)
-         ctx:assert(ViewLimit.allows(1, { x = x + 2, y = y + 2 }), "A tile next to the god is on the screen")
-         ctx:assert(not ViewLimit.allows(1, { x = x + 1000, y = y }), "A tile 1000 tiles away is off the screen")
+         ctx:assert(ViewLimit.allows(1, { x = x + 1000, y = y }), "A tile 1000 tiles away is reachable")
+         ViewLimit.follow_cursor(1, { x = x + 40, y = y - 3 })
+         local moved = player.position --[[@as MapPosition.struct]]
+         ctx:assert_equals(x + 40.5, moved.x, "The god flies to the cursor's tile")
+         ctx:assert_equals(y - 2.5, moved.y)
          player.set_controller({ type = defines.controllers.character, character = character })
       end)
    end)

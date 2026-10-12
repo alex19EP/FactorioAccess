@@ -22,12 +22,12 @@
 // (footprint.h). Ctrl with a movement key then nudges the build a tile instead, the cursor staying
 // on its tile, and the build key builds it where it is pinned.
 //
-// It reaches only what a sighted player's mouse reaches: in the character and god views, whose
-// camera stays on the player, the tiles on the screen, and the movement keys stop at the edge. In
-// remote view the camera follows the cursor, moved as a sighted player's map drag moves it, and a
-// camera the game moves (an alert, a pin, a search result) brings the cursor along. The map editor's
-// camera follows it too, moved by the mod's Lua (the game takes no map drag there), and the arrows
-// that fly the editor bring the cursor along.
+// It reaches only what a sighted player's mouse reaches: in the character view, whose camera stays
+// on the character, the tiles on the screen, and the movement keys stop at the edge. In remote view
+// the camera follows the cursor, moved as a sighted player's map drag moves it, and a camera the
+// game moves (an alert, a pin, a search result) brings the cursor along. The map editor's and the
+// god's (the sandbox) cameras follow it too: the mod's Lua moves them, as a sighted player flies
+// them, and the keys that fly them bring the cursor along.
 namespace fa::cursor {
 
 // From the mod's Lua every tick, for this client's player: whether the mod is in vanilla mode (the
