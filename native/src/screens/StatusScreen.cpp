@@ -96,16 +96,6 @@ void StatusScreen::Build(graph::GraphBuilder& builder)
         builder.PopContext();
     }
 
-    // The goal, then what the scenario adds under it: the tutorial's hints, its drive progress bar,
-    // its table of items still to pack.
-    if (const Widget* goal = agui::goalFrame(); goal && HasContent(goal))
-    {
-        builder.BeginStop("goal");
-        builder.PushContext(std::string(vocab::kGoal));
-        AddSubtree(builder, "goal", goal);
-        builder.PopContext();
-    }
-
     agui::HudBars bars = agui::hudBars();
     std::pair<const Widget*, vocab::Word> named[] = {
         {bars.health, vocab::kHealth},

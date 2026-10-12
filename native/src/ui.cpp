@@ -47,6 +47,7 @@
 #include "screens/MapViewOptionsScreen.hpp"
 #include "screens/EditorPanelScreen.hpp"
 #include "screens/SplitterScreen.hpp"
+#include "screens/GoalScreen.hpp"
 #include "screens/StatusScreen.hpp"
 #include "screens/TechnologyScreen.hpp"
 #include "screens/TooltipScreen.hpp"
@@ -170,7 +171,9 @@ void start() {
    manager.Register(std::make_unique<screens::ModWindowsScreen>());
    // The map editor's panel, the part after them.
    manager.Register(std::make_unique<screens::EditorPanelScreen>());
-   // The quickbar, the part after them.
+   // The scenario's goal, the part after them.
+   manager.Register(std::make_unique<screens::GoalScreen>());
+   // The quickbar, the part after it.
    manager.Register(std::make_unique<screens::QuickBarScreen>());
    // The shortcut bar, the part after it.
    manager.Register(std::make_unique<screens::ShortcutBarScreen>());

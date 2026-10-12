@@ -10,6 +10,7 @@ enum class Part {
    None, // back to what is open
    ModWindows, // only while a mod or the scenario shows a window on the screen
    EditorPanel, // in the map editor only
+   Goal, // only while the scenario shows a goal
    QuickBar,
    ShortcutBar,
    SideMenu,
@@ -25,8 +26,9 @@ Part current();
 // what is open again. Parts that are not available are passed over. Safe from any thread.
 void cycle(int direction);
 // Whether a part is on the screen now, as its screen sees it each frame: a scenario can hide the
-// bars, the map view options are in remote view only, and the crafting queue, the tracked
-// achievements and the mod windows are there only while they have anything. Safe from any thread.
+// bars, the map view options are in remote view only, and the goal, the crafting queue, the
+// tracked achievements and the mod windows are there only while they have anything. Safe from any
+// thread.
 void setAvailable(Part part, bool available);
 // Back to what is open.
 void close();

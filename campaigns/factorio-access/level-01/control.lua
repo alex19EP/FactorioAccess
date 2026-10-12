@@ -89,7 +89,7 @@ local story_table = {
       hint_node("cursor"),
       -- Done once a part was opened with Ctrl+Tab and the cursor moves again, back in the game. Keys
       -- inside a part (Tab, Escape) are the DLL's and never reach the level. No window opens over the
-      -- status, since Tab there would move in the status rather than close the window.
+      -- part, since Tab there would move in the part rather than close the window.
       {
          init = function()
             storage.parts_opened = false

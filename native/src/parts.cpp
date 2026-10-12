@@ -8,19 +8,19 @@ namespace fa::parts {
 namespace {
 
 // In the order Ctrl+Tab visits them, None first.
-constexpr Part kOrder[] = {Part::None,          Part::ModWindows,         Part::EditorPanel,    Part::QuickBar,
-                           Part::ShortcutBar,   Part::SideMenu,           Part::MapViewOptions, Part::Status,
-                           Part::CraftingQueue, Part::TrackedAchievements};
+constexpr Part kOrder[] = {Part::None,     Part::ModWindows,    Part::EditorPanel,        Part::Goal,
+                           Part::QuickBar, Part::ShortcutBar,   Part::SideMenu,           Part::MapViewOptions,
+                           Part::Status,   Part::CraftingQueue, Part::TrackedAchievements};
 constexpr int kCount = static_cast<int>(std::size(kOrder));
 
 // Set from Lua on the game's update and from the navigator on the Gui's logic.
 std::atomic<Part> g_current{Part::None};
 
 // Each part's screen says whether it is on the screen. The mod windows wait for theirs to see a
-// window and the editor panel for the map editor; None is always there, so a search for the next
-// part ends. Indexed by Part.
-std::atomic<bool> g_available[kCount] = {{true}, {false}, {false}, {true}, {true},
-                                         {true}, {true},  {true},  {true}, {true}};
+// window, the editor panel for the map editor and the goal for a goal; None is always there, so a
+// search for the next part ends. Indexed by Part.
+std::atomic<bool> g_available[kCount] = {{true}, {false}, {false}, {false}, {true}, {true},
+                                         {true}, {true},  {true},  {true},  {true}};
 
 bool available(Part part) { return part == Part::None || g_available[static_cast<int>(part)].load(); }
 

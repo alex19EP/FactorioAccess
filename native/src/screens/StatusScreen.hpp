@@ -1,7 +1,8 @@
 #pragma once
 
 // The HUD's status, the part after the side menu on Ctrl+Tab (see parts.h): what the game shows
-// around the edges of the map about how things stand.
+// around the edges of the map about how things stand. The scenario's goal is a part of its own
+// (GoalScreen.hpp).
 //
 // A stop each, for those the game shows:
 //   - research: the research box at the top right, the technology and its progress; Enter opens the
@@ -9,8 +10,6 @@
 //   - alerts: a button per alert category that has alerts (attack, construction, logistics, ...)
 //     with the count of its most important alert; Enter opens the game's list of them, and the
 //     tooltip key reads what the game's tooltip lists;
-//   - goal: the scenario's goal at the top left, and under it what the scenario adds to the goal
-//     window (the tutorial's hints, progress bar and table of items to gather);
 //   - bars: health and shield, the vehicle's while driving, and mining while it goes on.
 //
 // The research box and the alert buttons open windows, so pressing one leaves the status for that
