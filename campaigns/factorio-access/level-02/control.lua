@@ -222,14 +222,14 @@ script.on_init(function()
 end)
 
 script.on_event(defines.events.on_tick, function(event)
-   if not game.tick_paused then story_update(storage.story, event) end
+   if not game.tick_paused then story_update(storage.story, event, "level-03") end
 end)
 
 script.on_event(defines.events.on_player_changed_position, function(event)
-   story_update(storage.story, event)
+   story_update(storage.story, event, "level-03")
 end)
 
 script.on_event(KEYS, function(event)
    if pressed(event, "fa-i") then storage.anchored = not storage.anchored end
-   story_update(storage.story, event)
+   story_update(storage.story, event, "level-03")
 end)
