@@ -142,6 +142,14 @@ inline constexpr Word kUntitledModWindowShown{"fa.native-untitled-mod-window-sho
 inline constexpr Word kMapViewOptions{"fa.native-map-view-options"};
 // The map editor's panel of editors and settings.
 inline constexpr Word kEditorPanel{"fa.native-editor-panel"};
+// The map editor's keys: the Time editor's "(paused)" after its speed, the tick a tick once
+// reached, the clone brush's source and destination set, a scripting area or position removed.
+inline constexpr Word kEditorPaused{"gui-map-editor-time-editor.paused"};
+inline constexpr Word kEditorTick{"fa.native-editor-tick"};
+inline constexpr Word kCloneSourceSet{"fa.native-clone-source-set"};
+inline constexpr Word kCloneDestinationSet{"fa.native-clone-destination-set"};
+inline constexpr Word kScriptAreaRemoved{"fa.native-script-area-removed"};
+inline constexpr Word kScriptPositionRemoved{"fa.native-script-position-removed"};
 // The HUD's status: research, the alert categories, the scenario's goal and the bars.
 inline constexpr Word kStatus{"fa.native-status"};
 inline constexpr Word kAlerts{"fa.native-alerts"};

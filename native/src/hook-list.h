@@ -71,4 +71,6 @@
    X(speechBubbleGui, popups::speechBubbleDetour(), popups::speechBubbleOriginal(), "the SpeechBubbleGui constructor") \
    X(infoBoxManagerUpdate, popups::infoBoxesDetour(), popups::infoBoxesOriginal(), "InfoBoxManager::update")           \
    X(characterChangePosition, movement::changePositionDetour(), movement::changePositionOriginal(),                    \
-     "Character::changePosition")
+     "Character::changePosition")                                                                                      \
+   X(editorActionPerformed, editoractions::actionPerformedDetour(), editoractions::actionPerformedOriginal(),          \
+     "MapEditorActionHandler::actionPerformed")

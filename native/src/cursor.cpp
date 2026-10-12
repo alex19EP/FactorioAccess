@@ -1,6 +1,7 @@
 #include "cursor.h"
 
 #include "cues.h"
+#include "editoractions.h"
 #include "cursormoves.h"
 #include "facts.h"
 #include "footprint.h"
@@ -610,6 +611,7 @@ void frame(void* source) {
    }
    const std::optional<View> view = localView();
    if (view) announceView(*view, known && !vanilla);
+   if (view) editoractions::frame(view->player);
    if (!view || !known || vanilla) {
       // The mouse is the cursor in vanilla mode, and the build follows it.
       if (vanilla && world::pinnedBuild()) unpin();

@@ -4,6 +4,7 @@
 #include "console.h"
 #include "cursor.h"
 #include "disclosure.h"
+#include "editoractions.h"
 #include "entityicons.h"
 #include "flyingtext.h"
 #include "game.h"

@@ -986,6 +986,51 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.gameViewMapViewOptions, "GameView", "mapViewOptionsGui");
    offset(layout.globalMapViewSettings, "GlobalContext", "mapViewSettings.value");
    offset(layout.mapEditorViewGui, "MapEditorView", "mapEditorGui");
+   address(layout.editorActionPerformed,
+           "?actionPerformed@MapEditorActionHandler@@QEAAXAEBVEditorAction@@AEAVController@@@Z");
+   offset(layout.editorActionType, "EditorAction", "type");
+   offset(layout.editorActionString, "EditorAction", "string");
+   offset(layout.editorActionSurface, "EditorAction", "surfaceIndex");
+   offset(layout.surfaceAndDataData, "ActionData::SurfaceIndexAndData<unsigned int>", "data");
+   enumerator(layout.editorDecreaseSpeed, "EditorActionType", "DecreaseGameSpeed");
+   enumerator(layout.editorIncreaseSpeed, "EditorActionType", "IncreaseGameSpeed");
+   enumerator(layout.editorResetSpeed, "EditorActionType", "ResetGameSpeed");
+   enumerator(layout.editorTickOnce, "EditorActionType", "TickOnce");
+   enumerator(layout.editorTogglePause, "EditorActionType", "ToggleEntityUpdatePaused");
+   enumerator(layout.editorEntityVariation, "EditorActionType", "ChangeEntityVariation");
+   enumerator(layout.editorCliffVariation, "EditorActionType", "ChangeCliffVariation");
+   enumerator(layout.editorResourceVariation, "EditorActionType", "ChangeResourceVariation");
+   enumerator(layout.editorTileVariation, "EditorActionType", "ChangeTileVariation");
+   enumerator(layout.editorSwitchToSurface, "EditorActionType", "SwitchToSurface");
+   enumerator(layout.editorCloneSource, "EditorActionType", "SetCloneBrushSourceSurfaceAndPosition");
+   enumerator(layout.editorCloneDestination, "EditorActionType", "SetCloneBrushDestinationSurfaceAndPosition");
+   enumerator(layout.editorRemoveScriptRectangle, "EditorActionType", "RemoveScriptRectangle");
+   enumerator(layout.editorRemoveScriptPosition, "EditorActionType", "RemoveScriptPosition");
+   offset(layout.mapGameSpeed, "Map", "gameSpeed");
+   address(layout.gameSpeedStr,
+           "?str@GameSpeed@@QEBA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ");
+   offset(layout.mapPausedState, "Map", "entityUpdatePausedState");
+   offset(layout.pausedSetting, "EntityUpdatePausedState", "pausedSetting");
+   offset(layout.pausedTicksToRun, "EntityUpdatePausedState", "ticksToRun");
+   offset(layout.mapExtraScriptData, "Map", "extraScriptData");
+   offset(layout.scriptRectangles, "ExtraScriptData", "rectanglesBySurface");
+   offset(layout.scriptPositions, "ExtraScriptData", "positionsBySurface");
+   {
+      constexpr const char* kRectangleNode =
+         "std::_Tree_node<std::pair<SurfaceIndex const ,std::vector<std::unique_ptr<ScriptRectangle,std::default_"
+         "delete<ScriptRectangle> >,std::allocator<std::unique_ptr<ScriptRectangle,std::default_delete<"
+         "ScriptRectangle> > > > >,void *>";
+      constexpr const char* kPositionNode =
+         "std::_Tree_node<std::pair<SurfaceIndex const ,std::vector<std::unique_ptr<ScriptPosition,std::default_"
+         "delete<ScriptPosition> >,std::allocator<std::unique_ptr<ScriptPosition,std::default_delete<"
+         "ScriptPosition> > > > >,void *>";
+      offset(layout.scriptRectangleNodeValue, kRectangleNode, "_Myval.first");
+      offset(layout.scriptRectangleNodeVector, kRectangleNode, "_Myval.second");
+      offset(layout.scriptPositionNodeValue, kPositionNode, "_Myval.first");
+      offset(layout.scriptPositionNodeVector, kPositionNode, "_Myval.second");
+   }
+   offset(layout.scriptDataName, "CommonScriptData", "name");
+   offset(layout.scriptDataId, "CommonScriptData", "id");
    offset(layout.globalModManager, "GlobalContext", "modManager.value");
    address(layout.resolveResourcePath,
            "?resolveResourcePath@ModManager@@QEBA?AVPackagePath@@V?$basic_string_view@DU?$char_traits@D@std@@@std@@@Z");

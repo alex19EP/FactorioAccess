@@ -1405,6 +1405,42 @@ struct Layout {
    // buttons (MapEditorsGui, IconButtons) over the active editor's tools, and a Settings tab.
    uint32_t mapEditorViewGui = 0;        // MapEditorView::mapEditorGui, std::unique_ptr<MapEditorGui>
 
+   // The map editor's actions, every player's, as the game applies them on its update:
+   // void MapEditorActionHandler::actionPerformed(EditorAction const&, Controller&), which runs the
+   // handler for EditorAction::type (EditorActionType) when the controller is an editor's.
+   uintptr_t editorActionPerformed = 0;
+   uint32_t editorActionType = 0;        // EditorAction::type, EditorActionType (uint8)
+   // EditorAction's data union: the surface switched to by name (std::string), the surface and id
+   // of a scripting object removed (ActionData::SurfaceIndexAndData<unsigned int>).
+   uint32_t editorActionString = 0;      // EditorAction::string
+   uint32_t editorActionSurface = 0;     // EditorAction::surfaceIndex, SurfaceIndex (uint32)
+   uint32_t surfaceAndDataData = 0;      // SurfaceIndexAndData<unsigned int>::data
+   // EditorActionType values the mod speaks after.
+   uint32_t editorDecreaseSpeed = 0, editorIncreaseSpeed = 0, editorResetSpeed = 0, editorTickOnce = 0;
+   uint32_t editorTogglePause = 0, editorEntityVariation = 0, editorCliffVariation = 0;
+   uint32_t editorResourceVariation = 0, editorTileVariation = 0, editorSwitchToSurface = 0;
+   uint32_t editorCloneSource = 0, editorCloneDestination = 0;
+   uint32_t editorRemoveScriptRectangle = 0, editorRemoveScriptPosition = 0;
+   // The game's speed and pause as the Time editor shows them: std::string GameSpeed::str() const
+   // ("x 2", "/ 4", normal), then " (paused)" while the map is paused.
+   uint32_t mapGameSpeed = 0;            // Map::gameSpeed, std::unique_ptr<GameSpeed>
+   uintptr_t gameSpeedStr = 0;
+   uint32_t mapPausedState = 0;          // Map::entityUpdatePausedState, unique_ptr<EntityUpdatePausedState>
+   uint32_t pausedSetting = 0;           // EntityUpdatePausedState::pausedSetting, bool
+   uint32_t pausedTicksToRun = 0;        // EntityUpdatePausedState::ticksToRun, uint32
+   // Scripting areas and positions by surface (ExtraScriptData::rectanglesBySurface and
+   // positionsBySurface, std::map<SurfaceIndex, std::vector<std::unique_ptr<T>>>), each with a
+   // name and an id (CommonScriptData).
+   uint32_t mapExtraScriptData = 0;      // Map::extraScriptData, std::unique_ptr<ExtraScriptData>
+   uint32_t scriptRectangles = 0;        // ExtraScriptData::rectanglesBySurface
+   uint32_t scriptPositions = 0;         // ExtraScriptData::positionsBySurface
+   uint32_t scriptRectangleNodeValue = 0; // the map's _Tree_node::_Myval: the SurfaceIndex, then
+   uint32_t scriptRectangleNodeVector = 0; // the vector (_Myval.second)
+   uint32_t scriptPositionNodeValue = 0;
+   uint32_t scriptPositionNodeVector = 0;
+   uint32_t scriptDataName = 0;          // CommonScriptData::name, std::string
+   uint32_t scriptDataId = 0;            // CommonScriptData::id, uint32
+
    // Files inside a mod, read as the game reads them whether the mod is a folder or a zip: the
    // ModManager turns "__mod__/path" into a PackagePath, which opens a ReadStream.
    uint32_t globalModManager = 0; // GlobalContext::modManager.value, ModManager*
