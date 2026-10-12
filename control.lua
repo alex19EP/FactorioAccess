@@ -249,7 +249,6 @@ function on_tick(event)
       if VanillaMode.is_enabled(player.index) then goto continue end
 
       BumpDetection.play_step_sounds(player.index, event.tick)
-      BuildingTools.speak_drag_turn(player.index)
       -- Process walking announcements (anchored cursor or entity detection)
       Walking.process_walking_announcements(player.index)
       -- Check for pending logistics announcements

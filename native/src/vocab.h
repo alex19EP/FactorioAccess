@@ -227,6 +227,8 @@ inline constexpr Word kViewRemote{"fa.zoom-view-remote"};
 inline constexpr Word kViewCharacter{"fa.zoom-view-character"};
 inline constexpr Word kViewGod{"fa.zoom-view-god"};
 inline constexpr Word kViewEditor{"fa.zoom-view-editor"};
+// The direction a belt drag turned to, as the mod's Lua says it (locale/en/building-tools.cfg).
+inline constexpr Word kDragTurned{"fa.drag-turned"};
 
 // A blueprint's picture, tile by tile: what the game draws on an entity besides its icons. Items to
 // be delivered to it ("with 2 speed module"), which way a loader faces, a combinator's operation

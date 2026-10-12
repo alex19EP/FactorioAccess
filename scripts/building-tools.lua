@@ -163,29 +163,6 @@ function mod.rotate_item_in_hand(event)
    -- Nothing in hand - entity rotation will be handled by on_player_rotated_entity event
 end
 
--- The drag turn count each player last heard, while dragging. Outside storage: only this client
--- knows its drag building.
----@type table<integer, integer>
-local heard_drag_turns = {}
-
----Called every tick: says the direction a belt drag turns to when the game makes the turn, at the
----step after rotate.
----@param pindex integer
-function mod.speak_drag_turn(pindex)
-   local drag = NativeCursor.drag_build(pindex)
-   if not drag then
-      heard_drag_turns[pindex] = nil
-      return
-   end
-   local heard = heard_drag_turns[pindex]
-   heard_drag_turns[pindex] = drag.turns
-   if not heard or heard == drag.turns then return end
-   local direction = NativeCursor.build_direction(pindex)
-   if direction then
-      Speech.speak(pindex, { "fa.drag-turned", { "fa.direction", direction } } --[[@as LocalisedString]])
-   end
-end
-
 --Reads the result of rotating an entity on the map (called from on_player_rotated_entity event)
 function mod.on_entity_rotated(event)
    local pindex = event.player_index

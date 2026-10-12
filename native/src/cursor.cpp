@@ -457,6 +457,8 @@ Position g_lastCentre{};
 // The centre of the character or god view before remote view opened: remote view opened there (the
 // map key) comes to the cursor, opened elsewhere (an alert, a pin, the scanner) brings the cursor.
 Position g_fixedCentre{};
+// The turns of the drag under way the player has heard; nothing outside a drag.
+std::optional<int> g_heardDragTurns;
 // Frames to wait after the controller changed, for the view to show the new one.
 int g_settling = 0;
 // Frames left for a remote view the mod's jump asked for to open, while the cursor stays where it is.
@@ -487,7 +489,18 @@ void checkPin(const View& view, int playerIndex) {
    speech::say(std::string(vocab::kAttachedCursor), false);
 }
 
+// Says the direction a belt drag turns to when the game makes the turn, at the step after rotate.
+void sayDragTurn(int playerIndex) {
+   const std::optional<world::DragBuild> drag = world::dragBuild(playerIndex);
+   const std::optional<int> heard =
+      std::exchange(g_heardDragTurns, drag ? std::optional<int>(drag->turns) : std::nullopt);
+   if (!drag || !heard || *heard == drag->turns) return;
+   const int direction = world::buildDirection(playerIndex);
+   if (direction >= 0) speech::say(vocab::kDragTurned(std::string(vocab::kDirection(direction))), true);
+}
+
 void reset() {
+   g_heardDragTurns.reset();
    g_lastController.reset();
    g_landedTile.reset();
    g_pans.clear();
@@ -581,6 +594,7 @@ void frame(void* source) {
    if (!world::drivesCursor()) place(tileCentre(view->centre));
    const int playerIndex = at<uint16_t>(view->player, layout.playerIndex) + 1;
    checkPin(*view, playerIndex);
+   sayDragTurn(playerIndex);
    // A building in hand builds from the tile's centre, wherever the cycle key left the cursor in it.
    if (const std::optional<Position> cursor = currentCursor();
        cursor && *cursor != tileCentre(*cursor) && buildFollowsCursor(playerIndex))
