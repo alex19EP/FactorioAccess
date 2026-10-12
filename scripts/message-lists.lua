@@ -155,6 +155,16 @@ local function try_translate_all(pindex)
    if not any_requested and not any_pending then state.all_translated = true end
 end
 
+---Asks for every list as the player joins, so a game whose map is paused, which runs no tick, has
+---them too. Requests from before the player last left are never answered: they are asked again.
+---@param pindex integer
+function mod.on_player_joined(pindex)
+   local state = message_list_storage[pindex]
+   state.pending_translations = {}
+   state.pending_list_names = {}
+   try_translate_all(pindex)
+end
+
 ---Try to translate all message lists for all players.
 ---Call this from on_tick. Rate-limited internally to tick 1 and every 60 ticks.
 function mod.try_translate_all_players()

@@ -184,23 +184,47 @@ EventManager.on_event(
    end
 )
 
---Tells the DLL what the movement keys do for each player: they move the cursor unless a mod menu
---has them or combat mode aims with them.
+--Tells the DLL what the movement keys do for a player: they move the cursor unless a mod menu has
+--them or combat mode aims with them.
+---@param player LuaPlayer
+local function report_cursor_mode(player)
+   local pindex = player.index
+   if not player.connected or not storage.players[pindex] then return end
+   Cursor.report_mode(
+      pindex,
+      VanillaMode.is_enabled(pindex),
+      not UiRouter.get_router(pindex):is_ui_open() and not Combat.is_combat_mode(pindex),
+      Viewpoint.get_viewpoint(pindex):get_cursor_anchored(),
+      Rulers.ruler_tiles(pindex),
+      player.mod_settings[SETTING_NAMES.NEXT_MACHINE_SOUND].value --[[@as boolean]]
+   )
+end
+
 local function report_cursor_modes()
    for _, player in pairs(game.connected_players) do
-      local pindex = player.index
-      if storage.players[pindex] then
-         Cursor.report_mode(
-            pindex,
-            VanillaMode.is_enabled(pindex),
-            not UiRouter.get_router(pindex):is_ui_open() and not Combat.is_combat_mode(pindex),
-            Viewpoint.get_viewpoint(pindex):get_cursor_anchored(),
-            Rulers.ruler_tiles(pindex),
-            player.mod_settings[SETTING_NAMES.NEXT_MACHINE_SOUND].value --[[@as boolean]]
-         )
-      end
+      report_cursor_mode(player)
    end
 end
+
+-- A paused map runs no ticks, and the map editor pauses it in single player: the mode also goes to
+-- the DLL after each of the player's events and when the player joins, before any key.
+EventManager.observe_player_events(function(pindex)
+   report_cursor_mode(assert(game.get_player(pindex)))
+end)
+
+EventManager.observe_custom_inputs(function(_, pindex)
+   HandMonitor.on_key(pindex)
+   Rulers.on_key(pindex)
+end)
+
+EventManager.on_event(
+   defines.events.on_player_joined_game,
+   ---@param event EventData.on_player_joined_game
+   ---@param pindex integer
+   function(event, pindex)
+      MessageLists.on_player_joined(pindex)
+   end
+)
 
 --Called every tick.
 function on_tick(event)

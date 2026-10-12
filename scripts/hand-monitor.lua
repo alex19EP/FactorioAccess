@@ -28,4 +28,11 @@ function mod.on_tick()
    suppressed_this_tick = {}
 end
 
+---Ends the player's suppression at their next key: a paused map, such as the map editor's in
+---single player, runs no tick to end it.
+---@param pindex integer
+function mod.on_key(pindex)
+   suppressed_this_tick[pindex] = nil
+end
+
 return mod

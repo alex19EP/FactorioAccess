@@ -73,6 +73,10 @@ local on_nth_tick_handlers = {}
 ---@type fun(event: EventData.CustomInputEvent, pindex: integer)[]
 local custom_input_observers = {}
 
+-- Called with every event of a player after its handlers
+---@type fun(pindex: integer)[]
+local player_event_observers = {}
+
 -- Flag to track if we're in test mode
 local test_mode = false
 
@@ -168,6 +172,13 @@ function mod.observe_custom_inputs(observer)
    table.insert(custom_input_observers, observer)
 end
 
+---Register a function to run after the handlers of every event a player causes, such as to pass
+---on state they changed while the map is paused and no tick runs.
+---@param observer fun(pindex: integer)
+function mod.observe_player_events(observer)
+   table.insert(player_event_observers, observer)
+end
+
 ---Register a handler (alias for on_event)
 ---@param event_id_or_input defines.events|string The event ID or custom input name
 ---@param handler fun(event: EventData, pindex?: integer): table? The function to call; return nil to continue, or EventManager.FINISHED to stop
@@ -230,6 +241,12 @@ function mod._dispatch_event(event_id, event)
 
    if cursor_event then
       Cursor.end_event(pindex --[[@as integer]])
+   end
+
+   if pindex then
+      for _, observer in ipairs(player_event_observers) do
+         observer(pindex)
+      end
    end
 end
 
@@ -304,6 +321,7 @@ function mod.clear_all_handlers()
    on_configuration_changed_handlers = {}
    on_nth_tick_handlers = {}
    custom_input_observers = {}
+   player_event_observers = {}
 end
 
 ---Get the number of handlers for an event (useful for testing)

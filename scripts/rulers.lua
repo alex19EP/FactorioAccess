@@ -351,20 +351,32 @@ local function update_player(pindex)
    end
 end
 
+---Puts the tool back in the hand it left for a click.
+---@param pindex integer
+local function give_back(pindex)
+   ruler_storage[pindex].give_back_tick = nil
+   -- Storage outlives a player removed from the game.
+   local player = assert(game.get_player(pindex))
+   if player and player.cursor_stack and not player.cursor_stack.valid_for_read then
+      player.cursor_stack.set_stack({ name = mod.TOOL })
+   end
+end
+
 ---Called from on_tick.
 function mod.update_all_players()
    for pindex, _ in pairs(storage.players) do
       local state = ruler_storage[pindex]
-      if state.give_back_tick and game.tick >= state.give_back_tick then
-         state.give_back_tick = nil
-         -- Storage outlives a player removed from the game.
-         local player = assert(game.get_player(pindex))
-         if player and player.cursor_stack and not player.cursor_stack.valid_for_read then
-            player.cursor_stack.set_stack({ name = mod.TOOL })
-         end
-      end
+      if state.give_back_tick and game.tick >= state.give_back_tick then give_back(pindex) end
       if not VanillaMode.is_enabled(pindex) then update_player(pindex) end
    end
+end
+
+---Before each of the player's keys. A paused map, such as the map editor's in single player, runs
+---no tick, so the tool goes back at the next key instead: the game has looked at the empty hand in
+---the frames between.
+---@param pindex integer
+function mod.on_key(pindex)
+   if ruler_storage[pindex].give_back_tick and game.tick_paused then give_back(pindex) end
 end
 
 return mod
