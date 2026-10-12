@@ -191,9 +191,9 @@ script.on_init(function()
 end)
 
 script.on_event(defines.events.on_tick, function(event)
-   if not game.tick_paused then story_update(storage.story, event) end
+   if not game.tick_paused then story_update(storage.story, event, "level-02") end
 end)
 
 script.on_event(KEYS, function(event)
-   story_update(storage.story, event)
+   story_update(storage.story, event, "level-02")
 end)
