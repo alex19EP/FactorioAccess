@@ -79,7 +79,6 @@ local mod = {}
 ---@field on_drag_right fa.ui.SimpleTabHandler?
 ---@field on_conjunction_modification fa.ui.SimpleTabHandler?
 ---@field on_add_to_row fa.ui.SimpleTabHandler?
----@field on_toggle_supertype fa.ui.SimpleTabHandler?
 ---@field on_set_filter fa.ui.SimpleTabHandler?
 ---@field on_clear_filter fa.ui.SimpleTabHandler?
 ---@field enabled fun(number): boolean
@@ -363,8 +362,6 @@ TabList.on_drag_right = build_simple_method("on_drag_right")
 TabList.on_conjunction_modification = build_simple_method("on_conjunction_modification")
 ---@type fun(self, number, table?, fa.ui.RouterController)
 TabList.on_add_to_row = build_simple_method("on_add_to_row")
----@type fun(self, number, table?, fa.ui.RouterController)
-TabList.on_toggle_supertype = build_simple_method("on_toggle_supertype")
 ---@type fun(self, number, table?, fa.ui.RouterController)
 TabList.on_set_filter = build_simple_method("on_set_filter")
 ---@type fun(self, number, table?, fa.ui.RouterController)

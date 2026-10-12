@@ -50,8 +50,6 @@ Add a new condition, separated by and: control + slash
 
 Toggle the logical operator joining this condition to the previous one: n
 
-Toggle the condition type: j
-
 Set the active stop in a schedule: right bracket
 
 ## Explanation

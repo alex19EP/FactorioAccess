@@ -126,13 +126,6 @@ data:extend({
 
    {
       type = "custom-input",
-      name = "fa-s-j",
-      key_sequence = "SHIFT + J",
-      consuming = "none",
-   },
-
-   {
-      type = "custom-input",
       name = "fa-a-j",
       key_sequence = "ALT + J",
       consuming = "none",
@@ -247,13 +240,6 @@ data:extend({
       type = "custom-input",
       name = "fa-n",
       key_sequence = "N",
-      consuming = "none",
-   },
-
-   {
-      type = "custom-input",
-      name = "fa-j",
-      key_sequence = "J",
       consuming = "none",
    },
 

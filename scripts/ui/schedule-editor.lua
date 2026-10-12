@@ -81,33 +81,6 @@ local TYPES_WITH_COMPARATOR = {
    fuel_item_count_any = true,
 }
 
----Get the next or previous condition type in the cycle
----@param current_type WaitConditionType
----@param allowed_types WaitConditionType[]? List of allowed types (defaults to MAIN_SCHEDULE_CONDITION_TYPES)
----@param reverse boolean? If true, cycle backward instead of forward
----@return WaitConditionType
-local function get_next_condition_type(current_type, allowed_types, reverse)
-   allowed_types = allowed_types or MAIN_SCHEDULE_CONDITION_TYPES
-
-   -- Normalize fluid_count to item_count for cycling
-   local search_type = current_type == "fluid_count" and "item_count" or current_type
-
-   for i, ctype in ipairs(allowed_types) do
-      if ctype == search_type then
-         local next_index
-         if reverse then
-            next_index = ((i - 2) % #allowed_types) + 1
-         else
-            next_index = (i % #allowed_types) + 1
-         end
-         return allowed_types[next_index]
-      end
-   end
-
-   -- If not found, default to first type
-   return allowed_types[1]
-end
-
 ---Check if a signal is a fluid (including the "any fluid" virtual signal)
 ---@param signal SignalID
 ---@return boolean
@@ -437,26 +410,6 @@ local function build_condition_vtable(
          local new_mode = (condition.compare_type == "and") and "or" or "and"
          schedule.set_wait_condition_mode(record_position, condition_index, new_mode)
          ctx.controller.message:fragment({ "fa.schedule-connector-" .. new_mode })
-      end,
-
-      on_toggle_supertype = function(ctx)
-         local reverse = ctx.modifiers and ctx.modifiers.shift
-         local new_type = get_next_condition_type(condition.type, allowed_types, reverse)
-         local new_condition = { type = new_type, compare_type = condition.compare_type }
-
-         -- Preserve compatible fields when changing types
-         if TYPES_WITH_TICKS[new_type] then
-            new_condition.ticks = condition.ticks or 3600
-         elseif TYPES_WITH_CONDITION[new_type] then
-            if condition.condition then new_condition.condition = condition.condition end
-         elseif TYPES_WITH_STATION[new_type] then
-            new_condition.station = condition.station or "Station"
-         elseif new_type == "damage_taken" then
-            new_condition.damage = condition.damage or 1000
-         end
-
-         schedule.change_wait_condition(record_position, condition_index, new_condition)
-         ScheduleReader.read_wait_condition(ctx.controller.message, new_condition)
       end,
 
       on_action1 = function(ctx)

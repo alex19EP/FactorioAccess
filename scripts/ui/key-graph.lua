@@ -120,7 +120,6 @@ local mod = {}
 ---@field on_drag_right fa.ui.graph.SimpleCallback? Handler for drag right (shift+d)
 ---@field on_conjunction_modification fa.ui.graph.SimpleCallback? Handler for conjunction modification (n key)
 ---@field on_add_to_row fa.ui.graph.SimpleCallback? Handler for add to row (slash key with modifiers)
----@field on_toggle_supertype fa.ui.graph.SimpleCallback? Handler for toggling supertype (j key)
 ---@field on_set_filter fa.ui.graph.SimpleCallback? Handler for set filter (alt+leftbracket)
 ---@field on_clear_filter fa.ui.graph.SimpleCallback? Handler for clear filter (alt+rightbracket)
 
@@ -722,15 +721,6 @@ function Graph:on_add_to_row(ctx, modifiers)
    self:_with_render(ctx, function()
       local n = self.render.nodes[ctx.state.cur_key]
       self:_maybe_call(n, ctx, "on_add_to_row", modifiers)
-   end)
-end
-
----@param ctx fa.ui.graph.InternalTabCtx
----@param modifiers fa.ui.graph.Modifiers
-function Graph:on_toggle_supertype(ctx, modifiers)
-   self:_with_render(ctx, function()
-      local n = self.render.nodes[ctx.state.cur_key]
-      self:_maybe_call(n, ctx, "on_toggle_supertype", modifiers)
    end)
 end
 

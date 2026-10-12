@@ -106,7 +106,6 @@ end
 ---@field on_drag_right? fun(self, pindex: number, modifiers: table?, controller: fa.ui.RouterController)
 ---@field on_conjunction_modification? fun(self, pindex: number, modifiers: table?, controller: fa.ui.RouterController)
 ---@field on_add_to_row? fun(self, pindex: number, modifiers: table?, controller: fa.ui.RouterController)
----@field on_toggle_supertype? fun(self, pindex: number, modifiers: table?, controller: fa.ui.RouterController)
 ---@field on_set_filter? fun(self, pindex: number, modifiers: table?, controller: fa.ui.RouterController)
 ---@field on_clear_filter? fun(self, pindex: number, modifiers: table?, controller: fa.ui.RouterController)
 ---@field get_help_metadata? fun(self, pindex: number): fa.ui.help.HelpItem[]?
@@ -858,10 +857,6 @@ register_ui_event("fa-cs-dot", create_ui_handler("on_action3", { control = true,
 
 -- N key for conjunction modification (circuit network)
 register_ui_event("fa-n", create_ui_handler("on_conjunction_modification", {}))
-
--- J key for toggle supertype (condition type cycling)
-register_ui_event("fa-j", create_ui_handler("on_toggle_supertype", {}))
-register_ui_event("fa-s-j", create_ui_handler("on_toggle_supertype", { shift = true }))
 
 -- Slash key for add to row (with modifiers)
 register_ui_event("fa-slash", create_ui_handler("on_add_to_row", {}))
