@@ -769,6 +769,21 @@ struct Layout {
    uint32_t exploreResults = 0;       // ExploreModsPane::resultsTable, a TableWithSelection, no header
    uint32_t exploreResultsCount = 0;  // ExploreModsPane::resultsCountLabel
    uint32_t explorePages = 0;         // ExploreModsPane::paginationWidget
+   uint32_t exploreModInfo = 0;       // ExploreModsPane::modInfoPane, shown beside the tabs
+   uint32_t modsDownloads = 0;        // ModsGui::downloadModsPane, shown while mods download
+   uint32_t modsUpdatesTab = 0;       // ModsGui::updatesTab
+   uint32_t modsUpdatesPane = 0;      // ModsGui::updatesTabContents, std::unique_ptr<UpdateModsPane>
+   uint32_t updatesTable = 0;         // UpdateModsPane::updatesTable, laid out as Manage's mods table
+   uint32_t updatesStatus = 0;        // UpdateModsPane::statusPane
+   uint32_t updatesModInfo = 0;       // UpdateModsPane::modInfoPane
+   // ModInfoPane, the selected mod's details on each tab.
+   uint32_t modInfoName = 0;          // modName
+   uint32_t modInfoBookmark = 0;      // bookmarkButton, toggled while the mod is bookmarked
+   uint32_t modInfoInstall = 0;       // installButton
+   uint32_t modInfoChangelog = 0;     // changelogButton
+   uint32_t modInfoDelete = 0;        // deleteButton
+   uint32_t modInfoDescription = 0;   // modDescription
+   uint32_t modInfoTable = 0;         // modInfoTable: a caption, then its value, a row each
    // SearchFilterWidgets, a mod portal filter: an agui::CheckBox at its start, so these are offsets
    // from the checkbox.
    uint32_t searchFilterHits = 0;     // hitCountLabel, the mods the filter matches

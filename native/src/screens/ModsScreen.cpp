@@ -7,6 +7,7 @@
 
 #include "AguiNodes.hpp"
 #include "game.h"
+#include "text.h"
 #include "vocab.h"
 
 namespace fa::screens
@@ -86,6 +87,106 @@ std::string ResultLine(const Result& result)
     return line;
 }
 
+// A table of mods with a checkbox each (Manage's enabled mods, Updates' mods to update): the
+// header's checkbox for them all, then a row per mod, its name and versions first, Enter selecting
+// it, then its checkbox.
+void AddModRows(graph::GraphBuilder& builder, const Widget* table);
+// The sort buttons in such a table's header, named by their column.
+void AddSortButtons(graph::GraphBuilder& builder, const Widget* table);
+
+// A button that stays pressed while its setting is on (a filter's exclude, a mod's bookmark),
+// saying both states so that releasing it is heard too.
+graph::NodeVtable ToggleNode(const Widget* button)
+{
+    graph::NodeVtable node = ControlNode(button);
+    auto state = [button]() { return std::string(agui::buttonToggled(button) ? vocab::kPressed : vocab::kNotPressed); };
+    for (graph::NodeAnnouncement& part : node.Announcements)
+        if (part.Kind == graph::AnnouncementKinds::Value)
+            part.Text = state;
+    node.StateText = state;
+    return node;
+}
+
+// Whether a ModInfoPane shows a mod: with none selected it holds only a disabled button.
+bool ShowsMod(const Widget* pane) { return Shows(pane) && !LabelText(agui::member(pane, layout.modInfoName)).empty(); }
+
+// The texts of a widget side by side, as one line reads them.
+std::string JoinedText(const Widget* widget)
+{
+    std::string line;
+    for (const Widget* label : FindAll(widget, "agui::Label"))
+        if (std::string phrase = LabelText(label); !phrase.empty())
+            line += (line.empty() ? "" : " ") + phrase;
+    return line;
+}
+
+// A ModInfoPane, the selected mod's details: its name and buttons (bookmark, install, changelog,
+// delete), the description, then the table's facts, a caption and its value a line each. The
+// dependencies and incompatibilities are a list under their caption, each read with the status
+// the game gives in its tooltip ("required, not active"); Enter presses its icon, which shows
+// that mod.
+void AddModInfo(graph::GraphBuilder& builder, const std::string& prefix, const Widget* pane)
+{
+    builder.StartRow(prefix + "/head");
+    const Widget* name = agui::member(pane, layout.modInfoName);
+    if (Shows(name))
+        builder.AddItem(
+            graph::ControlId::Referenced(name, prefix + "/name"), TextNode(name, [name]() { return LabelText(name); }));
+    // The bookmark flips once the portal answers: its state is watched, not said on Enter.
+    const Widget* bookmark = agui::member(pane, layout.modInfoBookmark);
+    if (Shows(bookmark))
+    {
+        graph::NodeVtable node = ToggleNode(bookmark);
+        node.StateText = nullptr;
+        builder.AddItem(graph::ControlId::Referenced(bookmark, prefix + "/bookmark"), std::move(node));
+    }
+    AddControl(builder, prefix + "/install", agui::member(pane, layout.modInfoInstall));
+    AddControl(builder, prefix + "/changelog", agui::member(pane, layout.modInfoChangelog));
+    AddControl(builder, prefix + "/delete", agui::member(pane, layout.modInfoDelete));
+    builder.EndRow();
+
+    AddSubtree(builder, prefix + "/description", agui::member(pane, layout.modInfoDescription));
+
+    const Widget* table = agui::member(pane, layout.modInfoTable);
+    std::span<const Widget* const> cells = agui::children(table);
+    for (std::size_t i = 0; i + 1 < cells.size(); i += 2)
+    {
+        const Widget* caption = cells[i];
+        const Widget* value = cells[i + 1];
+        if (!Shows(caption) || !Shows(value))
+            continue;
+        std::string key = prefix + "/facts/" + std::to_string(i / 2);
+        std::vector<const Widget*> dependencies = FindAll(value, "ModInfoPane::DependencyFlow");
+        if (!dependencies.empty())
+        {
+            builder.PushContext(LabelText(caption));
+            for (std::size_t d = 0; d < dependencies.size(); ++d)
+            {
+                const Widget* mod = FindDescendant(dependencies[d], "agui::Label");
+                const Widget* icon = FindDescendant(dependencies[d], "agui::Button");
+                if (!mod)
+                    continue;
+                graph::NodeVtable node = TextNode(mod,
+                    [mod]()
+                    {
+                        std::string line = LabelText(mod);
+                        std::string status = text::speakable(agui::toolTip(mod).title);
+                        return status.empty() ? line : line + ", " + status;
+                    });
+                if (icon && agui::enabled(icon))
+                    node.OnActivate = [icon]() { agui::press(icon, agui::MouseButton::Left, false, false); };
+                builder.AddItem(graph::ControlId::Referenced(mod, key + "/" + std::to_string(d)), std::move(node));
+            }
+            builder.PopContext();
+        }
+        else if (const Widget* choice = FindDescendant(value, "agui::DropDown"))
+            builder.AddItem(graph::ControlId::Referenced(choice, key), ControlNode(choice, caption));
+        else
+            builder.AddItem(graph::ControlId::Referenced(value, key),
+                TextNode(value, [caption, value]() { return LabelText(caption) + ' ' + JoinedText(value); }));
+    }
+}
+
 } // namespace
 
 bool ModsScreen::Handles(const Widget* window) const { return agui::derivesFrom(window, "ModsGui"); }
@@ -106,11 +207,23 @@ void ModsScreen::BuildWindow(graph::GraphBuilder& builder, const Widget* window)
     {
         BuildExplore(builder, window);
     }
+    else if (agui::tabSelected(agui::member(window, layout.modsUpdatesTab)))
+    {
+        BuildUpdates(builder, window);
+    }
     else
     {
         builder.BeginStop("content");
         if (const Widget* page = ChildOfKind(tabs, agui::Kind::Container))
             AddSubtree(builder, "content", page);
+    }
+
+    // The mods being downloaded, on every tab while any are.
+    const Widget* downloads = agui::member(window, layout.modsDownloads);
+    if (Shows(downloads))
+    {
+        builder.BeginStop("downloads");
+        AddSubtree(builder, "downloads", downloads);
     }
 
     AddFooter(builder, window);
@@ -179,6 +292,14 @@ void ModsScreen::BuildExplore(graph::GraphBuilder& builder, const Widget* window
         builder.EndRow();
     }
 
+    // The selected mod's details: bookmark, install and changelog, its description and facts.
+    const Widget* info = agui::member(pane, layout.exploreModInfo);
+    if (ShowsMod(info))
+    {
+        builder.BeginStop("info");
+        AddModInfo(builder, "info", info);
+    }
+
     // The filters, in groups under the game's headings (expansions, categories, tags, filters),
     // each group a Ctrl+arrow region announced as focus enters it. A portal filter is its checkbox,
     // read with the mods it matches, and beside it the button that excludes it from the search.
@@ -228,7 +349,8 @@ void ModsScreen::BuildExplore(graph::GraphBuilder& builder, const Widget* window
                     };
             builder.StartLine("filter");
             builder.AddItem(graph::ControlId::Referenced(box, key), std::move(filter));
-            AddControl(builder, key + "/exclude", exclude);
+            if (Shows(exclude))
+                builder.AddItem(graph::ControlId::Referenced(exclude, key + "/exclude"), ToggleNode(exclude));
             builder.EndRow();
             break;
         }
@@ -244,11 +366,55 @@ void ModsScreen::BuildManage(graph::GraphBuilder& builder, const Widget* window)
     const Widget* pane = agui::member(window, layout.modsManagePane);
     const Widget* table = agui::member(pane, layout.manageModsTable);
 
+    builder.BeginStop("mods");
+    AddModRows(builder, table);
+
+    builder.BeginStop("info");
+    AddModInfo(builder, "info", agui::member(pane, layout.manageModsInfo));
+
+    builder.BeginStop("search");
+    const Widget* search = agui::member(pane, layout.manageModsSearch);
+    AddControl(builder, "search/bar", search);
+    if (const Widget* popup = FindDescendant(pane, "SearchPopup"))
+        AddSubtree(builder, "search/popup", popup);
+    AddSortButtons(builder, table);
+}
+
+void ModsScreen::BuildUpdates(graph::GraphBuilder& builder, const Widget* window)
+{
+    const Widget* pane = agui::pointerMember(window, layout.modsUpdatesPane);
+    const Widget* table = agui::member(pane, layout.updatesTable);
+    const Widget* status = agui::member(pane, layout.updatesStatus);
+
+    // The mods with a newer version on the portal, ticked to be updated, and what the game says
+    // when there are none or the player is not logged in.
+    builder.BeginStop("mods");
+    AddModRows(builder, table);
+    if (Shows(status))
+        AddSubtree(builder, "mods/status", status);
+
+    const Widget* info = agui::member(pane, layout.updatesModInfo);
+    if (ShowsMod(info))
+    {
+        builder.BeginStop("info");
+        AddModInfo(builder, "info", info);
+    }
+
+    // The search field, Update selected and refresh, then the sort buttons.
+    builder.BeginStop("search");
+    AddSubtree(builder, "search", pane, {table, status});
+    AddSortButtons(builder, table);
+}
+
+namespace
+{
+
+void AddModRows(graph::GraphBuilder& builder, const Widget* table)
+{
     std::span<const Widget* const> cells = agui::children(table);
     std::size_t columns = std::max(agui::tableColumns(table), 1u);
     std::size_t rows = cells.size() / columns;
 
-    builder.BeginStop("mods");
     if (rows > 0)
     {
         if (const Widget* all = FindDescendant(cells[0], "agui::CheckBox"))
@@ -304,17 +470,14 @@ void ModsScreen::BuildManage(graph::GraphBuilder& builder, const Widget* window)
         if (agui::selectedRow(table) == row)
             builder.SetStart(graph::ControlId::Structural(key));
     }
+}
 
-    builder.BeginStop("info");
-    AddSubtree(builder, "info", agui::member(pane, layout.manageModsInfo));
-
-    builder.BeginStop("search");
-    const Widget* search = agui::member(pane, layout.manageModsSearch);
-    AddControl(builder, "search/bar", search);
-    if (const Widget* popup = FindDescendant(pane, "SearchPopup"))
-        AddSubtree(builder, "search/popup", popup);
+void AddSortButtons(graph::GraphBuilder& builder, const Widget* table)
+{
+    std::span<const Widget* const> cells = agui::children(table);
+    std::size_t columns = std::max(agui::tableColumns(table), 1u);
     // The header's sort buttons, named by the column they sort.
-    for (std::size_t column = 0; rows > 0 && column < columns; ++column)
+    for (std::size_t column = 0; column < columns && column < cells.size(); ++column)
     {
         const Widget* sort = FindDescendant(cells[column], "agui::TextButton");
         const Widget* caption = FindDescendant(cells[column], "agui::Label");
@@ -324,5 +487,7 @@ void ModsScreen::BuildManage(graph::GraphBuilder& builder, const Widget* window)
             [caption]() { return vocab::kSortBy(LabelText(caption)); });
     }
 }
+
+} // namespace
 
 } // namespace fa::screens

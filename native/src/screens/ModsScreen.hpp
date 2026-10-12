@@ -1,22 +1,31 @@
 #pragma once
 
-// The Mods window (ModsGui). Stops:
-//   tabs    — Manage, Browse and install, Updates
-//   mods    — on the Manage tab, the installed mods, read without touching the game. A row each:
-//             the name ("Space Age 2.1.21"), where Enter clicks the mod, selecting it so the info
-//             shows it; then its checkbox, where Enter enables or disables it. The all-mods
-//             checkbox comes first.
-//   info    — the selected mod's info: name, changelog and delete, description, version, author,
-//             dependencies
-//   content — on the Updates tab, the tab's page read generically
+// The Mods window (ModsGui). Stops, after the tabs (Manage, Browse and install, Updates):
+// On the Manage tab:
+//   mods      — the installed mods, read without touching the game. A row each: the name ("Space Age
+//               2.1.21"), where Enter clicks the mod, selecting it so the info shows it; then its
+//               checkbox, where Enter enables or disables it. The all-mods checkbox comes first.
+//   info      — the selected mod's details (see below)
+//   search    — the search field and the column sort buttons
 // On the Browse and install tab, the mod portal:
-//   search  — the sort order, the search field and the search's status
-//   results — a line per mod found ("Rate Calculator 3.4.1, by raiguard, Utilities, ..."), its
-//             summary beside it, Enter selecting it; then how many were found and the page buttons
-//   filters — the filters under their headings: a filter's checkbox with the mods it matches, then
-//             the button excluding it
-//   buttons — Back and Confirm
-//   search  — the search field and the column sort buttons
+//   search    — the sort order, the search field and the search's status
+//   results   — a line per mod found ("Rate Calculator 3.4.1, by raiguard, Utilities, ..."), its
+//               summary beside it, Enter selecting it; then how many were found and the page buttons
+//   info      — the selected mod's details
+//   filters   — the filters under their headings: a filter's checkbox with the mods it matches, then
+//               the button excluding it
+// On the Updates tab:
+//   mods      — the mods with a newer version, laid out as on Manage, the checkbox ticking it for
+//               the update; then the game's status (all up to date, not logged in)
+//   info      — the selected mod's details
+//   search    — the search field, Update selected, refresh, and the column sort buttons
+// Then on every tab:
+//   downloads — while mods download, their progress and Cancel
+//   buttons   — Back and Confirm
+//
+// A mod's details: its name, then bookmark, install, changelog and delete; the description; the
+// facts a line each ("Version 2.5.0"); the dependencies and incompatibilities, each with the status
+// the game gives it, Enter showing that mod.
 
 #include "WindowScreen.hpp"
 
@@ -34,6 +43,7 @@ protected:
 private:
     void BuildManage(graph::GraphBuilder& builder, const agui::Widget* window);
     void BuildExplore(graph::GraphBuilder& builder, const agui::Widget* window);
+    void BuildUpdates(graph::GraphBuilder& builder, const agui::Widget* window);
 };
 
 } // namespace fa::screens
