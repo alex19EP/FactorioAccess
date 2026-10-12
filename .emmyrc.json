@@ -5,6 +5,7 @@
   },
   "workspace": {
     "library": ["${workspaceFolder}/.tools/factorio-library/factorio/library"],
+    "moduleMap": [{ "pattern": "^__FactorioAccess__[./](.*)$", "replace": "$1" }],
     "ignoreGlobs": [
       ".claude/**",
       ".git/**",

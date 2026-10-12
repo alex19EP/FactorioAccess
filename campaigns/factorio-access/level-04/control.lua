@@ -8,6 +8,7 @@
 
 ---@diagnostic disable-next-line: unresolved-require
 require("story")
+local Helpers = require("__FactorioAccess__/campaigns/factorio-access/story-helpers")
 
 ---@type fa.campaign.Patch[]
 local PATCHES = {
@@ -41,40 +42,10 @@ local ENOUGH_PLATES = 5
 -- Items the drill puts in its chest before the chest is to be emptied.
 local FILLED = 2
 
----@return LuaPlayer
-local function player()
-   return assert(game.get_player(1))
-end
-
----@param name string
----@return integer
-local function carried(name)
-   return player().get_item_count(name)
-end
-
----Whether a condition is worth checking: on every event but the tick, and on every half second.
----@param event EventData
----@return boolean
-local function due(event)
-   return event.name ~= defines.events.on_tick or event.tick % 30 == 0
-end
-
----@param name string
----@return LuaEntity[]
-local function built(name)
-   return game.surfaces.nauvis.find_entities_filtered({ name = name, force = "player" })
-end
-
----@param name string
----@return LuaEntity?
-local function find(name)
-   return built(name)[1]
-end
-
----@return boolean
-local function no_window()
-   return player().opened_gui_type == defines.gui_type.none
-end
+local player, carried, built, find = Helpers.player, Helpers.carried, Helpers.built, Helpers.find
+local no_window, fuelled = Helpers.no_window, Helpers.fuelled
+local chapter = Helpers.chapter(4)
+local hint_node, goal_node = chapter.hint_node, chapter.goal_node
 
 ---Whether any stone furnace passes `check`.
 ---@param check fun(furnace: LuaEntity): boolean
@@ -86,12 +57,6 @@ local function any_furnace(check)
    return false
 end
 
----@param entity LuaEntity
----@return boolean
-local function fuelled(entity)
-   return entity.energy > 0 or not assert(entity.burner).inventory.is_empty()
-end
-
 ---The chest the drill drops into, if a chest is what it drops into.
 ---@return LuaEntity?
 local function drill_chest()
@@ -100,77 +65,6 @@ local function drill_chest()
    local target = drill.drop_target
    if target and target.type == "container" then return target end
    return nil
-end
-
----@param text LocalisedString
-local function hint(text)
-   story_show_message_dialog({ text = text })
-end
-
----A node that shows a hint once the last one is closed.
----@param name string
----@param ... any the hint's parameters
----@return fa.campaign.StoryNode
-local function hint_node(name, ...)
-   local text = { "fa.campaign-04-" .. name, ... }
-   return {
-      name = name,
-      condition = story_elapsed_check(1),
-      action = function()
-         hint(text)
-      end,
-   }
-end
-
----@class (exact) fa.campaign.GoalOptions
----@field params any[]? the goal's parameters
----@field needs string? what the goal works on; while none stands, the goal asks for it again
----@field variant (fun(): string?)? another goal while something is wrong, named as the goals are
----@field start fun()? called as the goal appears
----@field after fun(event: EventData, story: table)? called as the goal is done
-
----A goal, done when `done` says so.
----@param name string
----@param done fun(event: EventData): boolean
----@param options fa.campaign.GoalOptions?
----@return fa.campaign.StoryNode
-local function goal_node(name, done, options)
-   options = options or {}
-   local text = { "fa.campaign-04-goal-" .. name, table.unpack(options.params or {}) }
-   return {
-      name = name,
-      init = function()
-         storage.goal_variant = nil
-         set_goal(text)
-         if options.start then options.start() end
-      end,
-      update = function(event)
-         if not due(event) then return end
-         ---@type string?
-         local variant = nil
-         if options.needs and not find(options.needs) then
-            variant = "rebuild"
-         elseif options.variant then
-            variant = options.variant()
-         end
-         if variant == storage.goal_variant then return end
-         storage.goal_variant = variant
-         if variant == nil then
-            set_goal(text)
-         elseif variant == "rebuild" then
-            set_goal({ "fa.campaign-04-goal-rebuild", { "entity-name." .. options.needs } })
-         else
-            set_goal({ "fa.campaign-04-goal-" .. variant })
-         end
-      end,
-      condition = function(event)
-         return storage.goal_variant == nil and due(event) and done(event)
-      end,
-      action = function(event, story)
-         set_goal("")
-         if options.after then options.after(event, story) end
-      end,
-   }
 end
 
 local function setup()
@@ -351,7 +245,7 @@ script.on_init(function()
 end)
 
 script.on_event(defines.events.on_tick, function(event)
-   if not game.tick_paused then story_update(storage.story, event) end
+   if not game.tick_paused then story_update(storage.story, event, "level-05") end
 end)
 
 -- The goals are checked on the tick too; these events only answer at once.
@@ -363,16 +257,16 @@ script.on_event({
    defines.events.on_built_entity,
    defines.events.on_player_crafted_item,
 }, function(event)
-   story_update(storage.story, event)
+   story_update(storage.story, event, "level-05")
 end)
 
 -- Picking up an item from the ground: with the pick-up key, or by mining it.
 script.on_event(defines.events.on_picked_up_item, function(event)
    storage.picked_up = true
-   story_update(storage.story, event)
+   story_update(storage.story, event, "level-05")
 end)
 
 script.on_event(defines.events.on_player_mined_entity, function(event)
    if event.entity.name == "item-on-ground" then storage.picked_up = true end
-   story_update(storage.story, event)
+   story_update(storage.story, event, "level-05")
 end)
