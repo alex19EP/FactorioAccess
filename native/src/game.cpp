@@ -1540,6 +1540,23 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.optionalRailLocationHas, "std::optional<RailLocation>", "_Has_value");
    offset(layout.trainStopRail, "TrainStop", "rail");
    offset(layout.trainStopDirection, "TrainStop", "direction");
+   offset(layout.railLocationLayer, "RailLocation", "layer");
+   address(layout.drawRailPlanBuilder,
+           "?drawRailPlanBuilder@BuildingRenderer@@SA_NAEBVController@@AEBVMapPosition@@AEAVDrawQueue@@V?$NamedBool@"
+           "VGhostModeTag@@@@W4BuildMode@@PEBVRailPlannerPrototype@@V?$function@$$A6APEBVEntity@@XZ@std@@"
+           "W4EntitySelectionMode@@@Z");
+   address(layout.drawRailPlanArrow, "?drawRailPlanArrow@BuildingRenderer@@SAXAEBVRailLocation@@AEAVDrawQueue@@V?$"
+                                     "NamedBool@VAnchoredTag@@@@_N@Z");
+   address(layout.drawItemCounts,
+           "?drawItemCounts@RenderUtil@@YAXAEAVDrawQueue@@AEBV?$map@V?$IDWithQuality@V?$ID@VItemPrototype@@G@@@@IU?$"
+           "less@V?$IDWithQuality@V?$ID@VItemPrototype@@G@@@@@std@@V?$allocator@U?$pair@$$CBV?$IDWithQuality@V?$ID@"
+           "VItemPrototype@@G@@@@I@std@@@3@@std@@W4Corner@1@AEBVColor@@@Z");
+   offset(layout.gameViewRailPlannerActive, "GameView", "railPlannerActive");
+   offset(layout.gameViewRailPlanStart, "GameView", "railPathFinderNodeLocation");
+   offset(layout.gameViewRailPlanFinder, "GameView", "railPlanFinder._Mypair._Myval2");
+   offset(layout.railPlanFinderStepCount, "RailPlanFinder", "stepCount");
+   offset(layout.railPlanFinderGoal, "RailPlanFinder", "goalLocation");
+   offset(layout.railPlanFinderGhostMode, "RailPlanFinder", "ghostMode");
    offset(layout.boundingLeftTop, "BoundingBox", "leftTop");
    offset(layout.boundingRightBottom, "BoundingBox", "rightBottom");
 

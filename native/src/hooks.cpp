@@ -15,6 +15,7 @@
 #include "luabridge.h"
 #include "movement.h"
 #include "popups.h"
+#include "railplanner.h"
 #include "selection.h"
 #include "ui.h"
 #include "world.h"

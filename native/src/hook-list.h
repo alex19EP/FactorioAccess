@@ -58,6 +58,11 @@
      "RoboportInfoRenderer::postPrepare")                                                                              \
    X(drawOnTilesBetween, highlights::drawOnTilesBetweenDetour(), highlights::drawOnTilesBetweenOriginal(),             \
      "RenderUtil::drawOnTilesBetween")                                                                                 \
+   X(drawRailPlanBuilder, railplanner::drawPlanDetour(), railplanner::drawPlanOriginal(),                              \
+     "BuildingRenderer::drawRailPlanBuilder")                                                                          \
+   X(drawRailPlanArrow, railplanner::drawArrowDetour(), railplanner::drawArrowOriginal(),                              \
+     "BuildingRenderer::drawRailPlanArrow")                                                                            \
+   X(drawItemCounts, railplanner::drawCountsDetour(), railplanner::drawCountsOriginal(), "RenderUtil::drawItemCounts") \
    X(entityDrawAlert, entityicons::drawAlertDetour(), entityicons::drawAlertOriginal(), "Entity::drawAlert")           \
    X(drawInfoIcon, entityicons::drawInfoIconDetour(), entityicons::drawInfoIconOriginal(), "DrawQueue::drawInfoIcon")  \
    X(initLuaState, luabridge::initLuaStateDetour(), luabridge::initLuaStateOriginal(), "LuaHelper::initLuaState")      \

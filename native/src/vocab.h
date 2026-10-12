@@ -522,6 +522,16 @@ inline constexpr Word kSelectionCancelUpgrade{"fa.native-selection-cancel-upgrad
 inline constexpr Word kSelectionDeconstructed{"fa.native-selection-deconstructed"};
 inline constexpr Word kSelectionUpgraded{"fa.native-selection-upgraded"};
 
+// The rail planner: planning from a rail end, leaving "North"; the route just shown built, planning
+// on from its end; planning ended; no route to the cursor; which way the route ends, with the rail
+// end words of the mod's rail reader; how many tiles short of the cursor it stops.
+inline constexpr Word kRailPlanStart{"fa.native-rail-plan-start"};
+inline constexpr Word kRailPlanBuilt{"fa.native-rail-plan-built"};
+inline constexpr Word kRailPlanEnded{"fa.native-rail-plan-ended"};
+inline constexpr Word kRailPlanNoRoute{"fa.native-rail-plan-no-route"};
+inline constexpr Word kRailPlanEnds{"fa.rail-end-direction"};
+inline constexpr Word kRailPlanShort{"fa.native-rail-plan-short"};
+
 inline constexpr Word kNoTooltip{"fa.native-no-tooltip"};
 inline constexpr Word kNoAction{"fa.native-no-action"};
 
