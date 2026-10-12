@@ -6,11 +6,11 @@ for the cursor, the scanner and pins alike.
 ]]
 local util = require("util")
 local serpent = require("serpent")
-local Consts = require("scripts.consts")
 local FaUtils = require("scripts.fa-utils")
 local Fluids = require("scripts.fluids")
 local Localising = require("scripts.localising")
 local Speech = require("scripts.speech")
+local TileKinds = require("scripts.tile-kinds")
 local MessageBuilder = Speech.MessageBuilder
 local NetworkShape = require("scripts.network-shape")
 local Cursor = require("scripts.cursor")
@@ -290,18 +290,21 @@ function mod.area_scan_summary_info(pindex, left_top, right_bottom, skip_types)
       })
    end
 
-   ---@type { name: string, count: integer, category: string }[]
+   ---@type { name: string, count: integer, category: string, tile: true? }[]
    local counts = {}
 
    local covered_area = (right_bottom.x - left_top.x) * (right_bottom.y - left_top.y)
    assert(covered_area > 0)
 
-   local water_count = surf.count_tiles_filtered({
-      name = Consts.WATER_TILE_NAMES,
-      area = { left_top, right_bottom },
-   })
-
-   if water_count > 0 then table.insert(counts, { name = "water", count = water_count, category = "resource" }) end
+   -- Water, lava, the oceans and marshes, each by the game's name of its tile
+   ---@type table<string, integer>
+   local liquids = {}
+   for _, tile in pairs(surf.find_tiles_filtered({ name = TileKinds.water_like(), area = { left_top, right_bottom } })) do
+      liquids[tile.name] = (liquids[tile.name] or 0) + 1
+   end
+   for name, count in pairs(liquids) do
+      table.insert(counts, { name = name, count = count, category = "resource", tile = true })
+   end
 
    local path_count = surf.count_tiles_filtered({ name = "stone-path", area = { left_top, right_bottom } })
    if path_count > 0 then
@@ -372,8 +375,8 @@ function mod.area_scan_summary_info(pindex, left_top, right_bottom, skip_types)
 
       -- Create proper localised string for the name
       local localised_name
-      if entry.name == "water" then
-         localised_name = { "fa.area-scan-water" }
+      if entry.tile then
+         localised_name = prototypes.tile[entry.name].localised_name
       elseif entry.name == "trees" then
          localised_name = { "fa.area-scan-trees" }
       elseif entry.name == "stone-brick-path" then

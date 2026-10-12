@@ -13,6 +13,7 @@ local FaUtils = require("scripts.fa-utils")
 local Localising = require("scripts.localising")
 local SC = require("scripts.scanner.scanner-consts")
 local Speech = require("scripts.speech")
+local TileKinds = require("scripts.tile-kinds")
 
 local mod = {}
 
@@ -200,21 +201,6 @@ local function can_place_pump(player, pump, position, direction)
    })
 end
 
----The tiles an offshore pump pumps from: water, lava, the oil and ammonia oceans, modded ones alike.
----@type string[]?
-local pumpable_tiles
-
----@return string[]
-local function pumpable()
-   if not pumpable_tiles then
-      pumpable_tiles = {}
-      for name, tile in pairs(prototypes.tile) do
-         if tile.fluid then table.insert(pumpable_tiles, name) end
-      end
-   end
-   return pumpable_tiles
-end
-
 ---The offshore pump the player holds, if any.
 ---@param player LuaPlayer
 ---@return LuaEntityPrototype?
@@ -239,7 +225,7 @@ function mod.pump_spots(player)
    local tiles = player.surface.find_tiles_filtered({
       position = player.position,
       radius = SC.PUMP_SPOT_DISTANCE,
-      name = pumpable(),
+      name = TileKinds.pumpable(),
    })
    for _, tile in ipairs(tiles) do
       water[tile.position.x .. "," .. tile.position.y] = true

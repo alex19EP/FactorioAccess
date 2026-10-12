@@ -64,28 +64,6 @@ mod.CRAFTING_MACHINES = {
 }
 
 ---@type string[]
-mod.WATER_TILE_NAMES = {
-   "water",
-   "deepwater",
-   "water-green",
-   "deepwater-green",
-   "water-shallow",
-   "water-mud",
-   "water-wube",
-}
-
----@type table<string, true?>
-mod.WATER_TILE_NAMES_SET = {
-   ["water"] = true,
-   ["deepwater"] = true,
-   ["water-green"] = true,
-   ["deepwater-green"] = true,
-   ["water-shallow"] = true,
-   ["water-mud"] = true,
-   ["water-wube"] = true,
-}
-
----@type string[]
 mod.RAIL_TYPES = {
    "straight-rail",
    "curved-rail-a",
