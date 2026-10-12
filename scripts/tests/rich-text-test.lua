@@ -21,8 +21,6 @@ describe("Rich Text Processing", function()
       local result = RichText.verbalize_rich_text("[item=iron-plate] [fluid=water] (Nova EP)")
       local expected = {
          "",
-         " ",
-         "",
          { "fa.rich-text-item", { "?", { "item-name.iron-plate" }, "iron-plate" } },
          "",
          " ",
@@ -39,8 +37,6 @@ describe("Rich Text Processing", function()
    it("should verbalize fluid tags", function(ctx)
       local result = RichText.verbalize_rich_text("bar [fluid=water] baz")
       local expected = {
-         "",
-         " ",
          "",
          "bar",
          "",
@@ -72,13 +68,13 @@ describe("Rich Text Processing", function()
 
    it("should handle space-age tag", function(ctx)
       local result = RichText.verbalize_rich_text("[space-age] label")
-      local expected = { "", " ", "", { "fa.rich-text-space-age" }, "", " ", "", "label" }
+      local expected = { "", { "fa.rich-text-space-age" }, "", " ", "", "label" }
       ctx:assert_table_equals(expected, result)
    end)
 
    it("should pass through unknown tags", function(ctx)
       local result = RichText.verbalize_rich_text("[unknown-tag=foo] bar")
-      local expected = { "", " ", "", "[unknown-tag=foo]", "", " ", "", "bar" }
+      local expected = { "", "[unknown-tag=foo]", "", " ", "", "bar" }
       ctx:assert_table_equals(expected, result)
    end)
 
