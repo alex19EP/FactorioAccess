@@ -486,6 +486,8 @@ local story_table = {
       giving_node("assemblers", function()
          give_blueprint(BLUEPRINTS.science)
       end),
+      hint_node("place"),
+      hint_node("detach"),
       hint_node("ghosts"),
       goal_node("red", function()
          return fed_labs("automation-science-pack") >= 1
