@@ -2,6 +2,7 @@
 __pycache__
 *.zip
 !lab_tiles.zip
+!/campaigns/**/blueprint.zip
 
 /.claude/settings.local.json
 claude-task.md
