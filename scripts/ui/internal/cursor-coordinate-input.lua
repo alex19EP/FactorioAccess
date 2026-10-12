@@ -19,7 +19,7 @@ local cursor_coordinate_ui = {
 ---@param controller fa.ui.RouterController
 function cursor_coordinate_ui:open(pindex, parameters, controller)
    -- Open textbox for coordinate input with intro message
-   controller:open_textbox("", "cursor_coordinate_input", { "fa.cursor-coordinate-enter" })
+   controller:open_textbox("", "cursor_coordinate_input", { intro_message = { "fa.cursor-coordinate-enter" } })
 end
 
 ---Handle textbox result

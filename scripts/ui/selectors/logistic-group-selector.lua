@@ -74,7 +74,11 @@ local function render_group_selector(ctx)
          ctx.message:fragment({ "fa.logistics-create-new-group" })
       end,
       on_click = function(ctx)
-         ctx.controller:open_textbox("", { node = "create_new" }, { "fa.logistics-enter-group-name" })
+         ctx.controller:open_textbox(
+            "",
+            { node = "create_new" },
+            { intro_message = { "fa.logistics-enter-group-name" } }
+         )
       end,
       on_child_result = function(ctx, result)
          if result and result ~= "" then

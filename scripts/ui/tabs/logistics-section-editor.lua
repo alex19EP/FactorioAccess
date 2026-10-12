@@ -126,7 +126,7 @@ local function render_section(ctx, section_index)
                ctx.controller:open_textbox(
                   "",
                   { node = item_key .. "_min", slot_index = i },
-                  { "fa.logistics-enter-min" }
+                  { intro_message = { "fa.logistics-enter-min" } }
                )
             end,
             on_child_result = function(ctx, result)
@@ -187,7 +187,7 @@ local function render_section(ctx, section_index)
                ctx.controller:open_textbox(
                   "",
                   { node = item_key .. "_max", slot_index = i },
-                  { "fa.logistics-enter-max" }
+                  { intro_message = { "fa.logistics-enter-max" } }
                )
             end,
             on_child_result = function(ctx, result)
@@ -351,7 +351,11 @@ local function render_section(ctx, section_index)
          ctx.controller.message:fragment({ "fa.logistics-group-cleared" })
       end,
       on_action1 = function(ctx)
-         ctx.controller:open_textbox("", { node = "group_selector" }, { "fa.logistics-enter-group-name" })
+         ctx.controller:open_textbox(
+            "",
+            { node = "group_selector" },
+            { intro_message = { "fa.logistics-enter-group-name" } }
+         )
       end,
    })
 
@@ -366,7 +370,11 @@ local function render_section(ctx, section_index)
          ctx.message:fragment({ "fa.logistics-multiplier", tostring(section.multiplier) })
       end,
       on_click = function(ctx)
-         ctx.controller:open_textbox("", { node = "multiplier" }, { "fa.logistics-enter-multiplier" })
+         ctx.controller:open_textbox(
+            "",
+            { node = "multiplier" },
+            { intro_message = { "fa.logistics-enter-multiplier" } }
+         )
       end,
       on_child_result = function(ctx, result)
          local num = tonumber(result)

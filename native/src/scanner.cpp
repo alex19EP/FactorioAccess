@@ -429,7 +429,8 @@ const std::byte* forceOf(const std::byte* player) {
 }
 
 std::string_view prototypeName(const std::byte* prototype) {
-   return view(at<MsvcString>(prototype, layout.prototypeName));
+   // In place: a copy's short name lives in the copy, which the view would outlive.
+   return view(*reinterpret_cast<const MsvcString*>(prototype + layout.prototypeName));
 }
 
 std::string_view prototypeType(const std::byte* prototype) {

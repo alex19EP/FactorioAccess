@@ -185,7 +185,7 @@ local function render_infinity_chest_config(ctx)
             ctx.controller:open_textbox(
                "",
                { node = row_key .. "_count", filter_index = i },
-               { "fa.infinity-chest-enter-count" }
+               { intro_message = { "fa.infinity-chest-enter-count" } }
             )
          end,
          on_child_result = function(ctx, result)

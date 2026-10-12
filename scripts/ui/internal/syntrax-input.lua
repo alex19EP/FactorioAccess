@@ -20,7 +20,7 @@ local syntrax_input_ui = {
 ---@param controller fa.ui.RouterController
 function syntrax_input_ui:open(pindex, parameters, controller)
    -- Open textbox for syntrax code input
-   controller:open_textbox("", "syntrax_input", { "fa.syntrax-enter" })
+   controller:open_textbox("", "syntrax_input", { intro_message = { "fa.syntrax-enter" } })
 end
 
 ---Handle textbox result

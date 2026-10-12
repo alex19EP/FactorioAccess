@@ -518,13 +518,6 @@ data:extend({
 
    {
       type = "custom-input",
-      name = "fa-mouse-button-3",
-      key_sequence = "mouse-button-3",
-      consuming = "none",
-   },
-
-   {
-      type = "custom-input",
       name = "fa-q",
       key_sequence = "Q",
       linked_game_control = "pipette",

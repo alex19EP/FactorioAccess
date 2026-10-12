@@ -191,7 +191,8 @@ const MoveInputs& moveInputs() {
    for (const std::byte* input = inputs.first; input < inputs.last; input += layout.controlInputSize) {
       const std::byte* prototype = at<const std::byte*>(input, layout.controlInputPrototype);
       if (!prototype) continue;
-      const std::string_view name = view(at<MsvcString>(prototype, layout.prototypeName));
+      // In place: a copy's short name lives in the copy, which a view would outlive.
+      const std::string_view name = view(*reinterpret_cast<const MsvcString*>(prototype + layout.prototypeName));
       for (size_t i = 0; i < kMoveKeys.size(); ++i)
          if (kMoveKeys[i].name == name) g_moveInputs.inputs[i] = input;
    }

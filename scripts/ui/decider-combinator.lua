@@ -232,7 +232,11 @@ local function build_condition_vtable(entity, i, condition, row_key)
             local cb = entity.get_control_behavior()
             ---@cast cb LuaDeciderCombinatorControlBehavior
             local params = cb.parameters
-            ctx.controller:open_textbox("", { node = row_key, target = "constant" }, { "fa.decider-enter-constant" })
+            ctx.controller:open_textbox(
+               "",
+               { node = row_key, target = "constant" },
+               { intro_message = { "fa.decider-enter-constant" } }
+            )
          else
             ctx.controller:open_child_ui(
                Router.UI_NAMES.SIGNAL_CHOOSER,
@@ -312,7 +316,7 @@ local function build_output_vtable(entity, i, output, row_key)
       end,
 
       on_action3 = function(ctx)
-         ctx.controller:open_textbox("", { node = row_key }, { "fa.decider-enter-constant" })
+         ctx.controller:open_textbox("", { node = row_key }, { intro_message = { "fa.decider-enter-constant" } })
       end,
 
       on_add_to_row = function(ctx)

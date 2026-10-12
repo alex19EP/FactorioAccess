@@ -44,7 +44,6 @@ local KruiseKontrol = require("scripts.kruise-kontrol-wrapper")
 local Localising = require("scripts.localising")
 local MapCells = require("scripts.map-cells")
 local NativeCursor = require("scripts.native-cursor")
-local NoHover = require("scripts.no-hover")
 local Speech = require("scripts.speech")
 local MessageBuilder = Speech.MessageBuilder
 local MovementHistory = require("scripts.movement-history")
@@ -231,7 +230,6 @@ EventManager.on_event(
 --Called every tick.
 function on_tick(event)
    MessageLists.try_translate_all_players()
-   NoHover.on_tick()
    report_cursor_modes()
    ScannerEntrypoint.on_tick()
    MovementHistory.update_all_players()
@@ -563,8 +561,7 @@ EventManager.on_event(
    defines.events.on_player_created,
    ---@param event EventData.on_player_created
    function(event)
-      PlayerInit.initialize(game.players[event.player_index])
-      --if not game.is_multiplayer() then Speech.speak(pindex, "Press 'TAB' to continue") end
+      PlayerInit.initialize(game.players[event.player_index]) --if not game.is_multiplayer() then Speech.speak(pindex, "Press 'TAB' to continue") end
    end
 )
 
@@ -1998,7 +1995,6 @@ EventManager.on_event(
 )
 
 EventManager.on_event("fa-cas-v", function(event, pindex)
-   local p = game.get_player(pindex)
    local router = UiRouter.get_router(pindex)
    local enabling = not VanillaMode.is_enabled(pindex)
 
@@ -2014,27 +2010,13 @@ EventManager.on_event("fa-cas-v", function(event, pindex)
 
       -- Exit combat mode if active
       if Combat.is_combat_mode(pindex) then Combat.toggle_combat_mode(pindex) end
-
-      -- Re-enable mouse entity selection
-      p.game_view_settings.update_entity_selection = true
    else
       VanillaMode.toggle(pindex)
-
-      -- Disable mouse entity selection
-      p.game_view_settings.update_entity_selection = false
 
       sounds.play_confirm(pindex)
       Speech.speak(pindex, { "fa.vanilla-mode-disabled" })
    end
 end)
-
-EventManager.on_event(
-   "fa-mouse-button-3",
-   ---@param event EventData.CustomInputEvent
-   function(event, pindex)
-      game.get_player(pindex).game_view_settings.update_entity_selection = true
-   end
-)
 
 -- Q: Pipette tool
 EventManager.on_event(

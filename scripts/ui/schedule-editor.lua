@@ -1058,7 +1058,11 @@ local function render_schedule_editor(ctx)
          click_ctx.controller:open_child_ui(Router.UI_NAMES.TRAIN_INTERRUPT_SELECTOR, {}, { node = "add_interrupt" })
       end,
       on_action1 = function(m_ctx)
-         m_ctx.controller:open_textbox("", { node = "add_interrupt" }, { "fa.schedule-enter-interrupt-name" })
+         m_ctx.controller:open_textbox(
+            "",
+            { node = "add_interrupt" },
+            { intro_message = { "fa.schedule-enter-interrupt-name" } }
+         )
       end,
       on_child_result = function(ctx, result, context)
          if not result or result == "" then
