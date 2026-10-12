@@ -12,6 +12,9 @@
 // the box's size in tiles and the counts the game draws beside it, largest first: what a copy or
 // blueprint would build, what an upgrade planner would upgrade and to what, what a deconstruction
 // planner would remove and the items that would give. They follow what the mod says of the move.
+// A deconstruction or upgrade planner's selection, once finished, says what it did (marked or
+// cancelled) and the counts it showed last; the game shows no total of its own, nor one for the
+// marks a blueprint makes as it is built.
 namespace fa::selection {
 
 // MinHook detours for PlayerInputSource::expectedSelectionModeFromInputs,

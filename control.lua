@@ -38,7 +38,6 @@ local F = require("scripts.field-ref")
 local Filters = require("scripts.filters")
 local GameNotices = require("scripts.game-notices")
 local InventoryTransfers = require("scripts.inventory-transfers")
-local SelectionResults = require("scripts.selection-results")
 local InventoryUtils = require("scripts.inventory-utils")
 local ItemInfo = require("scripts.item-info")
 local KruiseKontrol = require("scripts.kruise-kontrol-wrapper")
@@ -238,7 +237,6 @@ function on_tick(event)
    SonifierTickHandler.on_tick()
    BattleNotice.on_tick()
    ForceGhostEnabler.on_tick()
-   SelectionResults.on_tick()
 
    -- Check alerts via AudioCues
    AudioCues.check_cues(event.tick, players)
@@ -698,10 +696,6 @@ function general_mod_menu_down(pindex, menu, upper_limit)
    end
 end
 
-EventManager.on_event(defines.events.on_marked_for_deconstruction, SelectionResults.on_marked_for_deconstruction)
-EventManager.on_event(defines.events.on_cancelled_deconstruction, SelectionResults.on_cancelled_deconstruction)
-EventManager.on_event(defines.events.on_marked_for_upgrade, SelectionResults.on_marked_for_upgrade)
-EventManager.on_event(defines.events.on_cancelled_upgrade, SelectionResults.on_cancelled_upgrade)
 EventManager.on_event(defines.events.on_player_selected_area, SpidertronRemote.on_selected_area)
 EventManager.on_event(defines.events.on_player_alt_selected_area, SpidertronRemote.on_selected_area)
 EventManager.on_event(defines.events.on_player_reverse_selected_area, SpidertronRemote.on_selected_area)

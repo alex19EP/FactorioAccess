@@ -489,6 +489,11 @@ inline constexpr Word kSelectionCancelled{"fa.native-selection-cancelled"};
 // transport belt".
 inline constexpr Word kBoxSize{"fa.native-box-size"};
 inline constexpr Word kUpgrade{"fa.native-upgrade"};
+// What a finished deconstruction or upgrade planner selection did, said before its counts.
+inline constexpr Word kSelectionDeconstruct{"fa.native-selection-deconstruct"};
+inline constexpr Word kSelectionCancelDeconstruct{"fa.native-selection-cancel-deconstruct"};
+inline constexpr Word kSelectionUpgrade{"fa.native-selection-upgrade"};
+inline constexpr Word kSelectionCancelUpgrade{"fa.native-selection-cancel-upgrade"};
 
 inline constexpr Word kNoTooltip{"fa.native-no-tooltip"};
 inline constexpr Word kNoAction{"fa.native-no-action"};

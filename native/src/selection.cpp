@@ -30,8 +30,46 @@ T at(const void* object, uint32_t offset) {
    return value;
 }
 
-// SelectionMode::Nothing: no selection is open.
+// SelectionMode: Nothing (no selection is open), Select, AlternativeSelect (Shift),
+// SuperForcedSelect, ReverseSelect.
 constexpr int32_t kNothing = 0;
+constexpr int32_t kSelect = 1;
+constexpr int32_t kAlternativeSelect = 2;
+constexpr int32_t kReverseSelect = 4;
+
+// What the open selection's counts are of, and the counts as said, from its last frame drawn.
+enum class CountsKind { Build, Deconstruction, Upgrade };
+std::mutex g_countsMutex;
+CountsKind g_countsKind = CountsKind::Build;
+std::vector<std::string> g_counts;
+
+// Says what a deconstruction or upgrade planner's finished selection did, then the counts it showed
+// last; nothing for a selection that took in nothing. A copy or blueprint's result is said where it
+// lands: the item in hand, the blueprint's window.
+void sayFinished(int32_t mode) {
+   CountsKind kind;
+   std::vector<std::string> counts;
+   {
+      std::scoped_lock lock(g_countsMutex);
+      kind = g_countsKind;
+      counts = std::move(g_counts);
+      g_counts.clear();
+   }
+   if (counts.empty()) return;
+   const vocab::Word* action = nullptr;
+   if (kind == CountsKind::Deconstruction && mode == kSelect)
+      action = &vocab::kSelectionDeconstruct;
+   else if (kind == CountsKind::Deconstruction && mode == kAlternativeSelect)
+      action = &vocab::kSelectionCancelDeconstruct;
+   else if (kind == CountsKind::Upgrade && (mode == kSelect || mode == kReverseSelect))
+      action = &vocab::kSelectionUpgrade;
+   else if (kind == CountsKind::Upgrade && mode == kAlternativeSelect)
+      action = &vocab::kSelectionCancelUpgrade;
+   if (!action) return;
+   std::string said = *action;
+   for (const std::string& count : counts) said += ", " + count;
+   speech::say(std::move(said), true);
+}
 
 // This client's GameView, which holds the open selection; null outside a game.
 std::byte* gameView() {
@@ -79,8 +117,10 @@ using FinishSelectionFunction = void (*)(void* source);
 
 // A select press while a selection is open finishes it, as the game does for a gamepad.
 bool detourSelectionTool(void* source, int32_t mode, int32_t customMode) {
-   if (openSelection()) {
+   if (std::byte* view = openSelection()) {
+      const int32_t open = selectionMode(view);
       reinterpret_cast<FinishSelectionFunction>(layout.finishSelection)(source);
+      sayFinished(open);
       return true;
    }
    return g_selectionToolOriginal(source, mode, customMode);
@@ -91,8 +131,10 @@ DeselectionFunction g_deselectionOriginal = nullptr;
 
 // The deselect control's second press finishes its selection too.
 bool detourDeselection(void* source) {
-   if (openSelection()) {
+   if (std::byte* view = openSelection()) {
+      const int32_t open = selectionMode(view);
       reinterpret_cast<FinishSelectionFunction>(layout.finishSelection)(source);
+      sayFinished(open);
       return true;
    }
    return g_deselectionOriginal(source);
@@ -217,6 +259,13 @@ void addUpgrades(std::vector<Line>& lines, const std::byte* map, uintptr_t proto
    });
 }
 
+// What the counts the game draws beside the box are of.
+CountsKind countsKind(const std::byte* renderer) {
+   if (at<bool>(renderer, layout.selectionRendererDeconstruction)) return CountsKind::Deconstruction;
+   const std::byte* counts = renderer + layout.selectionRendererCounts;
+   return empty(counts + layout.countsItemsToBuild) ? CountsKind::Upgrade : CountsKind::Build;
+}
+
 // The counts the game draws beside the box, largest first, as SelectionToolRenderer::
 // drawSelectionCounts and RenderUtil::drawDeconstructionCounts choose them.
 std::vector<Line> counts(const std::byte* renderer) {
@@ -226,13 +275,14 @@ std::vector<Line> counts(const std::byte* renderer) {
       std::stable_sort(lines.begin() + static_cast<ptrdiff_t>(from), lines.end(),
                        [](const Line& a, const Line& b) { return a.count > b.count; });
    };
-   if (at<bool>(renderer, layout.selectionRendererDeconstruction)) {
+   const CountsKind kind = countsKind(renderer);
+   if (kind == CountsKind::Deconstruction) {
       addCounts(lines, counts + layout.countsEntities, layout.entityPrototypes);
       sorted(0);
       const size_t items = lines.size();
       addCounts(lines, counts + layout.countsItemsNotToBuild, layout.itemPrototypes);
       sorted(items);
-   } else if (!empty(counts + layout.countsItemsToBuild)) {
+   } else if (kind == CountsKind::Build) {
       addCounts(lines, counts + layout.countsItemsToBuild, layout.itemPrototypes);
       sorted(0);
    } else {
@@ -259,6 +309,13 @@ void detourDrawCounts(void* renderer, void* queue, const void* color) {
    std::byte* view = openSelection();
    if (!view) return;
    const auto* self = static_cast<const std::byte*>(renderer);
+   const std::vector<Line> lines = counts(self);
+   {
+      std::scoped_lock lock(g_countsMutex);
+      g_countsKind = countsKind(self);
+      g_counts.clear();
+      for (const Line& line : lines) g_counts.push_back(line.text);
+   }
    const auto selection = at<int64_t>(view, layout.gameViewSelectionStartTime);
    // MapPositions are fixed point, 256 to the tile.
    const int32_t cursorX = at<int32_t>(self, layout.selectionRendererCursor) >> 8;
@@ -274,7 +331,7 @@ void detourDrawCounts(void* renderer, void* queue, const void* color) {
    const int32_t width = std::abs(cursorX - (at<int32_t>(self, layout.selectionRendererStart) >> 8)) + 1;
    const int32_t height = std::abs(cursorY - (at<int32_t>(self, layout.selectionRendererStart + 4) >> 8)) + 1;
    std::string said = vocab::kBoxSize(width, height);
-   for (const Line& line : counts(self)) said += ", " + line.text;
+   for (const Line& line : lines) said += ", " + line.text;
    speech::say(std::move(said), false);
 }
 
