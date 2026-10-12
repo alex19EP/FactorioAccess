@@ -30,9 +30,12 @@ const Widget* ConfirmButton(const Widget* window)
     return buttons.empty() ? nullptr : buttons.back();
 }
 
-// A list whose items select on a click, the selected one confirming the window. Disabled items are
-// group headings: the items after one are read in its context.
-void AddSelectList(graph::GraphBuilder& builder, const std::string& prefix, const Widget* list, const Widget* window)
+// A list whose items select on a click, the selected one confirming the window. The scenario list's
+// disabled items are group headings (NewGameGui::addCategoryHeader): the items after one are read
+// in its context. The level list has none; a disabled level there is locked (NewGameGui::addLevel),
+// and its tooltip says how to unlock it.
+void AddSelectList(
+    graph::GraphBuilder& builder, const std::string& prefix, const Widget* list, const Widget* window, bool headings)
 {
     bool inGroup = false;
     std::vector<const Widget*> items = agui::listBoxItems(list);
@@ -41,7 +44,7 @@ void AddSelectList(graph::GraphBuilder& builder, const std::string& prefix, cons
         const Widget* item = items[i];
         if (!Shows(item))
             continue;
-        if (!agui::enabled(item))
+        if (headings && !agui::enabled(item))
         {
             if (inGroup)
                 builder.PopContext();
@@ -52,9 +55,15 @@ void AddSelectList(graph::GraphBuilder& builder, const std::string& prefix, cons
         graph::NodeVtable vtable = TextNode(item, [item]() { return text::speakable(agui::text(item)); });
         auto selected = [item]() { return agui::buttonToggled(item) ? std::string(vocab::kSelected) : std::string(); };
         vtable.Announcements.emplace_back(selected, true, graph::AnnouncementKinds::Selected);
+        vtable.Announcements.emplace_back([item]()
+            { return agui::enabled(item) ? std::string() : std::string(vocab::kLocked); }, false,
+            graph::AnnouncementKinds::Enabled);
         vtable.OnActivate = [window, item]()
         {
             g_confirmedItem = nullptr;
+            // A locked level ignores the click.
+            if (!agui::enabled(item))
+                return;
             if (!agui::buttonToggled(item))
                 agui::press(item, agui::MouseButton::Left, false, false);
             else if (const Widget* confirm = ConfirmButton(window))
@@ -81,14 +90,14 @@ bool NewGameScreen::Handles(const Widget* window) const { return agui::derivesFr
 void NewGameScreen::BuildWindow(graph::GraphBuilder& builder, const Widget* window)
 {
     builder.BeginStop("scenarios");
-    AddSelectList(builder, "scenarios", agui::member(window, layout.newGameMaps), window);
+    AddSelectList(builder, "scenarios", agui::member(window, layout.newGameMaps), window, true);
 
     const Widget* levels = agui::member(window, layout.newGameLevels);
     if (Shows(levels))
     {
         builder.BeginStop("levels");
         if (const Widget* list = FindDescendant(levels, "agui::ListBox"))
-            AddSelectList(builder, "levels", list, window);
+            AddSelectList(builder, "levels", list, window, false);
     }
 
     const Widget* difficulty = agui::member(window, layout.newGameDifficulty);
