@@ -28,8 +28,24 @@ std::mutex g_mutex;
 std::condition_variable g_wake;
 std::deque<Utterance> g_queue;
 std::atomic<bool> g_enabled = false;
+std::atomic<bool> g_muted = false;
 bool g_stopping = false;
 std::thread g_thread;
+
+constexpr const wchar_t* kMuteMarker = L"factorio-access-mute.once";
+
+std::string environment(const char* name) {
+   char value[64];
+   DWORD length = GetEnvironmentVariableA(name, value, sizeof(value));
+   return length > 0 && length < sizeof(value) ? std::string(value, length) : std::string();
+}
+
+bool mutedAtStart(const std::filesystem::path& directory) {
+   if (std::string mute = environment("FA_MUTE"); !mute.empty()) return mute == "1";
+   std::error_code error;
+   bool marker = std::filesystem::remove(directory / kMuteMarker, error);
+   return marker || environment("AI_AGENT").ends_with("_agent");
+}
 
 void PRISM_CALL onPrismLog(void*, PrismLogLevel level, const char* source, const char* message) {
    // Prism's own logging thread; fa::log is thread-safe.
@@ -107,11 +123,12 @@ bool hasPlayer() {
    return true;
 }
 
-void start() {
+void start(const std::filesystem::path& directory) {
    if (!hasPlayer()) {
       log::info("No player at this game, so speech only goes to the log");
       return;
    }
+   setMuted(mutedAtStart(directory));
    g_enabled = true;
    g_thread = std::thread(run);
 }
@@ -132,7 +149,7 @@ void say(std::string text, bool interrupt) {
    if (text.empty()) return;
    log::info("say{}: {}", interrupt ? " (interrupt)" : "", text);
    dev::onSpeech(text, interrupt);
-   if (!g_enabled) return;
+   if (!g_enabled || g_muted) return;
    {
       std::scoped_lock lock(g_mutex);
       if (interrupt) g_queue.clear();
@@ -148,6 +165,18 @@ void sayShown(std::string_view text) {
       if (end == std::string_view::npos) break;
       text.remove_prefix(end + 1);
    }
+}
+
+bool muted() { return g_muted; }
+
+void setMuted(bool muted) {
+   g_muted = muted;
+   SetEnvironmentVariableA("FA_MUTE", muted ? "1" : "0");
+   if (muted) {
+      std::scoped_lock lock(g_mutex);
+      g_queue.clear();
+   }
+   log::info("Speech {}", muted ? "muted: lines go to the log and the dev server only" : "unmuted");
 }
 
 } // namespace fa::speech

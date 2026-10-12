@@ -68,6 +68,19 @@ with `storage` kept, as after a save and load. Restart the game instead after ch
 reloaded Lua comes from the mods folder, so from the checkout `just link-mod` linked, whatever
 worktree the DLL was built in. `/fareload` does nothing in multiplayer.
 
+## A game an AI agent drives
+
+A game Claude Code launches with `just run` or `just start` starts muted: what it says goes to the
+DLL's log and the dev server's `/speech`, but not to the screen reader of the developer at the same
+desk. Claude's commands and the ones you type with `!` have the same environment, so the repo's
+PreToolUse hook (`.claude/hooks/agent-launch.sh`, which Claude Code runs for its own commands only)
+leaves a flag in `%LOCALAPPDATA%\FactorioAccess` when Claude launches. The recipe turns a fresh flag
+into `factorio-access-mute.once` beside the DLL, which the DLL deletes as it starts, so only that
+launch is muted. A game started straight from a Claude Code shell (the DRM-free sandbox) sees
+`AI_AGENT` ending in `_agent` itself; so does one you start with `!` that way. `FA_MUTE=1` or `0`
+overrides both. `just unmute` and `just mute` switch a running game, and a reloaded core keeps the
+choice.
+
 ## Main recipes
 
 | Recipe | What it does |
@@ -84,5 +97,6 @@ worktree the DLL was built in. `/fareload` does nothing in multiplayer.
 | `just reload` | build, load the new core and the mods' Lua into the running game |
 | `just loaded` | whether the running game loaded this checkout's DLLs |
 | `just dev-on` / `just dev-off` | arm or disarm the loopback dev server for the next start |
+| `just mute` / `just unmute` | keep the running game's speech off the screen reader, or let it through |
 | `just log` / `just game-log` | the end of the DLL's log and of the game's log |
 | `just package` | the mod portal zip, as the publish workflow builds it |

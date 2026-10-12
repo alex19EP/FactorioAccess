@@ -7,8 +7,10 @@
 // what the navigator shows, and keys typed into the game's own event stream. It starts only when
 // `factorio-access-dev.enable` sits next to the DLL (or FA_DEV=1), so players never get it.
 //
-//   GET  /health              ok and the frame count
+//   GET  /health              ok, the frame count and whether speech is muted
 //   GET  /speech?since=N      every line spoken since sequence N, and the next N
+//   GET  /mute?on=1|0         keep speech off the screen reader, or let it through; without
+//                             `on`, the current state (see speech::start)
 //   GET  /screen              live screens, the focused node and every node by Tab-stop
 //   POST /key                 body: chords such as `tab shift+tab down enter wait=60 escape`;
 //                             answers with what was spoken while they ran; `text=a_b%5Fc`
