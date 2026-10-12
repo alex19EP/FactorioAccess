@@ -17,9 +17,9 @@ bool hasPlayer();
 // A game an AI agent drives over the dev server starts muted, so the developer's screen reader is
 // left alone: the log and the dev server's /speech still get every line. Muted are a game whose
 // `directory` (the DLL's) holds `factorio-access-mute.once`, which `just run` and `just start`
-// put there for an agent and which this deletes, so only that launch is muted; and a game started
-// straight from an agent's shell (AI_AGENT ending in `_agent`, as Claude Code's tool calls have).
-// FA_MUTE=1 or 0 overrides both; setMuted sets it, so a reloaded core keeps the choice.
+// put there when Claude runs them and which this deletes, so only that launch is muted; and a game
+// started straight from a Claude Code shell (AI_AGENT ending in `_agent`, which Steam's launches
+// lack). FA_MUTE=1 or 0 overrides both; setMuted sets it, so a reloaded core keeps the choice.
 void start(const std::filesystem::path& directory);
 
 // Ends the speech thread and Prism with it, dropping what is still queued; before the core unloads.

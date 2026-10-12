@@ -70,14 +70,16 @@ worktree the DLL was built in. `/fareload` does nothing in multiplayer.
 
 ## A game an AI agent drives
 
-A game an AI agent such as Claude Code launches with `just run` or `just start` starts muted:
-what it says goes to the DLL's log and the dev server's `/speech`, but not to the screen reader of
-the developer at the same desk. The recipes tell an agent by `AI_AGENT` ending in `_agent`, which
-Claude Code sets for its own tool calls and not for a command you run with `!`; they leave
-`factorio-access-mute.once` beside the DLL, which the DLL deletes as it starts, so only that launch
-is muted. A game started straight from an agent's shell (the DRM-free sandbox) sees the variable
-itself. `FA_MUTE=1` or `0` overrides both. `just unmute` and `just mute` switch a running game, and
-a reloaded core keeps the choice.
+A game Claude Code launches with `just run` or `just start` starts muted: what it says goes to the
+DLL's log and the dev server's `/speech`, but not to the screen reader of the developer at the same
+desk. Claude's commands and the ones you type with `!` have the same environment, so the repo's
+PreToolUse hook (`.claude/hooks/agent-launch.sh`, which Claude Code runs for its own commands only)
+leaves a flag in `%LOCALAPPDATA%\FactorioAccess` when Claude launches. The recipe turns a fresh flag
+into `factorio-access-mute.once` beside the DLL, which the DLL deletes as it starts, so only that
+launch is muted. A game started straight from a Claude Code shell (the DRM-free sandbox) sees
+`AI_AGENT` ending in `_agent` itself; so does one you start with `!` that way. `FA_MUTE=1` or `0`
+overrides both. `just unmute` and `just mute` switch a running game, and a reloaded core keeps the
+choice.
 
 ## Main recipes
 

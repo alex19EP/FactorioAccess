@@ -216,16 +216,19 @@ start: _require-not-running _mute-for-agent
     @Start-Process 'steam://run/{{STEAM_APPID}}'; \
      Write-Host '[just] launched Factorio via Steam (app {{STEAM_APPID}})'
 
-# A game an AI agent launches starts muted: its speech reaches the log and the dev server's /speech
-# but not the screen reader of the developer at the same desk. Claude Code's tool calls carry
-# AI_AGENT ending in `_agent`; a command the developer runs (`! just run`) does not. The DLL deletes
-# the marker as it starts, so only that launch is muted (native/src/speech.h), and a launch of the
-# developer's own removes one an agent's failed launch left behind.
+# A game Claude launches starts muted: its speech reaches the log and the dev server's /speech but
+# not the screen reader of the developer at the same desk. The flag comes from the PreToolUse hook
+# .claude/hooks/agent-launch.sh, which runs for Claude's own commands and never for one the
+# developer types (`! just run`); a flag older than the longest build is left over from a launch
+# that never got here. The DLL deletes the marker as it starts, so only that launch is muted
+# (native/src/speech.h), and a launch of the developer's own removes one a failed launch left.
 _mute-for-agent: _require-steam
     @$marker = '{{STEAM_DIR}}\bin\x64\factorio-access-mute.once'; \
-     if ($env:AI_AGENT -like '*_agent') { \
+     $flag = Get-Item -ErrorAction SilentlyContinue (Join-Path $env:LOCALAPPDATA 'FactorioAccess\agent-launch'); \
+     if ($flag) { Remove-Item -Force $flag }; \
+     if ($flag -and $flag.LastWriteTime -gt (Get-Date).AddMinutes(-15)) { \
          New-Item -Force -ItemType File $marker | Out-Null; \
-         Write-Host '[just] launched by an agent, so the game starts muted; just unmute lets its speech through' \
+         Write-Host '[just] launched by Claude, so the game starts muted; just unmute lets its speech through' \
      } else { Remove-Item -Force -ErrorAction SilentlyContinue $marker }
 
 # Keep the running game's speech off the screen reader (log and dev server only)
