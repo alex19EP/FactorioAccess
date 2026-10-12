@@ -2155,6 +2155,7 @@ struct Layout {
    uint32_t connectionPointSize = 0;
    uint32_t railLocationPosition = 0;      // RailLocation::position, MapPosition
    uint32_t railLocationDirection = 0;     // RailLocation::direction, uint8
+   uint32_t railLocationLayer = 0;         // RailLocation::layer, RailLayer (uint8)
    uintptr_t pointInSignal = 0;
    uintptr_t pointOutSignal = 0;
    uintptr_t pointAlternativeInSignal = 0;
@@ -2163,6 +2164,26 @@ struct Layout {
    uint32_t optionalRailLocationHas = 0;   // std::optional<RailLocation>::_Has_value, bool
    uint32_t trainStopRail = 0;             // TrainStop::rail, Rail*
    uint32_t trainStopDirection = 0;        // TrainStop::direction, uint8
+   // The rail planner (railplanner.h). static bool BuildingRenderer::drawRailPlanBuilder(Controller
+   // const&, MapPosition const&, DrawQueue&, NamedBool<GhostModeTag>, BuildMode, RailPlannerPrototype
+   // const*, std::function<Entity const*()>, EntitySelectionMode) runs the search a step further and
+   // draws the route each frame, in the world, the map and the editor. It draws the route's end with
+   // static void BuildingRenderer::drawRailPlanArrow(RailLocation const&, DrawQueue&,
+   // NamedBool<AnchoredTag>, bool tooFar), and the items it takes with static void RenderUtil::
+   // drawItemCounts(DrawQueue&, std::map<IDWithQuality<ID<ItemPrototype>>, unsigned> const&, Corner,
+   // Color const&), whose map has the selection counts' node layout. GameView::railPlannerActive
+   // (bool), ::railPathFinderNodeLocation (the start, a RailLocation) and ::railPlanFinder
+   // (std::unique_ptr<RailPlanFinder>). RailPlanFinder::stepCount (uint32, the search's steps since it
+   // last started over), ::goalLocation (the cursor's, a RailLocation) and ::ghostMode (bool).
+   uintptr_t drawRailPlanBuilder = 0;
+   uintptr_t drawRailPlanArrow = 0;
+   uintptr_t drawItemCounts = 0;
+   uint32_t gameViewRailPlannerActive = 0;
+   uint32_t gameViewRailPlanStart = 0;
+   uint32_t gameViewRailPlanFinder = 0;
+   uint32_t railPlanFinderStepCount = 0;
+   uint32_t railPlanFinderGoal = 0;
+   uint32_t railPlanFinderGhostMode = 0;
    uint32_t boundingLeftTop = 0;           // BoundingBox::leftTop
    uint32_t boundingRightBottom = 0;       // BoundingBox::rightBottom
 };

@@ -4,6 +4,7 @@
 #include "footprint.h"
 #include "game.h"
 #include "highlights.h"
+#include "railplanner.h"
 #include "text.h"
 #include "vocab.h"
 #include "zoom.h"
@@ -575,7 +576,9 @@ SettingsDrawFunction g_settingsDrawOriginal = nullptr;
 void detourSettingsDraw(const void* settings, void* drawQueue, const void* entity) {
    g_settingsDrawOriginal(settings, drawQueue, entity);
    if (footprint::gathering()) footprint::add(pieceOf(settings, entity));
-   if (!t_preview.active || t_preview.read || at<const void*>(settings, layout.settingsBlueprint)) return;
+   if (!t_preview.active || t_preview.read || at<const void*>(settings, layout.settingsBlueprint) ||
+       railplanner::drawing())
+      return;
    t_preview.read = true;
    if (g_spokenPreview == t_preview.key) return;
    g_spokenPreview = t_preview.key;

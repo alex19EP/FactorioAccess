@@ -174,6 +174,7 @@ add_library(fa_native SHARED
   src/movement.cpp
   src/zoom.cpp
   src/selection.cpp
+  src/railplanner.cpp
   src/editoractions.cpp
   src/preview.cpp
   src/blueprints.cpp
