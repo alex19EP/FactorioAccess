@@ -66,6 +66,8 @@ inline constexpr Word kCollapsed{"fa.native-collapsed"};
 inline constexpr Word kSubmenu{"fa.native-submenu"};
 
 inline constexpr Word kAllMods{"fa.native-all-mods"};
+// A mod portal filter left out of the search.
+inline constexpr Word kExcluded{"fa.native-excluded"};
 inline constexpr Word kAlternative{"fa.native-alternative"};
 // A column heading's button, "sort by name".
 inline constexpr Word kSortBy{"fa.native-sort-by"};

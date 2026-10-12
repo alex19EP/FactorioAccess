@@ -41,6 +41,10 @@ void ModsScreen::BuildWindow(graph::GraphBuilder& builder, const Widget* window)
     {
         BuildManage(builder, window);
     }
+    else if (agui::tabSelected(agui::member(window, layout.modsExploreTab)))
+    {
+        BuildExplore(builder, window);
+    }
     else
     {
         builder.BeginStop("content");
@@ -49,6 +53,74 @@ void ModsScreen::BuildWindow(graph::GraphBuilder& builder, const Widget* window)
     }
 
     AddFooter(builder, window);
+}
+
+void ModsScreen::BuildExplore(graph::GraphBuilder& builder, const Widget* window)
+{
+    const Widget* pane = agui::pointerMember(window, layout.modsExplorePane);
+    const Widget* filters = agui::member(pane, layout.exploreFilters);
+
+    builder.BeginStop("content");
+    AddSubtree(builder, "content", pane, {filters});
+
+    // The filters, in groups under the game's headings (expansions, categories, tags, filters),
+    // each group a Ctrl+arrow region announced as focus enters it. A portal filter is its checkbox,
+    // read with the mods it matches, and beside it the button that excludes it from the search.
+    builder.BeginStop("filters");
+    bool inGroup = false;
+    std::span<const Widget* const> cells = agui::children(filters);
+    for (std::size_t i = 0; i < cells.size(); ++i)
+    {
+        const Widget* cell = cells[i];
+        if (!Shows(cell))
+            continue;
+        std::string key = "filters/" + std::to_string(i);
+        switch (agui::kind(cell))
+        {
+        case agui::Kind::Label:
+            if (inGroup)
+                builder.PopContext();
+            builder.SetRegion(key);
+            builder.PushContext(LabelText(cell));
+            inGroup = true;
+            break;
+        case agui::Kind::CheckBox:
+            AddControl(builder, key, cell);
+            break;
+        default:
+        {
+            const Widget* box = ChildOfKind(cell, agui::Kind::CheckBox);
+            if (!box)
+                break;
+            const Widget* hits = agui::member(box, layout.searchFilterHits);
+            const Widget* exclude = agui::member(box, layout.searchFilterExclude);
+            graph::NodeVtable filter = ControlNode(box,
+                [box, hits]()
+                {
+                    std::string name = NameOf(box);
+                    std::string count = LabelText(hits);
+                    return count.empty() ? name : name + ' ' + count;
+                });
+            // An excluded filter's checkbox is disabled: it says why.
+            for (graph::NodeAnnouncement& part : filter.Announcements)
+                if (part.Kind == graph::AnnouncementKinds::Enabled)
+                    part.Text = [box, exclude]()
+                    {
+                        if (agui::buttonToggled(exclude))
+                            return std::string(vocab::kExcluded);
+                        return agui::enabled(box) ? std::string() : std::string(vocab::kDisabled);
+                    };
+            builder.StartLine("filter");
+            builder.AddItem(graph::ControlId::Referenced(box, key), std::move(filter));
+            AddControl(builder, key + "/exclude", exclude);
+            builder.EndRow();
+            break;
+        }
+        }
+    }
+    if (inGroup)
+        builder.PopContext();
+    builder.SetRegion("");
 }
 
 void ModsScreen::BuildManage(graph::GraphBuilder& builder, const Widget* window)

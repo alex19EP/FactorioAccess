@@ -529,6 +529,11 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.manageModsTable, "ManageModsPane", "modsTable");
    offset(layout.manageModsInfo, "ManageModsPane", "modInfoPane");
    offset(layout.manageModsSearch, "ManageModsPane", "searchBar");
+   offset(layout.modsExploreTab, "ModsGui", "exploreTab");
+   offset(layout.modsExplorePane, "ModsGui", "exploreTabContents");
+   offset(layout.exploreFilters, "ExploreModsPane", "filtersTable");
+   offset(layout.searchFilterHits, "SearchFilterWidgets", "hitCountLabel");
+   offset(layout.searchFilterExclude, "SearchFilterWidgets", "excludeButton");
    offset(layout.settingsContent, "SettingsGui", "contentFrame");
    offset(layout.settingsReset, "SettingsGui", "resetButton");
    offset(layout.modSettingsTabs, "ModSettingsGui", "tabs");

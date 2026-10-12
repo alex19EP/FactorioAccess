@@ -9,6 +9,8 @@
 //   info    — the selected mod's info: name, changelog and delete, description, version, author,
 //             dependencies
 //   content — on the other tabs, the tab's page read generically
+//   filters — on the Browse and install tab, the mod portal's filters under their headings: a
+//             filter's checkbox with the mods it matches, then the button excluding it
 //   buttons — Back and Confirm
 //   search  — the search field and the column sort buttons
 
@@ -27,6 +29,7 @@ protected:
 
 private:
     void BuildManage(graph::GraphBuilder& builder, const agui::Widget* window);
+    void BuildExplore(graph::GraphBuilder& builder, const agui::Widget* window);
 };
 
 } // namespace fa::screens

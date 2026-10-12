@@ -763,6 +763,13 @@ struct Layout {
    uint32_t manageModsTable = 0;      // ManageModsPane::modsTable
    uint32_t manageModsInfo = 0;       // ManageModsPane::modInfoPane
    uint32_t manageModsSearch = 0;     // ManageModsPane::searchBar
+   uint32_t modsExploreTab = 0;       // ModsGui::exploreTab
+   uint32_t modsExplorePane = 0;      // ModsGui::exploreTabContents, std::unique_ptr<ExploreModsPane>
+   uint32_t exploreFilters = 0;       // ExploreModsPane::filtersTable
+   // SearchFilterWidgets, a mod portal filter: an agui::CheckBox at its start, so these are offsets
+   // from the checkbox.
+   uint32_t searchFilterHits = 0;     // hitCountLabel, the mods the filter matches
+   uint32_t searchFilterExclude = 0;  // excludeButton, toggled while the filter is excluded
    uint32_t settingsContent = 0;      // SettingsGui::contentFrame
    uint32_t settingsReset = 0;        // SettingsGui::resetButton
    uint32_t modSettingsTabs = 0;      // ModSettingsGui::tabs
