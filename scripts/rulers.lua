@@ -3,8 +3,10 @@ Audio rulers.
 
 A ruler is a cross through a tile: the tile's row and column, without end. When the cursor or the
 character comes onto a new tile in line with one of the player's rulers, a tone plays: a low one a
-tile off the line, a high one on it, a click on the ruler's own tile. The DLL's skips stop where
-they come into line with more of the player's rulers than the tile before (native/src/skiprules.h).
+tile off the line, a high one on it, a click on the ruler's own tile. The DLL plays the cursor's
+tones itself (native/src/cues.h), on frames, which go on while the map is paused; this module plays
+the character's. The DLL's skips stop where they come into line with more of the player's rulers
+than the tile before (native/src/skiprules.h).
 
 Rulers are placed with the audio ruler tool (data/audio-ruler.lua), which the shortcut bar and
 Ctrl+Alt+B put in hand. As with Kruise Kontrol's spaghetti planner, the tool is held only for its
@@ -54,11 +56,6 @@ local ruler_storage = StorageManager.declare_storage_module("rulers", {
 -- Saves from before the tool hold a ruler handle with this metatable until the version above clears
 -- it.
 script.register_metatable("RulerHandle", {})
-
--- The cursor tile each player's rulers last sounded for. Only the client with the DLL knows the
--- cursor, so this stays out of storage: it only decides when to play a sound.
----@type table<integer, fa.Tile?>
-local last_cursor_tiles = {}
 
 -- For the DLL's skips, every tick: each player's rulers on one surface as x1, y1, x2, y2... Rebuilt
 -- when the rulers or the surface change.
@@ -314,7 +311,7 @@ function mod.ruler_tiles(pindex)
    return tiles
 end
 
----Plays the tones for the tiles the character and the cursor came onto this tick.
+---Plays the tone for the tile the character came onto this tick.
 ---@param pindex integer
 local function update_player(pindex)
    if not next(ruler_storage[pindex].rulers) then return end
@@ -339,15 +336,6 @@ local function update_player(pindex)
          sound_tile(pindex, player.physical_surface_index, x, y)
          reveal_far_lines(pindex, player.physical_surface_index, x, y)
       end
-   end
-
-   -- Only this client knows the cursor: sounds only from here on.
-   local cursor_tile = Cursor.speech_tile(pindex)
-   if not cursor_tile then return end
-   local last = last_cursor_tiles[pindex]
-   if not last or cursor_tile.x ~= last.x or cursor_tile.y ~= last.y then
-      sound_tile(pindex, player.surface_index, cursor_tile.x, cursor_tile.y)
-      last_cursor_tiles[pindex] = cursor_tile
    end
 end
 

@@ -285,6 +285,20 @@ TEST(Skip_StopsAtTheEdgeOfTheScreen)
     CHECK_EQ((Result{Result::Kind::Edge, 3, 0, 0}), find(world, 3, 0, 1, 0, kLimit, onScreen, {}));
 }
 
+TEST(Ruler_AlignmentIsTheStrongestOfAnyRuler)
+{
+    using fa::skip::Alignment;
+    using fa::skip::rulerAlignment;
+    const std::vector<Ruler> rulers{{0, 0}, {10, 10}};
+    CHECK(rulerAlignment(rulers, 0, 0) == Alignment::AtRuler);
+    CHECK(rulerAlignment(rulers, 0, 7) == Alignment::OnLine);
+    CHECK(rulerAlignment(rulers, 5, 10) == Alignment::OnLine);
+    CHECK(rulerAlignment(rulers, 1, 7) == Alignment::Close);
+    CHECK(rulerAlignment(rulers, 2, 9) == Alignment::Close);
+    CHECK(rulerAlignment(rulers, 5, 5) == Alignment::None);
+    CHECK(rulerAlignment({}, 0, 0) == Alignment::None);
+}
+
 TEST(Skip_GivesUpAtTheLimit)
 {
     World world;

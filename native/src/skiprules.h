@@ -31,6 +31,27 @@ inline uint32_t rulerWeight(std::span<const Ruler> rulers, int32_t x, int32_t y)
    return weight;
 }
 
+// The strongest way a tile lies in line with the rulers, for the tone the cursor plays coming onto
+// it (scripts/rulers.lua): a tile off a line, on one, or on a ruler itself.
+enum class Alignment { None, Close, OnLine, AtRuler };
+
+inline Alignment rulerAlignment(std::span<const Ruler> rulers, int32_t x, int32_t y) {
+   Alignment best = Alignment::None;
+   for (const Ruler& ruler : rulers) {
+      const int32_t dx = ruler.x > x ? ruler.x - x : x - ruler.x;
+      const int32_t dy = ruler.y > y ? ruler.y - y : y - ruler.y;
+      Alignment alignment = Alignment::None;
+      if (dx == 0 && dy == 0)
+         alignment = Alignment::AtRuler;
+      else if (dx == 0 || dy == 0)
+         alignment = Alignment::OnLine;
+      else if (dx <= 1 || dy <= 1)
+         alignment = Alignment::Close;
+      if (alignment > best) best = alignment;
+   }
+   return best;
+}
+
 struct Result {
    enum class Kind {
       Found, // a change at `x`, `y`, `tiles` away

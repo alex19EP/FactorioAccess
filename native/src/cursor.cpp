@@ -1,5 +1,6 @@
 #include "cursor.h"
 
+#include "cues.h"
 #include "cursormoves.h"
 #include "facts.h"
 #include "footprint.h"
@@ -606,6 +607,12 @@ void frame(void* source) {
       const std::pair tile{tileOf(cursor->x), tileOf(cursor->y)};
       if (tile != g_landedTile) {
          g_landedTile = tile;
+         std::vector<skip::Ruler> rulers;
+         {
+            std::scoped_lock lock(g_mutex);
+            rulers = g_rulers;
+         }
+         cues::rulerTone(skip::rulerAlignment(rulers, tile.first, tile.second));
          if (*cursor == tileCentre(*cursor) && !buildFollowsCursor(playerIndex) && !world::dragBuild(playerIndex)) {
             const reader::Point landing = reader::landingIn(tile.first, tile.second);
             if (landing.x != cursor->x || landing.y != cursor->y) place(Position{landing.x, landing.y});
