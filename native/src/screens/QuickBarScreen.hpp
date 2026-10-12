@@ -3,10 +3,12 @@
 // The game's quickbar along the bottom of the screen (QuickBarGui), a part of the HUD that Ctrl+Tab
 // moves to from the world or from any window (see parts.h), and back again.
 //
-// Two stops. The bars on screen, the one the quickbar keys (1 to 0) use first, each a row of its
-// slots read in the context of the page it shows. Then the button of each bar that shows its
-// page's number; pressing it opens the game's page picker, read instead as a line per page: the
-// page's button, which shows that page on the bar, then its slots.
+// The bars on screen, the one the quickbar keys (1 to 0) use first, each a row of its slots read in
+// the context of the page it shows. Then the button of each bar that shows its page's number;
+// pressing it opens the game's page picker, read instead as a line per page: the page's button,
+// which shows that page on the bar, then its slots. Then the toolbar beside the bars, the
+// character's guns over their ammo and the armor, and while driving the vehicle's guns: the game
+// draws them next to the quickbar, so they are reached with it rather than as a part of their own.
 //
 // Every slot is the game's own button, clicked as the Gui clicks it, so what a click does is
 // vanilla. Enter is the left button: with an item in hand it puts that item on the slot, with an

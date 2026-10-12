@@ -850,10 +850,15 @@ std::string StackText(const Widget* slot)
         count = button.count;
     }
     if (name.empty())
-        return std::string(vocab::kEmpty);
+    {
+        // A slot for one kind of item shows that kind's silhouette, named in its tooltip ("Guns").
+        std::string_view caption = agui::emptySlotCaption(slot);
+        return caption.empty() ? std::string(vocab::kEmpty) : std::format("{}, {}", caption, vocab::kEmpty);
+    }
     std::string spoken = quality.empty() ? std::string(name) : std::format("{} {}", quality, name);
-    // A choose button (a filter, a planner's rule) holds a choice, not a stack.
-    if (count == 0 && agui::derivesFrom(slot, "ChooseButtonBase"))
+    // A choose button (a filter, a planner's rule) holds a choice, not a stack; a vehicle's gun slot
+    // (a SimpleSlot on the toolbar) shows a gun fixed to it.
+    if (count == 0 && (agui::derivesFrom(slot, "ChooseButtonBase") || agui::derivesFromTemplate(slot, "SimpleSlot")))
         return spoken;
     if (count == 0)
         return std::format("{}, {}", spoken, vocab::kEmpty);

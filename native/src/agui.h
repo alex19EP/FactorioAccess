@@ -414,6 +414,17 @@ int quickBarPickingFor(const Widget* quickBar);
 // The page picker's rows, one per page: clicking a row's button shows that page on the bar.
 std::vector<QuickBarRow> quickBarPickerRows(const Widget* quickBar);
 
+// The table of the toolbar beside the quickbar (a ToolEquipTable), or null outside a game or while
+// the view has none: the character's gun, ammo and armor slots, or with `vehicle` the guns of the
+// vehicle being driven. A column per gun, its ammo under it; the first column holds the button that
+// opens the character's (or vehicle's) window over the armor, which sits in a flow beside the
+// armor's battery bar.
+const Widget* toolBarTable(bool vehicle);
+
+// The caption the game's tooltip gives an empty item slot for what goes in it ("Armor", "Guns"), or
+// empty for a slot without one.
+std::string_view emptySlotCaption(const Widget* slot);
+
 // The shortcut bar beside the quickbar (ShortcutBarGui), or null outside a game or while the view
 // has none.
 const Widget* shortcutBar();

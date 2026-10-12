@@ -1,5 +1,7 @@
 #include "MachineScreen.hpp"
 
+#include <algorithm>
+#include <cctype>
 #include <string>
 #include <utility>
 #include <vector>
@@ -25,8 +27,15 @@ Attachments MachineAttachments(const agui::EntityWindowParts& parts)
     Attachments attachments;
     auto label = [&attachments](const Widget* container, std::string name)
     {
-        if (container)
-            attachments[container].label = name;
+        if (!container)
+            return;
+        // Empty slots that the game names alike ("Fuel") already say it.
+        std::vector<const Widget*> slots = VisibleChildren(container);
+        if (!slots.empty()
+            && std::ranges::equal(agui::emptySlotCaption(slots.front()), name, [](char a, char b)
+                { return std::tolower(static_cast<unsigned char>(a)) == std::tolower(static_cast<unsigned char>(b)); }))
+            return;
+        attachments[container].label = name;
     };
     std::vector<std::pair<const Widget*, std::string>> bars;
     if (parts.progressBar && parts.recipe)

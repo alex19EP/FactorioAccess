@@ -91,6 +91,27 @@ void AddBars(graph::GraphBuilder& builder, const std::vector<agui::QuickBarRow>&
     }
 }
 
+// The toolbar beside the bars, as the game lays it out: the button that opens the character's window
+// over the armor, then each gun over its ammo. The armor shares its cell with its battery bar.
+void AddToolBar(graph::GraphBuilder& builder, const std::string& key, const Widget* table)
+{
+    if (!table || !agui::visible(table))
+        return;
+    builder.BeginStop(key);
+    AddGrid(
+        builder, key, table, [](const Widget* cell) { return !agui::derivesFrom(cell, "agui::EmptyWidget"); },
+        [](const Widget* cell)
+        {
+            if (agui::derivesFrom(cell, "agui::HorizontalFlow"))
+            {
+                std::vector<const Widget*> parts = VisibleChildren(cell);
+                if (!parts.empty())
+                    return ControlNode(parts.back());
+            }
+            return ControlNode(cell);
+        });
+}
+
 // A row per page in its own context, so that Up and Down say the page: its button, which shows the
 // page on the bar the picker opened for, then its slots numbered as the quickbar keys take them.
 void AddPicker(graph::GraphBuilder& builder, std::vector<agui::QuickBarRow> pages, std::size_t bar)
@@ -152,6 +173,8 @@ void QuickBarScreen::Build(graph::GraphBuilder& builder)
         _cancelled = false;
         picking = -1;
         AddBars(builder, rows);
+        AddToolBar(builder, "tools", agui::toolBarTable(false));
+        AddToolBar(builder, "vehicle", agui::toolBarTable(true));
     }
     _picking = picking;
 }

@@ -837,6 +837,11 @@ struct Layout {
    uint32_t slotInventory = 0;        // InventoryGuiSlot::inventory, Inventory*
    uint32_t slotIndex = 0;            // InventoryGuiSlot::targetSpecification.slotIndex
    uint32_t slotItemStack = 0;        // InventoryGuiSlot::itemStack, ItemStack*
+   // What an empty slot shows in place of an item (a gun, ammo or armor silhouette), with the caption
+   // its tooltip gives it ("Armor"). An InventoryGuiSlot's IDButton base is at its start.
+   // IDButton<IDWithQualityFilter<ID<ItemPrototype>>, ItemStack>::emptySlotInfo, EmptySlotInfo*
+   uint32_t slotEmptyInfo = 0;
+   uint32_t emptySlotCaption = 0;     // EmptySlotInfo::caption, std::string, already translated
    // What robots are to bring to an entity's slot or take from it (its insert and removal plans),
    // as InventoryGuiSlot::paintComponent draws them: the requested item's ghost and count, and a
    // deconstruction mark.
@@ -1370,6 +1375,13 @@ struct Layout {
    uint32_t rowPage = 0;                 // QuickBarGui::RowWidgets::pageIndex, unsigned char
    uint32_t rowButton = 0;               // QuickBarGui::RowWidgets::button, std::unique_ptr<agui::Button>
    uint32_t rowSlots = 0;                // QuickBarGui::RowWidgets::slots, std::vector<std::unique_ptr<ChooseButton>>
+   // The toolbar beside the quickbar (ToolEquipGui, an agui Window), reached as the quickbar is: the
+   // character's gun, ammo and armor slots, and while driving a second one for the vehicle's guns.
+   // Its equipmentTable (ToolEquipTable, an agui::Table) holds them, a column per gun: the button
+   // that opens the character's window over the armor, each gun over its ammo.
+   uint32_t controllerViewToolBar = 0;        // ToolEquipGui* ControllerView::getToolBar(), a vtable slot
+   uint32_t controllerViewVehicleToolBar = 0; // ToolEquipGui* ControllerView::getVehicleToolBar(), a vtable slot
+   uint32_t toolBarTable = 0;                 // ToolEquipGui::equipmentTable, an embedded ToolEquipTable
 
    // The shortcut bar beside the quickbar (ShortcutBarGui), reached as the quickbar is. Its buttons
    // stand in columns, each an agui::VerticalFlow; a button with no behavior is an empty place.
@@ -2017,6 +2029,11 @@ struct Layout {
    uint32_t inserterHeldStack = 0;
    uint32_t inserterPickupVector = 0;
    uint32_t inserterDropVector = 0;
+   // An inserter links its targets only once it runs, so one that never had energy has none. The
+   // game's hover still highlights what it would use (Inserter::drawPickupTarget, drawDropTarget):
+   // the first entity on the tile for which these say yes (bool, a vtable slot each).
+   uint32_t entityValidPickupTarget = 0;   // Entity::validMachinePickupTargetInternal() const
+   uint32_t entityValidDropTarget = 0;     // Entity::validMachineDropTargetInternal() const
    // bool Entity::isToBeUpgraded() const, as LuaEntity::to_be_upgraded.
    uintptr_t entityToBeUpgraded = 0;
    // A turret's target priorities: Turret::priorityList (std::vector<ID<EntityPrototype>>, uint16,

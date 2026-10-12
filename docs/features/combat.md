@@ -132,7 +132,7 @@ vehicdles, so Kruise Kontrol does its best, but:
 
 IMPORTANT: Equipment in an armor stays with the armor when you unequip it. You did not lose the equipment. To get it out, put the armor back on and unequip the equipment from it first.
 
-Weapons and armor are configured via the equipment overview tab in an entity's menus, or via your personal menu.  To briefly summarize complex mechanics:
+Your guns, ammo and armor are on the game's toolbar beside the quickbar. Press control tab until you reach the quickbar, then tab past its bars and page buttons. Each gun sits over its ammo, with the armor under the button that opens your character screen, and an empty slot says what goes in it. Enter clicks a slot as the mouse would: with an item in hand it puts the item there, with an empty hand it takes the slot's item. A gun or ammo you pick up goes into an empty gun or ammo slot by itself. While you drive, the vehicle's guns and ammo follow as another stop. To briefly summarize complex mechanics:
 
 - you personally can wear armor and have up to 3 weapons
 - Your vehicles have fixed weapons and usually no other equipment, but you can sometimes add things like roboports

@@ -953,6 +953,28 @@ std::vector<QuickBarRow> quickBarPickerRows(const Widget* quickBar) {
    return rowsAt(quickBar, layout.quickBarPickerRows);
 }
 
+const Widget* toolBarTable(bool vehicle) {
+   auto* context = *reinterpret_cast<const std::byte* const*>(layout.globalContext);
+   if (!context) return nullptr;
+   auto* game = at<const std::byte*>(context, layout.globalGame);
+   if (!game) return nullptr;
+   auto* view = at<const std::byte*>(game, layout.gameView);
+   if (!view) return nullptr;
+   auto* controllerView = at<std::byte*>(view, layout.gameViewControllerView);
+   if (!controllerView) return nullptr;
+   auto vtable = *reinterpret_cast<VirtualTable*>(controllerView);
+   uint32_t slot = vehicle ? layout.controllerViewVehicleToolBar : layout.controllerViewToolBar;
+   auto* toolBar = reinterpret_cast<const std::byte* (*)(void*)>(vtable[slot])(controllerView);
+   return toolBar ? reinterpret_cast<const Widget*>(toolBar + layout.toolBarTable) : nullptr;
+}
+
+std::string_view emptySlotCaption(const Widget* slot) {
+   const std::byte* button = asBase(slot, ".?AVInventoryGuiSlot@@");
+   if (!button) return {};
+   const std::byte* info = at<const std::byte*>(button, layout.slotEmptyInfo);
+   return info ? readString(info, layout.emptySlotCaption) : std::string_view();
+}
+
 const Widget* shortcutBar() {
    auto* context = *reinterpret_cast<const std::byte* const*>(layout.globalContext);
    if (!context) return nullptr;

@@ -1208,6 +1208,8 @@ const std::byte* reachedAt(const std::byte* entity, double dx, double dy, const 
                                                          position.y + static_cast<int32_t>(std::lround(dy * scale))));
 }
 
+const std::byte* unlinkedReach(const std::byte* inserter, double dx, double dy, bool pickup);
+
 // What an inserter holds, and where it picks up and drops: the entity there or the ground, how
 // many tiles and which way.
 std::string inserterState(const std::byte* entity, const std::byte* inserter, const Design* design) {
@@ -1219,16 +1221,17 @@ std::string inserterState(const std::byte* entity, const std::byte* inserter, co
       words.push_back(vocab::kInserterHolding(item ? localisedName(item) : std::string()));
       if (count > 1) words.push_back(vocab::kInserterHoldingCount(count));
    }
-   auto reach = [&](const vocab::Word& word, const std::byte* linked, uint32_t vector) {
+   auto reach = [&](const vocab::Word& word, const std::byte* linked, uint32_t vector, bool pickup) {
       const double dx = at<double>(inserter, vector);
       const double dy = at<double>(inserter, vector + static_cast<uint32_t>(sizeof(double)));
       const auto tiles = static_cast<int64_t>(std::lround(std::sqrt(dx * dx + dy * dy)));
       const std::byte* target = reachedAt(entity, dx, dy, linked, design);
+      if (!target && !design) target = unlinkedReach(entity, dx, dy, pickup);
       words.push_back(word(targetName(target), tiles, directionName(wayOf(dx, dy))));
    };
    reach(vocab::kInserterPicksUp, at<const std::byte*>(inserter, layout.inserterPickupTarget),
-         layout.inserterPickupVector);
-   reach(vocab::kInserterDrops, dropTargetOf(inserter), layout.inserterDropVector);
+         layout.inserterPickupVector, true);
+   reach(vocab::kInserterDrops, dropTargetOf(inserter), layout.inserterDropVector, false);
    return joined(words);
 }
 
@@ -1593,6 +1596,27 @@ void eachEntityIn(const std::byte* surface, Position leftTop, Position rightBott
    const auto* last = at<const std::byte* const*>(search, layout.entitySearchContent + sizeof(void*));
    for (const std::byte* const* it = first; it != last; ++it) visit(*it);
    reinterpret_cast<void (*)(std::byte*)>(layout.entitySearchDestroy)(search);
+}
+
+// What an inserter's hand reaches, `dx`, `dy` tiles from `inserter`, while it has no target linked:
+// as the game's hover highlights it, the first entity on that tile which the game takes for a pickup
+// (or drop) target. The hover also leaves out enemies' entities and moving trains, which an inserter
+// that never ran has no part in.
+const std::byte* unlinkedReach(const std::byte* inserter, double dx, double dy, bool pickup) {
+   const Position position = at<Position>(inserter, layout.entityPosition);
+   const int32_t x = tileOf(position.x + static_cast<int32_t>(std::lround(dx * kScale)));
+   const int32_t y = tileOf(position.y + static_cast<int32_t>(std::lround(dy * kScale)));
+   // The game shrinks the tile's box a little, so that what only touches its edges stays out.
+   constexpr int32_t kInset = kScale / 10;
+   const uint32_t slot = pickup ? layout.entityValidPickupTarget : layout.entityValidDropTarget;
+   const std::byte* found = nullptr;
+   eachEntityIn(at<const std::byte*>(inserter, layout.entitySurface),
+                Position{x * kScale + kInset, y * kScale + kInset},
+                Position{(x + 1) * kScale - kInset, (y + 1) * kScale - kInset}, [&](const std::byte* candidate) {
+                   if (found || candidate == inserter || agui::objectAsBase(candidate, ".?AVEntityGhost@@")) return;
+                   if (virtualAt<bool (*)(const void*)>(candidate, slot)(candidate)) found = candidate;
+                });
+   return found;
 }
 
 // Whether an entity of the type stands at the position, as LuaSurface::find_entity looks.

@@ -595,6 +595,9 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.slotInventory, "InventoryGuiSlot", "inventory");
    offset(layout.slotIndex, "InventoryGuiSlot", "targetSpecification.slotIndex");
    offset(layout.slotItemStack, "InventoryGuiSlot", "itemStack");
+   offset(layout.slotEmptyInfo, "IDButton<IDWithQualityFilter<ID<ItemPrototype,unsigned short> >,ItemStack>",
+          "emptySlotInfo");
+   offset(layout.emptySlotCaption, "EmptySlotInfo", "caption");
    offset(layout.slotGhostItem, "InventoryGuiSlot", "ghostItem.id.baseID");
    offset(layout.slotGhostQuality, "InventoryGuiSlot", "ghostItem.id.qualityID");
    offset(layout.slotGhostCount, "InventoryGuiSlot", "ghostItem.count");
@@ -990,6 +993,9 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.rowPage, "QuickBarGui::RowWidgets", "pageIndex");
    offset(layout.rowButton, "QuickBarGui::RowWidgets", "button");
    offset(layout.rowSlots, "QuickBarGui::RowWidgets", "slots");
+   classSlot(layout.controllerViewToolBar, "ControllerView", "getToolBar");
+   classSlot(layout.controllerViewVehicleToolBar, "ControllerView", "getVehicleToolBar");
+   offset(layout.toolBarTable, "ToolEquipGui", "equipmentTable");
    classSlot(layout.controllerViewShortcutBar, "ControllerView", "getShortcutBar");
    offset(layout.shortcutBarColumns, "ShortcutBarGui", "columns");
    offset(layout.shortcutBarListButton, "ShortcutBarGui", "expandButton");
@@ -1440,6 +1446,8 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.inserterPickupTarget, "Inserter", "pickupTarget.target");
    offset(layout.inserterHeldStack, "Inserter", "heldStack");
    offset(layout.inserterPickupVector, "Inserter", "pickupVector");
+   classSlot(layout.entityValidPickupTarget, "Entity", "validMachinePickupTargetInternal");
+   classSlot(layout.entityValidDropTarget, "Entity", "validMachineDropTargetInternal");
    offset(layout.inserterDropVector, "Inserter", "dropoffVector");
    address(layout.entityToBeUpgraded, "?isToBeUpgraded@Entity@@QEBA_NXZ");
    offset(layout.turretPriorityList, "Turret", "priorityList");
