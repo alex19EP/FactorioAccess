@@ -235,11 +235,26 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.chunkTiles, "Chunk", "tiles");
    size(layout.tileSize, "Tile");
    address(layout.surfaceTileAt, "?getTileOptional@Surface@@QEBAPEBVTile@@AEBVTilePosition@@@Z");
+   offset(layout.tileCollisionLayers, "TilePrototype", "collisionMask");
+   offset(layout.tileFluid, "TilePrototype", "fluid.id");
+   address(layout.collisionLayerNames,
+           "?nameToPrototype@?$PrototypeList@VCollisionLayerPrototype@@@@0V?$map@V?$basic_string@DU?$char_traits@D@"
+           "std@@V?$allocator@D@2@@std@@PEAVCollisionLayerPrototype@@U?$less@X@2@V?$allocator@U?$pair@$$CBV?$"
+           "basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@PEAVCollisionLayerPrototype@@@std@@@2@@std@@A");
+   offset(layout.collisionLayerMask, "CollisionLayerPrototype", "layerMask");
+   offset(layout.collisionLayerRow, "CollisionLayerPrototype", "layerRow");
+   offset(layout.simpleEntityRock, "SimpleEntityPrototype", "countAsRockForFilteredDeconstruction");
    offset(layout.resourceSearchRadius, "ResourceEntityPrototype", "resourcePatchSearchRadius");
    offset(layout.resourceInfinite, "ResourceEntityPrototype", "infiniteType");
    classSlot(layout.prototypeGetType, "PrototypeBase", "getType");
    address(layout.entityTargeterVtable, "??_7?$Targeter@VEntity@@$0A@$0A@@@6B@");
    offset(layout.targetableTargeters, "Targetable", "targetingMe.firstTargeter");
+   offset(layout.surfacePlatform, "Surface", "platform");
+   offset(layout.platformAsteroidChunks, "SpacePlatform", "asteroidChunks");
+   size(layout.asteroidChunkSize, "AsteroidChunk");
+   offset(layout.asteroidChunkPrototype, "AsteroidChunk", "prototypeID");
+   offset(layout.asteroidChunkPosition, "AsteroidChunk", "position");
+   address(layout.asteroidChunkTargeterVtable, "??_7?$Targeter@VAsteroidChunk@@$0A@$0A@@@6B@");
    offset(layout.entityUsageBits, "Entity", "usageBitMask");
    offset(layout.scanAssemblerRecipe, "AssemblingMachine", "recipeID");
    offset(layout.scanFurnaceRecipe, "Furnace", "recipeID");

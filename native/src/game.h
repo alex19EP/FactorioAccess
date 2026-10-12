@@ -340,6 +340,18 @@ struct Layout {
    uint32_t chunkTiles = 0;                // Chunk::tiles
    uint32_t tileSize = 0;                  // sizeof(Tile)
    uintptr_t surfaceTileAt = 0;
+   // What a tile is, by what it collides with (data/base/prototypes/tile/tile-collision-masks.lua):
+   // TilePrototype::collisionMask holds CollisionLayers, a uint64[4] of layer bits, and each
+   // CollisionLayerPrototype knows its word (layerRow) and bit (layerMask) in it
+   // (CollisionLayers::addLayerByName). The layers are prototypes, found by name.
+   uint32_t tileCollisionLayers = 0;       // TilePrototype::collisionMask, CollisionLayers first
+   uint32_t tileFluid = 0;                 // TilePrototype::fluid.id, ID<FluidPrototype> (uint16), 0 for none
+   uintptr_t collisionLayerNames = 0;      // PrototypeList<CollisionLayerPrototype>::nameToPrototype
+   uint32_t collisionLayerMask = 0;        // CollisionLayerPrototype::layerMask, uint64
+   uint32_t collisionLayerRow = 0;         // CollisionLayerPrototype::layerRow, uint16
+   // The deconstruction planner's "trees and rocks only" rock, set on volcanic rocks, ruins,
+   // icebergs and modded rocks alike.
+   uint32_t simpleEntityRock = 0;          // SimpleEntityPrototype::countAsRockForFilteredDeconstruction, bool
    // Resource patches as the map finds them (ResourcePatchInfo::addPatch and scanPatch): a grid of
    // cells twice the prototype's resourcePatchSearchRadius a side (at most 32, shrunk until it
    // divides 32; 0 makes every resource a patch of its own), joined to their 8 neighbours while one
@@ -353,6 +365,15 @@ struct Layout {
    // Targeters::clear calls each targeter's clearAsReactionToNotification, which nulls target.
    uintptr_t entityTargeterVtable = 0;     // Targeter<Entity,0,0>'s vftable: generic type, no flags
    uint32_t targetableTargeters = 0;       // Targetable::targetingMe.firstTargeter, TargeterBase*
+   // Asteroid chunks are no entities: a platform keeps them in SpacePlatform::asteroidChunks, a
+   // std::vector<AsteroidChunk>. Each starts with a MovableTargetable, whose move retargets its
+   // targeters, so they are linked as entities are, with Targeter<AsteroidChunk>'s vftable.
+   uint32_t surfacePlatform = 0;           // Surface::platform, SpacePlatform* or null
+   uint32_t platformAsteroidChunks = 0;    // SpacePlatform::asteroidChunks, std::vector<AsteroidChunk>
+   uint32_t asteroidChunkSize = 0;         // sizeof(AsteroidChunk)
+   uint32_t asteroidChunkPrototype = 0;    // AsteroidChunk::prototypeID, ID<AsteroidChunkPrototype> (uint16)
+   uint32_t asteroidChunkPosition = 0;     // AsteroidChunk::position, Vector (two doubles, in tiles)
+   uintptr_t asteroidChunkTargeterVtable = 0; // Targeter<AsteroidChunk,0,0>'s vftable
    // Entity::usageBitMask (uint16). The scanner skips what LuaEntity's constructor refuses: 0x4,
    // the entity inside a ghost, which Entity::getOuterEntity trades for its ghost, and 0x10.
    uint32_t entityUsageBits = 0;

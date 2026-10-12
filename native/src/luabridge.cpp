@@ -584,27 +584,10 @@ std::optional<double> numberField(lua_State* L, int table, const char* name) {
    return value;
 }
 
-// The strings of the array in field `name` of the table at `table`.
-std::vector<std::string> stringsField(lua_State* L, int table, const char* name) {
-   std::vector<std::string> strings;
-   getField(L, table, name);
-   if (type(L, -1) == kTable) {
-      const size_t count = rawLen(L, -1);
-      for (size_t i = 1; i <= count; ++i) {
-         rawGetI(L, -1, static_cast<int>(i));
-         if (type(L, -1) == kString) strings.push_back(toString(L, -1));
-         setTop(L, -2);
-      }
-   }
-   setTop(L, -2);
-   return strings;
-}
-
-// fa_native.scanner_refresh(pindex, {surface, x, y, direction, water, ice, extras, generation,
-// automatic, keep_origin}): lists for this client's player what the scanner finds on that surface
-// where the player's force charted it, nearest x, y first, and only in `direction` (an 8-way
-// defines.direction) when given; water and ice are arrays of the tile names that make bodies of
-// water and of ice; extras is an array of {category, key, x, y} the mod lists itself
+// fa_native.scanner_refresh(pindex, {surface, x, y, direction, extras, generation, automatic,
+// keep_origin}): lists for this client's player what the scanner finds on that surface where the
+// player's force charted it, nearest x, y first, and only in `direction` (an 8-way
+// defines.direction) when given; extras is an array of {category, key, x, y} the mod lists itself
 // (scanner::Extra), from its collection `generation`. With `automatic`, over the next ticks (see
 // scanner::Refresh). The list is this client's only; nothing in the game depends on it.
 int scannerRefresh(lua_State* L) {
@@ -625,8 +608,6 @@ int scannerRefresh(lua_State* L) {
    getField(L, 2, "keep_origin");
    request.keepOrigin = toBoolean(L, -1);
    setTop(L, -3);
-   request.water = stringsField(L, 2, "water");
-   request.ice = stringsField(L, 2, "ice");
    getField(L, 2, "extras");
    if (type(L, -1) == kTable) {
       const int extras = getTop(L);

@@ -4,6 +4,7 @@
 #include "facts.h"
 #include "game.h"
 #include "mappicture.h"
+#include "prototypes.h"
 #include "graph/GraphAnnouncer.hpp"
 #include "graph/GraphBuilder.hpp"
 #include "screens/AguiNodes.hpp"
@@ -512,19 +513,15 @@ const std::byte* tilePrototypeAt(const std::byte* surface, Position tile) {
    return found ? prototypeAt(layout.tilePrototypes, at<uint16_t>(found, 0)) : nullptr;
 }
 
-// The mod's water tiles (Consts.WATER_TILE_NAMES).
-bool isWater(const std::byte* prototype) {
-   static constexpr std::array<std::string_view, 7> kWater{
-      "water", "deepwater", "water-green", "deepwater-green", "water-shallow", "water-mud", "water-wube"};
-   if (!prototype) return false;
-   const std::string_view name = reinterpret_cast<const MsvcString*>(prototype + layout.prototypeName)->view();
-   return std::ranges::find(kWater, name) != kWater.end();
+prototypes::TileKind tileKindOf(const std::byte* prototype) {
+   return prototype ? prototypes::tileKind(prototype) : prototypes::TileKind::Land;
 }
 
-// A water tile's shape, by which of its four sides are water (FaUtils.identify_water_shores).
-std::string waterShape(const std::byte* surface, Position tile) {
+// A water-like tile's shape, by which of its four sides are of its kind (FaUtils.identify_water_shores):
+// a lake's edge by the marsh around it is its shore.
+std::string waterShape(const std::byte* surface, Position tile, prototypes::TileKind kind) {
    auto water = [&](int32_t dx, int32_t dy) {
-      return isWater(tilePrototypeAt(surface, Position{tile.x + dx, tile.y + dy}));
+      return tileKindOf(tilePrototypeAt(surface, Position{tile.x + dx, tile.y + dy})) == kind;
    };
    const bool north = water(0, -1), south = water(0, 1), east = water(1, 0), west = water(-1, 0);
    switch (north + south + east + west) {
@@ -539,7 +536,8 @@ std::string waterShape(const std::byte* surface, Position tile) {
 std::string tileName(const std::byte* surface, Position tile) {
    const std::byte* prototype = tilePrototypeAt(surface, tile);
    if (!prototype) return {};
-   if (isWater(prototype)) return localisedName(prototype) + " " + waterShape(surface, tile);
+   if (const prototypes::TileKind kind = prototypes::tileKind(prototype); prototypes::waterLike(kind))
+      return localisedName(prototype) + " " + waterShape(surface, tile, kind);
    return localisedName(prototype);
 }
 
@@ -728,7 +726,7 @@ const void* selectedAtPoint(int32_t x, int32_t y) {
 
 bool waterAt(int32_t tileX, int32_t tileY) {
    const std::optional<Local> here = local();
-   return here && isWater(tilePrototypeAt(here->surface, Position{tileX, tileY}));
+   return here && prototypes::waterLike(tileKindOf(tilePrototypeAt(here->surface, Position{tileX, tileY})));
 }
 
 std::vector<Stop> stopsIn(int32_t tileX, int32_t tileY) {

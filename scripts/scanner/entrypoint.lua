@@ -16,7 +16,6 @@ local Cursor = require("scripts.cursor")
 local Extras = require("scripts.scanner.extras")
 local FaUtils = require("scripts.fa-utils")
 local Localising = require("scripts.localising")
-local ScannerConsts = require("scripts.scanner.scanner-consts")
 local Readout = require("scripts.scanner.readout")
 local UiRouter = require("scripts.ui.router")
 local Speech = require("scripts.speech")
@@ -79,10 +78,12 @@ local function announce(pindex, event, target)
       readout = { words = { "fa.scanner-forest", entry.trees } }
    elseif entry.kind == "patch" then
       readout = { words = entry.text }
-   elseif entry.kind == "water" then
-      readout = { words = { "fa.scanner-water", entry.width, entry.height } }
-   elseif entry.kind == "ice" then
-      readout = { words = { "fa.scanner-iceberg", entry.width, entry.height } }
+   elseif entry.kind == "tiles" then
+      readout = {
+         words = { "fa.scanner-tile-body", prototypes.tile[entry.prototype].localised_name, entry.width, entry.height },
+      }
+   elseif entry.kind == "chunk" then
+      readout = { words = prototypes.asteroid_chunk[entry.prototype].localised_name }
    elseif entry.kind == "extra" then
       readout = Extras.readout(pindex, entry.generation, entry.extra)
       if not readout then return end
@@ -132,8 +133,6 @@ local function refresh(player, fields)
    fields.surface = player.surface.index
    fields.x = player.position.x
    fields.y = player.position.y
-   fields.water = ScannerConsts.WATER_PROTOS
-   fields.ice = script.feature_flags.space_travel and ScannerConsts.ICEBERG_PROTOS or nil
    fields.extras = Extras.collect(player, generation)
    fields.generation = generation
    native.scanner_refresh(player.index, fields)

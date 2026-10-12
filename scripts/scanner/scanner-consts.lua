@@ -1,5 +1,3 @@
-local Consts = require("scripts.consts")
-
 local mod = {}
 
 -- The scanner's categories, by the keys the DLL names them with (native/src/scanner.cpp
@@ -33,12 +31,5 @@ mod.CATEGORIES = {
 -- With an offshore pump in hand, shore within this many tiles of the player is checked for places to
 -- build it.
 mod.PUMP_SPOT_DISTANCE = 30
-
--- Modded water is mostly not a thing. If it is we can extend the list.
-mod.WATER_PROTOS = Consts.WATER_TILE_NAMES
-
--- No clue if modded icebergs is a thing. If it is we can extend the list.
-mod.ICEBERG_PROTOS =
-   { "brash-ice", "ice-rough", "ice-smooth", "snow-crests", "snow-flat", "snow-lumpy", "snow-patchy", "ice-platform" }
 
 return mod

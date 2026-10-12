@@ -1,4 +1,4 @@
-Last reviewed: 2026-10-09 (update this if reviewing this doc)
+Last reviewed: 2026-10-12 (update this if reviewing this doc)
 
 # Introduction
 
@@ -18,19 +18,36 @@ player who scans. Nothing of it is in `storage`, and other clients have none. Th
 A refresh (`fa_native.scanner_refresh`, only where `fa_native` exists) walks every chunk of the
 surface that the player's force has charted, as sighted players see all of it on the map:
 
-- Entities by type (`kTypes` in `scanner.cpp`), each its own entry, grouped by prototype. Types not
-  in the table are not listed. Rocks are resources, `*-remnants` are remnants.
+- Entities, each its own entry, grouped by prototype. Every entity type is listed but the effects
+  and helpers in `kSkippedTypes` (projectiles, explosions, fire, stickers, smoke, beams, spider legs,
+  demolisher segments, the rocket in a silo ...). `kTypes` picks a type's category; a type it does
+  not know goes to Other. Mods add prototypes, never types, so modded entities are listed too.
+  Rocks are resources: a simple entity is a rock when the game counts it as one for the
+  deconstruction planner's "trees and rocks only" (`count_as_rock_for_filtered_deconstruction`:
+  volcanic rocks, chimneys, Fulgoran ruins, stromatolites, lithium icebergs, demolisher corpses,
+  modded rocks). `*-remnants` are remnants.
 - Subcategories that say more than the prototype (`kDetails`, read by `subcategoryKey`): machines
   by recipe, drills by what they mine, chests by contents (empty, one item, mixed), pipes and tanks
   by fluid (pipes also by whether they end), wagons by train, ghosts by type, spawners by pollution,
   roboports by network name.
-- Trees as forests: trees in the same or touching 8-tile cells. Trees within 25 tiles are listed one
-  by one, and a forest of one is said as its tree.
+- Trees and plants (Gleba's, and what agricultural towers plant) as forests: trees in the same or
+  touching 8-tile cells. Trees within 25 tiles are listed one by one, and a forest of one is said as
+  its tree.
 - Resources as patches, by the map's own rule (`ResourcePatchInfo::addPatch` and `scanPatch`): cells
   twice the prototype's patch search radius a side, joined to their 8 neighbours. A patch says the
   map's label of what is left in it. Wells of an infinite resource within 50 tiles are listed one
   by one.
-- Water and ice as bodies of 8-way connected tiles, landing on the tile nearest the player.
+- Bodies of 8-way connected tiles of one kind and one fluid, landing on the tile nearest the player
+  and named by the tile most of the body is ("Deep water 54 by 40"). The kind comes from the tile's
+  collision layers (`prototypes::tileKind`, data/base/prototypes/tile/tile-collision-masks.lua), so
+  modded tiles take part: water_tile without ground_tile is water-like, a liquid when it also blocks
+  the player (water, lava, ammoniacal ocean, brash ice) and shallow when it does not (shallow water,
+  Gleba's wetlands, the oil ocean); meltable is Aquilo's ice. A body an offshore pump pumps from (the
+  tile has a fluid) is a resource, the others terrain. The cursor reads the same kinds: a water-like
+  tile says its shape, and the skip treats it as water.
+- Asteroid chunks floating past a platform, each kind a subcategory of Resources. They are no
+  entities (`SpacePlatform::asteroidChunks`), but are linked as entities are, so entries follow them
+  and drop out once collected.
 
 Things that move (units, vehicles, characters, robots: `kMovingTypes`) of another force are left out
 of chunks under fog of war, which the player's force has not charted in the last 600 ticks
@@ -122,7 +139,8 @@ The DLL leaves the keys alone while a game window is open or one of the mod's ow
 
 # Adding to the scanner
 
-- A new entity type: add it to `kTypes` in `scanner.cpp` with its category.
+- An entity type in the wrong category: add it to `kTypes` in `scanner.cpp` with its category (a
+  new engine type lands in Other until then). One that is no thing on the map: `kSkippedTypes`.
 - A subcategory that says more than the prototype: add the type to `kDetails` in `scanner.cpp`
   with the member its entity class keeps it in (a `game::Layout` field), and read it in
   `subcategoryKey`.

@@ -3,6 +3,7 @@
 #include "game.h"
 
 #include <cstddef>
+#include <cstdint>
 
 namespace fa::prototypes {
 
@@ -47,7 +48,28 @@ const std::byte* find(uintptr_t map, std::string_view name) {
    return nullptr;
 }
 
+// Whether `layers` (CollisionLayers) holds the layer named `name`; false when no such layer exists.
+bool hasLayer(const std::byte* layers, std::string_view name) {
+   const std::byte* layer = find(layout.collisionLayerNames, name);
+   if (!layer) return false;
+   const uint16_t row = *reinterpret_cast<const uint16_t*>(layer + layout.collisionLayerRow);
+   const uint64_t mask = *reinterpret_cast<const uint64_t*>(layer + layout.collisionLayerMask);
+   return (reinterpret_cast<const uint64_t*>(layers)[row] & mask) != 0;
+}
+
 } // namespace
+
+TileKind tileKind(const void* tilePrototype) {
+   const std::byte* layers = static_cast<const std::byte*>(tilePrototype) + layout.tileCollisionLayers;
+   if (hasLayer(layers, "water_tile") && !hasLayer(layers, "ground_tile"))
+      return hasLayer(layers, "player") ? TileKind::Liquid : TileKind::Shallow;
+   if (hasLayer(layers, "meltable")) return TileKind::Ice;
+   return TileKind::Land;
+}
+
+uint16_t tileFluid(const void* tilePrototype) {
+   return *reinterpret_cast<const uint16_t*>(static_cast<const std::byte*>(tilePrototype) + layout.tileFluid);
+}
 
 std::optional<std::string> localisedName(std::string_view kind, std::string_view name) {
    for (size_t i = 0; i < game::kNamedPrototypeCount; ++i) {

@@ -18,7 +18,7 @@
 // alike for every entity of the kind (the mod it comes from, its description, wire reach, maximum
 // consumption, the last player ...): its name, FA's own facts (facts.h), a status only when it
 // tells of a problem, health only when damaged, then the lines that tell of this entity's state and
-// the icons alt mode draws. With no entity there, the tile's name and a water tile's shape. Where
+// the icons alt mode draws. With no entity there, the tile's name and a water-like tile's shape. Where
 // the view draws fog of war (remote view and the map), a tile the force has not charted is only
 // "uncharted", and one it charted but does not see now is what the chart's old picture shows there
 // (mappicture.h), then "blurred".
@@ -46,7 +46,8 @@ void tick();
 // For the skip and cycle keys (skip.h, cursor.h), in the game's input handling, where the game
 // itself finds what the mouse selects: what the mouse at the centre of the tile `tileX`, `tileY`,
 // or at the map position `x`, `y` in fixed point, would select for this client's player (null for
-// nothing, or outside a game with a view), and whether the tile is water.
+// nothing, or outside a game with a view), and whether the tile is water-like (water, lava, the oil
+// and ammonia oceans, Gleba's wetlands: prototypes::waterLike).
 const void* selectedAt(int32_t tileX, int32_t tileY);
 const void* selectedAtPoint(int32_t x, int32_t y);
 bool waterAt(int32_t tileX, int32_t tileY);

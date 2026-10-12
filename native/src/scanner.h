@@ -35,8 +35,6 @@ struct Refresh {
    double x = 0;                 // where distances are measured from, in tiles
    double y = 0;
    std::optional<int> direction;  // only entries in this direction (an 8-way defines.direction)
-   std::vector<std::string> water; // tile names that are water
-   std::vector<std::string> ice;   // tile names that are ice (Aquilo)
    std::vector<Extra> extras;
    uint32_t generation = 0; // which of the mod's collections `extras` is, said back with each extra
    // Made over the next ticks (see tick) rather than at once. It keeps the list's direction, and with
@@ -75,14 +73,16 @@ struct Entry {
    bool empty = false;         // nothing in the category: the fields below are unset
    uint32_t index = 0;         // one-based place in its subcategory
    uint32_t count = 0;         // entries in the subcategory
-   // "entity", "forest" (several trees), "patch" (a resource patch), "water", "ice" or "extra".
+   // "entity", "forest" (several trees), "patch" (a resource patch), "tiles" (a body of water-like
+   // or ice tiles), "chunk" (an asteroid chunk) or "extra".
    std::string kind;
    uint32_t extra = 0;         // an extra: its one-based place in Refresh::extras
    uint32_t generation = 0;    // an extra: its Refresh::generation
-   std::string prototype;      // an entity's or patch's prototype name
+   // An entity's, patch's or asteroid chunk's prototype name; a body's tile, the one most of it is
+   std::string prototype;
    std::string text;           // a patch: the map's label of it, what is left in it
    uint32_t trees = 0;         // a forest: how many trees are left
-   int32_t width = 0;          // water and ice: the size of the body, in tiles
+   int32_t width = 0;          // a body: its size, in tiles
    int32_t height = 0;
    double x = 0;               // where it is, in tiles
    double y = 0;

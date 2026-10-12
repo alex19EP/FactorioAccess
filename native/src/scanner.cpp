@@ -4,6 +4,7 @@
 #include "chart.h"
 #include "game.h"
 #include "log.h"
+#include "prototypes.h"
 #include "world.h"
 
 #include <algorithm>
@@ -120,26 +121,57 @@ constexpr std::array<std::string_view, kCategoryCount> kCategoryKeys{
 };
 static_assert(!kCategoryKeys.back().empty(), "a category has no key");
 
-// The category of each entity type the scanner lists one by one. Types left out (beams,
-// explosions, particles ...) are not listed; trees and resources are listed as forests and patches.
+// Entity types that are no things on the map but effects and helpers: what is shot, burns, blows
+// up or hangs on something, the legs of a spider, the segments behind a demolisher's head, the
+// requests of a building, the rocket inside a silo. The scanner lists every other type; mods add
+// prototypes, never types.
+constexpr std::string_view kSkippedTypes[] = {
+   "arrow",
+   "artillery-projectile",
+   "beam",
+   "deconstructible-tile-proxy",
+   "explosion",
+   "fire",
+   "highlight-box",
+   "item-request-proxy",
+   "lightning",
+   "particle-source",
+   "projectile",
+   "rocket-silo-rocket",
+   "rocket-silo-rocket-shadow",
+   "segment",
+   "smoke-with-trigger",
+   "speech-bubble",
+   "spider-leg",
+   "sticker",
+   "stream",
+};
+
+// The category of each entity type the scanner lists one by one, but for Other, which takes the rest.
+// Trees, plants and resources are listed as forests and patches.
 struct TypeRule {
    std::string_view type;
    Cat category;
 };
 constexpr TypeRule kTypes[] = {
    {"accumulator", Logistics},
+   {"agricultural-tower", Production},
    {"ammo-turret", Military},
    {"arithmetic-combinator", Logistics},
    {"artillery-flare", Military},
    {"artillery-turret", Military},
    {"artillery-wagon", Trains},
    {"assembling-machine", Production},
+   {"asteroid", Enemies},
+   {"asteroid-collector", Production},
    {"beacon", Production},
    {"boiler", Logistics},
    {"burner-generator", Logistics},
+   {"capture-robot", Military},
    {"car", Vehicles},
+   {"cargo-bay", Logistics},
+   {"cargo-landing-pad", Logistics},
    {"cargo-wagon", Trains},
-   {"character-corpse", Other},
    {"character", Players},
    {"cliff", Terrain},
    {"combat-robot", Military},
@@ -159,26 +191,27 @@ constexpr TypeRule kTypes[] = {
    {"elevated-half-diagonal-rail", Trains},
    {"elevated-straight-rail", Trains},
    {"entity-ghost", Ghosts},
-   {"fire", Other},
-   {"fish", Other},
-   {"flame-thrower-explosion", Other},
    {"fluid-turret", Military},
    {"fluid-wagon", Trains},
    {"furnace", Production},
+   {"fusion-generator", Logistics},
+   {"fusion-reactor", Logistics},
    {"gate", Military},
    {"generator", Logistics},
    {"half-diagonal-rail", Trains},
    {"heat-interface", Logistics},
    {"heat-pipe", Logistics},
+   {"infinity-cargo-wagon", Trains},
    {"infinity-container", Containers},
    {"infinity-pipe", Logistics},
    {"inserter", Logistics},
-   {"item-entity", Other},
    {"lab", Production},
    {"lamp", Logistics},
+   {"lane-splitter", Logistics},
    {"legacy-curved-rail", Trains},
    {"legacy-straight-rail", Trains},
    {"land-mine", Military},
+   {"lightning-attractor", Logistics},
    {"linked-belt", Logistics},
    {"linked-container", Logistics},
    {"loader-1x1", Logistics},
@@ -191,10 +224,9 @@ constexpr TypeRule kTypes[] = {
    {"offshore-pump", Production},
    {"pipe-to-ground", Logistics},
    {"pipe", Logistics},
-   {"player-port", Other},
    {"power-switch", Logistics},
    {"programmable-speaker", Logistics},
-   {"projectile", Other},
+   {"proxy-container", Logistics},
    {"pump", Logistics},
    {"radar", Military},
    {"rail-chain-signal", Trains},
@@ -204,17 +236,18 @@ constexpr TypeRule kTypes[] = {
    {"rail-support", Trains},
    {"reactor", Logistics},
    {"roboport", Logistics},
-   {"rocket-silo-rocket-shadow", Other},
-   {"rocket-silo-rocket", Other},
    {"rocket-silo", Production},
-   {"simple-entity-with-force", Other},
-   {"simple-entity-with-owner", Other},
-   {"simple-entity", Other},
+   {"segmented-unit", Enemies},
+   {"selector-combinator", Logistics},
    {"solar-panel", Logistics},
+   {"space-platform-hub", Logistics},
+   {"spider-unit", Enemies},
    {"spider-vehicle", Spidertrons},
    {"splitter", Logistics},
    {"storage-tank", Logistics},
    {"straight-rail", Trains},
+   {"temporary-container", Containers},
+   {"thruster", Logistics},
    {"tile-ghost", Ghosts},
    {"train-stop", Trains},
    {"transport-belt", Logistics},
@@ -222,13 +255,8 @@ constexpr TypeRule kTypes[] = {
    {"underground-belt", Logistics},
    {"unit-spawner", Enemies},
    {"unit", Enemies},
+   {"valve", Logistics},
    {"wall", Military},
-};
-
-// Rocks are resources: they are mined for stone and coal.
-constexpr std::string_view kRocks[] = {
-   "big-rock",         "big-sand-rock", "huge-rock",       "medium-rock",
-   "medium-sand-rock", "small-rock",    "small-sand-rock", "tiny-rock",
 };
 
 // What sets an entity apart from others of its prototype in its subcategory: what a machine makes,
@@ -262,6 +290,7 @@ constexpr DetailRule kDetails[] = {
    {"entity-ghost", Detail::Ghost, &game::Layout::scanGhostInner},
    {"fluid-wagon", Detail::Train, &game::Layout::scanFluidWagonTrain},
    {"furnace", Detail::Furnace, &game::Layout::scanFurnaceRecipe},
+   {"infinity-cargo-wagon", Detail::Train, &game::Layout::scanCargoWagonTrain},
    {"infinity-container", Detail::Contents, &game::Layout::scanInfinityInventory},
    {"infinity-pipe", Detail::Fluid, &game::Layout::scanInfinityPipeFluidBox},
    {"locomotive", Detail::Train, &game::Layout::scanLocomotiveTrain},
@@ -271,6 +300,7 @@ constexpr DetailRule kDetails[] = {
    {"pipe-to-ground", Detail::Fluid, &game::Layout::scanUndergroundFluidBox},
    {"roboport", Detail::Roboport, &game::Layout::scanRoboportName},
    {"storage-tank", Detail::Fluid, &game::Layout::scanTankFluidBox},
+   {"temporary-container", Detail::Contents, &game::Layout::scanContainerInventory},
    {"tile-ghost", Detail::TileGhost, nullptr},
    {"unit-spawner", Detail::Spawner, &game::Layout::scanSpawnerPollution},
 };
@@ -281,8 +311,23 @@ constexpr DetailRule kDetails[] = {
 // of chunks under fog of war (Chart::isChunkCoveredByFogOfWar), as there they are not where the map
 // shows them. The force's own are drawn wherever they are.
 constexpr std::string_view kMovingTypes[] = {
-   "artillery-wagon", "car",        "cargo-wagon",    "character",      "combat-robot", "construction-robot",
-   "fluid-wagon",     "locomotive", "logistic-robot", "spider-vehicle", "unit",
+   "artillery-wagon",
+   "asteroid",
+   "capture-robot",
+   "car",
+   "cargo-pod",
+   "cargo-wagon",
+   "character",
+   "combat-robot",
+   "construction-robot",
+   "fluid-wagon",
+   "infinity-cargo-wagon",
+   "locomotive",
+   "logistic-robot",
+   "segmented-unit",
+   "spider-unit",
+   "spider-vehicle",
+   "unit",
 };
 
 // What the full map names, rather than drawing as a pixel of a building's colour: what its own
@@ -291,8 +336,10 @@ constexpr std::string_view kMovingTypes[] = {
 // Forests, water and ice show as the colour of the ground they cover. Entities whose prototype is
 // "not-on-map" are left out, as the map leaves them out.
 constexpr std::string_view kMapTypes[] = {
-   "artillery-wagon", "car",        "cargo-wagon", "character", "display-panel", "fluid-wagon", "locomotive",
-   "spider-vehicle",  "train-stop", "turret",      "unit",      "unit-spawner",
+   "artillery-wagon", "car",         "cargo-wagon",          "character",
+   "display-panel",   "fluid-wagon", "infinity-cargo-wagon", "locomotive",
+   "segmented-unit",  "spider-unit", "spider-vehicle",       "train-stop",
+   "turret",          "unit",        "unit-spawner",
 };
 
 // How an entity is listed.
@@ -324,8 +371,12 @@ bool listed(const std::string_view (&types)[N], std::string_view type) {
    return std::find(std::begin(types), std::end(types), type) != std::end(types);
 }
 
+// Planted or wild, plants are trees: harvested, they leave nothing standing.
+bool isTree(std::string_view type) { return type == "tree" || type == "plant"; }
+
 Rule ruleFor(const std::byte* prototype, std::string_view type, std::string_view name) {
-   if (type == "tree") {
+   if (listed(kSkippedTypes, type)) return {};
+   if (isTree(type)) {
       Rule rule{Listing::Tree, Resources};
       rule.onMap = true;
       return rule;
@@ -337,23 +388,23 @@ Rule ruleFor(const std::byte* prototype, std::string_view type, std::string_view
       rule.onMap = true;
       return rule;
    }
-   if (listed(kRocks, name)) return {Listing::Alone, Resources};
+   // Rocks are resources: they are mined for stone, coal and the like. A rock is what the
+   // deconstruction planner's "trees and rocks only" takes, so modded ones are too; Fulgora's vault
+   // is left out by the game, to stand out.
+   if (type == "simple-entity" && at<bool>(prototype, layout.simpleEntityRock)) return {Listing::Alone, Resources};
    if (name.ends_with("-remnants")) return {Listing::Alone, Remnants};
-   for (const TypeRule& typeRule : kTypes) {
-      if (typeRule.type != type) continue;
-      Rule rule{Listing::Alone, typeRule.category};
-      for (const DetailRule& detail : kDetails)
-         if (detail.type == type) {
-            rule.detail = detail.detail;
-            rule.member = detail.member ? layout.*detail.member : 0;
-         }
-      rule.moves = listed(kMovingTypes, type);
-      rule.onMap =
-         listed(kMapTypes, type) && !(at<uint32_t>(prototype, layout.entityPrototypeFlags) & game::kEntityNotOnMap);
-      rule.panel = type == "display-panel";
-      return rule;
-   }
-   return {};
+   const auto known = std::ranges::find(kTypes, type, &TypeRule::type);
+   Rule rule{Listing::Alone, known != std::end(kTypes) ? known->category : Other};
+   for (const DetailRule& detail : kDetails)
+      if (detail.type == type) {
+         rule.detail = detail.detail;
+         rule.member = detail.member ? layout.*detail.member : 0;
+      }
+   rule.moves = listed(kMovingTypes, type);
+   rule.onMap =
+      listed(kMapTypes, type) && !(at<uint32_t>(prototype, layout.entityPrototypeFlags) & game::kEntityNotOnMap);
+   rule.panel = type == "display-panel";
+   return rule;
 }
 
 // scanner-consts.lua: how close trees and the wells of an infinite resource are listed one by one
@@ -413,9 +464,9 @@ Targeter*& firstTargeter(std::byte* targetable) {
    return *reinterpret_cast<Targeter**>(targetable + layout.targetableTargeters);
 }
 
-// As TargeterBase's constructor links one.
-void link(Targeter& targeter, std::byte* entity) {
-   targeter.vfptr = reinterpret_cast<const void*>(layout.entityTargeterVtable);
+// As TargeterBase's constructor links one, as a Targeter of the class whose vftable is `vtable`.
+void link(Targeter& targeter, std::byte* entity, uintptr_t vtable) {
+   targeter.vfptr = reinterpret_cast<const void*>(vtable);
    targeter.target = entity;
    targeter.previous = nullptr;
    Targeter*& first = firstTargeter(entity);
@@ -456,9 +507,10 @@ public:
    Links& operator=(const Links&) = delete;
    ~Links() { release(); }
 
-   // Links `entity`, which must be there now; its index.
-   uint32_t add(std::byte* entity) {
-      link(targeters_.emplace_back(), entity);
+   // Links `entity`, which must be there now; its index. An asteroid chunk is linked as one, with its
+   // own Targeter's vftable.
+   uint32_t add(std::byte* entity, uintptr_t vtable = layout.entityTargeterVtable) {
+      link(targeters_.emplace_back(), entity, vtable);
       return static_cast<uint32_t>(targeters_.size() - 1);
    }
 
@@ -640,6 +692,12 @@ std::optional<uint16_t> tileAt(const std::byte* surface, int32_t x, int32_t y) {
    return at<uint16_t>(tile, 0);
 }
 
+// Where an asteroid chunk is now.
+Position chunkPosition(const std::byte* chunk) {
+   return {fixedPoint(at<double>(chunk, layout.asteroidChunkPosition)),
+           fixedPoint(at<double>(chunk, layout.asteroidChunkPosition + sizeof(double)))};
+}
+
 using PatchConstructFunction = void* (*)(void* info, bool useClockLimiter);
 using PatchDestroyFunction = void (*)(void* info);
 using PatchUpdateFunction = bool (*)(void* info, const void* resource, const void* force, bool keepIfUnchanged);
@@ -752,8 +810,8 @@ enum class Kind : uint8_t {
    Entity, // one entity
    Forest, // trees, nearest first
    Patch,  // a resource patch's resources, nearest first
-   Water,  // a body of water, by its tile nearest the origin
-   Ice,    // a body of ice, likewise
+   Tiles,  // a body of water-like or ice tiles of one TileKind, by its tile nearest the origin
+   Chunk,  // an asteroid chunk floating past a platform, linked as an entity is
    Extra,  // one the mod listed itself, by its place in Refresh::extras (Item::first)
 };
 
@@ -762,8 +820,8 @@ constexpr std::string_view kindName(Kind kind) {
    case Kind::Entity: return "entity";
    case Kind::Forest: return "forest";
    case Kind::Patch: return "patch";
-   case Kind::Water: return "water";
-   case Kind::Ice: return "ice";
+   case Kind::Tiles: return "tiles";
+   case Kind::Chunk: return "chunk";
    case Kind::Extra: return "extra";
    }
    return {};
@@ -778,12 +836,14 @@ std::optional<Cat> categoryByKey(std::string_view key) {
 struct Item {
    Kind kind;
    Cat category;
-   const std::byte* prototype = nullptr; // an entity's or patch's prototype
-   Position position{};             // where to go: kept up to date as the entry is checked
-   std::string key;                 // its subcategory
-   uint32_t first = 0;              // an entity's link in Links
-   uint32_t count = 0;              // links of an entity; trees of a forest, resources of a patch
-   TileBox box;                     // water, ice, forests and patches
+   // An entity's or patch's prototype; a body's tile prototype that most of it is
+   const std::byte* prototype = nullptr;
+   Position position{}; // where to go: kept up to date as the entry is checked
+   std::string key;     // its subcategory
+   uint32_t first = 0;  // an entity's link in Links
+   uint32_t count = 0;  // links of an entity; trees of a forest, resources of a patch
+   TileBox box;         // bodies, forests and patches
+   prototypes::TileKind tiles = prototypes::TileKind::Land; // a body's
 };
 
 struct Subcategory {
@@ -791,8 +851,13 @@ struct Subcategory {
    std::vector<uint32_t> items; // into List::items
 };
 
-// What a tile is to the scanner.
-enum TileClass : uint8_t { NoClass, WaterTile, IceTile };
+// What a tile is to the scanner, by tile ID, read as the list starts so that putting it together
+// reads nothing of the game. Tile prototypes stay for the game's life.
+struct TileInfo {
+   prototypes::TileKind kind = prototypes::TileKind::Land;
+   uint16_t fluid = 0;
+   const std::byte* prototype = nullptr;
+};
 
 struct List {
    const std::byte* game = nullptr;
@@ -805,7 +870,7 @@ struct List {
    std::vector<Item> items;
    Links links;
    std::array<std::vector<Subcategory>, kCategoryCount> categories;
-   std::vector<uint8_t> tileClasses; // TileClass by tile ID
+   std::vector<TileInfo> tiles; // by tile ID
 };
 
 constexpr unsigned kMaxThreads = 16;
@@ -1218,18 +1283,20 @@ void addGroups(std::vector<Item>& items, std::span<const Cells* const> cells, co
    }
 }
 
-// Bodies of water or ice: connected tiles of one class, 8 ways, chunk by chunk. Each chunk labels its
-// own components; components touching across chunk borders are then joined.
+// Bodies of tiles: connected tiles of one TileKind other than land and one fluid, 8 ways, chunk by
+// chunk, so that a lake is apart from the marsh or the ocean it touches. Each chunk labels its own
+// components; components touching across chunk borders are then joined.
 class TileBodies {
 public:
-   TileBodies(TileClass tileClass, Position origin) : class_(tileClass), origin_(origin) {}
+   explicit TileBodies(Position origin) : origin_(origin) {}
 
-   void addChunk(const std::byte* chunk, int32_t cx, int32_t cy, const std::vector<uint8_t>& classes) {
+   void addChunk(const std::byte* chunk, int32_t cx, int32_t cy, const std::vector<TileInfo>& tiles) {
+      std::array<uint16_t, 1024> ids;
       std::array<uint16_t, 1024> labels{};
       bool any = false;
       for (int32_t i = 0; i < 1024; ++i) {
-         const uint16_t id = at<uint16_t>(chunk, layout.chunkTiles + static_cast<uint32_t>(i) * layout.tileSize);
-         if (id < classes.size() && classes[id] == class_) {
+         ids[i] = at<uint16_t>(chunk, layout.chunkTiles + static_cast<uint32_t>(i) * layout.tileSize);
+         if (ids[i] < tiles.size() && tiles[ids[i]].kind != prototypes::TileKind::Land) {
             labels[i] = kUnlabelled;
             any = true;
          }
@@ -1241,22 +1308,27 @@ public:
       std::vector<int32_t> stack;
       for (int32_t start = 0; start < 1024; ++start) {
          if (labels[start] != kUnlabelled) continue;
+         const TileInfo& first = tiles[ids[start]];
          const uint16_t label = next++;
          const uint32_t node = sets_.add();
          stats_.push_back({});
+         stats_[node].kind = first.kind;
+         stats_[node].fluid = first.fluid;
          labels[start] = label;
          stack.push_back(start);
          while (!stack.empty()) {
             const int32_t tile = stack.back();
             stack.pop_back();
             const int32_t x = tile / 32, y = tile % 32;
-            stats_[node].add(cx * 32 + x, cy * 32 + y, origin_);
+            stats_[node].add(cx * 32 + x, cy * 32 + y, ids[tile], origin_);
             for (int32_t dx = -1; dx <= 1; ++dx)
                for (int32_t dy = -1; dy <= 1; ++dy) {
                   const int32_t nx = x + dx, ny = y + dy;
                   if (nx < 0 || nx >= 32 || ny < 0 || ny >= 32) continue;
                   const int32_t neighbour = nx * 32 + ny;
                   if (labels[neighbour] != kUnlabelled) continue;
+                  const TileInfo& other = tiles[ids[neighbour]];
+                  if (other.kind != first.kind || other.fluid != first.fluid) continue;
                   labels[neighbour] = label;
                   stack.push_back(neighbour);
                }
@@ -1272,21 +1344,25 @@ public:
    void absorb(TileBodies&& other) {
       const uint32_t base = sets_.size();
       for (uint32_t i = 0; i < other.sets_.size(); ++i) sets_.add();
-      stats_.insert(stats_.end(), other.stats_.begin(), other.stats_.end());
+      stats_.insert(stats_.end(), std::make_move_iterator(other.stats_.begin()),
+                    std::make_move_iterator(other.stats_.end()));
       index_.reserve(index_.size() + other.chunks_.size());
       for (Chunk& chunk : other.chunks_) {
          chunk.base += base;
          index_.emplace(packCell(chunk.x, chunk.y), chunks_.size());
          chunks_.push_back(chunk);
       }
-      other = TileBodies(class_, origin_);
+      other = TileBodies(origin_);
    }
 
-   // Each body, nearest first: its box, and its tile nearest the origin.
+   // Each body, nearest first: its box, its tile nearest the origin, its kind, and the tile ID most
+   // of it is (the lowest of a tie).
    struct Body {
       TileBox box;
       int32_t nearestX = 0;
       int32_t nearestY = 0;
+      prototypes::TileKind kind = prototypes::TileKind::Land;
+      uint16_t tile = 0;
    };
    std::vector<Body> bodies() {
       for (const Chunk& chunk : chunks_) {
@@ -1299,27 +1375,73 @@ public:
       for (uint32_t node = 0; node < sets_.size(); ++node) roots[sets_.find(node)].add(stats_[node]);
       std::vector<Stats> found;
       found.reserve(roots.size());
-      for (const auto& [root, stats] : roots) found.push_back(stats);
+      for (auto& [root, stats] : roots) found.push_back(std::move(stats));
       std::sort(found.begin(), found.end(), [](const Stats& a, const Stats& b) {
          return nearer(a.nearest, a.position(), b.nearest, b.position());
       });
       std::vector<Body> result;
       result.reserve(found.size());
-      for (const Stats& stats : found) result.push_back({stats.box, stats.nearestX, stats.nearestY});
+      for (const Stats& stats : found)
+         result.push_back({stats.box, stats.nearestX, stats.nearestY, stats.kind, stats.tiles.most()});
       return result;
    }
 
 private:
    static constexpr uint16_t kUnlabelled = 0xffff;
 
+   // How many of each tile ID a body has. Bodies are mostly of one to three tiles, kept in place;
+   // only a body of more goes to the heap.
+   class TileCounts {
+   public:
+      void add(uint16_t id, uint32_t n) {
+         for (uint8_t i = 0; i < used_; ++i)
+            if (few_[i].first == id) {
+               few_[i].second += n;
+               return;
+            }
+         for (auto& [tile, number] : more_)
+            if (tile == id) {
+               number += n;
+               return;
+            }
+         if (used_ < few_.size())
+            few_[used_++] = {id, n};
+         else
+            more_.emplace_back(id, n);
+      }
+      void add(const TileCounts& other) {
+         for (uint8_t i = 0; i < other.used_; ++i) add(other.few_[i].first, other.few_[i].second);
+         for (const auto& [tile, number] : other.more_) add(tile, number);
+      }
+      // The ID most of the body is, the lowest of a tie.
+      uint16_t most() const {
+         std::pair<uint16_t, uint32_t> best{};
+         auto consider = [&](const std::pair<uint16_t, uint32_t>& entry) {
+            if (entry.second > best.second || (entry.second == best.second && entry.first < best.first)) best = entry;
+         };
+         for (uint8_t i = 0; i < used_; ++i) consider(few_[i]);
+         for (const auto& entry : more_) consider(entry);
+         return best.first;
+      }
+
+   private:
+      std::array<std::pair<uint16_t, uint32_t>, 3> few_{};
+      uint8_t used_ = 0;
+      std::vector<std::pair<uint16_t, uint32_t>> more_;
+   };
+
    struct Stats {
       TileBox box;
       double nearest = INFINITY;
       int32_t nearestX = 0;
       int32_t nearestY = 0;
+      prototypes::TileKind kind = prototypes::TileKind::Land;
+      uint16_t fluid = 0;
+      TileCounts tiles;
       Position position() const { return tileCentre(nearestX, nearestY); }
-      void add(int32_t x, int32_t y, Position origin) {
+      void add(int32_t x, int32_t y, uint16_t id, Position origin) {
          box.add(x, y);
+         tiles.add(id, 1);
          const double distance = distanceSquared(tileCentre(x, y), origin);
          if (nearer(distance, tileCentre(x, y), nearest, position())) {
             nearest = distance;
@@ -1329,6 +1451,9 @@ private:
       }
       void add(const Stats& other) {
          box.add(other.box);
+         kind = other.kind;
+         fluid = other.fluid;
+         tiles.add(other.tiles);
          if (nearer(other.nearest, other.position(), nearest, position())) {
             nearest = other.nearest;
             nearestX = other.nearestX;
@@ -1351,7 +1476,10 @@ private:
    }
 
    void join(const Chunk& a, uint16_t labelA, const Chunk& b, uint16_t labelB) {
-      if (labelA && labelB) sets_.join(a.base + labelA - 1, b.base + labelB - 1);
+      if (!labelA || !labelB) return;
+      const uint32_t nodeA = a.base + labelA - 1, nodeB = b.base + labelB - 1;
+      if (stats_[nodeA].kind == stats_[nodeB].kind && stats_[nodeA].fluid == stats_[nodeB].fluid)
+         sets_.join(nodeA, nodeB);
    }
 
    // Joins along the border with the chunk at (dx, dy): edge tile i of this chunk touches edge tiles
@@ -1374,7 +1502,6 @@ private:
          join(chunk, chunk.at(mine), *other, other->at(theirs));
    }
 
-   TileClass class_;
    Position origin_{};
    Sets sets_;
    std::vector<Stats> stats_;
@@ -1459,8 +1586,7 @@ const std::byte* nearestMember(const World& world, const Item& item, const TileB
    forEachEntity(world.surface, {box.left >> 1, box.top >> 1}, {box.right >> 1, box.bottom >> 1},
                  [&](const std::byte* entity) {
                     const auto* prototype = at<const std::byte*>(entity, layout.entityPrototypeOf);
-                    if (item.kind == Kind::Patch ? prototype != item.prototype
-                                                 : std::string_view(prototypeType(prototype)) != "tree")
+                    if (item.kind == Kind::Patch ? prototype != item.prototype : !isTree(prototypeType(prototype)))
                        return;
                     const Position position = at<Position>(entity, layout.entityPosition);
                     const double distance = distanceSquared(position, g_list.origin);
@@ -1499,13 +1625,18 @@ bool validate(const World& world, uint32_t index) {
          return true;
       }
       return false;
-   case Kind::Water:
-   case Kind::Ice: {
+   case Kind::Tiles: {
       // Landfill may have covered the tile.
       const auto id = tileAt(world.surface, tileOf(item.position.x), tileOf(item.position.y));
-      const TileClass wanted = item.kind == Kind::Water ? WaterTile : IceTile;
-      return id && *id < g_list.tileClasses.size() && g_list.tileClasses[*id] == wanted;
+      return id && *id < g_list.tiles.size() && g_list.tiles[*id].kind == item.tiles;
    }
+   case Kind::Chunk:
+      // Gone once collected or broken up; it moves all the while.
+      if (const std::byte* chunk = g_list.links.entity(item.first)) {
+         item.position = chunkPosition(chunk);
+         return true;
+      }
+      return false;
    case Kind::Extra:
       // Only the mod can tell whether its pin or tag is still there; it says so when it says it.
       return true;
@@ -1610,7 +1741,8 @@ std::optional<std::pair<uint32_t, uint32_t>> current(const World& world) {
 void describe(const World& world, const Item& item, Entry& entry) {
    entry.kind = std::string(kindName(item.kind));
    switch (item.kind) {
-   case Kind::Entity: entry.prototype = std::string(prototypeName(item.prototype)); break;
+   case Kind::Entity:
+   case Kind::Chunk: entry.prototype = std::string(prototypeName(item.prototype)); break;
    case Kind::Forest: {
       if (item.count == 1) {
          // A forest of one tree is said as a tree.
@@ -1629,8 +1761,8 @@ void describe(const World& world, const Item& item, Entry& entry) {
       entry.prototype = std::string(prototypeName(item.prototype));
       break;
    }
-   case Kind::Water:
-   case Kind::Ice:
+   case Kind::Tiles:
+      entry.prototype = std::string(prototypeName(item.prototype));
       entry.width = item.box.width();
       entry.height = item.box.height();
       break;
@@ -1690,9 +1822,8 @@ std::optional<Position> act(Action action) {
    } else {
       const auto& subcategory = g_list.categories[*g_cursor.category][*g_cursor.subcategory];
       const Item& item = g_list.items[subcategory.items[*g_cursor.entry]];
-      move.target = item.kind == Kind::Water || item.kind == Kind::Ice
-                       ? tileCentre(tileOf(item.position.x), tileOf(item.position.y))
-                       : item.position;
+      move.target =
+         item.kind == Kind::Tiles ? tileCentre(tileOf(item.position.x), tileOf(item.position.y)) : item.position;
       move.entry.index = place->first + 1;
       move.entry.count = place->second;
       describe(world, item, move.entry);
@@ -1706,20 +1837,14 @@ std::optional<Position> act(Action action) {
    return target;
 }
 
-// TileClass by tile ID, from the mod's names of water and ice tiles.
-std::vector<uint8_t> tileClasses(const Refresh& request) {
-   const auto& prototypes = *reinterpret_cast<const MsvcVector<const std::byte*>*>(layout.tilePrototypes);
-   std::vector<uint8_t> classes(static_cast<size_t>(prototypes.last - prototypes.first), NoClass);
-   for (size_t id = 0; id < classes.size(); ++id) {
-      const std::byte* prototype = prototypes.first[id];
-      if (!prototype) continue;
-      const std::string_view name = prototypeName(prototype);
-      if (std::find(request.water.begin(), request.water.end(), name) != request.water.end())
-         classes[id] = WaterTile;
-      else if (std::find(request.ice.begin(), request.ice.end(), name) != request.ice.end())
-         classes[id] = IceTile;
-   }
-   return classes;
+// What each tile is, by tile ID.
+std::vector<TileInfo> tileInfos() {
+   const auto& list = *reinterpret_cast<const MsvcVector<const std::byte*>*>(layout.tilePrototypes);
+   std::vector<TileInfo> tiles(static_cast<size_t>(list.last - list.first));
+   for (size_t id = 0; id < tiles.size(); ++id)
+      if (const std::byte* prototype = list.first[id])
+         tiles[id] = {prototypes::tileKind(prototype), prototypes::tileFluid(prototype), prototype};
+   return tiles;
 }
 
 // Milliseconds since the last lap, for the refresh's log line.
@@ -1766,7 +1891,7 @@ struct Scan {
    Position origin;
    std::optional<int> direction;
    bool map;
-   const std::vector<uint8_t>& tileClasses;
+   const std::vector<TileInfo>& tiles;
 
    bool wanted(Position position) const { return inDirection(position, origin, direction); }
 
@@ -1789,7 +1914,7 @@ struct Scan {
 
 // One thread's share of a refresh's walk: whole chunks, handed out a batch at a time.
 struct Walk {
-   explicit Walk(Position origin) : cells(origin), water(WaterTile, origin), ice(IceTile, origin) {}
+   explicit Walk(Position origin) : cells(origin), bodies(origin) {}
 
    std::vector<Item> items;
    // The entities of entity items not yet linked, by Item::first; linked items' `first` is their
@@ -1803,8 +1928,7 @@ struct Walk {
    };
    std::vector<Range> ranges;
    Cells cells;
-   TileBodies water;
-   TileBodies ice;
+   TileBodies bodies;
    std::unordered_map<const std::byte*, Rule> rules;
    const std::byte* lastPrototype = nullptr;
    const Rule* lastRule = nullptr;
@@ -1877,8 +2001,7 @@ void walkChunk(const Scan& scan, Walk& walk, const std::byte* chunk, size_t plac
    });
    if (walk.items.size() != (walk.ranges.empty() ? 0 : walk.ranges.back().end))
       walk.ranges.push_back({place, walk.items.size()});
-   walk.water.addChunk(chunk, chunkPosition.x, chunkPosition.y, scan.tileClasses);
-   walk.ice.addChunk(chunk, chunkPosition.x, chunkPosition.y, scan.tileClasses);
+   walk.bodies.addChunk(chunk, chunkPosition.x, chunkPosition.y, scan.tiles);
    ++walk.chunks;
 }
 
@@ -1947,8 +2070,7 @@ bool onMap(const std::byte* player) { return at<uint8_t>(player, layout.playerRe
 struct Job {
    Job(const std::byte* game, const Refresh& request, Position origin, std::optional<int> direction, bool map)
       : game(game), playerIndex(request.playerIndex), surfaceIndex(request.surfaceIndex), origin(origin),
-        direction(direction), generation(request.generation), map(map), tileClasses(scanner::tileClasses(request)),
-        links(game) {}
+        direction(direction), generation(request.generation), map(map), tiles(tileInfos()), links(game) {}
    Job(const Job&) = delete;
    Job& operator=(const Job&) = delete;
 
@@ -1959,13 +2081,14 @@ struct Job {
    std::optional<int> direction;
    uint32_t generation;
    bool map; // List::map
-   std::vector<uint8_t> tileClasses;
+   std::vector<TileInfo> tiles;
 
    Scan scan(const Place& place) const {
       return {place.surface, place.surfaceIndex, place.force, place.forceId, place.chart,
-              origin,        direction,          map,         tileClasses};
+              origin,        direction,          map,         tiles};
    }
    std::vector<Item> extras;    // the mod's, where they are listed
+   std::vector<Item> chunks;    // asteroid chunks, linked as the list starts
    std::vector<Position> order; // the chunks' positions, nearest first
    size_t next = 0;             // the first in `order` not walked
    std::deque<Walk> walks;
@@ -2026,6 +2149,24 @@ std::unique_ptr<Job> startJob(const Refresh& request, Position origin, std::opti
       item.first = static_cast<uint32_t>(i);
       job->extras.push_back(std::move(item));
    }
+
+   // The asteroid chunks floating past a platform are resources, each kind a subcategory. The map
+   // shows none. Linked now, they are followed as they move until the list is put in place.
+   const std::byte* platform = at<const std::byte*>(place->surface, layout.surfacePlatform);
+   if (platform && !map) {
+      const auto& chunkPrototypes =
+         *reinterpret_cast<const MsvcVector<const std::byte*>*>(layout.asteroidChunkPrototypes);
+      const auto floating = at<MsvcVector<std::byte>>(platform, layout.platformAsteroidChunks);
+      for (std::byte* chunk = floating.first; chunk < floating.last; chunk += layout.asteroidChunkSize) {
+         const Position position = chunkPosition(chunk);
+         if (!scan.wanted(position)) continue;
+         const std::byte* prototype = chunkPrototypes.first[at<uint16_t>(chunk, layout.asteroidChunkPrototype)];
+         Item item{Kind::Chunk, Resources, prototype, position, std::format("chunk/{}", prototypeName(prototype))};
+         item.first = job->links.add(chunk, layout.asteroidChunkTargeterVtable);
+         item.count = 1;
+         job->chunks.push_back(std::move(item));
+      }
+   }
    return job;
 }
 
@@ -2077,23 +2218,25 @@ List assemble(Job& job) {
    for (Walk& walk : job.walks) {
       cells.push_back(&walk.cells);
       if (&walk == &merged) continue;
-      merged.water.absorb(std::move(walk.water));
-      merged.ice.absorb(std::move(walk.ice));
+      merged.bodies.absorb(std::move(walk.bodies));
    }
    addGroups(list.items, cells, job.names);
-   for (auto [bodies, kind, category, key] : {std::tuple{&merged.water, Kind::Water, Resources, "water"},
-                                              std::tuple{&merged.ice, Kind::Ice, Terrain, "iceberg"}}) {
-      for (const TileBodies::Body& body : bodies->bodies()) {
-         const Position nearest = tileCentre(body.nearestX, body.nearestY);
-         if (!inDirection(nearest, job.origin, job.direction)) continue;
-         Item item{kind, category, nullptr, nearest, key};
-         item.box = body.box;
-         list.items.push_back(std::move(item));
-      }
+   for (const TileBodies::Body& body : merged.bodies.bodies()) {
+      const Position nearest = tileCentre(body.nearestX, body.nearestY);
+      if (!inDirection(nearest, job.origin, job.direction)) continue;
+      // What an offshore pump pumps is a resource: water, lava, oil and ammonia oceans. Bodies are
+      // grouped by their kind and fluid, so that the lakes are apart from the marshes around them.
+      const TileInfo& tile = job.tiles[body.tile];
+      Item item{Kind::Tiles, tile.fluid ? Resources : Terrain, tile.prototype, nearest,
+                std::format("tiles/{}/{}", static_cast<int>(body.kind), tile.fluid)};
+      item.tiles = body.kind;
+      item.box = body.box;
+      list.items.push_back(std::move(item));
    }
    list.items.insert(list.items.end(), job.extras.begin(), job.extras.end());
+   list.items.insert(list.items.end(), job.chunks.begin(), job.chunks.end());
    group(list);
-   list.tileClasses = std::move(job.tileClasses);
+   list.tiles = std::move(job.tiles);
    return list;
 }
 
@@ -2116,14 +2259,14 @@ void assembleApart(Job& job) {
 bool same(const Item& a, const List& fresh, const Item& b) {
    if (a.kind != b.kind) return false;
    switch (a.kind) {
-   case Kind::Entity: {
+   case Kind::Entity:
+   case Kind::Chunk: {
       const std::byte* entity = g_list.links.entity(a.first);
       return entity && entity == fresh.links.entity(b.first);
    }
    case Kind::Forest:
    case Kind::Patch:
-   case Kind::Water:
-   case Kind::Ice: {
+   case Kind::Tiles: {
       const int32_t x = tileOf(a.position.x), y = tileOf(a.position.y);
       return x >= b.box.left && x <= b.box.right && y >= b.box.top && y <= b.box.bottom;
    }
