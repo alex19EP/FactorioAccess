@@ -55,6 +55,11 @@ void refresh(const Refresh& request);
 // false for another client's player.
 bool tick(int playerIndex, uint32_t surfaceIndex);
 
+// Each frame, for this client's player, while the update thread waits: once Lua's ticks have
+// stopped (a paused map, as the map editor's in single player), carries the automatic refresh under
+// way along as a tick would. Starting one is still the mod's, as the player's events come.
+void frame(int playerIndex, uint32_t surfaceIndex);
+
 // Before the core unloads, with no Lua call or hook under way: ends the scanner's threads and
 // leaves its entity links to the game.
 void stop();

@@ -2337,8 +2337,13 @@ void install(Job& job, bool keep) {
    job.installMs = stopwatch.lap();
 }
 
-// The automatic refresh under way, if any. Only on the game's update thread, from Lua.
+// The automatic refresh under way, if any. On the game's update thread, from Lua, or on frames
+// while the update thread waits (carry).
 std::unique_ptr<Job> g_job;
+// When Lua last ticked. While ticks stop (a paused map, as the map editor's in single player), frames
+// carry the refresh along instead.
+Clock::time_point g_lastTick;
+constexpr auto kTicksStopped = std::chrono::milliseconds(100);
 // When the next automatic refresh starts while the list is of the player's surface, and when one is
 // tried again while it is not.
 Clock::time_point g_nextCycle;
@@ -2404,7 +2409,11 @@ void refresh(const Refresh& request) {
    report(*job, "asked");
 }
 
-bool tick(int playerIndex, uint32_t surfaceIndex) {
+namespace {
+
+// Carries the automatic refresh under way a slice further and puts its list in place once done.
+// Without one, whether the mod is to start one now, when `mayStart`.
+bool step(int playerIndex, uint32_t surfaceIndex, bool mayStart) {
    const std::byte* game = currentGame();
    const std::byte* player = localPlayer(game, playerIndex);
    if (!player) return false;
@@ -2441,6 +2450,7 @@ bool tick(int playerIndex, uint32_t surfaceIndex) {
       g_job.reset();
       return false;
    }
+   if (!mayStart) return false;
 
    bool current;
    {
@@ -2451,6 +2461,18 @@ bool tick(int playerIndex, uint32_t surfaceIndex) {
    // One that cannot start is not tried again every tick.
    g_nextTry = now + kCycleInterval;
    return true;
+}
+
+} // namespace
+
+bool tick(int playerIndex, uint32_t surfaceIndex) {
+   g_lastTick = Clock::now();
+   return step(playerIndex, surfaceIndex, true);
+}
+
+void frame(int playerIndex, uint32_t surfaceIndex) {
+   if (!g_job || Clock::now() - g_lastTick < kTicksStopped) return;
+   step(playerIndex, surfaceIndex, false);
 }
 
 void stop() {

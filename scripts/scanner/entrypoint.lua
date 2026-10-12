@@ -184,17 +184,32 @@ end
 -- The mod's own UIs take the scanner keys while open; the DLL must leave those keys alone then.
 -- The DLL also keeps its list up to date on its own, starting a refresh when it asks for one; in
 -- remote view that keeps the list's origin, which the camera leaves as Home jumps to entries.
+---@param player LuaPlayer
+local function tick_player(player)
+   native.scanner_mod_ui(player.index, UiRouter.get_router(player.index):is_ui_open())
+   if native.scanner_tick(player.index, player.surface.index) then
+      refresh(player, {
+         automatic = true,
+         keep_origin = player.controller_type == defines.controllers.remote,
+      })
+   end
+end
+
 function mod.on_tick()
    if not native then return end
    for _, player in pairs(game.connected_players) do
-      native.scanner_mod_ui(player.index, UiRouter.get_router(player.index):is_ui_open())
-      if native.scanner_tick(player.index, player.surface.index) then
-         refresh(player, {
-            automatic = true,
-            keep_origin = player.controller_type == defines.controllers.remote,
-         })
-      end
+      tick_player(player)
    end
+end
+
+---After each of the player's events. A paused map, as the map editor's in single player, runs no
+---tick: what the player builds or removes there comes by events, which then start the refresh, and
+---the DLL carries it along on frames.
+---@param pindex integer
+function mod.on_player_event(pindex)
+   if not native or not game.tick_paused then return end
+   local player = assert(game.get_player(pindex))
+   if player.connected then tick_player(player) end
 end
 
 return mod

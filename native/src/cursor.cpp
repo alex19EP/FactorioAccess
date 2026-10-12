@@ -6,6 +6,7 @@
 #include "footprint.h"
 #include "game.h"
 #include "reader.h"
+#include "scanner.h"
 #include "skip.h"
 #include "speech.h"
 #include "viewannounce.h"
@@ -596,6 +597,7 @@ void frame(void* source) {
    const int playerIndex = at<uint16_t>(view->player, layout.playerIndex) + 1;
    checkPin(*view, playerIndex);
    sayDragTurn(playerIndex);
+   scanner::frame(playerIndex, at<uint32_t>(view->view, layout.gameViewSurfaceIndex));
    // A building in hand builds from the tile's centre, wherever the cycle key left the cursor in it.
    if (const std::optional<Position> cursor = currentCursor();
        cursor && *cursor != tileCentre(*cursor) && buildFollowsCursor(playerIndex))

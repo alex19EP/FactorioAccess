@@ -210,6 +210,7 @@ end
 -- the DLL after each of the player's events and when the player joins, before any key.
 EventManager.observe_player_events(function(pindex)
    report_cursor_mode(assert(game.get_player(pindex)))
+   ScannerEntrypoint.on_player_event(pindex)
 end)
 
 EventManager.observe_custom_inputs(function(_, pindex)
