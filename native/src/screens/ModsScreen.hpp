@@ -27,6 +27,9 @@
 // facts a line each ("Version 2.5.0"); the dependencies and incompatibilities, each with the status
 // the game gives it, Enter showing that mod.
 
+#include <chrono>
+#include <string>
+
 #include "WindowScreen.hpp"
 
 namespace fa::screens
@@ -36,6 +39,8 @@ class ModsScreen final : public WindowScreen
 {
 public:
     bool Handles(const agui::Widget* window) const override;
+    const char* TakeSuggestedLanding() override;
+    void OnPop() override;
 
 protected:
     void BuildWindow(graph::GraphBuilder& builder, const agui::Widget* window) override;
@@ -44,6 +49,19 @@ private:
     void BuildManage(graph::GraphBuilder& builder, const agui::Widget* window);
     void BuildExplore(graph::GraphBuilder& builder, const agui::Widget* window);
     void BuildUpdates(graph::GraphBuilder& builder, const agui::Widget* window);
+    // A mod's details, as the stop "info".
+    void AddInfo(graph::GraphBuilder& builder, const agui::Widget* pane);
+
+    std::string _shownMod; // the mod whose details the last build declared
+    // A dependency pressed: focus lands on the details once they show another mod than this.
+    bool _following = false;
+    std::string _followedFrom;
+    std::chrono::steady_clock::time_point _followedAt;
+    bool _landOnMod = false;
+    // The Browse tab's count of mods found, said as it changes while the tab stays shown.
+    std::string _found;
+    bool _browsing = false;    // the last build showed the Browse tab
+    bool _browsingNow = false; // this one does
 };
 
 } // namespace fa::screens

@@ -1,12 +1,15 @@
 #include "ModsScreen.hpp"
 
 #include <algorithm>
+#include <chrono>
+#include <functional>
 #include <optional>
 #include <string>
 #include <vector>
 
 #include "AguiNodes.hpp"
 #include "game.h"
+#include "speech.h"
 #include "text.h"
 #include "vocab.h"
 
@@ -18,6 +21,12 @@ namespace
 
 using agui::Widget;
 using game::layout;
+
+// The details' keys: AddModInfo names its mod's name node from the prefix.
+constexpr const char* kInfoKey = "info";
+constexpr const char* kInfoNameKey = "info/name";
+// How long a pressed dependency's details are waited for before focus stays where it is.
+constexpr auto kFollowWait = std::chrono::seconds(10);
 
 // The first child of the given kind, or null.
 const Widget* ChildOfKind(const Widget* widget, agui::Kind kind)
@@ -124,8 +133,9 @@ std::string JoinedText(const Widget* widget)
 // delete), the description, then the table's facts, a caption and its value a line each. The
 // dependencies and incompatibilities are a list under their caption, each read with the status
 // the game gives in its tooltip ("required, not active"); Enter presses its icon, which shows
-// that mod.
-void AddModInfo(graph::GraphBuilder& builder, const std::string& prefix, const Widget* pane)
+// that mod, calling `followed` first.
+void AddModInfo(
+    graph::GraphBuilder& builder, const std::string& prefix, const Widget* pane, const std::function<void()>& followed)
 {
     builder.StartRow(prefix + "/head");
     const Widget* name = agui::member(pane, layout.modInfoName);
@@ -174,7 +184,11 @@ void AddModInfo(graph::GraphBuilder& builder, const std::string& prefix, const W
                         return status.empty() ? line : line + ", " + status;
                     });
                 if (icon && agui::enabled(icon))
-                    node.OnActivate = [icon]() { agui::press(icon, agui::MouseButton::Left, false, false); };
+                    node.OnActivate = [icon, followed]()
+                    {
+                        followed();
+                        agui::press(icon, agui::MouseButton::Left, false, false);
+                    };
                 builder.AddItem(graph::ControlId::Referenced(mod, key + "/" + std::to_string(d)), std::move(node));
             }
             builder.PopContext();
@@ -194,6 +208,8 @@ bool ModsScreen::Handles(const Widget* window) const { return agui::derivesFrom(
 void ModsScreen::BuildWindow(graph::GraphBuilder& builder, const Widget* window)
 {
     const Widget* tabs = agui::member(window, layout.modsTabs);
+    _shownMod.clear();
+    _browsingNow = false;
 
     builder.BeginStop("tabs");
     if (const Widget* header = ChildOfKind(tabs, agui::Kind::Table))
@@ -227,6 +243,49 @@ void ModsScreen::BuildWindow(graph::GraphBuilder& builder, const Widget* window)
     }
 
     AddFooter(builder, window);
+
+    _browsing = _browsingNow;
+    // A dependency pressed: once the details show another mod (the portal may take a moment to
+    // answer), focus lands on its name, which says it.
+    if (_following)
+    {
+        if (!_shownMod.empty() && _shownMod != _followedFrom)
+        {
+            _following = false;
+            _landOnMod = true;
+        }
+        else if (std::chrono::steady_clock::now() - _followedAt > kFollowWait)
+            _following = false;
+    }
+}
+
+void ModsScreen::AddInfo(graph::GraphBuilder& builder, const Widget* pane)
+{
+    _shownMod = LabelText(agui::member(pane, layout.modInfoName));
+    AddModInfo(builder, kInfoKey, pane,
+        [this]()
+        {
+            _following = true;
+            _followedFrom = _shownMod;
+            _followedAt = std::chrono::steady_clock::now();
+        });
+}
+
+const char* ModsScreen::TakeSuggestedLanding()
+{
+    bool land = _landOnMod;
+    _landOnMod = false;
+    return land ? kInfoNameKey : nullptr;
+}
+
+void ModsScreen::OnPop()
+{
+    WindowScreen::OnPop();
+    _shownMod.clear();
+    _following = false;
+    _landOnMod = false;
+    _found.clear();
+    _browsing = false;
 }
 
 void ModsScreen::BuildExplore(graph::GraphBuilder& builder, const Widget* window)
@@ -297,8 +356,15 @@ void ModsScreen::BuildExplore(graph::GraphBuilder& builder, const Widget* window
     if (ShowsMod(info))
     {
         builder.BeginStop("info");
-        AddModInfo(builder, "info", info);
+        AddInfo(builder, info);
     }
+
+    // How many mods the search found, said when it changes: a search or filter finished.
+    std::string found = Shows(count) ? LabelText(count) : std::string();
+    if (_browsing && !found.empty() && found != _found)
+        speech::say(found, false);
+    _found = found;
+    _browsingNow = true;
 
     // The filters, in groups under the game's headings (expansions, categories, tags, filters),
     // each group a Ctrl+arrow region announced as focus enters it. A portal filter is its checkbox,
@@ -370,7 +436,7 @@ void ModsScreen::BuildManage(graph::GraphBuilder& builder, const Widget* window)
     AddModRows(builder, table);
 
     builder.BeginStop("info");
-    AddModInfo(builder, "info", agui::member(pane, layout.manageModsInfo));
+    AddInfo(builder, agui::member(pane, layout.manageModsInfo));
 
     builder.BeginStop("search");
     const Widget* search = agui::member(pane, layout.manageModsSearch);
@@ -397,7 +463,7 @@ void ModsScreen::BuildUpdates(graph::GraphBuilder& builder, const Widget* window
     if (ShowsMod(info))
     {
         builder.BeginStop("info");
-        AddModInfo(builder, "info", info);
+        AddInfo(builder, info);
     }
 
     // The search field, Update selected and refresh, then the sort buttons.
