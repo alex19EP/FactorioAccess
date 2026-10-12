@@ -5,6 +5,7 @@ This module runs the player loop once and calls each sonifier's
 on_tick_per_player function, avoiding redundant iteration.
 ]]
 
+local EventManager = require("scripts.event-manager")
 local VanillaMode = require("scripts.vanilla-mode")
 local SettingsDecls = require("scripts.settings-decls")
 local SETTING_NAMES = SettingsDecls.SETTING_NAMES
@@ -50,5 +51,19 @@ function mod.on_tick()
       ::continue::
    end
 end
+
+-- The radars run only while their setting is on, so switching one off stops the sounds it was playing.
+local RADAR_BY_SETTING = {
+   [SETTING_NAMES.SONIFICATION_COMBAT_ENEMIES] = EnemyRadar,
+   [SETTING_NAMES.SONIFICATION_COMBAT_SPAWNERS] = SpawnerRadar,
+}
+
+EventManager.on_event(defines.events.on_runtime_mod_setting_changed, function(event)
+   local radar = RADAR_BY_SETTING[event.setting]
+   -- No player when the change was not to a player's current setting
+   local pindex = event.player_index
+   if not radar or not pindex then return end
+   if not game.get_player(pindex).mod_settings[event.setting].value then radar.stop_all(pindex) end
+end)
 
 return mod
