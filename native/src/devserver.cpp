@@ -220,11 +220,36 @@ constexpr uint64_t kFramesHeld = 4;
 
 std::string percentDecoded(std::string_view text);
 
+// Modifiers as "shift", "ctrl+alt": what "down=" and "up=" hold and let go.
+std::optional<Chord> parseModifiers(std::string_view text) {
+   Chord chord{0, false, false, false};
+   size_t start = 0;
+   while (start <= text.size()) {
+      size_t plus = text.find('+', start);
+      if (plus == std::string_view::npos) plus = text.size();
+      const std::string_view mod = text.substr(start, plus - start);
+      if (mod == "shift")
+         chord.shift = true;
+      else if (mod == "ctrl" || mod == "control")
+         chord.ctrl = true;
+      else if (mod == "alt")
+         chord.alt = true;
+      else
+         return std::nullopt;
+      start = plus + 1;
+   }
+   return chord;
+}
+
 std::string runKeys(std::string_view spec) {
    struct Step {
       std::optional<Chord> chord;
       uint64_t wait = 0;
       std::string text;
+      // "down=shift" holds modifiers over the steps after it, until "up=shift": for a game control
+      // that acts while a modifier is held, such as the rail planner's obstacle avoidance.
+      std::optional<Chord> hold;
+      bool holdDown = false;
    };
    std::vector<Step> steps;
    for (std::string_view word : words(spec)) {
@@ -239,6 +264,13 @@ std::string runKeys(std::string_view spec) {
          continue;
       }
       std::string token = lowered(word);
+      if (token.starts_with("down=") || token.starts_with("up=")) {
+         const bool down = token.starts_with("down=");
+         auto modifiers = parseModifiers(std::string_view(token).substr(down ? 5 : 3));
+         if (!modifiers) return std::format("[error] bad modifiers: {}\n", word);
+         steps.push_back({std::nullopt, 0, {}, modifiers, down});
+         continue;
+      }
       if (token == "wait") {
          steps.push_back({std::nullopt, 60, {}});
          continue;
@@ -259,7 +291,23 @@ std::string runKeys(std::string_view spec) {
 
    uint64_t from = speechCursor();
    bool first = true;
+   // The modifiers "down=" holds now.
+   Chord held{0, false, false, false};
    for (const Step& step : steps) {
+      if (step.hold) {
+         // Only what changes: holding a held modifier again, or letting go of one not held, sends
+         // nothing.
+         const Chord& hold = *step.hold;
+         const bool shift = hold.shift && held.shift != step.holdDown;
+         const bool ctrl = hold.ctrl && held.ctrl != step.holdDown;
+         const bool alt = hold.alt && held.alt != step.holdDown;
+         input::injectModifiers(shift, ctrl, alt, step.holdDown);
+         if (shift) held.shift = step.holdDown;
+         if (ctrl) held.ctrl = step.holdDown;
+         if (alt) held.alt = step.holdDown;
+         waitFrames(kFramesForModifiers);
+         continue;
+      }
       if (!step.text.empty()) {
          if (!first) waitFrames(kFramesBetweenKeys);
          first = false;
@@ -274,20 +322,29 @@ std::string runKeys(std::string_view spec) {
       first = false;
       const Chord& chord = *step.chord;
       // Modifiers go down frames before the key and up after the game has acted on it, as a
-      // person's do: the game reads them from its key state when it handles the key.
-      bool modified = chord.shift || chord.ctrl || chord.alt;
+      // person's do: the game reads them from its key state when it handles the key. Held ones
+      // stay down.
+      const bool shift = chord.shift && !held.shift;
+      const bool ctrl = chord.ctrl && !held.ctrl;
+      const bool alt = chord.alt && !held.alt;
+      const bool modified = shift || ctrl || alt;
       if (modified) {
-         input::injectModifiers(chord.shift, chord.ctrl, chord.alt, true);
+         input::injectModifiers(shift, ctrl, alt, true);
          waitFrames(kFramesForModifiers);
       }
-      input::injectKey(chord.key, chord.shift, chord.ctrl, chord.alt, true);
+      const bool withShift = chord.shift || held.shift;
+      const bool withCtrl = chord.ctrl || held.ctrl;
+      const bool withAlt = chord.alt || held.alt;
+      input::injectKey(chord.key, withShift, withCtrl, withAlt, true);
       waitFrames(kFramesHeld);
-      input::injectKey(chord.key, chord.shift, chord.ctrl, chord.alt, false);
+      input::injectKey(chord.key, withShift, withCtrl, withAlt, false);
       if (modified) {
          waitFrames(kFramesForModifiers);
-         input::injectModifiers(chord.shift, chord.ctrl, chord.alt, false);
+         input::injectModifiers(shift, ctrl, alt, false);
       }
    }
+   // Nothing stays held past the request.
+   if (held.shift || held.ctrl || held.alt) input::injectModifiers(held.shift, held.ctrl, held.alt, false);
    waitFrames(kFramesAfterKeys);
 
    std::string out;
