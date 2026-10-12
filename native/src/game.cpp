@@ -532,6 +532,9 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.modsExploreTab, "ModsGui", "exploreTab");
    offset(layout.modsExplorePane, "ModsGui", "exploreTabContents");
    offset(layout.exploreFilters, "ExploreModsPane", "filtersTable");
+   offset(layout.exploreResults, "ExploreModsPane", "resultsTable");
+   offset(layout.exploreResultsCount, "ExploreModsPane", "resultsCountLabel");
+   offset(layout.explorePages, "ExploreModsPane", "paginationWidget");
    offset(layout.searchFilterHits, "SearchFilterWidgets", "hitCountLabel");
    offset(layout.searchFilterExclude, "SearchFilterWidgets", "excludeButton");
    offset(layout.settingsContent, "SettingsGui", "contentFrame");

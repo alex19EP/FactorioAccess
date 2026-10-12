@@ -68,6 +68,13 @@ inline constexpr Word kSubmenu{"fa.native-submenu"};
 inline constexpr Word kAllMods{"fa.native-all-mods"};
 // A mod portal filter left out of the search.
 inline constexpr Word kExcluded{"fa.native-excluded"};
+// A mod portal search result: its author ("by raiguard") and how often it was downloaded, which
+// the game shows with icons only.
+inline constexpr Word kByAuthor{"fa.native-by-author"};
+inline constexpr Word kDownloads{"fa.native-downloads"};
+// The arrow buttons of a list shown a page at a time.
+inline constexpr Word kPreviousPage{"fa.native-previous-page"};
+inline constexpr Word kNextPage{"fa.native-next-page"};
 inline constexpr Word kAlternative{"fa.native-alternative"};
 // A column heading's button, "sort by name".
 inline constexpr Word kSortBy{"fa.native-sort-by"};

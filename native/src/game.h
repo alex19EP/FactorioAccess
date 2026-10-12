@@ -766,6 +766,9 @@ struct Layout {
    uint32_t modsExploreTab = 0;       // ModsGui::exploreTab
    uint32_t modsExplorePane = 0;      // ModsGui::exploreTabContents, std::unique_ptr<ExploreModsPane>
    uint32_t exploreFilters = 0;       // ExploreModsPane::filtersTable
+   uint32_t exploreResults = 0;       // ExploreModsPane::resultsTable, a TableWithSelection, no header
+   uint32_t exploreResultsCount = 0;  // ExploreModsPane::resultsCountLabel
+   uint32_t explorePages = 0;         // ExploreModsPane::paginationWidget
    // SearchFilterWidgets, a mod portal filter: an agui::CheckBox at its start, so these are offsets
    // from the checkbox.
    uint32_t searchFilterHits = 0;     // hitCountLabel, the mods the filter matches

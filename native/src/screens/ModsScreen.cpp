@@ -1,7 +1,9 @@
 #include "ModsScreen.hpp"
 
 #include <algorithm>
+#include <optional>
 #include <string>
+#include <vector>
 
 #include "AguiNodes.hpp"
 #include "game.h"
@@ -23,6 +25,65 @@ const Widget* ChildOfKind(const Widget* widget, agui::Kind kind)
         if (agui::kind(child) == kind)
             return child;
     return nullptr;
+}
+
+// The texts of a mod portal search result, as ExploreModsPane::addResult lays it out: a top flow
+// of the thumbnail and a column of the title line (name, version, "deprecated"), the author and the
+// summary; under it a flow of the category, when it was last updated, the downloads and "Space Age
+// mod", each but the last after an icon.
+struct Result
+{
+    std::vector<const Widget*> title;
+    const Widget* author = nullptr;
+    const Widget* summary = nullptr;
+    std::vector<const Widget*> facts; // category, updated, downloads, then the Space Age label
+};
+
+std::optional<Result> ReadResult(const Widget* cell)
+{
+    std::vector<const Widget*> parts = VisibleChildren(cell);
+    if (parts.size() < 2)
+        return std::nullopt;
+    std::vector<const Widget*> top = VisibleChildren(parts[0]);
+    if (top.empty())
+        return std::nullopt;
+    std::vector<const Widget*> column = VisibleChildren(top.back());
+    std::vector<const Widget*> title =
+        column.empty() ? std::vector<const Widget*>() : FindAll(column[0], "agui::Label");
+    if (column.size() < 3 || title.empty())
+        return std::nullopt;
+    return Result{std::move(title), column[1], column[2], FindAll(parts[1], "agui::Label")};
+}
+
+// "Rate Calculator 3.4.1, by raiguard, Utilities, 2 months ago, 344013 downloads": the name first,
+// so a list is skimmed by its first words.
+std::string ResultLine(const Result& result)
+{
+    // The version follows the name as on screen; "deprecated" is a part of its own.
+    std::vector<std::string> parts{LabelText(result.title[0])};
+    for (std::size_t i = 1; i < result.title.size(); ++i)
+    {
+        std::string phrase = LabelText(result.title[i]);
+        if (phrase.empty())
+            continue;
+        if (i == 1)
+            parts[0] += ' ' + phrase;
+        else
+            parts.push_back(phrase);
+    }
+    if (std::string author = LabelText(result.author); !author.empty())
+        parts.push_back(vocab::kByAuthor(author));
+    for (std::size_t i = 0; i < result.facts.size(); ++i)
+    {
+        std::string fact = LabelText(result.facts[i]);
+        if (fact.empty())
+            continue;
+        parts.push_back(i == 2 ? vocab::kDownloads(fact) : fact);
+    }
+    std::string line;
+    for (const std::string& part : parts)
+        line += (line.empty() ? "" : ", ") + part;
+    return line;
 }
 
 } // namespace
@@ -59,9 +120,64 @@ void ModsScreen::BuildExplore(graph::GraphBuilder& builder, const Widget* window
 {
     const Widget* pane = agui::pointerMember(window, layout.modsExplorePane);
     const Widget* filters = agui::member(pane, layout.exploreFilters);
+    const Widget* results = agui::member(pane, layout.exploreResults);
+    const Widget* count = agui::member(pane, layout.exploreResultsCount);
+    const Widget* pages = agui::member(pane, layout.explorePages);
 
-    builder.BeginStop("content");
-    AddSubtree(builder, "content", pane, {filters});
+    // The sort order, the search field and what the game says about the search (no results, the
+    // portal unreachable).
+    builder.BeginStop("search");
+    AddSubtree(builder, "search", pane, {filters, results, count, pages});
+
+    // A result a line, its summary beside it. Enter selects it, as a click on its row does, and
+    // the mod's details show.
+    builder.BeginStop("results");
+    std::span<const Widget* const> rows = agui::children(results);
+    for (std::size_t row = 0; row < rows.size(); ++row)
+    {
+        std::optional<Result> result = ReadResult(rows[row]);
+        if (!result || !Shows(rows[row]))
+            continue;
+        auto selected = [results, row]()
+        { return agui::selectedRow(results) == row ? std::string(vocab::kSelected) : std::string(); };
+        const Widget* name = result->title[0];
+        graph::NodeVtable mod = TextNode(name, [result = *result]() { return ResultLine(result); });
+        mod.Announcements.emplace_back(selected, true, graph::AnnouncementKinds::Selected);
+        mod.OnActivate = [results, name]() { agui::pressOver(results, name, agui::MouseButton::Left, false, false); };
+        mod.StateText = selected;
+
+        std::string key = "results/" + std::to_string(row);
+        builder.StartLine("result");
+        builder.AddItem(graph::ControlId::Referenced(name, key), std::move(mod));
+        const Widget* summary = result->summary;
+        builder.AddItem(graph::ControlId::Referenced(summary, key + "/summary"),
+            TextNode(summary, [summary]() { return LabelText(summary); }));
+        builder.EndRow();
+        if (agui::selectedRow(results) == row)
+            builder.SetStart(graph::ControlId::Structural(key));
+    }
+    // How many mods the search found, and the pages they are shown on.
+    if (Shows(count))
+        builder.AddItem(graph::ControlId::Referenced(count, "results/count"),
+            TextNode(count, [count]() { return LabelText(count); }));
+    std::vector<const Widget*> pageButtons = VisibleChildren(pages);
+    if (Shows(pages) && !pageButtons.empty())
+    {
+        builder.StartRow("pages");
+        for (std::size_t i = 0; i < pageButtons.size(); ++i)
+        {
+            const Widget* button = pageButtons[i];
+            std::function<std::string()> name;
+            if (i == 0)
+                name = []() { return std::string(vocab::kPreviousPage); };
+            else if (i + 1 == pageButtons.size())
+                name = []() { return std::string(vocab::kNextPage); };
+            else
+                name = [button]() { return vocab::kPage(OwnText(button)); };
+            AddControl(builder, "results/pages/" + std::to_string(i), button, std::move(name));
+        }
+        builder.EndRow();
+    }
 
     // The filters, in groups under the game's headings (expansions, categories, tags, filters),
     // each group a Ctrl+arrow region announced as focus enters it. A portal filter is its checkbox,

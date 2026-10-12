@@ -8,9 +8,13 @@
 //             checkbox comes first.
 //   info    — the selected mod's info: name, changelog and delete, description, version, author,
 //             dependencies
-//   content — on the other tabs, the tab's page read generically
-//   filters — on the Browse and install tab, the mod portal's filters under their headings: a
-//             filter's checkbox with the mods it matches, then the button excluding it
+//   content — on the Updates tab, the tab's page read generically
+// On the Browse and install tab, the mod portal:
+//   search  — the sort order, the search field and the search's status
+//   results — a line per mod found ("Rate Calculator 3.4.1, by raiguard, Utilities, ..."), its
+//             summary beside it, Enter selecting it; then how many were found and the page buttons
+//   filters — the filters under their headings: a filter's checkbox with the mods it matches, then
+//             the button excluding it
 //   buttons — Back and Confirm
 //   search  — the search field and the column sort buttons
 
