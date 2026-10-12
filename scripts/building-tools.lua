@@ -144,18 +144,16 @@ local function holds_rail_planner(player)
    return ghost ~= nil and (ghost.name --[[@as LuaItemPrototype]]).type == "rail-planner"
 end
 
----Reads what rotate did to the rail planner. While planning, the game turns the end of the route,
----but keeps that only in ghost mode (Shift held): otherwise it picks the end itself every frame.
----Not planning, it turns the entity the cursor is on instead, which on_entity_rotated reads.
+---Reads what rotate did to the rail planner. Not planning, it turns the straight rail a click
+---places, in eight steps. While planning, it turns the end of the route, but the game keeps that
+---only in ghost mode (Shift held): otherwise it picks the end itself every frame.
 ---@param pindex integer
----@param player LuaPlayer
-local function read_rail_turn(pindex, player)
+local function read_rail_turn(pindex)
+   local direction = NativeCursor.build_direction(pindex)
    if not NativeCursor.rail_route(pindex) then
-      local selected = player.selected
-      if not (selected and selected.rotatable) then Speech.speak(pindex, { "fa.rail-turn-not-planning" }) end
+      if direction then Speech.speak(pindex, FaUtils.direction_lookup(direction)) end
       return
    end
-   local direction = NativeCursor.build_direction(pindex)
    if direction then
       Speech.speak(pindex, { "fa.rail-end-direction", FaUtils.direction_lookup(direction) })
    else
@@ -169,9 +167,8 @@ function mod.rotate_item_in_hand(event)
    local p = game.get_player(pindex)
    if not check_for_player(pindex) then return end
 
-   local player = assert(p)
-   if holds_rail_planner(player) then
-      read_rail_turn(pindex, player)
+   if holds_rail_planner(assert(p)) then
+      read_rail_turn(pindex)
       return
    end
 
