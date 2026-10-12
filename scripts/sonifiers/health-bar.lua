@@ -66,26 +66,6 @@ function mod.play_shield(pindex, shield_ratio)
    LauncherAudio.patch():file(SHIELD_SOUND_FILE):volume(SHIELD_VOLUME):pan(pan):send(pindex)
 end
 
----Play both health and shield sounds (for on-demand status check)
----@param pindex integer
----@param health_ratio number Current health ratio (0 to 1)
----@param shield_ratio number? Current shield ratio (0 to 1), nil if no shield
-function mod.play_status(pindex, health_ratio, shield_ratio)
-   local compound = LauncherAudio.compound()
-
-   -- Always play health
-   local health_pan = ratio_to_pan(health_ratio)
-   compound:add(LauncherAudio.patch():file(HEALTH_SOUND_FILE):volume(HEALTH_VOLUME):pan(health_pan))
-
-   -- Play shield if present
-   if shield_ratio then
-      local shield_pan = ratio_to_pan(shield_ratio)
-      compound:add(LauncherAudio.patch():file(SHIELD_SOUND_FILE):volume(SHIELD_VOLUME):pan(shield_pan))
-   end
-
-   compound:send(pindex)
-end
-
 ---Get the entity and health/shield state for a player's entity of interest
 ---@param pindex integer
 ---@return LuaEntity? entity The entity being tracked (vehicle or character)
