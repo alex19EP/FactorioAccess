@@ -158,7 +158,8 @@ std::optional<Stamp> stampOf(const std::filesystem::path& file) {
 
 std::optional<Stamp> g_loadedStamp;
 
-// The copies earlier runs left behind, which a crash never got to remove.
+// The copies earlier runs left behind, which a crash never got to remove. A copy another running
+// game still holds stays: deleting it fails.
 void removeOldCopies() {
    WIN32_FIND_DATAW found;
    HANDLE search = FindFirstFileW((g_directory / L"fa_native.live-*.dll").c_str(), &found);
@@ -172,9 +173,11 @@ void load(uint32_t generation) {
    const std::filesystem::path core = g_directory / kCore;
    std::filesystem::path file = core;
    if (g_dev) {
-      // The build replaces fa_native.dll while the copy runs.
+      // The build replaces fa_native.dll while the copy runs. The copy is named for this process:
+      // a game restarting itself (after the Mods window's Confirm) starts the new process while
+      // the old one still holds its copy.
       g_loadedStamp = stampOf(core);
-      file = g_directory / std::format(L"fa_native.live-{}.dll", generation);
+      file = g_directory / std::format(L"fa_native.live-{}-{}.dll", GetCurrentProcessId(), generation);
       if (!CopyFileW(core.c_str(), file.c_str(), FALSE)) {
          note(std::format("Copying fa_native.dll failed ({})", GetLastError()));
          return;

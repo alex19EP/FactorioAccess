@@ -530,8 +530,9 @@ void AddModRows(graph::GraphBuilder& builder, const Widget* table)
         std::string key = "mods/" + std::to_string(row);
         builder.StartRow("mod");
         builder.AddItem(graph::ControlId::Referenced(target, key), std::move(mod));
-        // Then its checkbox, which enables or disables it.
-        AddControl(builder, key + "/enabled", enabled);
+        // Then its checkbox, which enables it (or ticks it for the update), named for the mod: Up and
+        // Down keep the column, so moving down the checkboxes says whose each is.
+        AddControl(builder, key + "/enabled", enabled, name);
         builder.EndRow();
         if (agui::selectedRow(table) == row)
             builder.SetStart(graph::ControlId::Structural(key));
