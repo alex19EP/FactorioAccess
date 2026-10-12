@@ -10,7 +10,9 @@ namespace fa::text {
 
 namespace {
 
-constexpr std::array kFormattingTags{std::string_view("color"), std::string_view("font")};
+// Tags that only style their text; background-color marks the words a mod portal search matched.
+constexpr std::array kFormattingTags{std::string_view("color"), std::string_view("font"),
+                                     std::string_view("background-color")};
 
 thread_local bool g_withoutDecorations = false;
 
