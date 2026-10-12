@@ -9,13 +9,6 @@
 ---@diagnostic disable-next-line: unresolved-require
 require("story")
 
----@class (exact) fa.campaign.Patch
----@field name string
----@field left integer
----@field top integer
----@field width integer
----@field height integer
-
 ---@type fa.campaign.Patch[]
 local PATCHES = {
    { name = "copper-ore", left = -24, top = 4, width = 5, height = 5 },
@@ -247,9 +240,9 @@ script.on_init(function()
 end)
 
 script.on_event(defines.events.on_tick, function(event)
-   if not game.tick_paused then story_update(storage.story, event) end
+   if not game.tick_paused then story_update(storage.story, event, "level-04") end
 end)
 
 script.on_event(KEYS, function(event)
-   story_update(storage.story, event)
+   story_update(storage.story, event, "level-04")
 end)

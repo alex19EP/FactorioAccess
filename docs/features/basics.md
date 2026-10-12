@@ -34,7 +34,7 @@ Force buildt: `shift + [`
 
 Superforce build: `control + shift + left bracket`
 
-Mine: `hold x`
+Mine: hold `right bracket` (the game's mine control)
 
 Instantly mine everything mineable within 10 tiles: `shift + x` (a cheat)
 
@@ -122,7 +122,7 @@ The following sections elaborate on mod features.  Not all interactions are cove
 
 The cursor is where you are looking and operating.  As the cursor moves around, the entity you are operating on changes with it.  This is called selecting an entity.
 
-The most basic use of the cursor is mining.  To do so, get your character within a few tiles of an entity like a resource and hold `x`.  This is also how you remove placed buildings.
+The most basic use of the cursor is mining.  To do so, put the cursor on an entity and hold `right bracket`.  Ore must be right next to your character; rocks, trees and buildings can be mined from as far as you can build.  This is also how you remove placed buildings.
 Note that some entities take a while to mine.  An example of such is the rocket pieces in the initial crash site, all of which may be removed.
 
 What the game calls the hand is not your character's hand, but your virtual hand.  Your hand's position is always at the cursor.

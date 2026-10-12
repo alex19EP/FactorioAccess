@@ -2,6 +2,14 @@
 -- Types for the game's core/lualib/story.lua, which campaign levels load with require("story").
 -- The lint's API library has no lualib, so the functions the levels use are declared here.
 
+---A rectangle of ore a level creates, in tiles.
+---@class (exact) fa.campaign.Patch
+---@field name string
+---@field left integer
+---@field top integer
+---@field width integer
+---@field height integer
+
 ---@class fa.campaign.StoryNode
 ---@field name string?
 ---@field init (fun(event: EventData, story: table): boolean?)?
