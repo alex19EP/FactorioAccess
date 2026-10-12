@@ -547,7 +547,12 @@ private:
             return;
         }
 
-        _builder.StartRow(rowKey);
+        // A field being typed in keeps Left and Right for its caret, which would strand what follows
+        // it in a row (a new surface's name and its confirm button): such items go one under another.
+        const bool column = std::ranges::any_of(
+            leaves, [](const Widget* leaf) { return agui::kind(leaf) == Kind::TextBox && !agui::readOnly(leaf); });
+        if (!column)
+            _builder.StartRow(rowKey);
         for (std::size_t i = 0; i < leaves.size(); ++i)
         {
             const Widget* leaf = leaves[i];
@@ -573,7 +578,8 @@ private:
             }
             Add(cellKey, ControlNode(leaf));
         }
-        _builder.EndRow();
+        if (!column)
+            _builder.EndRow();
     }
 
     // A header grid (IsHeaderGrid): a row per item, in a context naming it (with the icons it
@@ -749,6 +755,9 @@ std::string NameOf(const Widget* widget)
     // A title bar's X: no text, no tooltip.
     if (name.empty() && agui::derivesFrom(widget, "CloseButton"))
         name = vocab::kClose;
+    // A bare check mark: confirm what was filled in beside it.
+    if (name.empty() && agui::showsCheckMark(widget))
+        name = vocab::kConfirm;
     return name;
 }
 

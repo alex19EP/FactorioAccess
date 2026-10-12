@@ -1,5 +1,6 @@
 #include "selection.h"
 
+#include "agui.h"
 #include "game.h"
 #include "speech.h"
 #include "text.h"
@@ -29,6 +30,13 @@ T at(const void* object, uint32_t offset) {
    std::memcpy(&value, static_cast<const std::byte*>(object) + offset, sizeof(value));
    return value;
 }
+
+template <class T>
+struct MsvcVector {
+   T* first;
+   T* last;
+   T* end;
+};
 
 // SelectionMode: Nothing (no selection is open), Select, AlternativeSelect (Shift),
 // SuperForcedSelect, ReverseSelect.
@@ -123,12 +131,40 @@ int32_t detourExpectedMode(const void* source, bool custom) {
    return view ? selectionMode(view) : kNothing;
 }
 
+// Whether `player` is in the map editor's Scripting editor with its position tool, whose select
+// press belongs to the build key (create a point) and the open-gui key (select one).
+bool scriptPositionTool(const std::byte* player) {
+   const auto* controller = player ? at<const std::byte*>(player, layout.playerController) : nullptr;
+   if (!controller) return false;
+   using GetType = uint8_t (*)(const void*);
+   if ((*reinterpret_cast<const GetType* const*>(controller))[layout.controllerGetType](controller) !=
+       layout.controllerEditor)
+      return false;
+   const std::byte* editors = controller + layout.editorControllerEditors;
+   if (at<uint8_t>(editors, layout.mapEditorsActive) != layout.editorTypeScripting) return false;
+   const auto& list = *reinterpret_cast<const MsvcVector<const std::byte* const>*>(editors + layout.mapEditorsList);
+   for (const std::byte* const* editor = list.first; editor != list.last; ++editor) {
+      if (agui::className(reinterpret_cast<const agui::Widget*>(*editor)) != "ScriptingEditor") continue;
+      const auto& tools =
+         *reinterpret_cast<const MsvcVector<const std::byte* const>*>(*editor + layout.editorBaseTools);
+      const size_t active = at<uint8_t>(*editor, layout.editorBaseActiveTool);
+      return active < static_cast<size_t>(tools.last - tools.first) &&
+             tools.first[active] == at<const std::byte*>(*editor, layout.scriptingPositionTool);
+   }
+   return false;
+}
+
 using SelectionToolFunction = bool (*)(void* source, int32_t mode, int32_t customMode);
 SelectionToolFunction g_selectionToolOriginal = nullptr;
 using FinishSelectionFunction = void (*)(void* source);
 
-// A select press while a selection is open finishes it, as the game does for a gamepad.
+// A select press while a selection is open finishes it, as the game does for a gamepad. With the
+// Scripting editor's position tool the press is left to the build and open-gui keys, as its
+// instructions say.
 bool detourSelectionTool(void* source, int32_t mode, int32_t customMode) {
+   if (mode == kSelect && world::drivesCursor() &&
+       scriptPositionTool(at<const std::byte*>(source, layout.inputSourcePlayer)))
+      return false;
    if (std::byte* view = openSelection()) {
       const int32_t open = selectionMode(view);
       reinterpret_cast<FinishSelectionFunction>(layout.finishSelection)(source);
@@ -189,13 +225,6 @@ struct MsvcString {
 std::string_view view(const MsvcString& string) {
    return {string.capacity >= sizeof(string.buffer) ? string.pointer : string.buffer, string.size};
 }
-
-template <class T>
-struct MsvcVector {
-   T* first;
-   T* last;
-   T* end;
-};
 
 // The prototype an ID indexes in a PrototypeList<T>::indexToPrototype vector, or null.
 const std::byte* prototypeAt(uintptr_t list, size_t index) {

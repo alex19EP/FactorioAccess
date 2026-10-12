@@ -80,11 +80,31 @@ std::string speedLine(const std::byte* map) {
    return text::speakable(line);
 }
 
-// The name of the scripting area or position `id` on `surface`, from one of ExtraScriptData's maps
-// by surface; nothing when it has none.
-std::optional<std::string> scriptName(const std::byte* byShape, uint32_t keyOffset, uint32_t vectorOffset,
-                                      uint32_t surface, uint32_t id) {
-   const auto* head = at<const MapNode*>(byShape, 0);
+// The surface named `name` as the Surfaces editor lists it: "nauvis (Nauvis)", with the planet's
+// icon, or the name alone when the display name is the same.
+std::string surfaceLine(const std::byte* map, std::string_view name) {
+   const auto* first = at<const std::byte* const*>(map, layout.mapSurfaces);
+   const auto* last = at<const std::byte* const*>(map, layout.mapSurfaces + sizeof(void*));
+   for (const std::byte* const* surface = first; surface != last; ++surface) {
+      if (!*surface || view(at<MsvcString>(*surface, layout.surfaceName)) != name) continue;
+      MsvcString shown{};
+      reinterpret_cast<MsvcString* (*)(const void*, MsvcString*)>(layout.surfaceDisplayName)(*surface, &shown);
+      std::string line(name);
+      if (view(shown) != name) line += " (" + std::string(view(shown)) + ")";
+      destroy(shown);
+      return text::speakable(line);
+   }
+   return text::speakable(name);
+}
+
+// The scripting areas or positions on `surface`, from one of ExtraScriptData's maps by surface.
+std::vector<const std::byte*> scriptObjects(const std::byte* map, bool areas, uint32_t surface) {
+   const auto* data = at<const std::byte*>(map, layout.mapExtraScriptData);
+   if (!data) return {};
+   const uint32_t keyOffset = areas ? layout.scriptRectangleNodeValue : layout.scriptPositionNodeValue;
+   const uint32_t vectorOffset = areas ? layout.scriptRectangleNodeVector : layout.scriptPositionNodeVector;
+   const auto* head = at<const MapNode*>(data + (areas ? layout.scriptRectangles : layout.scriptPositions), 0);
+   std::vector<const std::byte*> found;
    std::vector<const MapNode*> pending{head->parent};
    while (!pending.empty()) {
       const MapNode* node = pending.back();
@@ -95,11 +115,31 @@ std::optional<std::string> scriptName(const std::byte* byShape, uint32_t keyOffs
       if (at<uint32_t>(node, keyOffset) != surface) continue;
       const auto* first = at<const std::byte* const*>(node, vectorOffset);
       const auto* last = at<const std::byte* const*>(node, vectorOffset + sizeof(void*));
-      for (const std::byte* const* object = first; object != last; ++object)
-         if (at<uint32_t>(*object, layout.scriptDataId) == id)
-            return std::string(view(at<MsvcString>(*object, layout.scriptDataName)));
+      found.insert(found.end(), first, last);
    }
+   return found;
+}
+
+std::string scriptName(const std::byte* object) {
+   return text::speakable(view(at<MsvcString>(object, layout.scriptDataName)));
+}
+
+// The name of the scripting area or position `id` on `surface`; nothing when it has none.
+std::optional<std::string> scriptNameById(const std::byte* map, bool areas, uint32_t surface, uint32_t id) {
+   for (const std::byte* object : scriptObjects(map, areas, surface))
+      if (at<uint32_t>(object, layout.scriptDataId) == id) return scriptName(object);
    return std::nullopt;
+}
+
+// The name of the newest scripting area or position on `surface` (the highest id): the one just
+// created. Nothing when it has none.
+std::optional<std::string> newestScriptName(const std::byte* map, bool areas, uint32_t surface) {
+   const std::byte* newest = nullptr;
+   for (const std::byte* object : scriptObjects(map, areas, surface))
+      if (!newest || at<uint32_t>(object, layout.scriptDataId) > at<uint32_t>(newest, layout.scriptDataId))
+         newest = object;
+   if (!newest) return std::nullopt;
+   return scriptName(newest);
 }
 
 // The tick a tick once was asked at, while the map has not left it.
@@ -120,17 +160,11 @@ void detourActionPerformed(void* handler, const std::byte* action, std::byte* co
 
    // A removed scripting object is named before it is gone.
    std::optional<std::string> removed;
+   const uint32_t surface = at<uint32_t>(action, layout.editorActionSurface);
    const bool area = type == layout.editorRemoveScriptRectangle;
-   if ((area || type == layout.editorRemoveScriptPosition) && map) {
-      const auto* data = at<const std::byte*>(map, layout.mapExtraScriptData);
-      const uint32_t surface = at<uint32_t>(action, layout.editorActionSurface);
-      const uint32_t id = at<uint32_t>(action, layout.editorActionSurface + layout.surfaceAndDataData);
-      if (data)
-         removed = area ? scriptName(data + layout.scriptRectangles, layout.scriptRectangleNodeValue,
-                                     layout.scriptRectangleNodeVector, surface, id)
-                        : scriptName(data + layout.scriptPositions, layout.scriptPositionNodeValue,
-                                     layout.scriptPositionNodeVector, surface, id);
-   }
+   if ((area || type == layout.editorRemoveScriptPosition) && map)
+      removed = scriptNameById(map, area, surface,
+                               at<uint32_t>(action, layout.editorActionSurface + layout.surfaceAndDataData));
 
    g_actionPerformedOriginal(handler, action, controller);
    if (!map) return;
@@ -150,10 +184,19 @@ void detourActionPerformed(void* handler, const std::byte* action, std::byte* co
    } else if (type == layout.editorCloneDestination) {
       speech::say(vocab::kCloneDestinationSet, true);
    } else if (removed) {
-      const std::string name = text::speakable(*removed);
-      speech::say(area ? vocab::kScriptAreaRemoved(name) : vocab::kScriptPositionRemoved(name), true);
+      speech::say(area ? vocab::kScriptAreaRemoved(*removed) : vocab::kScriptPositionRemoved(*removed), true);
+   } else if (type == layout.editorCreateScriptRectangle || type == layout.editorCreateScriptPosition) {
+      const bool rectangle = type == layout.editorCreateScriptRectangle;
+      if (const std::optional<std::string> created = newestScriptName(map, rectangle, surface))
+         speech::say(rectangle ? vocab::kScriptAreaCreated(*created) : vocab::kScriptPositionCreated(*created), true);
+   } else if (type == layout.editorSelectScriptRectangle || type == layout.editorSelectScriptPosition) {
+      const bool rectangle = type == layout.editorSelectScriptRectangle;
+      const uint32_t id = at<uint32_t>(action, layout.editorActionSurface + layout.surfaceAndDataData);
+      if (const std::optional<std::string> selected = scriptNameById(map, rectangle, surface, id))
+         speech::say(rectangle ? vocab::kScriptAreaSelected(*selected) : vocab::kScriptPositionSelected(*selected),
+                     true);
    } else if (type == layout.editorSwitchToSurface) {
-      speech::say(text::speakable(view(at<MsvcString>(action, layout.editorActionString))), true);
+      speech::say(surfaceLine(map, view(at<MsvcString>(action, layout.editorActionString))), true);
    }
 }
 

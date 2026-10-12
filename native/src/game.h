@@ -157,6 +157,19 @@ struct Layout {
    uint32_t gameViewSelectionSurface = 0;
    uint32_t gameViewSelectionPosition = 0;
    uint32_t gameViewSelectionStartTime = 0;
+   // The map editor's Scripting editor takes every select press as its own selection
+   // (ScriptingEditor::usesCustomSelection is true whatever tool is active), so with its position
+   // tool the build key, which the game's instructions say creates a point, never gets the press.
+   // The editors (EditorController::editors, MapEditors: a vector of std::unique_ptr<EditorBase>
+   // and the active EditorType), an editor's tools (std::vector<EditorTool*>) and active index, and
+   // the Scripting editor's position tool (std::unique_ptr<CursorTool>).
+   uint32_t editorControllerEditors = 0; // EditorController::editors, MapEditors
+   uint32_t mapEditorsList = 0;          // MapEditors::editors
+   uint32_t mapEditorsActive = 0;        // MapEditors::activeEditorType, EditorType
+   uint32_t editorTypeScripting = 0;     // EditorType::Scripting
+   uint32_t editorBaseTools = 0;         // EditorBase::tools
+   uint32_t editorBaseActiveTool = 0;    // EditorBase::activeToolIndex
+   uint32_t scriptingPositionTool = 0;   // ScriptingEditor::positionCursorTool
    // What the open selection takes in. Every frame CursorRenderer::renderSelection (the world) and
    // SelectionToolChartRenderer::prepare (the map, but not for a deconstruction planner) build a
    // SelectionToolRenderer for the box between the start corner and the cursor, count what the
@@ -507,6 +520,7 @@ struct Layout {
    uint32_t globalUtilitySprites = 0;      // GlobalContext::utilitySprites.value, UtilitySprites*
    uint32_t utilitySpritesSize = 0;
    uint32_t utilitySpritesMapping = 0;
+   uint32_t checkMarkSprite = 0;           // UtilitySprites::checkMark, Sprite
    // Alt mode icons: void DrawQueue::drawInfoIcon(Sprite const*, QualityCondition, MapPosition const&,
    // double scale, DrawingFlags, RenderLayer::Enum, Vector const&, signed char, Color) draws every
    // one (recipe, contents, filters, modules, fluid, ammo, signals ...), its Sprite owned by the
@@ -660,6 +674,7 @@ struct Layout {
    uint32_t slotKeyDown = 0;     // bool keyDown(KeyEvent const&)
    uint32_t slotKeyUp = 0;       // bool keyUp(KeyEvent const&)
    uint32_t slotFocus = 0;       // void focus(NamedBool<TabbedInTag>)
+   uint32_t slotClearFocus = 0;  // void clearFocus(): drops the keyboard focus if the widget has it
    uint32_t slotIsFocusable = 0; // bool isFocusable() const
 
    // agui::Label keeps its caption here instead of in Widget::text.
@@ -1421,6 +1436,13 @@ struct Layout {
    uint32_t editorResourceVariation = 0, editorTileVariation = 0, editorSwitchToSurface = 0;
    uint32_t editorCloneSource = 0, editorCloneDestination = 0;
    uint32_t editorRemoveScriptRectangle = 0, editorRemoveScriptPosition = 0;
+   uint32_t editorCreateScriptRectangle = 0, editorCreateScriptPosition = 0;
+   uint32_t editorSelectScriptRectangle = 0, editorSelectScriptPosition = 0;
+   // A surface as the Surfaces editor lists it: its name, then its display name in brackets when
+   // that differs (std::string Surface::getDisplayName() const: the localised name, a planet's
+   // icon and name, or a platform's name).
+   uint32_t surfaceName = 0;             // Surface::name, std::string
+   uintptr_t surfaceDisplayName = 0;
    // The game's speed and pause as the Time editor shows them: std::string GameSpeed::str() const
    // ("x 2", "/ 4", normal), then " (paused)" while the map is paused.
    uint32_t mapGameSpeed = 0;            // Map::gameSpeed, std::unique_ptr<GameSpeed>

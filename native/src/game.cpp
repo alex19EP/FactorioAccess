@@ -89,6 +89,13 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.gameViewSelectionSurface, "GameView", "startSelectionSurface");
    offset(layout.gameViewSelectionPosition, "GameView", "selectionPosition");
    offset(layout.gameViewSelectionStartTime, "GameView", "selectionStartTime");
+   offset(layout.editorControllerEditors, "EditorController", "editors");
+   offset(layout.mapEditorsList, "MapEditors", "editors");
+   offset(layout.mapEditorsActive, "MapEditors", "activeEditorType");
+   enumerator(layout.editorTypeScripting, "EditorType", "Scripting");
+   offset(layout.editorBaseTools, "EditorBase", "tools");
+   offset(layout.editorBaseActiveTool, "EditorBase", "activeToolIndex");
+   offset(layout.scriptingPositionTool, "ScriptingEditor", "positionCursorTool");
    address(layout.drawSelectionCounts, "?drawSelectionCounts@SelectionToolRenderer@@QEAAXAEAVDrawQueue@@AEBVColor@@@Z");
    offset(layout.selectionRendererCursor, "SelectionToolRenderer", "cursorPosition");
    offset(layout.selectionRendererStart, "SelectionToolRenderer", "selectionStart");
@@ -337,6 +344,7 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.globalUtilitySprites, "GlobalContext", "utilitySprites.value");
    size(layout.utilitySpritesSize, "UtilitySprites");
    offset(layout.utilitySpritesMapping, "UtilitySprites", "spritesMapping");
+   offset(layout.checkMarkSprite, "UtilitySprites", "checkMark");
    address(layout.drawInfoIcon,
            "?drawInfoIcon@DrawQueue@@QEAAXPEBVSprite@@VQualityCondition@@AEBVMapPosition@@NVDrawingFlags@@"
            "W4Enum@RenderLayer@@AEBVVector@@CVColor@@@Z");
@@ -449,6 +457,7 @@ bool resolve(pdb::SymbolTable& symbols) {
    slot(layout.slotKeyDown, "keyDown");
    slot(layout.slotKeyUp, "keyUp");
    slot(layout.slotFocus, "focus");
+   slot(layout.slotClearFocus, "clearFocus");
    slot(layout.slotIsFocusable, "isFocusable");
 
    offset(layout.labelText, "agui::Label", "resizableText.data");
@@ -1006,6 +1015,13 @@ bool resolve(pdb::SymbolTable& symbols) {
    enumerator(layout.editorCloneDestination, "EditorActionType", "SetCloneBrushDestinationSurfaceAndPosition");
    enumerator(layout.editorRemoveScriptRectangle, "EditorActionType", "RemoveScriptRectangle");
    enumerator(layout.editorRemoveScriptPosition, "EditorActionType", "RemoveScriptPosition");
+   enumerator(layout.editorCreateScriptRectangle, "EditorActionType", "CreateScriptRectangle");
+   enumerator(layout.editorCreateScriptPosition, "EditorActionType", "CreateScriptPosition");
+   enumerator(layout.editorSelectScriptRectangle, "EditorActionType", "SelectScriptRectangle");
+   enumerator(layout.editorSelectScriptPosition, "EditorActionType", "SelectScriptPosition");
+   offset(layout.surfaceName, "Surface", "name");
+   address(layout.surfaceDisplayName,
+           "?getDisplayName@Surface@@QEBA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ");
    offset(layout.mapGameSpeed, "Map", "gameSpeed");
    address(layout.gameSpeedStr,
            "?str@GameSpeed@@QEBA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ");

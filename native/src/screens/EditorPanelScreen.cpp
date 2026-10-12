@@ -69,9 +69,26 @@ void EditorPanelScreen::Build(graph::GraphBuilder& builder)
     }
 }
 
+bool EditorPanelScreen::TypingIn(const graph::GraphNode& node) { return TypingInField(node); }
+
+void EditorPanelScreen::OnCursorMoved(const graph::GraphNode& node) { FollowCursor(node); }
+
 void EditorPanelScreen::OnEscape() { parts::close(); }
 
-void EditorPanelScreen::OnPop() { _panel = nullptr; }
+void EditorPanelScreen::OnPop()
+{
+    // The panel stays on screen when left: a field typed in would keep the game's keyboard focus,
+    // and with it the keys meant for the map.
+    if (_panel && FindPanel() == _panel)
+        if (const Widget* focused = agui::focusedWidget(agui::applicationGui()))
+            for (const Widget* ancestor = focused; ancestor; ancestor = agui::parent(ancestor))
+                if (ancestor == _panel)
+                {
+                    agui::clearFocus(focused);
+                    break;
+                }
+    _panel = nullptr;
+}
 
 std::string EditorPanelScreen::LeaveLine() const
 {

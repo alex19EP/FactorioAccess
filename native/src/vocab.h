@@ -71,6 +71,7 @@ inline constexpr Word kAlternative{"fa.native-alternative"};
 inline constexpr Word kSortBy{"fa.native-sort-by"};
 inline constexpr Word kContinue{"fa.native-continue"};
 inline constexpr Word kClose{"fa.native-close"};
+inline constexpr Word kConfirm{"fa.native-confirm"};
 inline constexpr Word kAdjusting{"fa.native-adjusting"};
 
 inline constexpr Word kEmpty{"fa.native-empty"};
@@ -150,6 +151,10 @@ inline constexpr Word kCloneSourceSet{"fa.native-clone-source-set"};
 inline constexpr Word kCloneDestinationSet{"fa.native-clone-destination-set"};
 inline constexpr Word kScriptAreaRemoved{"fa.native-script-area-removed"};
 inline constexpr Word kScriptPositionRemoved{"fa.native-script-position-removed"};
+inline constexpr Word kScriptAreaCreated{"fa.native-script-area-created"};
+inline constexpr Word kScriptPositionCreated{"fa.native-script-position-created"};
+inline constexpr Word kScriptAreaSelected{"fa.native-script-area-selected"};
+inline constexpr Word kScriptPositionSelected{"fa.native-script-position-selected"};
 // The HUD's status: research, the alert categories, the scenario's goal and the bars.
 inline constexpr Word kStatus{"fa.native-status"};
 inline constexpr Word kAlerts{"fa.native-alerts"};

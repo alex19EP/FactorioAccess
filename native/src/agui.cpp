@@ -510,6 +510,14 @@ std::string_view iconName(const Widget* widget) {
    return localisedName(owner);
 }
 
+bool showsCheckMark(const Widget* widget) {
+   const std::byte* button = asBase(widget, ".?AVIconButton@@");
+   const auto* context = *reinterpret_cast<const std::byte* const*>(layout.globalContext);
+   const auto* sprites = context ? at<const std::byte*>(context, layout.globalUtilitySprites) : nullptr;
+   return button && sprites &&
+          at<const std::byte*>(button, layout.iconButtonSprite) == sprites + layout.checkMarkSprite;
+}
+
 namespace {
 
 // The prototype an ID indexes in a PrototypeList<T>::indexToPrototype vector, or null.
@@ -1608,6 +1616,8 @@ void focus(const Widget* widget) {
    // NamedBool<TabbedInTag> is a one-byte class passed by value, so it travels as a bool.
    callVirtual<void>(widget, layout.slotFocus, true);
 }
+
+void clearFocus(const Widget* widget) { callVirtual<void>(widget, layout.slotClearFocus); }
 
 namespace {
 

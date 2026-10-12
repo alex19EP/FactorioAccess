@@ -172,6 +172,10 @@ std::vector<const Widget*> listBoxItems(const Widget* listBox);
 // Translates through the game's locale, so main thread only.
 std::string_view iconName(const Widget* widget);
 
+// Whether an IconButton shows the game's check mark (UtilitySprites::checkMark), a confirm button
+// with no text or tooltip (the map editor's new surface).
+bool showsCheckMark(const Widget* widget);
+
 // What an item slot of the game's inventory windows (InventoryGuiSlot) holds: the item's name and
 // count, and its quality unless that is normal; an empty slot has a count of 0 and no name. Names
 // are translated, so main thread only. `data` is the stack's own Item (a blueprint, a book), null
@@ -650,6 +654,8 @@ unsigned selectedRow(const Widget* table);
 bool isFocusable(const Widget* widget);
 // Gives the widget the game's keyboard focus, as Tab would.
 void focus(const Widget* widget);
+// Takes the game's keyboard focus from the widget, if it has it.
+void clearFocus(const Widget* widget);
 // Greys the widget out or back in (Widget::setEnabled).
 void setEnabled(const Widget* widget, bool enabled);
 // Replaces the widget's tooltip with plain text, as the game's own Widget::setToolTip does.

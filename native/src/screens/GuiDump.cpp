@@ -117,6 +117,8 @@ void DumpWidget(State& state, const Widget* window, const Widget* widget, int de
     if (std::string_view icon = agui::iconName(widget); !icon.empty())
         line += std::format(" icon=\"{}\"", icon);
     line += StateOf(widget);
+    if (widget == agui::focusedWidget(agui::applicationGui()))
+        line += " focused";
     state.text += line;
     state.text += '\n';
 
