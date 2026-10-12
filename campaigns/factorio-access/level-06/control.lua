@@ -338,7 +338,7 @@ end)
 
 ---@param event EventData
 local function update(event)
-   if player().character then story_update(storage.story, event) end
+   if player().character then story_update(storage.story, event, "level-07") end
 end
 
 script.on_event(defines.events.on_tick, function(event)
