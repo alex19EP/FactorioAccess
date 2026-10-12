@@ -25,7 +25,9 @@
 // It reaches only what a sighted player's mouse reaches: in the character and god views, whose
 // camera stays on the player, the tiles on the screen, and the movement keys stop at the edge. In
 // remote view the camera follows the cursor, moved as a sighted player's map drag moves it, and a
-// camera the game moves (an alert, a pin, a search result) brings the cursor along.
+// camera the game moves (an alert, a pin, a search result) brings the cursor along. The map editor's
+// camera follows it too, moved by the mod's Lua (the game takes no map drag there), and the arrows
+// that fly the editor bring the cursor along.
 namespace fa::cursor {
 
 // From the mod's Lua every tick, for this client's player: whether the mod is in vanilla mode (the

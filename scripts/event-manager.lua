@@ -4,6 +4,7 @@
 local Cursor = require("scripts.cursor")
 local PlayerInit = require("scripts.player-init")
 local VanillaMode = require("scripts.vanilla-mode")
+local ViewLimit = require("scripts.view-limit")
 
 local mod = {}
 
@@ -240,7 +241,9 @@ function mod._dispatch_event(event_id, event)
    end
 
    if cursor_event then
-      Cursor.end_event(pindex --[[@as integer]])
+      ---@cast pindex integer
+      ViewLimit.follow_cursor(pindex, Cursor.tile(pindex))
+      Cursor.end_event(pindex)
    end
 
    if pindex then

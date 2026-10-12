@@ -4,7 +4,8 @@ The cursor reaches what a sighted player's mouse reaches.
 In the character view the camera stays on the character, so the mouse can point only at the tiles on
 the screen around it. The DLL keeps the cursor on those tiles (native/src/cursor.h): the movement
 keys stop at the edge, walking or zooming in pulls the cursor back, and a jump to anything off the
-screen opens remote view there. In remote view the camera follows the cursor.
+screen opens remote view there. In remote view the camera follows the cursor, and in the map editor
+too (mod.follow_cursor).
 
 God mode (the sandbox, no character) is the same: its camera stays on the god's position.
 
@@ -53,6 +54,20 @@ function mod.allows(pindex, position)
    if not left then return true end
    local x, y = math.floor(position.x), math.floor(position.y)
    return x >= left and x <= right and y >= top and y <= bottom
+end
+
+---In the map editor the camera follows the cursor, as in remote view: after a key, the editor moves
+---onto the cursor's tile when the cursor left the camera's. The game takes no map drag there, so the
+---DLL cannot pan it. The tile comes from the key's event, the same on every peer. The arrows still
+---fly the editor, and the DLL brings the cursor along.
+---@param pindex integer
+---@param tile fa.Tile
+function mod.follow_cursor(pindex, tile)
+   local player = assert(game.get_player(pindex))
+   if player.controller_type ~= defines.controllers.editor then return end
+   local position = player.position --[[@as MapPosition.struct]]
+   if math.floor(position.x) == tile.x and math.floor(position.y) == tile.y then return end
+   player.teleport({ tile.x + 0.5, tile.y + 0.5 })
 end
 
 ---For movement keys that cannot go further: says the cursor is at the edge of the screen.
