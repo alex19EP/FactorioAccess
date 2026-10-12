@@ -39,13 +39,15 @@ UiRouter.register_ui(test_tablist_focus)
 
 describe("Assembling Machine UI", function()
    it("should open recipe selection tab for assembling machine", function(ctx)
+      ---@type LuaPlayer
       local player
+      ---@type LuaEntity
       local assembler
       local opened = false
       local closed = false
 
       ctx:init(function()
-         player = game.get_player(1)
+         player = assert(game.get_player(1))
          -- Enable some recipes for testing
          player.force.recipes["iron-gear-wheel"].enabled = true
          player.force.recipes["electronic-circuit"].enabled = true
@@ -54,11 +56,11 @@ describe("Assembling Machine UI", function()
 
       ctx:at_tick(1, function()
          -- Create an assembling machine
-         assembler = player.surface.create_entity({
+         assembler = assert(player.surface.create_entity({
             name = "assembling-machine-1",
             position = { 0, 0 },
             force = player.force,
-         })
+         }))
          assert(assembler and assembler.valid)
       end)
 
@@ -89,11 +91,13 @@ describe("Assembling Machine UI", function()
    end)
 
    it("should set recipe when clicking on a recipe item", function(ctx)
+      ---@type LuaPlayer
       local player
+      ---@type LuaEntity
       local assembler
 
       ctx:init(function()
-         player = game.get_player(1)
+         player = assert(game.get_player(1))
          -- Enable recipes
          player.force.recipes["iron-gear-wheel"].enabled = true
          player.force.recipes["electronic-circuit"].enabled = true
@@ -101,11 +105,11 @@ describe("Assembling Machine UI", function()
 
       ctx:at_tick(1, function()
          -- Create assembling machine
-         assembler = player.surface.create_entity({
+         assembler = assert(player.surface.create_entity({
             name = "assembling-machine-1",
             position = { 0, 0 },
             force = player.force,
-         })
+         }))
       end)
 
       ctx:at_tick(2, function()
@@ -124,11 +128,13 @@ describe("Assembling Machine UI", function()
    end)
 
    it("should focus on current recipe when tab gains focus", function(ctx)
+      ---@type LuaPlayer
       local player
+      ---@type LuaEntity
       local assembler
 
       ctx:init(function()
-         player = game.get_player(1)
+         player = assert(game.get_player(1))
          -- Enable multiple recipes
          player.force.recipes["iron-gear-wheel"].enabled = true
          player.force.recipes["electronic-circuit"].enabled = true
@@ -138,11 +144,11 @@ describe("Assembling Machine UI", function()
 
       ctx:at_tick(1, function()
          -- Create assembling machine with a recipe set
-         assembler = player.surface.create_entity({
+         assembler = assert(player.surface.create_entity({
             name = "assembling-machine-1",
             position = { 0, 0 },
             force = player.force,
-         })
+         }))
          assembler.set_recipe("electronic-circuit")
       end)
 

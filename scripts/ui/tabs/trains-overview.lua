@@ -49,7 +49,7 @@ local function build_train_rows(builder, trains)
       builder:add_clickable("train-" .. train_id, function(ctx)
          if stock then
             ctx.message:fragment(TrainHelpers.get_name(stock))
-            local pos = stock.position
+            local pos = stock.position --[[@as MapPosition.struct]]
             ctx.message:fragment({ "fa.trains-overview-at-position", math.floor(pos.x), math.floor(pos.y) })
             TrainHelpers.push_state_message(ctx.message, stock)
          else

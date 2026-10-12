@@ -43,10 +43,11 @@ local function build_chapter_text_tab(chapter)
          elseif result.status == MessageLists.STATUS.PENDING then
             menu:add_label("pending", { "fa.tutorial-loading" })
          elseif result.status == MessageLists.STATUS.READY then
-            if #result.messages == 0 then
+            local messages = assert(result.messages)
+            if #messages == 0 then
                menu:add_label("empty", { "fa.tutorial-text-empty" })
             else
-               for i, message in ipairs(result.messages) do
+               for i, message in ipairs(messages) do
                   menu:add_label("msg_" .. i, message)
                end
                menu:add_label("end-of-chapter", { "fa.tutorial-end-of-chapter" })
@@ -104,7 +105,7 @@ local function build_chapter_blueprints_tab(chapter)
 end
 
 ---Build tabs for the tutorial UI
----@param pindex number
+---@param pindex integer
 ---@return fa.ui.TabstopDescriptor[]?
 local function build_tutorial_tabs(pindex)
    local chapters = TutorialData.get_chapters()

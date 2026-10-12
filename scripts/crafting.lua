@@ -3,22 +3,24 @@
 local mod = {}
 
 --Returns a navigable list of all unlocked recipes, for the recipe categories supported by the selected entity. Optionally can return all unlocked recipes for all categories.
+---@param pindex integer
+---@param ent LuaEntity?
+---@param load_all_categories boolean?
+---@return LuaRecipe[][] One list of recipes per item group
 function mod.get_recipes(pindex, ent, load_all_categories)
    if not ent then return {} end
    local category_filters = {}
    --Load the supported recipe categories for this entity
-   for category_name, _ in pairs(ent.prototype.crafting_categories) do
+   for category_name, _ in pairs(assert(ent.prototype.crafting_categories)) do
       table.insert(category_filters, { filter = "category", category = category_name })
    end
+   ---@type LuaCustomTable<string, LuaRecipePrototype>|LuaCustomTable<string, LuaRecipe>
    local all_machine_recipes = prototypes.get_recipe_filtered(category_filters)
    local unlocked_machine_recipes = {}
-   local force_recipes = game.get_player(pindex).force.recipes
+   local force_recipes = (game.get_player(pindex).force --[[@as LuaForce]]).recipes
 
    --Load all crafting categories if instructed
-   if load_all_categories == true then
-      ---@diagnostic disable-next-line: cast-local-type
-      all_machine_recipes = force_recipes
-   end
+   if load_all_categories == true then all_machine_recipes = force_recipes end
 
    --Load only the unlocked recipes
    for recipe_name, recipe in pairs(all_machine_recipes) do

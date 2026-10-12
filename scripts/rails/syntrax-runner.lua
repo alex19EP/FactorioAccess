@@ -20,7 +20,7 @@ end
 ---@class syntrax_runner.ExecuteOptions
 ---@field pindex integer Player index
 ---@field source string Syntrax source code
----@field position MapPosition Starting position
+---@field position fa.Point Starting position
 ---@field direction defines.direction Starting end direction (0-15)
 ---@field rail_type railutils.RailType Starting rail type
 ---@field placement_direction defines.direction Starting rail's placement direction
@@ -50,21 +50,27 @@ end
 ---@param planner_description railutils.RailPlannerDescription
 ---@return {name: string, position: MapPosition, direction: defines.direction}
 local function convert_placement(placement, planner_description)
+   -- Syntrax directions are plain numbers 0-15.
    if placement.type == "rail" then
+      local rail = placement --[[@as syntrax.vm.RailPlacement]]
       return {
-         name = map_rail_type(placement.rail_type, planner_description),
-         position = placement.position,
-         direction = placement.placement_direction,
+         name = map_rail_type(rail.rail_type, planner_description),
+         position = rail.position,
+         direction = rail.placement_direction --[[@as defines.direction]],
       }
-   elseif placement.type == "signal" then
-      return {
-         name = placement.signal_type,
-         position = placement.position,
-         direction = placement.direction,
-      }
-   else
-      error("Unknown placement type: " .. tostring((placement --[[@as syntrax.vm.Placement]]).type))
    end
+
+   -- Rails and signals are every kind the VM emits today; a new kind must fail here, not build as a signal.
+   ---@diagnostic disable-next-line: unnecessary-if
+   if placement.type == "signal" then
+      local signal = placement --[[@as syntrax.vm.SignalPlacement]]
+      return {
+         name = signal.signal_type,
+         position = signal.position,
+         direction = signal.direction --[[@as defines.direction]],
+      }
+   end
+   error("Unknown placement type: " .. tostring(placement.type))
 end
 
 ---Format an error message for a failed placement
@@ -88,9 +94,8 @@ end
 ---@param alternative syntrax.vm.Placement[]
 ---@param planner_description railutils.RailPlannerDescription
 ---@param build_mode defines.build_mode
----@return LuaEntity[]|nil ghosts All ghosts (created + existing) if successful, nil if failed
----@return LuaEntity[]|nil created_ghosts Ghosts we created (for cleanup tracking)
----@return syntrax.vm.Placement|nil failed_placement The placement that failed, if any
+---@return { ghosts: LuaEntity[], created: LuaEntity[] }? placed All ghosts (created + existing) and the ghosts we created (for cleanup tracking), nil if failed
+---@return syntrax.vm.Placement? failed_placement The placement that failed, if any
 local function try_alternative(pindex, surface, alternative, planner_description, build_mode)
    local all_ghosts = {}
    local created_ghosts = {}
@@ -115,7 +120,7 @@ local function try_alternative(pindex, surface, alternative, planner_description
       if not new_ghosts or #new_ghosts == 0 then
          -- Failed to place - clean up only ghosts WE created
          destroy_ghosts(created_ghosts)
-         return nil, nil, syntrax_placement
+         return nil, syntrax_placement
       end
 
       local new_ghost = new_ghosts[1]
@@ -125,7 +130,7 @@ local function try_alternative(pindex, surface, alternative, planner_description
       ::continue::
    end
 
-   return all_ghosts, created_ghosts
+   return { ghosts = all_ghosts, created = created_ghosts }
 end
 
 ---Execute syntrax code and place rails
@@ -137,8 +142,13 @@ function mod.execute(opts)
    if not player then return nil, "Invalid player" end
 
    -- Parse and execute syntrax
-   local placement_groups, err =
-      Syntrax.execute(opts.source, opts.position, opts.direction, opts.rail_type, opts.placement_direction)
+   local placement_groups, err = Syntrax.execute(
+      opts.source,
+      opts.position,
+      opts.direction --[[@as integer]],
+      opts.rail_type,
+      opts.placement_direction --[[@as integer]]
+   )
    if err then return nil, err.message end
 
    -- Handle empty result
@@ -149,29 +159,31 @@ function mod.execute(opts)
    local all_created = {} -- Track only ghosts we created, for cleanup
 
    for group_idx, group in ipairs(placement_groups) do
-      local group_ghosts, group_created = nil, nil
+      ---@type { ghosts: LuaEntity[], created: LuaEntity[] }?
+      local placed = nil
+      ---@type syntrax.vm.Placement?
       local last_failed_placement = nil
 
       -- Try each alternative in order
       for _, alternative in ipairs(group) do
          local failed
-         group_ghosts, group_created, failed =
+         placed, failed =
             try_alternative(opts.pindex, player.surface, alternative, opts.planner_description, opts.build_mode)
-         if group_ghosts then break end
+         if placed then break end
          if failed then last_failed_placement = failed end
       end
 
-      if not group_ghosts then
+      if not placed then
          -- No alternative worked - clean up only what we created
          destroy_ghosts(all_created)
          if last_failed_placement then return nil, format_placement_error(group_idx, last_failed_placement) end
          return nil, string.format("Failed to place group %d", group_idx)
       end
 
-      for _, g in ipairs(group_ghosts) do
+      for _, g in ipairs(placed.ghosts) do
          table.insert(all_ghosts, g)
       end
-      for _, g in ipairs(group_created) do
+      for _, g in ipairs(placed.created) do
          table.insert(all_created, g)
       end
    end

@@ -79,7 +79,7 @@ end
 ---Build a label for an inventory slot into a MessageBuilder
 ---@param message fa.MessageBuilder
 ---@param inv LuaInventory
----@param slot_index number
+---@param slot_index integer
 ---@param locks table<number, string>? Recipe locks for this inventory
 local function build_slot_label(message, inv, slot_index, locks)
    local stack = inv[slot_index]
@@ -116,8 +116,8 @@ local function build_slot_label(message, inv, slot_index, locks)
 end
 
 ---Calculate grid position from slot index
----@param slot_index number 1-based slot index
----@return number x, number y Grid coordinates (1-based)
+---@param slot_index integer 1-based slot index
+---@return integer x, integer y Grid coordinates (1-based)
 local function slot_to_grid_pos(slot_index)
    -- Convert to 0-based for calculation
    local index = slot_index - 1
@@ -127,9 +127,9 @@ local function slot_to_grid_pos(slot_index)
 end
 
 ---Calculate slot index from grid position
----@param x number Grid X (1-based)
----@param y number Grid Y (1-based)
----@return number Slot index (1-based)
+---@param x integer Grid X (1-based)
+---@param y integer Grid Y (1-based)
+---@return integer Slot index (1-based)
 local function grid_pos_to_slot(x, y)
    return (y - 1) * GRID_WIDTH + x
 end
@@ -145,14 +145,14 @@ local function check_write_access(ctx, entity, sibling_entity)
       -- Transfer operation: check both source and destination
       local result = EntityAccess.can_transfer_between(ctx.pindex, entity, sibling_entity)
       if not result.allowed then
-         ctx.controller.message:fragment(result.reason)
+         ctx.controller.message:fragment(assert(result.reason))
          return false
       end
    else
       -- Single entity operation
       local result = EntityAccess.can_write_to_entity(ctx.pindex, entity)
       if not result.allowed then
-         ctx.controller.message:fragment(result.reason)
+         ctx.controller.message:fragment(assert(result.reason))
          return false
       end
    end
@@ -161,8 +161,8 @@ end
 
 ---Custom dimension labeler for inventory slots
 ---@param ctx fa.ui.InventoryGrid.Context
----@param x number
----@param y number
+---@param x integer
+---@param y integer
 local function inventory_dimension_labeler(ctx, x, y)
    local slot_index = grid_pos_to_slot(x, y)
    local row = y
@@ -303,10 +303,11 @@ local function render_inventory_grid(ctx)
                if not check_write_access(click_ctx, entity, nil) then return end
 
                -- Check if hand has bookable item and slot has blueprint book
-               local is_bookable = cursor_stack
+               if
+                  cursor_stack
                   and cursor_stack.valid_for_read
                   and (cursor_stack.is_blueprint or cursor_stack.is_upgrade_item or cursor_stack.is_deconstruction_item)
-               if is_bookable then
+               then
                   if inv_stack and inv_stack.valid_for_read and inv_stack.is_blueprint_book then
                      -- Insert item into book
                      local book_inv = inv_stack.get_inventory(defines.inventory.item_main)
@@ -451,7 +452,7 @@ local function render_inventory_grid(ctx)
                      inv_stack.set_stack({
                         name = cursor_stack.name,
                         count = half,
-                        quality = cursor_stack.quality,
+                        quality = cursor_stack.quality.name,
                      })
                      cursor_stack.count = cursor_stack.count - half
                      click_ctx.controller.message:fragment({ "fa.placed-stuff", { "fa.half-stack" } })
@@ -460,7 +461,7 @@ local function render_inventory_grid(ctx)
                   -- Cursor is empty, inventory has items - take half
                   local half = math.floor(inv_stack.count / 2)
                   if half > 0 then
-                     cursor_stack.set_stack({ name = inv_stack.name, count = half, quality = inv_stack.quality })
+                     cursor_stack.set_stack({ name = inv_stack.name, count = half, quality = inv_stack.quality.name })
                      inv_stack.count = inv_stack.count - half
                      local item_description = ItemInfo.item_info({
                         name = cursor_stack.name,
@@ -490,22 +491,20 @@ local function render_inventory_grid(ctx)
             -- Also read item info (k = slot position + item info)
             local stack = inv[slot_index]
             local player = game.get_player(coord_ctx.pindex)
-            ItemInfo.get_item_stack_info(
-               coord_ctx.message,
-               stack,
-               { verbosity = ItemInfo.VERBOSITY.VERBOSE, force = player.force }
-            )
+            ItemInfo.get_item_stack_info(coord_ctx.message, stack, {
+               verbosity = ItemInfo.VERBOSITY.VERBOSE,
+               force = player.force --[[@as LuaForce]],
+            })
          end,
          on_read_info = function(info_ctx, x, y)
             -- Read detailed item info (y = just item info)
             local slot_index = grid_pos_to_slot(x, y)
             local stack = inv[slot_index]
             local player = game.get_player(info_ctx.pindex)
-            ItemInfo.get_item_stack_info(
-               info_ctx.message,
-               stack,
-               { verbosity = ItemInfo.VERBOSITY.VERBOSE, force = player.force }
-            )
+            ItemInfo.get_item_stack_info(info_ctx.message, stack, {
+               verbosity = ItemInfo.VERBOSITY.VERBOSE,
+               force = player.force --[[@as LuaForce]],
+            })
          end,
          on_production_stats_announcement = function(stats_ctx, x, y)
             -- Read production stats for item in slot (u = production stats)

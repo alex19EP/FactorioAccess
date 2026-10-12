@@ -144,7 +144,7 @@ end
 players = TH.deny_access_table()
 
 --Reads the item in hand, its facing direction if applicable, its count, and its total count including units in the main inventory.
----@param pindex number
+---@param pindex integer
 local function read_hand(pindex)
    if storage.players[pindex].skip_read_hand == true then
       storage.players[pindex].skip_read_hand = false
@@ -1252,7 +1252,7 @@ EventManager.on_event(
 )
 
 ---Toggles cursor mode on or off. Appropriately affects other modes such as build lock or remote view.
----@param pindex number
+---@param pindex integer
 ---@param muted boolean
 local function toggle_cursor_mode(pindex, muted)
    local vp = Viewpoint.get_viewpoint(pindex)

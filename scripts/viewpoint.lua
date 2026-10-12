@@ -21,7 +21,7 @@ local viewpoint_storage = StorageManager.declare_storage_module("viewpoint", {
 })
 
 ---@class fa.Viewpoint
----@field pindex number
+---@field pindex integer
 local Viewpoint = {}
 local Viewpoint_meta = { __index = Viewpoint }
 
@@ -38,7 +38,7 @@ end
 
 local viewpoint_cache = {}
 
----@param pindex number
+---@param pindex integer
 ---@return fa.Viewpoint
 function mod.get_viewpoint(pindex)
    local cached = viewpoint_cache[pindex]

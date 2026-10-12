@@ -26,12 +26,7 @@ local function get_ammo_summary(entity)
    if not ammo_inv then return { "fa.turret-no-ammo-slot" } end
 
    local contents = ammo_inv.get_contents()
-   local presenting = InventoryUtils.present_list(contents, nil, nil, true)
-   if presenting then
-      return presenting
-   else
-      return { "fa.empty" }
-   end
+   return InventoryUtils.present_list(contents, nil, nil, true)
 end
 
 ---Render the turret configuration form
@@ -106,9 +101,7 @@ local function render_turret_config(ctx)
             if result then
                entity.set_priority_target(slot_index, result)
                local proto = prototypes.entity[result]
-               if proto then
-                  result_ctx.controller.message:fragment(Localising.get_localised_name_with_fallback(proto))
-               end
+               result_ctx.controller.message:fragment(Localising.get_localised_name_with_fallback(proto))
             end
          end,
          on_clear = function(clear_ctx)

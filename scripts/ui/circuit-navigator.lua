@@ -153,7 +153,7 @@ local function render_entities_list(ctx)
 end
 
 ---Build tabs for circuit navigator
----@param pindex number
+---@param pindex integer
 ---@param parameters any
 ---@return fa.ui.TabstopDescriptor[]
 local function build_navigator_tabs(pindex, parameters)
@@ -181,7 +181,7 @@ mod.circuit_navigator = TabList.declare_tablist({
 })
 
 ---Build tabs for entities list
----@param pindex number
+---@param pindex integer
 ---@param parameters any
 ---@return fa.ui.TabstopDescriptor[]
 local function build_entities_tabs(pindex, parameters)

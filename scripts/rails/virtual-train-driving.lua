@@ -48,10 +48,11 @@ local function init_inventories()
    return {}
 end
 
+---@type table<integer, vtd.Inventories>
 local vtd_inventories = StorageManager.declare_storage_module("virtual_train_invs", init_inventories)
 
 ---@class vtd.Move
----@field position MapPosition Position of the rail piece
+---@field position fa.Point Position of the rail piece
 ---@field end_direction defines.direction Direction of the rail end we're facing
 ---@field rail_type railutils.RailType Type of rail (STRAIGHT, HALF_DIAGONAL, CURVE_A, CURVE_B)
 ---@field placement_direction defines.direction Direction the rail was placed
@@ -77,6 +78,7 @@ local function init_state()
    }
 end
 
+---@type table<integer, vtd.State>
 local vtd_storage = StorageManager.declare_storage_module("virtual_train_driving", init_state)
 
 ---Check if player has a rail planner in hand
@@ -273,7 +275,7 @@ local function create_traverser_from_move(move)
 end
 
 ---Get a bounding box for the tile containing a position
----@param position MapPosition
+---@param position fa.Point
 ---@return BoundingBox
 local function get_tile_search_area(position)
    local floor_x = math.floor(position.x)
@@ -282,25 +284,6 @@ local function get_tile_search_area(position)
       { x = floor_x + 0.001, y = floor_y + 0.001 },
       { x = floor_x + 0.999, y = floor_y + 0.999 },
    }
-end
-
----Check if a rail already exists at position matching prototype and direction
----@param surface LuaSurface
----@param position MapPosition
----@param prototype_name string
----@param direction defines.direction
----@return LuaEntity|nil
-local function find_matching_rail(surface, position, prototype_name, direction)
-   local entities = surface.find_entities_filtered({
-      area = get_tile_search_area(position),
-      name = prototype_name,
-   })
-
-   for _, entity in ipairs(entities) do
-      if entity.direction == direction then return entity end
-   end
-
-   return nil
 end
 
 ---Build a rail at the specified position using build_from_cursor
@@ -408,7 +391,7 @@ local function announce_rail(pindex)
    end
 
    -- Direction
-   mb:fragment({ "fa.facing-direction", { "fa.direction", current.end_direction } })
+   mb:fragment({ "fa.facing-direction", FaUtils.localise_direction(current.end_direction) })
 
    if state.speculating then mb:fragment("speculating") end
 
@@ -422,7 +405,8 @@ end
 ---@param move_fn fun(trav: railutils.Traverser)
 ---@return boolean
 local function check_connection(rail_entity, rail_type, end_direction, move_fn)
-   local position = { x = rail_entity.position.x, y = rail_entity.position.y }
+   local rail_pos = rail_entity.position --[[@as MapPosition.struct]]
+   local position = { x = rail_pos.x, y = rail_pos.y }
    local trav = Traverser.new(rail_type, position, rail_entity.direction, end_direction)
    move_fn(trav)
 
@@ -438,8 +422,9 @@ local function check_connection(rail_entity, rail_type, end_direction, move_fn)
    })
 
    for _, connected_rail in ipairs(rails_at_pos) do
-      local rail_floor_x = math.floor(connected_rail.position.x)
-      local rail_floor_y = math.floor(connected_rail.position.y)
+      local connected_pos = connected_rail.position --[[@as MapPosition.struct]]
+      local rail_floor_x = math.floor(connected_pos.x)
+      local rail_floor_y = math.floor(connected_pos.y)
       if
          rail_floor_x == expected_floor_x
          and rail_floor_y == expected_floor_y
@@ -549,6 +534,7 @@ function mod.lock_on_to_rail(pindex, rail_entity, build_mode)
       Speech.speak(pindex, { "fa.virtual-train-no-rail" })
       return
    end
+   ---@cast rail -? -- is_rail_entity is false for nil
 
    -- Convert entity name to rail type
    local rail_type = Queries.prototype_type_to_rail_type(get_effective_name(rail))
@@ -570,7 +556,8 @@ function mod.lock_on_to_rail(pindex, rail_entity, build_mode)
 
    -- Add initial rail to moves (entity = rail, not nil, but we won't destroy it on undo)
    -- Actually, use nil since it already exists and we shouldn't destroy it
-   push_move(pindex, rail.position, chosen_end_direction, rail_type, rail.direction, nil, false)
+   local rail_pos = rail.position --[[@as MapPosition.struct]]
+   push_move(pindex, rail_pos, chosen_end_direction, rail_type, rail.direction, nil, false)
 
    -- Set cursor position
    Cursor.jump(pindex, rail.position)
@@ -583,7 +570,7 @@ function mod.lock_on_to_rail(pindex, rail_entity, build_mode)
    elseif state.build_mode == defines.build_mode.superforced then
       mb:fragment({ "fa.virtual-train-mode-superforce" })
    end
-   mb:fragment({ "fa.facing-direction", { "fa.direction", chosen_end_direction } })
+   mb:fragment({ "fa.facing-direction", FaUtils.localise_direction(chosen_end_direction) })
    Speech.speak(pindex, mb:build())
 end
 
@@ -695,7 +682,7 @@ function mod.flip_end(pindex)
    -- Announce flip with new direction
    local mb = MessageBuilder.new()
    mb:fragment({ "fa.virtual-train-flipped" })
-      :fragment({ "fa.virtual-train-now-facing", { "fa.direction", trav:get_direction() } })
+      :fragment({ "fa.virtual-train-now-facing", FaUtils.localise_direction(trav:get_direction()) })
    Speech.speak(pindex, mb:build())
 end
 
@@ -840,7 +827,7 @@ function mod.place_signal(pindex, side, is_chain)
       local mb = MessageBuilder.new()
       mb:fragment({
          "fa.virtual-train-placed-" .. (is_chain and "chain-signal" or "signal"),
-      }):fragment({ "fa.direction", signal_dir })
+      }):fragment(FaUtils.localise_direction(signal_dir))
       Speech.speak(pindex, mb:build())
       return true
    elseif already_existed then

@@ -12,7 +12,7 @@ using an integral id, removal itself becomes easy.
 
 local mod = {}
 
----@returns number
+---@return number
 function mod.uid()
    if not storage.id_counter then storage.id_counter = 0 end
    storage.id_counter = storage.id_counter + 1

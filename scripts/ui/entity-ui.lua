@@ -196,7 +196,7 @@ local function build_configuration_tabs(entity)
 end
 
 ---Build equipment section based on entity having a grid
----@param pindex number
+---@param pindex integer
 ---@param entity LuaEntity
 ---@return fa.ui.TabDescriptor[]?
 local function build_equipment_tabs(pindex, entity)
@@ -250,7 +250,7 @@ local function get_player_inventory_section()
 end
 
 ---Build all sections for the entity UI
----@param pindex number
+---@param pindex integer
 ---@param entity LuaEntity
 ---@return fa.ui.TabstopDescriptor[]?
 local function build_entity_sections(pindex, entity)
@@ -323,7 +323,7 @@ local function build_entity_sections(pindex, entity)
 end
 
 ---Shared state setup for entity UI
----@param pindex number
+---@param pindex integer
 ---@param params table
 ---@return table
 local function setup_shared_state(pindex, params)
@@ -369,7 +369,7 @@ mod.entity_ui = TabList.declare_tablist({
 })
 
 ---Open the entity UI for a given entity
----@param pindex number Player index
+---@param pindex integer Player index
 ---@param entity LuaEntity The entity to open UI for
 ---@return boolean success
 function mod.open_entity_ui(pindex, entity)
@@ -385,7 +385,7 @@ function mod.open_entity_ui(pindex, entity)
    -- Check if player can access the entity (in reach, or charted for remote viewing)
    local can_access, error_message = EntityAccess.can_open_entity(pindex, entity)
    if not can_access then
-      Speech.speak(pindex, error_message)
+      Speech.speak(pindex, assert(error_message))
       return false
    end
 

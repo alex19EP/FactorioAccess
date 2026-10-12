@@ -51,7 +51,7 @@ end
 ---@return string The train name (backer_name of identifying locomotive), or fallback
 function mod.get_name(rolling_stock)
    local identifying_loco = mod.get_identifying_locomotive(rolling_stock)
-   if identifying_loco then return identifying_loco.backer_name end
+   if identifying_loco then return assert(identifying_loco.backer_name) end
 
    -- No locomotive: fallback based on whether we have a train
    local train = rolling_stock.train
@@ -157,7 +157,7 @@ end
 ---Check if an interrupt name is unique within a schedule
 ---@param schedule LuaSchedule
 ---@param name string
----@param exclude_index number? Optional index to exclude (for renames)
+---@param exclude_index integer? Optional index to exclude (for renames)
 ---@return boolean
 function mod.is_interrupt_name_unique(schedule, name, exclude_index)
    local interrupts = schedule.get_interrupts()

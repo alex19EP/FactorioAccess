@@ -37,7 +37,7 @@ local Sounds = require("scripts.ui.sounds")
 local mod = {}
 
 ---@class fa.ui.TabContext
----@field pindex number
+---@field pindex integer
 ---@field player LuaPlayer
 ---@field state table Goes into storage.
 ---@field shared_state table
@@ -98,22 +98,22 @@ local mod = {}
 
 ---@class fa.ui.TabListDeclaration (exact)
 ---@field ui_name fa.ui.UiName used for key routing.
----@field tabs_callback fun(pindex: number, parameters: any): fa.ui.TabstopDescriptor[]? Dynamic tabstops callback
----@field shared_state_setup (fun(number, table): table)? passed the parameters and pindex, should return a shaerd state.
+---@field tabs_callback fun(pindex: integer, parameters: any): fa.ui.TabstopDescriptor[]? Dynamic tabstops callback
+---@field shared_state_setup (fun(pindex: integer, parameters: table): table)? passed the parameters and pindex, should return a shaerd state.
 ---@field resets_to_first_tab_on_open boolean?
 ---@field persist_state boolean?
----@field get_binds (fun(pindex: number, parameters: table): fa.ui.Bind[]?)? TabList-level binds callback
+---@field get_binds (fun(pindex: integer, parameters: table): fa.ui.Bind[]?)? TabList-level binds callback
 
 ---@class fa.ui.TabListStorageState
----@field active_tabstop number
----@field active_tab number
----@field tab_states table<string, table>
+---@field active_tabstop integer
+---@field active_tab integer
+---@field tab_states table<string, table?>
 ---@field parameters any
 ---@field currently_open boolean
 ---@field shared_state table
 ---@field prev_tab_order string[]? Previous tab order for removal detection
 
----@type table<number, table<string, fa.ui.TabListStorageState>>
+---@type table<integer, table<string, fa.ui.TabListStorageState?>>
 local tablist_storage = StorageManager.declare_storage_module("tab_list", {}, {
    ephemeral_state_version = 1,
 })
@@ -122,9 +122,9 @@ local tablist_storage = StorageManager.declare_storage_module("tab_list", {}, {
 ---@field tabstops fa.ui.TabstopDescriptor[]
 ---@field descriptors  table<string, fa.ui.TabDescriptor>
 ---@field tab_order string[]
----@field tabs_callback fun(pindex: number, parameters: any): fa.ui.TabstopDescriptor[]
----@field shared_state_initializer (fun(number, table): table)?
----@field get_binds_callback (fun(pindex: number, parameters: table): fa.ui.Bind[]?)?
+---@field tabs_callback fun(pindex: integer, parameters: any): fa.ui.TabstopDescriptor[]
+---@field shared_state_initializer (fun(pindex: integer, parameters: table): table)?
+---@field get_binds_callback (fun(pindex: integer, parameters: table): fa.ui.Bind[]?)?
 ---@field declaration fa.ui.TabListDeclaration
 local TabList = {}
 local TabList_meta = { __index = TabList }
@@ -134,6 +134,9 @@ mod.TabList = TabList
 -- nothing if this tablist is not open, which can happen when calling a bunch of
 -- events back to back if the tab list has to close in the middle of a sequence
 -- of actions.
+---@param pindex integer
+---@param target_tab_index integer
+---@param cb_name string
 ---@param msg_builder fa.MessageBuilder?
 ---@param params any[]?
 ---@param controller? fa.ui.RouterController Not present for close
@@ -142,7 +145,7 @@ function TabList:_do_callback(pindex, target_tab_index, cb_name, msg_builder, pa
    params = params or {}
 
    local tl = tablist_storage[pindex][self.ui_name]
-   local tabname = self.tab_order[target_tab_index]
+   local tabname = self.tab_order[target_tab_index] --[[@as string]]
    local tabstate = tl.tab_states[tabname]
    assert(tabstate, "this gets set up on self:open()")
    if not tl.currently_open then return end
@@ -175,19 +178,19 @@ function TabList:_do_callback(pindex, target_tab_index, cb_name, msg_builder, pa
       tl.tab_states[tabname] = context.state
    end
 
-   local msg = msg_builder:build()
+   local msg = msg_builder:build_or_nil()
    if msg then Speech.speak(pindex, msg) end
 
    return result
 end
 
 -- Re-render the tabs, handling additions and removals
----@param pindex number
+---@param pindex integer
 ---@param controller fa.ui.RouterController
 ---@private
 function TabList:_rerender(pindex, controller)
    local tl = tablist_storage[pindex][self.ui_name]
-   assert(tl)
+   assert(tl, "rerendering a tab list that was never opened")
 
    -- Get fresh tabstops from callback
    local new_tabstops = self.tabs_callback(pindex, tl.parameters)
@@ -265,10 +268,8 @@ function TabList:_rerender(pindex, controller)
    end
 
    -- Clean up states for removed tabs
-   if prev_tab_order then
-      for _, old_name in ipairs(prev_tab_order) do
-         if not new_desc_map[old_name] then tl.tab_states[old_name] = nil end
-      end
+   for _, old_name in ipairs(prev_tab_order) do
+      if not new_desc_map[old_name] then tl.tab_states[old_name] = nil end
    end
 
    -- Initialize states for new tabs
@@ -370,7 +371,7 @@ TabList.on_set_filter = build_simple_method("on_set_filter")
 TabList.on_clear_filter = build_simple_method("on_clear_filter")
 
 ---Handle accelerator events (one callback for all accelerators)
----@param pindex number
+---@param pindex integer
 ---@param accelerator_name string The accelerator constant name
 ---@param modifiers table?
 ---@param controller fa.ui.RouterController
@@ -386,7 +387,7 @@ function TabList:on_accelerator(pindex, accelerator_name, modifiers, controller)
 end
 
 ---Handle child result from textbox or other child UI
----@param pindex number
+---@param pindex integer
 ---@param result any
 ---@param context any The context from when child UI was opened
 ---@param controller fa.ui.RouterController
@@ -402,19 +403,23 @@ function TabList:on_child_result(pindex, result, context, controller)
 end
 
 ---Announce the current tab's title
----@param pindex number
+---@param pindex integer
 ---@param modifiers table?
 ---@param controller fa.ui.RouterController
 function TabList:on_announce_title(pindex, modifiers, controller)
    local tl = tablist_storage[pindex][self.ui_name]
    if not tl or not tl.currently_open then return end
 
-   local desc = self.descriptors[self.tab_order[tl.active_tab]]
+   local desc = self.descriptors[
+      self.tab_order[tl.active_tab] --[[@as string]]
+   ]
    if desc and desc.title then controller.message:fragment(desc.title) end
 end
 
 -- Perform the flow for focusing a tab. Does this unconditionally, so be careful
 -- not to over-call it.
+---@param pindex integer
+---@param active_tab integer
 ---@param msg_builder fa.MessageBuilder? Optional message builder to prepend tabstop info to
 ---@param play_sound boolean? Optional boolean, defaults to true. Set to false to suppress sound.
 ---@param controller fa.ui.RouterController
@@ -426,7 +431,9 @@ function TabList:_set_active_tab(pindex, active_tab, msg_builder, play_sound, co
 
    -- Use provided message builder or create new one
    msg_builder = msg_builder or MessageBuilder.new()
-   local desc = self.descriptors[self.tab_order[active_tab]]
+   local desc = self.descriptors[
+      self.tab_order[active_tab] --[[@as string]]
+   ]
    local title = desc.title
    if title then msg_builder:list_item(title) end
    self:_do_callback(pindex, tl.active_tab, "on_tab_unfocused", nil, nil, controller)
@@ -435,7 +442,7 @@ function TabList:_set_active_tab(pindex, active_tab, msg_builder, play_sound, co
    tl.active_tab = active_tab
 end
 
----@param pindex number
+---@param pindex integer
 ---@param direction 1|-1
 ---@param controller fa.ui.RouterController
 function TabList:_cycle(pindex, direction, controller)
@@ -493,7 +500,7 @@ function TabList:on_previous_tab(pindex, modifiers, controller)
    self:_cycle(pindex, -1, controller)
 end
 
----@param pindex number
+---@param pindex integer
 ---@param direction 1|-1
 ---@param controller fa.ui.RouterController
 function TabList:_cycle_section(pindex, direction, controller)
@@ -576,9 +583,6 @@ end
 
 ---@param controller fa.ui.RouterController
 function TabList:open(pindex, parameters, controller)
-   assert(self.ui_name)
-   assert(controller, "TabList:open requires a controller")
-
    if not self.declaration.persist_state then tablist_storage[pindex][self.ui_name] = nil end
 
    local tabstate = tablist_storage[pindex][self.ui_name]
@@ -609,7 +613,7 @@ function TabList:open(pindex, parameters, controller)
 
    -- Perform initial render
    self:_rerender(pindex, controller)
-   if not tabstate.currently_open then return end -- Rerender might have closed
+   if not self:_open_state(pindex) then return end -- Rerender might have closed
 
    -- Tell all the tabs that they have opened, but abort if any of them close.
    for i = 1, #self.tab_order do
@@ -624,7 +628,7 @@ function TabList:open(pindex, parameters, controller)
 end
 
 ---Get help metadata for the current active tab
----@param pindex number
+---@param pindex integer
 ---@return fa.ui.help.HelpItem[]?
 function TabList:get_help_metadata(pindex)
    local tl = tablist_storage[pindex][self.ui_name]
@@ -656,12 +660,12 @@ end
 
 ---Get binds from all tabs in this TabList
 ---Called before open, so we call tabs_callback directly
----@param pindex number
+---@param pindex integer
 ---@param parameters table
 ---@return fa.ui.Bind[]?
 function TabList:get_binds(pindex, parameters)
    local all_binds = {}
-   local player = game.get_player(pindex)
+   local player = assert(game.get_player(pindex))
 
    -- Add TabList-level binds if present
    if self.get_binds_callback then
@@ -681,23 +685,21 @@ function TabList:get_binds(pindex, parameters)
 
    -- Iterate all tabs and collect their binds
    for _, tabstop in ipairs(tabstops) do
-      if tabstop.tabs then
-         for _, tab in ipairs(tabstop.tabs) do
-            if tab.callbacks and tab.callbacks.get_binds then
-               -- Create minimal context for the get_binds call
-               ---@type fa.ui.TabContext
-               local ctx = {
-                  pindex = pindex,
-                  player = player,
-                  parameters = parameters,
-                  state = {},
-                  shared_state = {},
-               }
-               local binds = tab.callbacks:get_binds(ctx)
-               if binds then
-                  for _, bind in ipairs(binds) do
-                     table.insert(all_binds, bind)
-                  end
+      for _, tab in ipairs(tabstop.tabs) do
+         if tab.callbacks.get_binds then
+            -- Create minimal context for the get_binds call
+            ---@type fa.ui.TabContext
+            local ctx = {
+               pindex = pindex,
+               player = player,
+               parameters = parameters,
+               state = {},
+               shared_state = {},
+            }
+            local binds = tab.callbacks:get_binds(ctx)
+            if binds then
+               for _, bind in ipairs(binds) do
+                  table.insert(all_binds, bind)
                end
             end
          end
@@ -727,8 +729,6 @@ end
 ---@param declaration fa.ui.TabListDeclaration
 ---@return fa.ui.TabList
 function mod.declare_tablist(declaration)
-   assert(declaration.tabs_callback, "TabList declaration must have tabs_callback")
-
    ---@type fa.ui.TabList
    local ret = setmetatable({
       ui_name = declaration.ui_name,

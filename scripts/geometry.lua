@@ -13,7 +13,7 @@ of 4 is 90 degrees clockwise, and an offset of -4 90 degrees counterclockwise.
 ---@param offset number
 ---@return defines.direction
 local function offset_dir(dir, offset)
-   return (dir + offset) % 16 --[[ @as defines.direction ]]
+   return ((dir + offset) % 16) --[[@as defines.direction]]
 end
 
 mod.offset_dir = offset_dir
@@ -31,7 +31,11 @@ function mod.dir_clockwise_90(dir)
 end
 
 -- The dot product, but set up to not require intermediate tables.
----@type fun(x1: number, y1: number, x2: number, y2: number): number
+---@param x1 number
+---@param y1 number
+---@param x2 number
+---@param y2 number
+---@return number
 function mod.dot_unrolled_2d(x1, y1, x2, y2)
    return x1 * x2 + y1 * y2
 end
@@ -41,7 +45,6 @@ end
 ---@return number, number
 function mod.uv_for_direction(dir)
    local v = Consts.DIRECTION_VECTORS[dir]
-   assert(v)
    return v.x, v.y
 end
 

@@ -84,7 +84,7 @@ function mod.read_pollution_level_at_position(pos, pindex)
       result = { "fa.pollution-level-very-high" }
    elseif pol < 250 then
       result = { "fa.pollution-level-extremely-high" }
-   elseif pol >= 250 then
+   else
       result = { "fa.pollution-level-maximal" }
    end
    Speech.speak(pindex, result)
@@ -113,7 +113,9 @@ function mod.read_nearest_damaged_ent_info(pos, pindex)
       return
    end
    --Narrow by distance
+   ---@type LuaEntity?
    local closest = nil
+   ---@type number
    local min_dist = 1001
    for i, ent in ipairs(damaged_ents) do
       local dist = util.distance(pos, ent.position)
@@ -173,8 +175,12 @@ function mod.selected_item_production_stats_info(pindex, prototype_name)
    if prototype_name then
       prototype = prototypes.item[prototype_name]
       if not prototype then
-         prototype = prototypes.fluid[prototype_name]
-         if prototype then stats = p.force.get_fluid_production_statistics(p.surface) end
+         ---@type LuaFluidPrototype?
+         local fluid = prototypes.fluid[prototype_name]
+         if fluid then
+            prototype = fluid
+            stats = p.force.get_fluid_production_statistics(p.surface)
+         end
       end
       -- If provided but not found, return error immediately (don't try fallbacks)
       if not prototype then return { "fa.error-unknown-item", prototype_name } end
@@ -249,7 +255,7 @@ function mod.selected_item_production_stats_info(pindex, prototype_name)
 end
 
 --Returns an info string about the entities and tiles found within an area scan done by an enlarged cursor.
----@param pindex number
+---@param pindex integer
 ---@param left_top fa.Point
 ---@param right_bottom fa.Point
 ---@param skip_types table<string, true>? Entity types to leave out of the count
@@ -284,7 +290,7 @@ function mod.area_scan_summary_info(pindex, left_top, right_bottom, skip_types)
       })
    end
 
-   ---@type { name: string, count: string, category: string }[]
+   ---@type { name: string, count: integer, category: string }[]
    local counts = {}
 
    local covered_area = (right_bottom.x - left_top.x) * (right_bottom.y - left_top.y)
@@ -377,11 +383,8 @@ function mod.area_scan_summary_info(pindex, left_top, right_bottom, skip_types)
       elseif entry.name == "refined-concrete" then
          localised_name = { "tile-name.refined-concrete" }
       else
-         -- Try entity name first, then fall back to raw name
-
-         if prototypes.entity[entry.name] then
-            localised_name = Localising.get_localised_name_with_fallback(prototypes.entity[entry.name])
-         end
+         -- Every other entry is counted from entities
+         localised_name = Localising.get_localised_name_with_fallback(prototypes.entity[entry.name])
       end
 
       if entry.category == "resource" or entry.category == "flooring" then

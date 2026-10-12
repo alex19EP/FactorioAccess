@@ -22,7 +22,7 @@ local worker_robots_storage = StorageManager.declare_storage_module("worker_robo
 })
 
 ---Cache of roboport-compatible item names, built at script load
----@type string[]
+---@type string[]?
 local roboport_compatible_items = nil
 
 ---Get list of items that roboports can request (repair tools and robots)
@@ -95,7 +95,7 @@ function mod.can_set_logistic_filter(ent)
    return ent.type == "logistic-container" and ent.prototype.logistic_mode == "storage"
 end
 
----@param pindex number
+---@param pindex integer
 ---@param ent LuaEntity
 ---@param name string
 function mod.set_logistic_filter(pindex, ent, name)
@@ -109,11 +109,7 @@ function mod.set_logistic_filter(pindex, ent, name)
 
    ent.set_filter(1, name)
    local proto = prototypes.item[name]
-   if proto then
-      Speech.speak(pindex, { "fa.logistic-storage-filter-set", Localising.get_localised_name_with_fallback(proto) })
-   else
-      Speech.speak(pindex, { "fa.logistic-storage-filter-set", name })
-   end
+   Speech.speak(pindex, { "fa.logistic-storage-filter-set", Localising.get_localised_name_with_fallback(proto) })
 end
 
 ---Format a compiled logistic filter for readout (from point.filters)
@@ -171,16 +167,9 @@ end
 function mod.get_all_logistic_points(entity)
    if not entity or not entity.valid then return {} end
 
-   local points_result = entity.get_logistic_point()
-   if not points_result then return {} end
-
-   -- If called without index, returns array of points
-   if type(points_result) == "table" then
-      return points_result
-   else
-      -- Single point returned
-      return { points_result }
-   end
+   -- Without an index, the API returns the array of all points
+   return entity.get_logistic_point() --[[@as LuaLogisticPoint[]?]]
+      or {}
 end
 
 ---Get unique group names from all sections in a point (excluding empty string)
@@ -217,7 +206,7 @@ end
 
 ---Get the network name for a logistic point's network
 ---@param point LuaLogisticPoint
----@return string?
+---@return LocalisedString?
 function mod.get_network_name_for_point(point)
    if not point or not point.valid then return nil end
 
@@ -323,7 +312,7 @@ function mod.logistic_network_chests_info(port)
 end
 
 ---On tick handler to announce logistics state changes after the game has processed them
----@param pindex number
+---@param pindex integer
 function mod.on_tick(pindex)
    local player_storage = worker_robots_storage[pindex]
 

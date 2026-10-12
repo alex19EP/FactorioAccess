@@ -6,13 +6,15 @@ local Wires = require("scripts.wires")
 local mod = {}
 
 --Formats a power value in watts to summarize it as a LocalisedString according to its magnitude.
----@param power float
+---@param power number
 ---@return LocalisedString
 function mod.get_power_string(power)
    return FaUtils.format_power(power)
 end
 
 --Spawns a lamp at the electric pole and uses its energy level to approximate the network satisfaction percentage with high accuracy
+---@param electric_pole LuaEntity
+---@return integer
 function mod.get_electricity_satisfaction(electric_pole)
    local satisfaction = -1
    local test_lamp = electric_pole.surface.create_entity({
@@ -28,14 +30,14 @@ end
 
 --Finds the neearest electric pole. Can be set to determine whether to check only for poles with electricity flow. Can call using only the first two parameters.
 function mod.find_nearest_electric_pole(ent, require_supplied, radius, alt_surface, alt_pos)
-   ---@type LuaEntity
+   ---@type LuaEntity?
    local nearest = nil
    local min_dist = 99999
    require_supplied = require_supplied or false
    radius = radius or 10
    ---@type LuaSurface
-   local surface = nil
-   local pos = nil
+   local surface
+   local pos
    if ent ~= nil and ent.valid then
       surface = ent.surface
       pos = ent.position

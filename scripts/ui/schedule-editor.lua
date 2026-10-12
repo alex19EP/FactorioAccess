@@ -16,6 +16,7 @@ local mod = {}
 
 ---Condition type cycle order for main schedule wait conditions
 ---Edit this table to reorder condition types for better UX
+---@type WaitConditionType[]
 local MAIN_SCHEDULE_CONDITION_TYPES = {
    "time",
    "inactivity",
@@ -35,6 +36,7 @@ local MAIN_SCHEDULE_CONDITION_TYPES = {
 }
 
 ---Condition type cycle order for interrupt trigger conditions
+---@type WaitConditionType[]
 local INTERRUPT_TRIGGER_CONDITION_TYPES = {
    "at_station",
    "not_at_station",
@@ -54,19 +56,23 @@ local INTERRUPT_TRIGGER_CONDITION_TYPES = {
 }
 
 -- Lookup tables for condition type field preservation when cycling types
+---@type table<WaitConditionType, true?>
 local TYPES_WITH_TICKS = { time = true, inactivity = true }
+---@type table<WaitConditionType, true?>
 local TYPES_WITH_CONDITION = {
    item_count = true,
    circuit = true,
    fuel_item_count_all = true,
    fuel_item_count_any = true,
 }
+---@type table<WaitConditionType, true?>
 local TYPES_WITH_STATION = {
    specific_destination_full = true,
    specific_destination_not_full = true,
    at_station = true,
    not_at_station = true,
 }
+---@type table<WaitConditionType, true?>
 local TYPES_WITH_COMPARATOR = {
    item_count = true,
    fluid_count = true,
@@ -77,7 +83,7 @@ local TYPES_WITH_COMPARATOR = {
 
 ---Get the next or previous condition type in the cycle
 ---@param current_type WaitConditionType
----@param allowed_types string[]? List of allowed types (defaults to MAIN_SCHEDULE_CONDITION_TYPES)
+---@param allowed_types WaitConditionType[]? List of allowed types (defaults to MAIN_SCHEDULE_CONDITION_TYPES)
 ---@param reverse boolean? If true, cycle backward instead of forward
 ---@return WaitConditionType
 local function get_next_condition_type(current_type, allowed_types, reverse)
@@ -110,8 +116,8 @@ local function is_fluid_signal(signal)
 end
 
 ---Create a record position for schedule operations
----@param schedule_index number
----@param interrupt_index number?
+---@param schedule_index integer
+---@param interrupt_index integer?
 ---@return ScheduleRecordPosition
 local function make_record_position(schedule_index, interrupt_index)
    return {
@@ -122,7 +128,7 @@ end
 
 ---Get the key for a schedule record tracking position within sublists
 ---@param records ScheduleRecord[] All records in the schedule
----@param record_index number Current record's 1-based index
+---@param record_index integer Current record's 1-based index
 ---@param prefix string? Optional prefix
 ---@return string
 local function get_record_key(records, record_index, prefix)
@@ -154,8 +160,8 @@ end
 
 ---Get the key for a wait condition
 ---@param records ScheduleRecord[] All records in the schedule
----@param record_index number Current record's 1-based index
----@param condition_index number Condition's 1-based index
+---@param record_index integer Current record's 1-based index
+---@param condition_index integer Condition's 1-based index
 ---@param prefix string? Optional prefix
 ---@return string
 local function get_condition_key(records, record_index, condition_index, prefix)
@@ -178,7 +184,7 @@ end
 ---@return string? station_name The extracted station name, or nil if empty
 local function extract_station_name(result, ctx)
    local station_name
-   if type(result) == "table" and result.value then
+   if type(result) == "table" then
       if result.errors then
          UiSounds.play_ui_edge(ctx.pindex)
          for _, error_msg in ipairs(result.errors) do
@@ -202,22 +208,38 @@ end
 ---Generate condition key and suggest move, handling both interrupt and main schedule
 ---@param ctx fa.ui.graph.Ctx
 ---@param record_position ScheduleRecordPosition
----@param new_condition_index number
+---@param new_condition_index integer
 ---@param key_prefix string
 ---@param records ScheduleRecord[]
 local function suggest_condition_move(ctx, record_position, new_condition_index, key_prefix, records)
    local new_key
-   if record_position.interrupt_index and not record_position.schedule_index then
-      new_key = key_prefix .. "c" .. tostring(new_condition_index)
+   local schedule_index = record_position.schedule_index
+   if schedule_index then
+      new_key = get_condition_key(records, schedule_index, new_condition_index, key_prefix)
    else
-      new_key = get_condition_key(records, record_position.schedule_index, new_condition_index, key_prefix)
+      -- An interrupt's trigger condition
+      new_key = key_prefix .. "c" .. tostring(new_condition_index)
    end
    ctx.graph_controller:suggest_move(new_key)
 end
 
+---How to edit one parameter of a wait condition
+---@class fa.ui.ScheduleEditor.ParamHandler
+---@field constant? fun(condition: WaitCondition, new_value: any): WaitCondition? Builds the condition from typed text
+---@field setter? fun(condition: WaitCondition, new_value: any): WaitCondition? Builds the condition from a chosen signal
+---@field get_current? fun(condition: WaitCondition): string
+---@field announcer fun(new_value: any, condition: WaitCondition): LocalisedString
+
+---The editable parameters of one wait condition type
+---@class fa.ui.ScheduleEditor.TypeHandlers
+---@field p1? fa.ui.ScheduleEditor.ParamHandler
+---@field p2? fa.ui.ScheduleEditor.ParamHandler
+---@field constant? fa.ui.ScheduleEditor.ParamHandler
+
 -- Shared announcers
+-- Only called after a constant handler accepted the value as a number
 local function announce_number(new_value)
-   return tostring(math.floor(tonumber(new_value)))
+   return tostring(math.floor(assert(tonumber(new_value))))
 end
 
 local function announce_signal(new_value)
@@ -225,6 +247,8 @@ local function announce_signal(new_value)
 end
 
 -- Factory for ticks-based conditions (time, inactivity)
+---@param type_name WaitConditionType
+---@return fa.ui.ScheduleEditor.TypeHandlers
 local function make_ticks_handler(type_name)
    return {
       p1 = {
@@ -242,6 +266,8 @@ local function make_ticks_handler(type_name)
 end
 
 -- Shared constant handler for circuit-like conditions
+---@param fixed_type WaitConditionType?
+---@return fa.ui.ScheduleEditor.ParamHandler
 local function make_circuit_constant_handler(fixed_type)
    return {
       constant = function(condition, new_value)
@@ -264,6 +290,9 @@ local function make_circuit_constant_handler(fixed_type)
 end
 
 -- Shared p1 signal setter for circuit-like conditions
+---@param fixed_type WaitConditionType?
+---@param auto_fluid boolean?
+---@return fa.ui.ScheduleEditor.ParamHandler
 local function make_signal_setter(fixed_type, auto_fluid)
    return {
       setter = function(condition, new_value)
@@ -285,6 +314,7 @@ local function make_signal_setter(fixed_type, auto_fluid)
 end
 
 -- Station name handler (shared by destination and at_station conditions)
+---@type fa.ui.ScheduleEditor.TypeHandlers
 local station_name_handler = {
    p1 = {
       constant = function(condition, new_value)
@@ -300,6 +330,7 @@ local station_name_handler = {
 }
 
 -- Build PARAM_HANDLERS using factories
+---@type table<WaitConditionType, fa.ui.ScheduleEditor.TypeHandlers?>
 local PARAM_HANDLERS = {
    time = make_ticks_handler("time"),
    inactivity = make_ticks_handler("inactivity"),
@@ -351,6 +382,7 @@ local PARAM_HANDLERS = {
 }
 
 -- Fuel handlers use same pattern as item_count but preserve type
+---@type fa.ui.ScheduleEditor.TypeHandlers
 local fuel_handlers = {
    p1 = make_signal_setter(), -- nil type means preserve condition.type
    constant = make_circuit_constant_handler(),
@@ -362,12 +394,12 @@ PARAM_HANDLERS.fluid_count = PARAM_HANDLERS.item_count
 ---Build vtable for a wait condition
 ---@param schedule LuaSchedule
 ---@param record_position ScheduleRecordPosition
----@param condition_index number
+---@param condition_index integer
 ---@param condition WaitCondition
 ---@param row_key string
 ---@param key_prefix string? Prefix for node keys
 ---@param records ScheduleRecord[] All records for key generation
----@param allowed_types string[]? Allowed condition types (defaults to MAIN_SCHEDULE_CONDITION_TYPES)
+---@param allowed_types WaitConditionType[]? Allowed condition types (defaults to MAIN_SCHEDULE_CONDITION_TYPES)
 ---@param default_type WaitConditionType? Default type when adding new conditions
 ---@return fa.ui.graph.NodeVtable
 local function build_condition_vtable(
@@ -618,6 +650,8 @@ end
 ---@return fa.ui.graph.NodeVtable
 local function build_record_vtable(schedule, record_position, record, row_key, key_prefix, records)
    key_prefix = key_prefix or ""
+   -- Records always come from make_record_position
+   local schedule_index = assert(record_position.schedule_index)
 
    return {
       label = function(ctx)
@@ -657,7 +691,7 @@ local function build_record_vtable(schedule, record_position, record, row_key, k
 
       -- Right click: go to this station (main schedule only, not interrupts)
       on_right_click = not record_position.interrupt_index and function(ctx)
-         schedule.go_to_station(record_position.schedule_index)
+         schedule.go_to_station(schedule_index)
          local destination = record.station or { "fa.schedule-rail-position" }
          ctx.controller.message:fragment({ "fa.schedule-going-to", destination })
       end or nil,
@@ -669,26 +703,26 @@ local function build_record_vtable(schedule, record_position, record, row_key, k
       end,
 
       on_drag_up = function(ctx)
-         if record_position.schedule_index == 1 then
+         if schedule_index == 1 then
             ctx.controller.message:fragment({ "fa.schedule-already-first-record" })
             return
          end
 
-         schedule.drag_record(record_position.schedule_index, record_position.schedule_index - 1)
+         schedule.drag_record(schedule_index, schedule_index - 1)
          ctx.controller.message:fragment({ "fa.schedule-record-moved-up" })
-         ctx.graph_controller:suggest_move(get_record_key(records, record_position.schedule_index - 1, key_prefix))
+         ctx.graph_controller:suggest_move(get_record_key(records, schedule_index - 1, key_prefix))
       end,
 
       on_drag_down = function(ctx)
          local record_count = schedule.get_record_count()
-         if not record_count or record_position.schedule_index >= record_count then
+         if not record_count or schedule_index >= record_count then
             ctx.controller.message:fragment({ "fa.schedule-already-last-record" })
             return
          end
 
-         schedule.drag_record(record_position.schedule_index, record_position.schedule_index + 1)
+         schedule.drag_record(schedule_index, schedule_index + 1)
          ctx.controller.message:fragment({ "fa.schedule-record-moved-down" })
-         ctx.graph_controller:suggest_move(get_record_key(records, record_position.schedule_index + 1, key_prefix))
+         ctx.graph_controller:suggest_move(get_record_key(records, schedule_index + 1, key_prefix))
       end,
 
       on_child_result = function(ctx, result)
@@ -715,7 +749,7 @@ end
 ---Build a list of schedule records and their conditions
 ---@param builder fa.ui.menu.MenuBuilder The menu builder to add to
 ---@param schedule LuaSchedule
----@param interrupt_index number? Optional interrupt index
+---@param interrupt_index integer? Optional interrupt index
 ---@param key_prefix string? Prefix for node keys
 local function build_records_list(builder, schedule, interrupt_index, key_prefix)
    key_prefix = key_prefix or ""
@@ -788,6 +822,8 @@ local function render_interrupt_tab(ctx, interrupt_index)
    local interrupts = schedule.get_interrupts()
    local interrupt = interrupts[interrupt_index]
    if not interrupt then return nil end
+   -- The game names every interrupt it returns: its interrupt API identifies them by name
+   local interrupt_name = assert(interrupt.name)
 
    local builder = Menu.MenuBuilder.new()
    local key_prefix = "interrupt-" .. tostring(interrupt_index) .. "-"
@@ -797,10 +833,10 @@ local function render_interrupt_tab(ctx, interrupt_index)
    builder:add_item("interrupt-name", {
       label = function(label_ctx)
          label_ctx.message:fragment({ "fa.schedule-interrupt-name" })
-         label_ctx.message:list_item(interrupt.name)
+         label_ctx.message:list_item(interrupt_name)
       end,
       on_click = function(click_ctx)
-         click_ctx.controller:open_textbox(interrupt.name, "interrupt-name", {
+         click_ctx.controller:open_textbox(interrupt_name, "interrupt-name", {
             intro_message = { "fa.schedule-enter-interrupt-name" },
          })
       end,
@@ -819,7 +855,7 @@ local function render_interrupt_tab(ctx, interrupt_index)
             return
          end
 
-         schedule.rename_interrupt(interrupt.name, new_name)
+         schedule.rename_interrupt(interrupt_name, new_name)
          click_ctx.controller.message:fragment({ "fa.schedule-interrupt-renamed", new_name })
       end,
    })
@@ -828,9 +864,8 @@ local function render_interrupt_tab(ctx, interrupt_index)
          label_ctx.message:fragment({ "fa.schedule-remove-interrupt" })
       end,
       on_click = function(click_ctx)
-         local name = interrupt.name
          schedule.remove_interrupt(interrupt_index)
-         click_ctx.controller.message:fragment({ "fa.schedule-interrupt-removed", name })
+         click_ctx.controller.message:fragment({ "fa.schedule-interrupt-removed", interrupt_name })
          click_ctx.graph_controller:suggest_move("interrupts-header")
       end,
    })
@@ -1020,8 +1055,9 @@ local function render_schedule_editor(ctx)
 
    local interrupts = schedule.get_interrupts()
    for i, interrupt in ipairs(interrupts) do
+      local interrupt_name = assert(interrupt.name)
       local interrupt_key = "interrupt-" .. tostring(i)
-      builder:add_clickable(interrupt_key, interrupt.name, {
+      builder:add_clickable(interrupt_key, interrupt_name, {
          on_click = function(click_ctx)
             click_ctx.graph_controller:suggest_move("interrupt-tab-" .. tostring(i))
          end,
@@ -1047,7 +1083,7 @@ local function render_schedule_editor(ctx)
          end,
          on_clear = function(clear_ctx)
             schedule.remove_interrupt(i)
-            clear_ctx.controller.message:fragment({ "fa.schedule-interrupt-removed", interrupt.name })
+            clear_ctx.controller.message:fragment({ "fa.schedule-interrupt-removed", interrupt_name })
          end,
       })
    end
@@ -1154,7 +1190,7 @@ mod.schedule_editor_ui = TabList.declare_tablist({
       for i, interrupt in ipairs(interrupts) do
          local interrupt_tab = KeyGraph.declare_graph({
             name = "interrupt-tab-" .. tostring(i),
-            title = interrupt.name,
+            title = assert(interrupt.name),
             render_callback = function(ctx)
                return render_interrupt_tab(ctx, i)
             end,

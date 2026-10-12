@@ -8,8 +8,6 @@ describe("Rich Text Processing", function()
       -- Based on actual output from MessageBuilder
       local expected = {
          "",
-         " ",
-         "",
          { "fa.rich-text-item", { "?", { "item-name.iron-plate" }, "iron-plate" } },
          "",
          " ",
@@ -61,8 +59,6 @@ describe("Rich Text Processing", function()
       local result = RichText.verbalize_rich_text("[virtual-signal=signal-A]")
       local expected = {
          "",
-         " ",
-         "",
          { "fa.rich-text-virtual-signal", { "?", { "virtual-signal-name.signal-A" }, "signal-A" } },
       }
       ctx:assert_table_equals(expected, result)
@@ -70,7 +66,7 @@ describe("Rich Text Processing", function()
 
    it("should verbalize wildcard signals", function(ctx)
       local result = RichText.verbalize_rich_text("[virtual-signal=signal-item-parameter]")
-      local expected = { "", " ", "", { "fa.rich-text-wildcard-item" } }
+      local expected = { "", { "fa.rich-text-wildcard-item" } }
       ctx:assert_table_equals(expected, result)
    end)
 
@@ -88,13 +84,13 @@ describe("Rich Text Processing", function()
 
    it("should handle malformed tags", function(ctx)
       local result = RichText.verbalize_rich_text("[item=iron-plate bar")
-      local expected = { "", " ", "", "[item=iron-plate bar" }
+      local expected = { "", "[item=iron-plate bar" }
       ctx:assert_table_equals(expected, result)
    end)
 
    it("should ignore color and font tags", function(ctx)
       local result = RichText.verbalize_rich_text("[color=red]text[/color]")
-      local expected = { "", " ", "", "text" }
+      local expected = { "", "text" }
       ctx:assert_table_equals(expected, result)
    end)
 

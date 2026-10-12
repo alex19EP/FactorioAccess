@@ -10,7 +10,7 @@ local MessageBuilder = Speech.MessageBuilder
 local mod = {}
 
 ---Check if the item in cursor can be rotated (has rotation support)
----@param stack LuaItemStack
+---@param stack LuaItemStack?
 ---@return boolean can_rotate True if the stack can be rotated
 function mod.can_rotate_item(stack)
    if not stack or not stack.valid_for_read or not stack.valid then return false end

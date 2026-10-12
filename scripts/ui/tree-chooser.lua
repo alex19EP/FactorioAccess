@@ -29,7 +29,6 @@ end
 ---@return fa.ui.tree.TreeChooserBuilder
 function TreeChooserBuilder:add_node(key, parent, vtable)
    assert(key ~= mod.ROOT, "Cannot add node with ROOT key")
-   assert(vtable.label, "Node vtable must have a label")
 
    if not self.nodes[key] then
       self.nodes[key] = {
@@ -71,10 +70,6 @@ end
 
 ---@return fa.ui.graph.Render?
 function TreeChooserBuilder:build()
-   local render = {
-      nodes = {},
-   }
-
    local root_children = {}
    for key, node in pairs(self.nodes) do
       if node.parent == mod.ROOT then table.insert(root_children, key) end
@@ -82,7 +77,11 @@ function TreeChooserBuilder:build()
 
    if #root_children == 0 then return nil end
 
-   render.start_key = root_children[1]
+   ---@type fa.ui.graph.Render
+   local render = {
+      nodes = {},
+      start_key = root_children[1],
+   }
 
    for key, node in pairs(self.nodes) do
       local transitions = {}
@@ -112,7 +111,8 @@ function TreeChooserBuilder:build()
       local siblings = {}
       if node.parent == mod.ROOT then
          siblings = root_children
-      elseif self.nodes[node.parent] then
+      else
+         -- add_node creates every parent it is given
          siblings = self.nodes[node.parent].children
       end
 

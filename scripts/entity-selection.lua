@@ -70,7 +70,7 @@ end
 ---Implements stable total ordering over entities per issue #265
 ---@param a LuaEntity
 ---@param b LuaEntity
----@param pindex number For player index
+---@param pindex integer For player index
 ---@return boolean True if a < b
 local function compare_entities(a, b, pindex)
    -- Ghosts before non-ghosts
@@ -122,7 +122,7 @@ end
 ---@param surface LuaSurface
 ---@param x number Tile x coordinate (will be floored)
 ---@param y number Tile y coordinate (will be floored)
----@param pindex number Player index (for primary entity detection)
+---@param pindex integer Player index (for primary entity detection)
 ---@return LuaEntity[] Sorted entities in stable order
 function mod.get_ents_on_tile(surface, x, y, pindex)
    local floor_x = math.floor(x)
@@ -161,7 +161,7 @@ end
 
 --- Get the first entity at a tile
 -- The entity list is sorted to have primary entities first, so a primary entity is expected.
----@param pindex number The player index
+---@param pindex integer The player index
 ---@return LuaEntity|nil The first entity at the tile, or nil if none found
 function mod.get_first_ent_at_tile(pindex)
    local player = game.get_player(pindex)
@@ -173,7 +173,7 @@ end
 
 --- Produce an iterator over all entities for a player's selected tile,
 -- while filtering out the player themselves.
----@param pindex number The player index
+---@param pindex integer The player index
 ---@return function, nil, nil
 function mod.iterate_selected_ents(pindex)
    local player = game.get_player(pindex)
@@ -195,7 +195,7 @@ function mod.iterate_selected_ents(pindex)
 end
 
 --- Get the tile info for the player's current cursor tile
----@param pindex number The player index
+---@param pindex integer The player index
 ---@return string?, LuaTile? Tile name and tile object, or nil if error
 function mod.get_player_tile(pindex)
    local player = game.get_player(pindex)
@@ -206,7 +206,7 @@ function mod.get_player_tile(pindex)
    local tile_name, tile_object
    if
       not pcall(function()
-         local tile = surf.get_tile(c_pos.x, c_pos.y)
+         local tile = surf.get_tile(math.floor(c_pos.x), math.floor(c_pos.y))
          tile_name = tile.name
          tile_object = tile
       end)

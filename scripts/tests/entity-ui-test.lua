@@ -9,17 +9,23 @@ local UiRouter = require("scripts.ui.router")
 
 describe("Entity UI", function()
    it("should open for a chest entity", function(ctx)
-      local player, chest
+      ---@type LuaPlayer
+      local player
+      ---@type LuaEntity
+      local chest
 
       ctx:init(function()
-         player = game.get_player(1)
+         player = assert(game.get_player(1))
          -- Create a chest near the player
-         chest = player.surface.create_entity({
-            name = "wooden-chest",
-            position = { player.position.x + 2, player.position.y },
-            force = player.force,
-         })
-         assert(chest ~= nil, "Failed to create chest")
+         local pos = player.position --[[@as MapPosition.struct]]
+         chest = assert(
+            player.surface.create_entity({
+               name = "wooden-chest",
+               position = { x = pos.x + 2, y = pos.y },
+               force = player.force,
+            }),
+            "Failed to create chest"
+         )
          assert(chest.valid, "Chest should be valid")
       end)
 
@@ -42,17 +48,23 @@ describe("Entity UI", function()
    end)
 
    it("should open for an assembling machine", function(ctx)
-      local player, machine
+      ---@type LuaPlayer
+      local player
+      ---@type LuaEntity
+      local machine
 
       ctx:init(function()
-         player = game.get_player(1)
+         player = assert(game.get_player(1))
          -- Create an assembling machine near the player
-         machine = player.surface.create_entity({
-            name = "assembling-machine-1",
-            position = { player.position.x + 2, player.position.y },
-            force = player.force,
-         })
-         assert(machine ~= nil, "Failed to create assembling machine")
+         local pos = player.position --[[@as MapPosition.struct]]
+         machine = assert(
+            player.surface.create_entity({
+               name = "assembling-machine-1",
+               position = { x = pos.x + 2, y = pos.y },
+               force = player.force,
+            }),
+            "Failed to create assembling machine"
+         )
          assert(machine.valid, "Machine should be valid")
       end)
 
@@ -79,17 +91,22 @@ describe("Entity UI", function()
    end)
 
    it("should open for charted out-of-reach entity in read-only mode", function(ctx)
-      local player, far_chest
+      ---@type LuaPlayer
+      local player
+      ---@type LuaEntity
+      local far_chest
 
       ctx:init(function()
-         player = game.get_player(1)
+         player = assert(game.get_player(1))
          -- Create a chest far from the player (but on charted terrain)
-         far_chest = player.surface.create_entity({
-            name = "wooden-chest",
-            position = { player.position.x + 100, player.position.y + 100 },
-            force = player.force,
-         })
-         assert(far_chest ~= nil, "Failed to create far chest")
+         far_chest = assert(
+            player.surface.create_entity({
+               name = "wooden-chest",
+               position = { player.position.x + 100, player.position.y + 100 },
+               force = player.force,
+            }),
+            "Failed to create far chest"
+         )
          assert(far_chest.valid, "Far chest should be valid")
          -- Ensure the chunk is charted (for remote viewing)
          local chunk_pos =
@@ -117,10 +134,13 @@ describe("Entity UI", function()
    end)
 
    it("should fail to open for uncharted out-of-reach entity", function(ctx)
-      local player, far_chest
+      ---@type LuaPlayer
+      local player
+      ---@type LuaEntity?
+      local far_chest
 
       ctx:init(function()
-         player = game.get_player(1)
+         player = assert(game.get_player(1))
          -- Create a chest in an uncharted area
          local far_pos = { x = player.position.x + 2000, y = player.position.y + 2000 }
          -- Ensure the chunk is NOT charted by picking a distant location
@@ -129,12 +149,14 @@ describe("Entity UI", function()
 
          -- Only create the chest if the chunk is uncharted (skip test otherwise)
          if not is_charted then
-            far_chest = player.surface.create_entity({
-               name = "wooden-chest",
-               position = far_pos,
-               force = player.force,
-            })
-            assert(far_chest ~= nil, "Failed to create far chest")
+            far_chest = assert(
+               player.surface.create_entity({
+                  name = "wooden-chest",
+                  position = far_pos,
+                  force = player.force,
+               }),
+               "Failed to create far chest"
+            )
             assert(far_chest.valid, "Far chest should be valid")
          end
       end)
@@ -160,17 +182,23 @@ describe("Entity UI", function()
    end)
 
    it("should handle entity becoming invalid during UI lifetime", function(ctx)
-      local player, chest
+      ---@type LuaPlayer
+      local player
+      ---@type LuaEntity
+      local chest
 
       ctx:init(function()
-         player = game.get_player(1)
+         player = assert(game.get_player(1))
          -- Create a chest near the player
-         chest = player.surface.create_entity({
-            name = "wooden-chest",
-            position = { player.position.x + 2, player.position.y },
-            force = player.force,
-         })
-         assert(chest ~= nil, "Failed to create chest")
+         local pos = player.position --[[@as MapPosition.struct]]
+         chest = assert(
+            player.surface.create_entity({
+               name = "wooden-chest",
+               position = { x = pos.x + 2, y = pos.y },
+               force = player.force,
+            }),
+            "Failed to create chest"
+         )
       end)
 
       ctx:at_tick(5, function()

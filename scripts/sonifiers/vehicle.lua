@@ -50,6 +50,7 @@ end, { ephemeral_state_version = 1 })
 ---@param vehicle LuaEntity
 ---@return number orientation 0-1 adjusted for travel direction
 local function get_travel_orientation(vehicle)
+   ---@type number
    local orientation = vehicle.orientation
    -- When speed is negative, vehicle is reversing - flip 180 degrees
    if vehicle.speed < 0 then
@@ -119,7 +120,7 @@ function mod.on_tick_per_player(pindex)
       return
    end
 
-   local vehicle = player.vehicle
+   local vehicle = assert(player.vehicle)
    if not is_trackable_vehicle(vehicle) then
       state.tracking = false
       state.distance = 0

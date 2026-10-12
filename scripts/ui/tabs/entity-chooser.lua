@@ -67,20 +67,15 @@ local function build_entity_tree(ctx)
 
    -- Collect entities by group/subgroup
    local entities_by_group = {}
-   local ungrouped = {}
 
    for name, proto in pairs(prototypes.entity) do
       if not filter_func or filter_func(proto, params) then
+         -- Every prototype has a group and subgroup
          local group = proto.group
          local subgroup = proto.subgroup
-
-         if group and subgroup then
-            entities_by_group[group.name] = entities_by_group[group.name] or {}
-            entities_by_group[group.name][subgroup.name] = entities_by_group[group.name][subgroup.name] or {}
-            table.insert(entities_by_group[group.name][subgroup.name], proto)
-         else
-            table.insert(ungrouped, proto)
-         end
+         entities_by_group[group.name] = entities_by_group[group.name] or {}
+         entities_by_group[group.name][subgroup.name] = entities_by_group[group.name][subgroup.name] or {}
+         table.insert(entities_by_group[group.name][subgroup.name], proto)
       end
    end
 

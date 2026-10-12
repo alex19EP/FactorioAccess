@@ -39,7 +39,7 @@ local RichText = require("scripts.rich-text")
 local mod = {}
 
 ---Storage for registered UI instances
----@type table<string, fa.ui.UiPanelBase>
+---@type table<string, fa.ui.UiPanelBase?>
 local registered_uis = {}
 
 ---Register a UI with the event routing system
@@ -57,7 +57,7 @@ function mod.get_registered_ui(ui_name)
 end
 
 ---Get all registered UIs
----@return table<string, fa.ui.UiPanelBase>
+---@return table<string, fa.ui.UiPanelBase?>
 function mod.get_registered_uis()
    return registered_uis
 end
@@ -66,8 +66,8 @@ end
 
 ---@class fa.ui.UiPanelBase
 ---@field ui_name fa.ui.UiName
----@field open fun(self, pindex: number, parameters: table, controller: fa.ui.RouterController)
----@field close? fun(self, pindex: number)
+---@field open fun(self, pindex: integer, parameters: table, controller: fa.ui.RouterController)
+---@field close? fun(self, pindex: integer)
 ---@field is_overlay? fun(self): boolean Return true if this UI is an overlay on the map
 ---@field on_click? fun(self, pindex: number, modifiers: table?, controller: fa.ui.RouterController)
 ---@field on_right_click? fun(self, pindex: number, modifiers: table?, controller: fa.ui.RouterController)
@@ -188,7 +188,7 @@ mod.BIND_KIND = {
 ---@class fa.ui.RouterState
 ---@field ui_stack fa.ui.StackEntry[] Stack of open UIs with contexts (top is last)
 
----@type table<number, fa.ui.RouterState>
+---@type table<integer, fa.ui.RouterState>
 local router_state = StorageManager.declare_storage_module("ui_router", {
    ui_stack = {},
 }, {
@@ -196,13 +196,13 @@ local router_state = StorageManager.declare_storage_module("ui_router", {
 })
 
 ---@class fa.ui.Router
----@field pindex number
+---@field pindex integer
 local Router = {}
 local Router_meta = { __index = Router }
 
 ---@class fa.ui.RouterController
 ---@field router fa.ui.Router
----@field pindex number
+---@field pindex integer
 ---@field message fa.MessageBuilder Temporary message accumulator during event processing
 local RouterController = {}
 local RouterController_meta = { __index = RouterController }
@@ -224,7 +224,7 @@ end
 
 ---Finalize the event by speaking accumulated message
 function RouterController:finalize()
-   local msg = self.message:build()
+   local msg = self.message:build_or_nil()
    if msg then Speech.speak(self.pindex, msg) end
 end
 
@@ -513,7 +513,7 @@ end
 -- Routers are stateless save for the pindex; we cache them to avoid the overhead of making new ones.
 local router_cache = {}
 
----@param pindex number
+---@param pindex integer
 ---@return fa.ui.Router
 function mod.get_router(pindex)
    assert(pindex ~= nil)
@@ -528,6 +528,8 @@ end
 ---@param handler fun(event: EventData, pindex: integer): any? The handler function
 local function register_ui_event(event_name, handler)
    EventManager.on_event(event_name, function(event, pindex)
+      -- UI events are all custom inputs, which always come from a player
+      assert(pindex)
       local router = mod.get_router(pindex)
       -- Only process if a UI is open
       if router:is_ui_open() then return handler(event, pindex) end
@@ -710,25 +712,11 @@ register_ui_event("fa-a-e", function(event, pindex)
 
    -- If there's still a UI on the stack, announce its title
    if #stack > 0 then
-      local top_entry = stack[#stack]
-      local ui_name = top_entry.name
-      local ui = registered_uis[ui_name]
-
-      if ui then
-         -- Check if this is a TabList (has descriptors and tab_order)
-         ---@cast ui fa.ui.TabList
-         if ui.descriptors and ui.tab_order then
-            -- Get the TabList storage directly from storage.players
-            local tablist_storage = storage.players[pindex].tab_list
-            if tablist_storage and tablist_storage[ui_name] then
-               local tl = tablist_storage[ui_name]
-               local active_tab = tl.active_tab
-               if active_tab and ui.tab_order[active_tab] then
-                  local desc = ui.descriptors[ui.tab_order[active_tab]]
-                  if desc and desc.title then Speech.speak(pindex, desc.title) end
-               end
-            end
-         end
+      local ui = registered_uis[stack[#stack].name]
+      if ui and ui.on_announce_title then
+         local controller = create_controller_for_event(router)
+         ui:on_announce_title(pindex, nil, controller)
+         controller:finalize()
       end
    end
 
@@ -886,7 +874,7 @@ register_ui_event("fa-a-rightbracket", create_ui_handler("on_clear_filter"))
 -- Bind invalidation handlers (called from control.lua)
 
 ---Called when player's hand contents change. Closes all UIs if any have HAND_CONTENTS bind.
----@param pindex number
+---@param pindex integer
 function mod.on_hand_contents_changed(pindex)
    local router = mod.get_router(pindex)
    if router:_has_hand_bind() then router:_clear_ui_stack() end

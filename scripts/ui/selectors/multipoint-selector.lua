@@ -28,11 +28,11 @@ mod.RESULT_KIND = {
 ---@field ui_name fa.ui.UiName
 ---@field intro_message LocalisedString Message to say when selector opens
 ---@field point_selected_callback fun(callback_args: fa.ui.selectors.MultipointCallbackArgs): fa.ui.selectors.MultipointCallbackResult
----@field get_binds? fun(pindex: number, parameters: table): fa.ui.Bind[]? Optional bind callback
+---@field get_binds? fun(pindex: integer, parameters: table): fa.ui.Bind[]? Optional bind callback
 
 ---@class fa.ui.selectors.MultipointCallbackArgs
 ---@field kind fa.ui.selectors.MultipointSelectionKind LEFT or RIGHT click
----@field position MapPosition The position that was selected
+---@field position fa.Point The position that was selected
 ---@field entity LuaEntity? The entity at the cursor position (nil if none)
 ---@field modifiers {control: boolean?, shift: boolean?, alt: boolean?} Modifier keys pressed
 ---@field router_ctx fa.ui.RouterController Router controller for messaging
@@ -143,10 +143,6 @@ end
 ---@param declaration fa.ui.selectors.MultipointSelectorDeclaration
 ---@return fa.ui.selectors.MultipointSelector
 function mod.declare_multipoint_selector(declaration)
-   assert(declaration.ui_name, "MultipointSelector declaration must have ui_name")
-   assert(declaration.intro_message, "MultipointSelector declaration must have intro_message")
-   assert(declaration.point_selected_callback, "MultipointSelector declaration must have point_selected_callback")
-
    ---@type fa.ui.selectors.MultipointSelector
    local ret = setmetatable({
       ui_name = declaration.ui_name,

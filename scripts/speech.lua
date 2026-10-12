@@ -54,6 +54,7 @@ local native = rawget(_G, "fa_native")
 local mod = {}
 
 -- Test capture mechanism
+---@type { enabled: boolean, messages: { message: LocalisedString, pindex: integer }[] }
 local capture_state = {
    enabled = false,
    messages = {},
@@ -127,8 +128,8 @@ function MessageBuilder:fragment(fragment)
       self.state = MESSAGE_BUILDER_STATE.FRAGMENT
    end
 
-   -- In all cases but initial, a space is needed.
-   if self.state ~= MESSAGE_BUILDER_STATE.INITIAL then table.insert(self.parts, " ") end
+   -- A space separates this fragment from anything before it.
+   if next(self.parts) then table.insert(self.parts, " ") end
 
    table.insert(self.parts, fragment)
    return self
@@ -157,8 +158,8 @@ function MessageBuilder:list_item_forced_comma(fragment)
 end
 
 -- It is an error to keep using this builder after building.
----@return LocalisedString? Nil if nothing was done.
-function MessageBuilder:build()
+---@return LocalisedString? Nil if nothing was added.
+function MessageBuilder:build_or_nil()
    self:_check_not_built()
    self.state = MESSAGE_BUILDER_STATE.BUILT
 
@@ -167,10 +168,17 @@ function MessageBuilder:build()
    return FaUtils.localise_cat_table(self.parts, "")
 end
 
+-- Like build_or_nil, but an empty message is the empty string.
+---@return LocalisedString
+function MessageBuilder:build()
+   return self:build_or_nil() or ""
+end
+
 -- Convenience function at module level
 mod.new = MessageBuilder.new
 
 -- Late-registered rich text processor (set by rich-text.lua to avoid circular dependency)
+---@type (fun(text: string): LocalisedString)?
 local rich_text_processor = nil
 
 ---Register the rich text processor function (called by rich-text.lua)
@@ -190,11 +198,12 @@ local function process_rich_text(str)
       return str
    elseif type(str) == "table" then
       -- Index 1 is the locale key/directive, process indices >= 2
+      ---@cast str LocalisedString[]
       local result = { str[1] }
       for i = 2, #str do
          result[i] = process_rich_text(str[i])
       end
-      return result
+      return result --[[@as LocalisedString]]
    else
       -- Numbers, booleans, nil - return as-is
       return str
@@ -205,7 +214,7 @@ mod.process_rich_text = process_rich_text
 
 ---Send a localized string to the native DLL or the external launcher for text-to-speech rendering.
 ---This is the primary way the mod communicates with blind players.
----@param pindex number Player index
+---@param pindex integer Player index
 ---@param str LocalisedString The message to speak
 function mod.speak(pindex, str)
    -- Assert to catch parameter order mistakes
@@ -242,7 +251,7 @@ function mod.start_capture()
 end
 
 ---Disable speech capture and return captured messages
----@return table Array of {message: LocalisedString, pindex: number}
+---@return table Array of {message: LocalisedString, pindex: integer}
 function mod.stop_capture()
    capture_state.enabled = false
    local messages = capture_state.messages
@@ -251,7 +260,7 @@ function mod.stop_capture()
 end
 
 ---Get captured messages without stopping capture
----@return table Array of {message: LocalisedString, pindex: number}
+---@return table Array of {message: LocalisedString, pindex: integer}
 function mod.get_captured_messages()
    return capture_state.messages
 end

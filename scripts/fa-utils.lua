@@ -19,7 +19,8 @@ local function check_entity_at_position(surface, pos, preferred_unit_number, exc
    return false
 end
 
--- Lookup table for direction offsets
+-- Offsets for the 8 cardinal and diagonal directions; half diagonals have none
+---@type table<defines.direction, { x: integer, y: integer }?>
 local DIRECTION_OFFSETS = {
    [defines.direction.north] = { x = 0, y = -1 },
    [defines.direction.northeast] = { x = 1, y = -1 },
@@ -95,11 +96,7 @@ function mod.to_neighboring_tile(pos, facing_direction)
    dir = HALF_DIAGONAL_MAP[dir] or dir
 
    local offset = DIRECTION_OFFSETS[dir]
-   if offset then
-      return { x = pos.x + offset.x, y = pos.y + offset.y }
-   else
-      return pos
-   end
+   return { x = pos.x + offset.x, y = pos.y + offset.y }
 end
 
 --Reports the direction and distance of one point from another. Biased towards the diagonals.
@@ -196,7 +193,7 @@ function mod.get_direction_biased(pos_target, pos_origin)
 end
 
 ---@param vector fa.Point
----@return defines.direction?
+---@return defines.direction
 function mod.direction_of_vector(vector)
    --[[
    The math, since not everyone knows it:
@@ -229,18 +226,16 @@ function mod.direction_of_vector(vector)
    -- 2pi/32 = pi/16, lua will not fold the constants.
    local segment = math.floor(angle / (math.pi / 16))
    local segment_off = segment + 1
-   local mapped = segment % 32
+   local mapped = segment_off % 32
    local dir = math.floor(mapped / 2)
    assert(dir < 16)
-   return dir --[[ @as defines.direction ]]
+   return dir --[[@as defines.direction]]
 end
 
 function mod.get_direction_precise(pos_target, pos_origin)
    local diff_x = pos_target.x - pos_origin.x
    local diff_y = pos_target.y - pos_origin.y
-   -- For legacy reasons, this must default north: callers have never checked,
-   -- and this used to be a very complex if tree.
-   return mod.direction_of_vector({ x = diff_x, y = diff_y }) or defines.direction.north
+   return mod.direction_of_vector({ x = diff_x, y = diff_y })
 end
 
 --Checks whether a cardinal or diagonal direction is precisely aligned. All check positions are floored to their northwest corners.
@@ -259,6 +254,17 @@ function mod.is_direction_aligned(pos_origin, pos_target)
 
    --None of the above means they are not aligned.
    return false
+end
+
+---A direction's name, as a locale parameter or a whole message. fa.direction picks the name by the direction's
+---number; the API documents defines as opaque, so the number is taken explicitly here.
+---@param dir defines.direction
+---@return LocalisedString
+function mod.localise_direction(dir)
+   return {
+      "fa.direction",
+      dir --[[@as integer]],
+   }
 end
 
 --Converts an input direction into a localised string.
@@ -479,7 +485,9 @@ function mod.ent_name_locale(ent)
       print("todo: forest isn't an entity")
       return { "fa.forest" }
    end
+   ---@type LuaEntityPrototype?
    local entity_prototype = prototypes.entity[ent.name]
+   ---@type LuaResourceCategoryPrototype?
    local resource_prototype = prototypes.resource_category[ent.name]
    local name = nil
    if ent.localised_name == nil and entity_prototype == nil and resource_prototype == nil then
@@ -598,7 +606,7 @@ function mod.get_item_name_for_ent(name)
 end
 
 --Returns true only if this action was called within the last 10 seconds. Resets.
----@param pindex int player index
+---@param pindex integer player index
 ---@param id_string string used to check whether the same thing as last time is being checked
 ---@param custom_message string info about what action is being checked
 ---@return boolean to allow the action
@@ -632,9 +640,6 @@ end
 
 local ALL_PROTO_KINDS = {
    "item",
-   "font",
-   "map_gen_preset",
-   "style",
    "entity",
    "fluid",
    "tile",
@@ -684,8 +689,10 @@ local ALL_PROTO_KINDS = {
 ---@return LuaPrototypeBase?
 function mod.find_prototype(name)
    for _, f in pairs(ALL_PROTO_KINDS) do
-      local p = prototypes[f]
-      if p and p[name] then return p[name] end
+      local kind = prototypes[f] --[[@as LuaCustomTable<string, LuaPrototypeBase>]]
+      ---@type LuaPrototypeBase?
+      local proto = kind[name]
+      if proto then return proto end
    end
 
    return nil

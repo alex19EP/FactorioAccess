@@ -78,7 +78,7 @@ end
 ---@return boolean can_open
 ---@return LocalisedString? error_message
 function mod.can_open_entity(pindex, entity)
-   local player = game.get_player(pindex)
+   local player = assert(game.get_player(pindex))
 
    -- Ghosts are always accessible
    if entity.type == "entity-ghost" then return true end
@@ -90,7 +90,11 @@ function mod.can_open_entity(pindex, entity)
    if bypasses_charting(entity) then return true end
 
    -- Otherwise, check if the chunk is visible (in radar range)
-   if is_position_visible(player.force, player.surface, entity.position) then return true end
+   if
+      is_position_visible(player.force --[[@as LuaForce]], player.surface, entity.position)
+   then
+      return true
+   end
 
    -- Cannot access
    return false, { "fa.entity-out-of-reach" }
@@ -101,7 +105,7 @@ end
 ---@param entity LuaEntity
 ---@return fa.EntityAccess.WriteCheckResult
 function mod.can_write_to_entity(pindex, entity)
-   local player = game.get_player(pindex)
+   local player = assert(game.get_player(pindex))
 
    -- Own character always has write access
    if is_own_character(player, entity) then return { allowed = true } end

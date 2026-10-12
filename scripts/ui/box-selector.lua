@@ -10,8 +10,8 @@ local mod = {}
 
 ---@class fa.ui.BoxSelectorDeclaration
 ---@field ui_name fa.ui.UiName
----@field callback? fun(pindex: number, params: table, result: table) Optional callback when selection completes
----@field get_binds? fun(pindex: number, parameters: table): fa.ui.Bind[]? Optional bind callback
+---@field callback? fun(pindex: integer, params: table, result: table) Optional callback when selection completes
+---@field get_binds? fun(pindex: integer, parameters: table): fa.ui.Bind[]? Optional bind callback
 
 ---@class fa.ui.BoxSelectorParameters
 ---@field intro_message? LocalisedString Custom intro message
@@ -23,8 +23,6 @@ local mod = {}
 ---@param declaration fa.ui.BoxSelectorDeclaration
 ---@return fa.ui.UiPanelBase
 function mod.declare_box_selector(declaration)
-   assert(declaration.ui_name, "BoxSelector declaration must have ui_name")
-
    local callback = declaration.callback
 
    return MultipointSelector.declare_multipoint_selector({
@@ -34,12 +32,13 @@ function mod.declare_box_selector(declaration)
       point_selected_callback = function(args)
          ---@type fa.ui.BoxSelectorState
          local state = args.state
+         local position = args.position
 
          if not state.first_click then
             -- First click - store it
             state.first_click = {
-               x = args.position.x,
-               y = args.position.y,
+               x = position.x,
+               y = position.y,
                modifiers = args.modifiers or {},
                is_right_click = args.kind == MultipointSelector.SELECTION_KIND.RIGHT,
             }
@@ -59,19 +58,19 @@ function mod.declare_box_selector(declaration)
             local result = {
                first_click = state.first_click,
                second_click = {
-                  x = args.position.x,
-                  y = args.position.y,
+                  x = position.x,
+                  y = position.y,
                   modifiers = args.modifiers or {},
                   is_right_click = args.kind == MultipointSelector.SELECTION_KIND.RIGHT,
                },
                box = {
                   left_top = {
-                     x = math.min(state.first_click.x, args.position.x),
-                     y = math.min(state.first_click.y, args.position.y),
+                     x = math.min(state.first_click.x, position.x),
+                     y = math.min(state.first_click.y, position.y),
                   },
                   right_bottom = {
-                     x = math.max(state.first_click.x, args.position.x),
-                     y = math.max(state.first_click.y, args.position.y),
+                     x = math.max(state.first_click.x, position.x),
+                     y = math.max(state.first_click.y, position.y),
                   },
                },
                controller = args.router_ctx,

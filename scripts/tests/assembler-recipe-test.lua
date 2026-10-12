@@ -11,8 +11,11 @@ describe("Assembler Recipe Mod Tests", function()
    it("should list available recipes for assembler", function(ctx)
       -- Local variables for the test
       local pindex = 1
+      ---@type LuaPlayer
       local player
+      ---@type LuaSurface
       local surface
+      ---@type LuaEntity
       local assembler
 
       ctx:init(function()
@@ -28,11 +31,11 @@ describe("Assembler Recipe Mod Tests", function()
 
       ctx:at_tick(1, function()
          -- Create an assembler
-         assembler = surface.create_entity({
+         assembler = assert(surface.create_entity({
             name = "assembling-machine-1",
             position = { x = 0, y = -3 },
             force = player.force,
-         })
+         }))
       end)
 
       ctx:at_tick(2, function()
