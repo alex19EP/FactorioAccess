@@ -106,6 +106,8 @@ add_library(fa_native SHARED
   src/screens/GenericWindowScreen.cpp
   src/screens/MenuScreen.cpp
   src/screens/LoadGameScreen.cpp
+  src/screens/SaveGameScreen.cpp
+  src/screens/SaveLists.cpp
   src/screens/NewGameScreen.cpp
   src/screens/MapGeneratorScreen.cpp
   src/screens/ModsScreen.cpp

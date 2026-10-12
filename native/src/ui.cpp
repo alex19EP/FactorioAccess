@@ -20,6 +20,7 @@
 #include "screens/FilterSelectScreen.hpp"
 #include "screens/GenericWindowScreen.hpp"
 #include "screens/LoadGameScreen.hpp"
+#include "screens/SaveGameScreen.hpp"
 #include "screens/DeconstructionPlannerScreen.hpp"
 #include "screens/UpgradePlannerScreen.hpp"
 #include "screens/BlueprintBookScreen.hpp"
@@ -123,6 +124,7 @@ void start() {
    std::vector<std::unique_ptr<screens::WindowScreen>> recipes;
    recipes.push_back(std::make_unique<screens::MenuScreen>());
    recipes.push_back(std::make_unique<screens::LoadGameScreen>());
+   recipes.push_back(std::make_unique<screens::SaveGameScreen>());
    recipes.push_back(std::make_unique<screens::NewGameScreen>());
    recipes.push_back(std::make_unique<screens::MapGeneratorScreen>());
    recipes.push_back(std::make_unique<screens::ModsScreen>());
