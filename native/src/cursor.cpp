@@ -621,7 +621,10 @@ void announceView(const View& view, bool speak) {
    }
    std::string text = (*word)(tiles, cell);
    if (!hand.empty()) text += ", " + hand;
-   speech::say(std::move(text), true);
+   // A view entered with a window, as remote view opens with a locomotive's, follows the window's
+   // own line rather than cutting it off.
+   const bool window = at<const void*>(view.view, layout.gameViewActiveWindow) != nullptr;
+   speech::say(std::move(text), !window);
 }
 
 void frame(void* source) {

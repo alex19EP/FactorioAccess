@@ -19,7 +19,8 @@ void TrainScreen::BuildWindow(graph::GraphBuilder& builder, const Widget* window
         if (const Widget* header = FindDescendant(parts.tabs, "agui::Table"))
             AddSubtree(builder, "train/tabs", header);
 
-    if (Shows(parts.schedule))
+    // The schedule keeps its visible flag while the other tab shows: the selected tab tells.
+    if (Shows(parts.schedule) && (!tabs || agui::tabSelected(parts.scheduleTab)))
     {
         AddSchedule(builder, "schedule", parts.schedule,
             [this](std::string key, std::function<bool()> ready) { LandWhen(std::move(key), std::move(ready)); });

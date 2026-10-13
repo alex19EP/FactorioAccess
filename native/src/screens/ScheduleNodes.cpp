@@ -25,12 +25,13 @@ void AddText(graph::GraphBuilder& builder, const std::string& key, const Widget*
     builder.AddItem(graph::ControlId::Referenced(label, key), std::move(node));
 }
 
-void AddButton(
-    graph::GraphBuilder& builder, const std::string& key, const Widget* widget, std::function<bool(int by)> reorder)
+// `word` names an icon button the game gives no tooltip.
+void AddButton(graph::GraphBuilder& builder, const std::string& key, const Widget* widget,
+    std::function<bool(int by)> reorder, const vocab::Word* word = nullptr)
 {
     if (!widget || !Shows(widget))
         return;
-    graph::NodeVtable node = ControlNode(widget);
+    graph::NodeVtable node = word ? ControlNode(widget, [word]() { return std::string(*word); }) : ControlNode(widget);
     node.OnReorder = std::move(reorder);
     builder.AddItem(graph::ControlId::Referenced(widget, key), std::move(node));
 }
@@ -80,9 +81,9 @@ void AddStation(graph::GraphBuilder& builder, const std::string& list, int index
             return text;
         },
         reorder);
-    AddButton(builder, key + "/goto", goTo, reorder);
-    AddButton(builder, key + "/change", station.change, reorder);
-    AddButton(builder, key + "/remove", station.remove, reorder);
+    AddButton(builder, key + "/goto", goTo, reorder, &vocab::kGoNow);
+    AddButton(builder, key + "/change", station.change, reorder, &vocab::kChangeStation);
+    AddButton(builder, key + "/remove", station.remove, reorder, &vocab::kRemove);
     AddButton(builder, key + "/unload", station.unload, reorder);
     builder.EndRow();
 
@@ -113,7 +114,8 @@ void AddConditions(graph::GraphBuilder& builder, const std::string& key, const C
         const Widget* condition = conditions[i];
         if (!Shows(condition))
             continue;
-        std::vector<const Widget*> skip{agui::scheduleConditionDrag(condition)};
+        const Widget* remove = agui::scheduleConditionRemove(condition);
+        std::vector<const Widget*> skip{agui::scheduleConditionDrag(condition), remove};
         std::string text = RowText(condition, skip);
         // A condition's first item: and or, or the condition's type in the first row.
         auto reorder = Reorder(
@@ -126,7 +128,8 @@ void AddConditions(graph::GraphBuilder& builder, const std::string& key, const C
             },
             land);
         builder.StartRow("condition");
-        AddRowItems(builder, keyAt(static_cast<int>(i)), {condition}, std::move(skip), std::move(reorder));
+        AddRowItems(builder, keyAt(static_cast<int>(i)), {condition}, std::move(skip), reorder);
+        AddButton(builder, keyAt(static_cast<int>(i)) + "/remove", remove, std::move(reorder), &vocab::kRemove);
         builder.EndRow();
     }
     AddControl(builder, key + "/add", add);
@@ -175,9 +178,9 @@ void AddSchedule(graph::GraphBuilder& builder, const std::string& key, const Wid
             land);
         builder.StartRow("interrupt");
         AddText(builder, row + "/name", interrupt.name, {}, reorder);
-        AddButton(builder, row + "/goto", interrupt.goTo, reorder);
+        AddButton(builder, row + "/goto", interrupt.goTo, reorder, &vocab::kGoNow);
         AddButton(builder, row + "/edit", interrupt.edit, reorder);
-        AddButton(builder, row + "/remove", interrupt.remove, reorder);
+        AddButton(builder, row + "/remove", interrupt.remove, reorder, &vocab::kRemove);
         builder.EndRow();
     }
     AddControl(builder, interrupts + "/add", parts.addInterrupt);

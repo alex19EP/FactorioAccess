@@ -88,6 +88,17 @@ struct Layout {
    // calls on itself when a dragged child is let go, running the pane's item drag handlers (a
    // schedule's sends the reorder's input action).
    uintptr_t dispatchItemDrag = 0;
+   // Before that the drag moved the child itself, as the mouse went: a MOVE pane
+   // (DragPane::elementDragged) takes it out (remove, kept alive), puts it in at its new index
+   // (insert) and tells the pane (DragPane::onWidgetsChangedOrder, where a condition list moves its
+   // and/or buttons); a SWAP pane swaps the two (swapChildren) as it is let go. The handlers then
+   // refresh the rows in place, trusting the children already in the new order.
+   uint32_t slotInsert = 0;                // agui::Widget::insert(Widget*, unsigned index)
+   uint32_t slotRemove = 0;                // agui::Widget::remove(Widget*, NamedBool keep)
+   uint32_t slotSwapChildren = 0;          // agui::Widget::swapChildren(int, int)
+   uint32_t dragPaneMode = 0;              // DragPane::mode, DragPane::DragMode
+   uint32_t dragModeSwap = 0;              // DragPane::DragMode::SWAP
+   uint32_t dragPaneChangedOrder = 0;      // DragPane::onWidgetsChangedOrder()
    // Pair<bool, agui::Widget*> determineWidgetUnderMouse(): whether the real mouse is over a GUI
    // rather than the game view. A GUI control bound like a world control (craft and build on the
    // left button, craft-5 and mine on the right) is held only while it says so.
@@ -1361,6 +1372,7 @@ struct Layout {
    uint32_t scheduleStationRemove = 0;       // ::removeButton, IconButton
    uint32_t scheduleStationUnload = 0;       // ::unloadCheckBox, agui::CheckBox
    uint32_t scheduleConditionDrag = 0;       // ScheduleConditionGui::draggableSpace, DragHandleFiller
+   uint32_t scheduleConditionRemove = 0;     // ScheduleConditionGui::removeButton, IconButton
    // An interrupt of a schedule (ScheduleInterruptGui).
    uint32_t scheduleInterruptGoTo = 0;       // ::gotoButton, IconButton
    uint32_t scheduleInterruptName = 0;       // ::name, agui::Label

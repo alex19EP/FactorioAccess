@@ -56,6 +56,12 @@ bool resolve(pdb::SymbolTable& symbols) {
    address(layout.dispatchMouseUp, "?dispatchMouseUp@Widget@agui@@QEAAXAEBVMouseEvent@2@@Z");
    address(layout.dispatchMouseLeave, "?dispatchMouseLeave@Widget@agui@@QEAAXAEBVMouseEvent@2@@Z");
    address(layout.dispatchItemDrag, "?dispatchItemDrag@Widget@agui@@QEAAXHH@Z");
+   slot(layout.slotInsert, "insert");
+   slot(layout.slotRemove, "remove");
+   slot(layout.slotSwapChildren, "swapChildren");
+   offset(layout.dragPaneMode, "DragPane", "mode");
+   enumerator(layout.dragModeSwap, "DragPane::DragMode", "SWAP");
+   classSlot(layout.dragPaneChangedOrder, "DragPane", "onWidgetsChangedOrder");
    address(layout.determineWidgetUnderMouse, "?determineWidgetUnderMouse@@YA?AU?$Pair@_NPEAVWidget@agui@@@@XZ");
    address(layout.processNextDialog, "?processNextDialog@PlayerInputSource@@QEAA_NXZ");
    address(layout.playerCursorPosition,
@@ -965,6 +971,7 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.scheduleStationRemove, "ScheduleStationGui", "removeButton");
    offset(layout.scheduleStationUnload, "ScheduleStationGui", "unloadCheckBox");
    offset(layout.scheduleConditionDrag, "ScheduleConditionGui", "draggableSpace");
+   offset(layout.scheduleConditionRemove, "ScheduleConditionGui", "removeButton");
    offset(layout.scheduleInterruptGoTo, "ScheduleInterruptGui", "gotoButton");
    offset(layout.scheduleInterruptName, "ScheduleInterruptGui", "name");
    offset(layout.scheduleInterruptEdit, "ScheduleInterruptGui", "editButton");

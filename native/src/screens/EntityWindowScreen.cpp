@@ -13,6 +13,26 @@ namespace fa::screens
 
 using agui::Widget;
 
+namespace
+{
+
+// The interaction area inside remote view's frame. Searched by visibility alone: the frame and the
+// area are no controls, so FindDescendant passes them by.
+const Widget* InteractionArea(const Widget* widget)
+{
+    if (!agui::visible(widget))
+        return nullptr;
+    if (agui::derivesFrom(widget, "InteractionArea"))
+        return widget;
+    for (auto list : {agui::children(widget), agui::privateChildren(widget)})
+        for (const Widget* child : list)
+            if (const Widget* found = InteractionArea(child))
+                return found;
+    return nullptr;
+}
+
+} // namespace
+
 EntityWindowScreen::Found EntityWindowScreen::FindWindow() const
 {
     // Only over plain play: the game menu takes over.
@@ -23,10 +43,10 @@ EntityWindowScreen::Found EntityWindowScreen::FindWindow() const
     if (!root)
         return {};
     Found top;
-    for (const Widget* child : agui::children(root))
+    auto consider = [&](const Widget* child)
     {
         if (!agui::visible(child))
-            continue;
+            return;
         if (const Widget* wrapped = agui::wrappedWindow(child))
         {
             if (Handles(wrapped))
@@ -34,6 +54,19 @@ EntityWindowScreen::Found EntityWindowScreen::FindWindow() const
         }
         else if (Handles(child))
             top = {child, nullptr};
+    };
+    for (const Widget* child : agui::children(root))
+    {
+        // Remote view docks a window in its frame's interaction area: a locomotive's always opens
+        // there, beside the train it follows.
+        if (agui::visible(child) && agui::derivesFrom(child, "RemoteControllerView::FrameAround"))
+        {
+            if (const Widget* area = InteractionArea(child))
+                for (const Widget* docked : agui::children(area))
+                    consider(docked);
+            continue;
+        }
+        consider(child);
     }
     return top;
 }

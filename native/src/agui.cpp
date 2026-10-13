@@ -977,6 +977,11 @@ const Widget* scheduleConditionDrag(const Widget* condition) {
    return gui ? part(gui, layout.scheduleConditionDrag) : nullptr;
 }
 
+const Widget* scheduleConditionRemove(const Widget* condition) {
+   const std::byte* gui = asBase(condition, ".?AVScheduleConditionGui@@");
+   return gui ? part(gui, layout.scheduleConditionRemove) : nullptr;
+}
+
 InterruptEditorParts interruptEditorParts(const Widget* window) {
    const std::byte* gui = asBase(window, ".?AVEditInterruptGui@@");
    if (!gui) return {};
@@ -1855,6 +1860,17 @@ bool dragChild(const Widget* pane, const Widget* child, int by) {
    int from = static_cast<int>(it - items.begin());
    int to = from + by;
    if (to < 0 || to >= static_cast<int>(items.size())) return false;
+   const std::byte* drag = asBase(pane, ".?AVDragPane@@");
+   if (!drag) return false;
+   // The child moves first, as under the mouse.
+   if (at<uint32_t>(drag, layout.dragPaneMode) == layout.dragModeSwap) {
+      callVirtual<void>(pane, layout.slotSwapChildren, from, to);
+   } else {
+      auto* moved = const_cast<Widget*>(child);
+      callVirtual<void>(pane, layout.slotRemove, moved, true);
+      callVirtual<void>(pane, layout.slotInsert, moved, static_cast<unsigned>(to));
+      callVirtualAt<void>(drag, layout.dragPaneChangedOrder);
+   }
    using Dispatch = void (*)(const Widget* widget, int from, int to);
    reinterpret_cast<Dispatch>(layout.dispatchItemDrag)(pane, from, to);
    return true;

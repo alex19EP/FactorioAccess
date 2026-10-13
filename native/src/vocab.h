@@ -206,6 +206,11 @@ inline constexpr Word kTracked{"fa.native-tracked"};
 inline constexpr Word kNotTracked{"fa.native-not-tracked"};
 // A schedule's station the train heads to, which the game shows only by its go-to button's look.
 inline constexpr Word kCurrentStop{"fa.native-current-stop"};
+// A schedule's icon buttons, which have no tooltip: a station's or an interrupt's go-to (play), a
+// station's change, and the remove cross of a station, a wait condition or an interrupt.
+inline constexpr Word kGoNow{"fa.native-go-now"};
+inline constexpr Word kChangeStation{"fa.native-change-station"};
+inline constexpr Word kRemove{"fa.native-remove"};
 
 // A recipe tooltip's ingredient count in red (not enough, and none to make) or in orange (not
 // enough, made from intermediates when crafted).

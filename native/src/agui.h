@@ -439,6 +439,8 @@ struct ScheduleParts {
 ScheduleParts scheduleParts(const Widget* scheduleGui);
 // The drag handle filling a wait condition's row (ScheduleConditionGui), or null for any other widget.
 const Widget* scheduleConditionDrag(const Widget* condition);
+// A wait condition's remove button, an icon with no tooltip, or null for any other widget.
+const Widget* scheduleConditionRemove(const Widget* condition);
 
 // The parts of the window editing an interrupt (EditInterruptGui): the scroll panes of its trigger
 // conditions and of its targets, the conditions (ScheduleConditionGui each) and the button adding
