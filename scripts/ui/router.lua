@@ -128,9 +128,6 @@ mod.UI_NAMES = {
    FLUID_CHOOSER = "fluid_chooser",
    LOGISTICS_CONFIG = "logistics_config",
    LOGISTIC_GROUP_SELECTOR = "logistic_group_selector",
-   TRAIN_GROUP_SELECTOR = "train_group_selector",
-   TRAIN_INTERRUPT_SELECTOR = "train_interrupt_selector",
-   STOP_SELECTOR = "stop_selector",
    CONSTANT_COMBINATOR = "constant_combinator",
    DECIDER_COMBINATOR = "decider_combinator",
    POWER_SWITCH = "power_switch",
@@ -149,7 +146,6 @@ mod.UI_NAMES = {
    ENTITY_CHOOSER = "entity_chooser",
    HELP = "help",
    TUTORIAL = "tutorial",
-   SCHEDULE_EDITOR = "schedule_editor",
    PROTOTYPE_LISTER = "prototype_lister",
    -- Test UI names (used in automated tests)
    TEST_ASSEMBLING_MACHINE = "test-assembling-machine",

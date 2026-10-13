@@ -24,18 +24,15 @@ local fluids_tab = require("scripts.ui.tabs.fluids")
 local infinity_chest_config_tab = require("scripts.ui.tabs.infinity-chest-config")
 local infinity_pipe_config_tab = require("scripts.ui.tabs.infinity-pipe-config")
 local inserter_config_tab = require("scripts.ui.tabs.inserter-config")
-local locomotive_config_tab = require("scripts.ui.tabs.locomotive-config")
 local roboport_config_tab = require("scripts.ui.tabs.roboport-config")
 local selector_combinator_tab = require("scripts.ui.tabs.selector-combinator")
 local splitter_config_tab = require("scripts.ui.tabs.splitter-config")
-local train_stop_tab = require("scripts.ui.tabs.train-stop")
 local turret_config_tab = require("scripts.ui.tabs.turret-config")
 
 local mod = {}
 
 -- Entity types that should show configuration section before inventories
 local CONFIG_FIRST_TYPES = {
-   ["locomotive"] = true,
    ["roboport"] = true,
 }
 
@@ -168,12 +165,6 @@ local function build_configuration_tabs(entity)
    if prototype.type == "arithmetic-combinator" then
       table.insert(tabs, arithmetic_combinator_tab.arithmetic_combinator_tab)
    end
-
-   -- Add train stop configuration
-   if prototype.type == "train-stop" then table.insert(tabs, train_stop_tab.train_stop_tab) end
-
-   -- Add locomotive configuration
-   if prototype.type == "locomotive" then table.insert(tabs, locomotive_config_tab.locomotive_config_tab) end
 
    -- Add roboport configuration
    if prototype.type == "roboport" then table.insert(tabs, roboport_config_tab.roboport_config_tab) end
