@@ -28,29 +28,19 @@ Pop a bookmark from the bookmark stack: alt + b
 
 Undo the most recent move, deleting a rail if you placed one: backspace
 
-### For the Schedule Editor
+### For the Train Window and its Schedule
 
-Set the first parameter of a schedule condition to a signal or item: m
+Move between the window's parts (the train, the schedule, the interrupts): tab
 
-Set the first parameter of a schedule condition to a typed value (number or station name): shift + m
+Jump to the next or previous station of the schedule: control + down and control + up
 
-Set the second parameter of a schedule condition to an item or signal: dot
+Move a station, wait condition or interrupt down or up the list: control + shift + down and control + shift + up
 
-Set the second parameter of a schedule condition to a typed value: shift + dot
+Go to the map beside the window, and on through the HUD: control + tab; back with control + shift + tab
 
-Toggle the comparison operator for a schedule condition when applicable: ciomma and shift + comma
+On the map, in map view, add a temporary stop where the cursor is: control + left bracket
 
-Delete a schedule condition: backspace on the condition
-
-Delete a schedule stop: backspace on the stop
-
-Add a new condition separated by or: slash, either on a condition or the initial "no conditions" item of a stop.
-
-Add a new condition, separated by and: control + slash
-
-Toggle the logical operator joining this condition to the previous one: n
-
-Set the active stop in a schedule: right bracket
+On the map, add the train stop under the cursor to the schedule: shift + left bracket
 
 ## Explanation
 
@@ -67,21 +57,15 @@ but because track layouts are very complex the train is not likely to do what yo
 run into other trains.
 
 A sighted player who wants to drive a train through a complicated base, and the accessible way for you to do so, is to
-use the schedule editor. You add a temporary stop for the station you want, add "passenger not present" as a condition,
-then hit right bracket on the stop to set it to the active stop.
+add a temporary stop. Open the locomotive, press control + tab to go to the map, put the cursor near the track where you
+want to go, and press control + left bracket. The game adds the temporary stop to the schedule and the train heads
+there. Add "passenger not present" to it as a wait condition if it should wait for you to get off.
 
 What we do offer is a radar that tells you which way and how fast a train is moving. When sitting in a moving train, you
 will hear a quiet tone in the direction the train is going.  Higher pitch is "more north", and pan is east/west.  So a
 high leftish tone is northwest, etc.  The tone plays when the train changes orientation, or after the train has traveled
 50 tiles. This at least allows you to (1) have the sighted experience of advanced players who can't really drive trains
 manually anyhow, and (2) know what's going on and roughly where and how far you have gone.
-
-We also offer two buttons in a locomotive's config menu, "go to station and wait for passenger" and "go to station and
-wait for passenger to disembark", which will add a temporary stop to the locomotive's schedule and then set it as the
-active stop. You may be familiar with this from 1.1 as "semiautomatic driving".  If you are coming from 1.1, note that
-the 2.0 version of this feature is simpler and more straightforward, but requires you to pick whether you want it to
-wait for you to get on or off by selecting the right button (this resolves many bugs from 1.1, most notably the "it
-can't drive to stations in the middle of tracks" issue).
 
 ### Overview of Track Reporting
 
@@ -251,40 +235,22 @@ building very large structures.
 
 ### Schedules and Stations
 
-There is a station UI. It works like any other UI and lets you set things like any other UI, and doesn't deserve more
-documentation. The only special thing about it is that train station names support rich text--see below on interrupts
-for why that is important.
+The train stop's window and the locomotive's window are the game's own, read as they show. Teaching how train schedules
+work is beyond the scope of mod documentation.  See the wiki for that.
 
-Teaching how train schedules work is beyond the scope of mod documentation.  See the wiki for that.
+A locomotive's window opens beside the map, in remote view following the train. Its first part holds the train's
+controls: its group, manual or automatic, drive remotely, and the Schedule and Fuel tabs. The schedule lists each
+station with its buttons (go now, change station, remove, unload) and, under it, its wait conditions, each with its
+own controls and remove button, then the station's "add wait condition" button. Enter on a button does what clicking it
+does: "add station" and "add wait condition" open the game's lists to choose from. The interrupts are the next part;
+"edit interrupt" opens the game's window for it, whose conditions and targets read the same way.
 
-The schedule editor now exposes all functionality.  To get to it, click a locomotive and find the schedule editor on the
-second row to the right of manual mode.  The typical flow is to put the train in manual mode, edit the schedule, then
-turn the train back to automatic.
+The game orders stations, conditions and interrupts by dragging them; control + shift + up and down drag the one under
+the cursor by one place, and the cursor follows it.
 
-The controls are at the top of this document, but they borrow the controls of the decider combinator. M is parameter 1,
-comma is the operator, and dot is parameter two.  What these are changes based on the schedule condition type, toggled
-with j.  For example, "wait" only has one parameter and it is always a constant integer, so you set it with shift + m.
-Rather than shifting whether or not m and dot open text boxes, we instead require you to add shift if the parameter can
-only be set from a text box.  In future that will basically just be numbers, but for today we do require you to enter
-stop names manually--there is no stop selector yet.
-
-Just like with the decider, n controls how the condition joins with the previous (and/or) and slash adds a new one and
-moves you to it (combined using or, add ctrl for and).  The key that we add to this is j, to toggle through the
-condition types (wait, passenger present, cargo has a specific thing, etc).
-
-The game does not care if stops are present when you add them to a schedule, so we will always support typing stop
-names.  Indeed, for some 2.0 functionality typing the stop name is mandatory even for the sighted.  For now, for
-simplicity and to get off the ground, you must type your stop names yourself.
-
-Like with the decider combinator, the idea is that you view these controls like reading text or similar (j doesn't fit
-the analogy, but it needed one more key and b is too important).  If we put braille on your keyboard with one "field"
-per key, it would "fit" on n m comma dot, and then slash adds to the "end" of the row as a whole.
-
-Train groups are supported and are set at the locomotive config level, that is outside the schedule editor.  As with
-other vanilla functionality, see the regular Factorio wiki for information on how to use them. To cover the one unclear
-point, groups are created by just deciding to use their name (press m instead of clicking into the group selector) and
-are destroyed by destroying the last train (or ghost) using the group.  This slightly unintuitive behavior matches
-vanilla.  It's more like channels than groups: any train "tuned" to the same name "receives" the schedule.
+Train groups are set in the locomotive's window, as in vanilla. Groups are created by just deciding to use their name and
+are destroyed by destroying the last train (or ghost) using the group.  It's more like channels than groups: any train
+"tuned" to the same name "receives" the schedule.
 
 ### Interrupts and Rich Text
 
@@ -303,19 +269,18 @@ need are:
 
 If you are reading this document and don't know what an interrupt does, start by reading those pages.
 
-To start with how to get to and make interrupts, the train schedule GUI has an add interrupt button; like with groups,
-to make a new one or type the name of an existing one, press m.  Also like groups, there is no explicit create or
-delete.  If a train is using an interrupt it exists, otherwise it does not. So to create one just start using the name.
-Interrupts can be dragged like stops to change their priority, and are edited by pressing tab, which will cycle through
-child schedule editors for all of your interrupts.
+To start with how to get to and make interrupts, the train schedule has an add interrupt button, which opens the game's
+list of interrupts and a field to type a new name.  Like groups, there is no explicit create or delete.  If a train is
+using an interrupt it exists, otherwise it does not. So to create one just start using the name. Interrupts move like
+stations to change their priority, and "edit interrupt" opens the game's window for one.
 
 This brings us to the stuff about rich text.  There are two places you may wish to use a wildcard:
 
 - In conditions. To find this, it is in the item selector signals -> unsorted -> parameters.
 - In station names.  For that, use what we are about to explain.
 
-There are two ways to enter rich text when typing into train-related text fields. One is to use `[item=prototypename]`.
-The other is to use our shorthands.  In order to make it feasible to type rich text, we have introduced a few shorthands
+The game's own text fields, station names among them, take rich text typed in its long form, `[item=prototypename]`.
+In the mod's own text boxes there is also a shorter way.  In order to make it feasible to type rich text, we have introduced a few shorthands
 starting with `:`.  They take the form `:t.name`.  For example, `:i.iron-plate` is iron plates.  To find the iron-plate
 part, use the prototype lister.  Opened with alt + p, the prototype lister is a tree chooser of all prototypes in the
 game.  Click to get the prototype name, right click to spell it, shift click to copy it to your clipboard, and shift

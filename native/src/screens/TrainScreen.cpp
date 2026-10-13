@@ -2,11 +2,31 @@
 
 #include "ScheduleNodes.hpp"
 #include "game.h"
+#include "parts.h"
+#include "vocab.h"
 
 namespace fa::screens
 {
 
 using agui::Widget;
+
+bool TrainScreen::IsActive()
+{
+    const bool open = FindWindow().window != nullptr;
+    parts::setAvailable(parts::Part::Map, open);
+    if (parts::current() == parts::Part::Map)
+    {
+        if (open)
+            return false;
+        parts::close();
+    }
+    return EntityWindowScreen::IsActive();
+}
+
+std::string TrainScreen::LeaveLine() const
+{
+    return parts::current() == parts::Part::Map ? std::string(vocab::kMap) : std::string();
+}
 
 bool TrainScreen::Handles(const Widget* window) const { return agui::derivesFrom(window, "TrainGui"); }
 

@@ -60,7 +60,6 @@ protected:
     /// while one is open.
     static void AddSidePanel(graph::GraphBuilder& builder, const agui::Widget* sidePanel);
 
-private:
     /// The window, and the wrapper the game put it in when a mod attached elements to it.
     struct Found
     {
@@ -69,6 +68,7 @@ private:
     };
     Found FindWindow() const;
 
+private:
     /// The mod elements in the wrapper's flows, a stop each.
     static void AddRelativeElements(graph::GraphBuilder& builder, const agui::Widget* wrapper);
 

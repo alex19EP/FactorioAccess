@@ -10,6 +10,10 @@
 //   - while the Schedule tab shows, the schedule's two stops (ScheduleNodes.hpp): the stations with
 //     their wait conditions, then the interrupts;
 //   - while the Cargo tab shows, its contents.
+//
+// The window opens docked in remote view, beside the map. Ctrl+Tab goes to the map (parts::Part::Map),
+// where this screen steps aside: FA's world keys move the cursor on the map, and the game's own
+// Ctrl+click (add a temporary stop) and Shift+click (add a stop) act where it is.
 
 #include "EntityWindowScreen.hpp"
 
@@ -18,6 +22,10 @@ namespace fa::screens
 
 class TrainScreen final : public EntityWindowScreen
 {
+public:
+    bool IsActive() override;
+    std::string LeaveLine() const override;
+
 protected:
     bool Handles(const agui::Widget* window) const override;
     void BuildWindow(graph::GraphBuilder& builder, const agui::Widget* window) override;

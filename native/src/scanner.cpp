@@ -5,6 +5,7 @@
 #include "facts.h"
 #include "game.h"
 #include "log.h"
+#include "parts.h"
 #include "prototypes.h"
 #include "world.h"
 
@@ -2503,9 +2504,10 @@ void observeKey(const input::KeyEvent* key) {
    if (!key || !key->down) return;
    const std::byte* game = currentGame();
    if (!game || !at<const std::byte*>(game, layout.gameLocalPlayer) || !world::drivesCursor()) return;
-   // An open game window has these keys for itself (an inserter's hand size, in the mod).
+   // An open game window has these keys for itself (an inserter's hand size, in the mod), unless
+   // the player went to the map beside it.
    const std::byte* view = at<const std::byte*>(game, layout.gameView);
-   if (!view || at<const void*>(view, layout.gameViewActiveWindow)) return;
+   if (!view || (at<const void*>(view, layout.gameViewActiveWindow) && parts::current() != parts::Part::Map)) return;
    std::optional<Action> action = actionFor(*key);
    if (!action) return;
    std::scoped_lock lock(g_mutex);

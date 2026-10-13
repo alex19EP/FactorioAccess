@@ -8,6 +8,9 @@ namespace fa::parts {
 
 enum class Part {
    None, // back to what is open
+   // The map beside a window that remote view docks: a train's, where the game adds a stop where the
+   // map is clicked. Only while one is open; FA's world keys and the game's clicks act on the map.
+   Map,
    ModWindows, // only while a mod or the scenario shows a window on the screen
    EditorPanel, // in the map editor only
    Goal, // only while the scenario shows a goal
