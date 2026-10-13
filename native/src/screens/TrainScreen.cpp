@@ -19,19 +19,13 @@ using agui::Widget;
 namespace
 {
 
-// Each station row of the window's schedule as it reads: its name, and whether the train heads there.
-std::vector<std::string> StationLines(const Widget* window)
+// The names of the window's schedule's stations, in order.
+std::vector<std::string> StationNames(const std::vector<agui::ScheduleStation>& stations)
 {
-    std::vector<std::string> lines;
-    const Widget* schedule = agui::trainWindowParts(window).schedule;
-    for (const agui::ScheduleStation& station : agui::scheduleParts(schedule).stations)
-    {
-        std::string line = LabelText(station.label);
-        if (agui::buttonToggled(station.goTo))
-            line += ", " + std::string(vocab::kCurrentStop);
-        lines.push_back(std::move(line));
-    }
-    return lines;
+    std::vector<std::string> names;
+    for (const agui::ScheduleStation& station : stations)
+        names.push_back(LabelText(station.label));
+    return names;
 }
 
 } // namespace
@@ -55,16 +49,21 @@ bool TrainScreen::IsActive()
 
 void TrainScreen::WatchSchedule(const Widget* window)
 {
-    // A stop added from the map (Ctrl+click, Shift+click) shows as a new row in the window beside it.
-    std::vector<std::string> lines = StationLines(window);
-    if (_mapStations && lines.size() > _mapStations->size())
+    // A stop added from the map (Ctrl+click, Shift+click) shows as a new row in the window beside it,
+    // found by name: the go-to marker moves to it when the train heads there at once.
+    std::vector<agui::ScheduleStation> stations = agui::scheduleParts(agui::trainWindowParts(window).schedule).stations;
+    std::vector<std::string> names = StationNames(stations);
+    if (_mapStations && names.size() > _mapStations->size())
     {
         std::size_t added = 0;
-        while (added < _mapStations->size() && lines[added] == (*_mapStations)[added])
+        while (added < _mapStations->size() && names[added] == (*_mapStations)[added])
             ++added;
-        speech::say(lines[added], false);
+        std::string line = names[added];
+        if (agui::buttonToggled(stations[added].goTo))
+            line += ", " + std::string(vocab::kCurrentStop);
+        speech::say(line, false);
     }
-    _mapStations = std::move(lines);
+    _mapStations = std::move(names);
 }
 
 std::string TrainScreen::LeaveLine() const
