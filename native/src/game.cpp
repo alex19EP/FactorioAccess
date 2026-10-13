@@ -943,6 +943,11 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.singleFluidBoxGui, "SingleFluidBoxEntityGui", "fluidBoxGui");
    offset(layout.fluidBoxIcon, "FluidBoxGui", "fluidIcon");
    offset(layout.fluidBoxBar, "FluidBoxGui", "fluidPercentageBar");
+   offset(layout.trainStopTabs, "TrainStopGui", "tabs");
+   offset(layout.trainsWidgetTable, "TrainsWidget", "trainsTable");
+   offset(layout.trainsWidgetEmpty, "TrainsWidget", "noTrainsSubheader");
+   offset(layout.trainCardMinimap, "TrainWithMinimap", "minimapSlot");
+   offset(layout.trainCardStatus, "TrainWithMinimap", "statusButton");
    offset(layout.electricNetworkBars, "ElectricNetworkGuiWindow<ElectricPole>", "satisfactionFlow");
    offset(layout.electricNetworkFlows, "ElectricNetworkGuiWindow<ElectricPole>", "gui");
    offset(layout.electricNetworkConsumption, "ElectricNetworkGuiWindow<ElectricPole>", "gui.inputFrame");

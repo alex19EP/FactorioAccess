@@ -853,7 +853,7 @@ EntityPanelParts entityPanelParts(const Widget* window) {
    EntityPanelParts parts;
    if (const std::byte* gui = asBase(window, ".?AVGenericOnOffEntityGui@@")) {
       parts.titled = reinterpret_cast<const Widget*>(gui + layout.onOffEntityWindow);
-   } else if (asBase(window, ".?AVSplitterGui@@")) {
+   } else if (asBase(window, ".?AVSplitterGui@@") || asBase(window, ".?AVTrainStopGui@@")) {
       parts.titled = window;
    } else if (asBase(window, ".?AVEntityWithEnergySourceGui@@")) {
       parts.titled = entityWindowParts(window).entity;
@@ -886,6 +886,31 @@ ElectricNetworkParts electricNetworkParts(const Widget* window) {
    for (const Widget* frame : {parts.consumption, parts.production, parts.storage})
       parts.graphs.push_back(member(frame, layout.flowFrameGraph));
    return parts;
+}
+
+const Widget* trainStopTabs(const Widget* window) {
+   const std::byte* gui = asBase(window, ".?AVTrainStopGui@@");
+   return gui ? reinterpret_cast<const Widget*>(gui + layout.trainStopTabs) : nullptr;
+}
+
+std::vector<TrainCard> trainCards(const Widget* trainsWidget) {
+   const std::byte* trains = asBase(trainsWidget, ".?AVTrainsWidget@@");
+   if (!trains) return {};
+   std::vector<TrainCard> cards;
+   for (const Widget* cell : children(reinterpret_cast<const Widget*>(trains + layout.trainsWidgetTable))) {
+      const std::byte* card = asBase(cell, ".?AVTrainWithMinimap@@");
+      if (!card) continue;
+      // The minimap slot is a MinimapBase first; the button the card holds is its agui::Button base.
+      cards.push_back(
+         {reinterpret_cast<const Widget*>(card + layout.trainCardStatus),
+          reinterpret_cast<const Widget*>(objectAsBase(card + layout.trainCardMinimap, ".?AVButton@agui@@"))});
+   }
+   return cards;
+}
+
+const Widget* trainsWidgetEmpty(const Widget* trainsWidget) {
+   const std::byte* trains = asBase(trainsWidget, ".?AVTrainsWidget@@");
+   return trains ? reinterpret_cast<const Widget*>(trains + layout.trainsWidgetEmpty) : nullptr;
 }
 
 const Widget* wrappedWindow(const Widget* widget) {

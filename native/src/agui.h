@@ -344,8 +344,8 @@ BurnerParts burnerParts(const Widget* burnerInfo);
 
 // The parts of a window with circuit and logistic network buttons in its title bar
 // (GuiWithSideButtons) that is a transport belt's, a pipe's, a lamp's or another
-// GenericOnOffEntityGui, a splitter's (SplitterGui), or a pump's, a boiler's or another
-// EntityWithEnergySourceGui; all null for any other window. `titled` is the window titled with the
+// GenericOnOffEntityGui, a splitter's (SplitterGui), a train stop's (TrainStopGui), or a pump's, a
+// boiler's or another EntityWithEnergySourceGui; all null for any other window. `titled` is the window titled with the
 // entity's name, `sidePanel` the container the buttons open their panels in.
 struct EntityPanelParts {
    const Widget* titled = nullptr;
@@ -375,6 +375,21 @@ struct ElectricNetworkParts {
    std::vector<const Widget*> graphs;
 };
 ElectricNetworkParts electricNetworkParts(const Widget* window);
+
+// The tabbed pane of a train stop's window (TrainStopGui), each tab a TrainsWidget: the trains
+// whose schedules have the stop, and the trains on the way to it. Null for any other window.
+const Widget* trainStopTabs(const Widget* window);
+
+// A train's card in a TrainsWidget (TrainWithMinimap): the button captioned with the train's state,
+// which shows the train on the map, and the minimap button, which opens the train's window.
+struct TrainCard {
+   const Widget* status = nullptr;
+   const Widget* open = nullptr;
+};
+// The cards of a TrainsWidget in the order shown; none for any other widget.
+std::vector<TrainCard> trainCards(const Widget* trainsWidget);
+// The subheader a TrainsWidget shows while it has no trains, or null for any other widget.
+const Widget* trainsWidgetEmpty(const Widget* trainsWidget);
 
 // A game window a mod attached relative GUI elements to sits in an invisible window the game puts
 // on the root in its place (CustomGuiGameGuiWrapper). The window it wraps, or null when `widget` is

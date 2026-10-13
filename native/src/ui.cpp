@@ -38,6 +38,7 @@
 #include "screens/ModsScreen.hpp"
 #include "screens/NewGameScreen.hpp"
 #include "screens/PipeScreen.hpp"
+#include "screens/TrainStopScreen.hpp"
 #include "screens/ModWindowsScreen.hpp"
 #include "screens/QuickBarScreen.hpp"
 #include "screens/ScenarioMessageScreen.hpp"
@@ -168,6 +169,8 @@ void start() {
    // An electric pole's network window, with the mod's views of its wires and supply area, and the
    // surface's like it.
    manager.Register(std::make_unique<screens::ElectricNetworkScreen>());
+   // A train stop's window, with the trains whose schedules have it and the trains on the way.
+   manager.Register(std::make_unique<screens::TrainStopScreen>());
    // The windows mods and the scenario put on the screen, while Ctrl+Tab has moved to them; it
    // also announces one that shows up.
    manager.Register(std::make_unique<screens::ModWindowsScreen>());

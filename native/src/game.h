@@ -1323,6 +1323,15 @@ struct Layout {
    uint32_t electricNetworkProduction = 0;   // ::gui.outputFrame, FlowDataFrame
    uint32_t electricNetworkStorage = 0;      // ::gui.storageFrame, FlowDataFrame
    uint32_t flowFrameGraph = 0;              // FlowDataFrame::graph, Graph
+   // A train stop's window (TrainStopGui): its tabs of the trains whose schedules have the stop and
+   // of the trains on the way to it, each a TrainsWidget. A TrainsWidget is a table of cards
+   // (TrainWithMinimap), a train each: a minimap button that opens the train's window, and a
+   // button captioned with the train's state that shows the train on the map.
+   uint32_t trainStopTabs = 0;               // TrainStopGui::tabs, agui::TabbedPane
+   uint32_t trainsWidgetTable = 0;           // TrainsWidget::trainsTable, agui::Table
+   uint32_t trainsWidgetEmpty = 0;           // TrainsWidget::noTrainsSubheader, agui::Frame
+   uint32_t trainCardMinimap = 0;            // TrainWithMinimap::minimapSlot, LocomotiveMinimapSlot
+   uint32_t trainCardStatus = 0;             // TrainWithMinimap::statusButton, agui::TextButton
    // A game window a mod attached relative GUI elements to (LuaGuiElement anchor) is taken off the
    // root into an invisible CustomGuiGameGuiWrapper: a 3 by 3 table with the window in the middle
    // and a flow on each side holding the mod's elements for that side.
