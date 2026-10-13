@@ -140,6 +140,18 @@ FactorioAccess reads every game window and moves through it from the keyboard. S
 | `ctrl + tab`, `ctrl + shift + tab` | Move to the next or previous part of the screen |
 | `escape` | Close the window, or stop adjusting a slider |
 
+### In a train's window
+
+| Key | What it does |
+| --- | --- |
+| `ctrl + up`, `ctrl + down` | Previous or next station of the schedule |
+| `ctrl + shift + up`, `ctrl + shift + down` | Move a station, wait condition or interrupt up or down, as dragging it does |
+| `ctrl + tab` | Go to the map beside the window; `ctrl + shift + tab` comes back |
+| `ctrl + [` on the map | Add a temporary stop near the cursor, in map view |
+| `shift + [` on the map | Add the train stop under the cursor to the schedule |
+
+See [rails](rails.md).
+
 ## Kruise Kontrol
 
 With the [Kruise Kontrol](https://mods.factorio.com/mod/Kruise_Kontrol) mod installed, `ctrl + alt + ]` sends your character to what the cursor is on, and `ctrl + alt + shift + ]` queues it after the current job. `enter` cancels. FactorioAccess says what Kruise Kontrol reports.
