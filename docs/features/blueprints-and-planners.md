@@ -18,17 +18,13 @@ Cancel upgrade or deconstruction orders in an area: start the selection with `sh
 
 Open a blueprint's or planner's window: `right bracket` on it in an inventory slot
 
-Cycle through blueprints in a blueprint book without opening the GUI: `m` and `dot (.)`
-
-Announce the currently active blueprint in a book: `comma (,)`
-
 Get a blueprint: `alt + b`
 
 Get an upgrade planner: `alt + u`
 
 Get a deconstruction planner: `alt + d`
 
-Get a new blueprint book: `ctrl + alt + shift + b`
+Get a new blueprint book: the blueprint book button on the shortcut bar, or give the game's "Make new blueprint book" control a key in the Controls window
 
 Copy: `ctrl + c`
 
@@ -36,7 +32,7 @@ Cut: `ctrl + x`
 
 Paste: `ctrl + v`
 
-Destroy a planner item with the GUI closed (important! With the gui closed): `ctrl + backspace` with the item in hand
+Delete the blueprint, book or planner in hand: `delete`, twice
 
 ## Description
 
@@ -79,7 +75,7 @@ A blueprint book is a bunch of blueprints, planners and other books grouped toge
 
 A blueprint, book or planner in a slot reads as sighted players see it: its name if it has one, what it is, then the up to four icons its owner chose, such as "Smelting, Blueprint, Stone furnace, Iron plate". A book with no icons of its own shows those of its active blueprint, and a planner with no icons its first filters. The slot of whatever you hold reads in hand.
 
-In terms of building, blueprint books work almost identically to blueprints.  The difference is that a blueprint book has an active blueprint, the one you build.  Use `m` and `dot` to cycle to the one you want without opening the book, or open the book.
+In terms of building, blueprint books work almost identically to blueprints.  The difference is that a blueprint book has an active blueprint, the one you build.  To choose it, open the book and pick the blueprint.
 
 To open a book, press `right bracket` on it in an inventory slot. Its window has these stops, moved between with `tab`:
 

@@ -84,7 +84,9 @@ To uninstall the DLL, delete `winmm.dll`, `winmm.pdb`, `fa_native.dll` and `fa_n
 - Connect and disconnect train move from J and K to CONTROL + J and CONTROL + K.
 - Research moves from T to CONTROL + T, leaving T to the time of day.
 - Zoom in and zoom out get EQUALS and MINUS.
-- Every control on a mouse button also gets a key: left button LEFTBRACKET, right button RIGHTBRACKET, middle button BACKSLASH, with the same modifiers. The key goes in the control's free second slot, so the mouse keeps working.
+- Every control on a mouse button also gets a key: left button LEFTBRACKET, right button RIGHTBRACKET, middle button BACKSLASH, with the same modifiers. The key goes in the control's free second slot, so the mouse keeps working. This covers other mods' controls too: Kruise Kontrol's "Klient do the thing", on CONTROL + ALT + right mouse button, gets CONTROL + ALT + RIGHTBRACKET.
+
+Everything else stays on the game's own keys. The mod adds keys only where the game has none; [the key reference](docs/features/keys.md) lists both.
 
 Close the game before running it, since the game rewrites `config.ini` when it exits. It works out which `config.ini` the game uses: for the zip version the one in the game folder, for Steam and the regular Windows version the one in `%AppData%\Factorio\config`. It says what it changed, and keeps a copy of the old file beside it. Running it again changes only what is missing.
 
@@ -98,11 +100,13 @@ To undo the changes, run it with `-Revert` from a command prompt in the game fol
 
 # Mod Documentation
 
-There are a huge number of keystrokes and functions in the mod. To help keep this README reasonable, we have divided them into other documents:
+To help keep this README reasonable, the mod's features are described in other documents:
 
+- [Keys](docs/features/keys.md) lists every key: the game's, as the keys script leaves them, and the mod's.
 - [Basics](docs/features/basics.md) explains walking, the cursor, and building.
+- [The Scanner](docs/features/scanner.md) explains how to find things on the map.
 - [Combat, Vehicles, and Military](./docs/features/combat.md)
-- [Ui](docs/features/ui.md) explains how menus and other controls work
+- [Windows](docs/features/ui.md) explains how the game's windows are read and used.
 - [Blueprints and Planners](docs/features/blueprints-and-planners.md) explains how to use blueprints, blueprint books, deconstruction planners, and upgrade planners.
 - [Circuit Network](docs/features/circuit-network.md) explains functionality applying specifically to the circuit network, such as how to drag wires.
 
@@ -119,8 +123,7 @@ better for mod players. Your experience will continue to lag a lot and parts of 
 be essentially unplayable in multiplayer, with vanilla mode or otherwise. We maintain this feature for the small number
 of users who want to play multiplayer anyway or have different use cases.
 
-When Vanilla Mode mode is toggled on, it disables sonifiers and speech, stops all of the mod's key handling, and closes
-any open mod UIs. Mod data such as rulers is left untouched, and so you should be able to toggle Vanilla
+When Vanilla Mode mode is toggled on, it disables sonifiers and speech and stops all of the mod's key handling. Mod data such as rulers is left untouched, and so you should be able to toggle Vanilla
 Mode without any penalties. If the sighted person does not run our keys script, then their game in
 Vanilla Mode should function as if this mod is not present. If the mod's config tweaks are used and then Vanilla Mode is
 enabled, the keymapping changes of the mod are still present but inactive. In this case one can play using the arrow

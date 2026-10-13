@@ -1,141 +1,53 @@
-# Movement, the Cursor, and building
+# Movement, the Cursor, and Building
 
-## Quick Key Reference:
+Every key is listed in [the key reference](keys.md). This page explains how they fit together.
 
-Walk your character: `arrow keys`
+## The cursor
 
-Move the cursor: `wasd`
+The mod replaces the mouse with a cursor that you move over the map's tile grid with `w`, `a`, `s` and `d`. The game's own mouse position follows it, so every game control acts where the cursor is: `[` builds or opens there, `]` mines there, `q` pipettes there. This is why the keys script gives every mouse button a key: `[` is the left button, `]` the right button and `\` the middle button.
 
-Pick items up from near your character: `hold f`
+As the cursor moves, it reads what is on its tile, as a sighted player would see it: the entity, its state, and the ground. `y` reads the game's full information panel for it, the one a sighted player sees on hovering. `shift + f` steps through everything on the tile, for example a belt and the item lying on it.
 
-Toggle whether the cursor stays in front of you when walking: `i`
+The Factorio world is continuous, but all buildings sit on the tile grid. Walking stays smooth: your character can stand at x = 1.23. Walk with the arrow keys.
 
-Return the cursor to your character: `j`
+The keys for the cursor are spread over both hands on purpose. `d` then `[`, over and over, builds a row of things quickly because each hand does one key.
 
-Enter cursor coordinates and jump to them: `shift + c`
+To find where things are:
 
-Take the audio ruler tool: `ctrl + alt + b`, or its shortcut bar button
+- `k` reads the cursor's coordinates.
+- `shift + k` reads how far and in which direction it is from your character, and `alt + k` the same as east or west and north or south.
+- `alt + j` reads your character's coordinates, and `j` brings the cursor back to your character.
+- [The scanner](scanner.md) lists what is on the map and moves the cursor to it.
 
-With the tool in hand, place a ruler: `left bracket`; remove the nearest ruler on the cursor's line: `shift + left bracket`
+### Cursor skipping
 
-Increase the size of the cursor: `shift + i`
+`shift` with `w`, `a`, `s` or `d` skips up to 100 tiles, stopping at the first change: water to ground, a belt's corner, the start or end of a row of entities, the line of an audio ruler.
 
-Decrease the size of the cursor: `ctrl + i`
+Many buildings are bigger than one tile. `ctrl` with `w`, `a`, `s` or `d` moves the cursor by the size of the building in hand, so that building again makes a neat row or column. An assembling machine is 3 by 3, so `ctrl + d` moves 3 tiles east. This works for blueprints too.
 
-Announce cursor coordinates and other info depending on context: `k`
+### The character
 
-Announce a detailed description of the item in your hand: `y`
+Your character is your body. You mostly need not think about it, but it must be within reach of what you build, mine or open, unless you place ghosts. When something fails, the game says why, for example "Cannot reach".
 
-Announce cursor's relative position to the character: `alt + k`
+Your character is also what picks things up. Stand on or beside a belt and hold `f` to pick up from it; the mod says what is being picked up.
 
-Build, configure, interact, and perform other "primary" actions: `left bracket`
-
-Force buildt: `shift + [`
-
-Superforce build: `control + shift + left bracket`
-
-Mine: hold `right bracket` (the game's mine control)
-
-Instantly mine everything mineable within 10 tiles: `shift + x` (a cheat)
-
-Clear all ghosts within 100 tiles: `ctrl + shift + x` (not a cheat--only removes ghost entities)
-
-Get the status of an entity: `right bracket`
-
-Check the pollution level at the cursor: `shift + u`
-
-Fast transfer full stacks from the hand to the selected entity: `ctrl + left bracket`
-
-Fast transfer half stacks from the hand to the selected entity: `ctrl + right bracket`
-
-Drop 1 item from the hand into an entity: `z`
-
-Skip the cursor up to 100 tiles or until the first change: `shift + wasd`
-
-Move the cursor by the size of the item in hand: `ctrl + wasd`
-
-Move larger cursors by 1 tile: `ctrl + WASD`
-
-Trigger Kruise Kontrol: `ctrl + alt + right bracket`
-
-Cancel Kruise Kontrol: `enter`
-
-Rotate item in hand or selected entity clockwise: `r`
-
-Rotate item in hand or selected entity counterclockwise: `shift + r`
-
-Flip horizontal: `h`
-
-Flip vertical: `v`
-
-Empty the hand: `q`
-
-Announce the contents of the hand: `shift + q`
-
-Pippette: `q` with an empty hand
-
-Cycle through all entities on a tile, announcing them: `shift + f`
-
-Do the appropriate action for the item in hand, for example equipping equipment: `ctrl + shift + left bracket`
-
-Build a line: hold `left bracket` and move the cursor
-
-Turn a belt line while holding `left bracket`: `r`, then step to the side
-
-Cycle your cursor through vehicles near your cursor: `shift + v`
-
-Read the time of day: `t`. The game has no clock, only light: you hear day, dusk, night or dawn, and at dusk and dawn how much light there is.
-
-## Description
-
-The mod replaces the mouse with keyboard commands.  We call this the cursor.  This is the mod equivalent of the sighted cursor.
-
-The Factorio world is continuous, but all buildings in Vanilla build on a tile grid.  The mod takes the continuous world and turns it into a tile grid for you.  You navigate this grid with WASD.
-
-Walking always remains "smoothe", e.g. your character can be at `x = 1.2323`.  Most mod users do not walk much.
-
-To have your character walk somewhere, place your cursor on an empty tile and press `ctrl + alt + right bracket` to trigger Kruise Kontrol.
-
-The keys for the cursor are not logically arranged because of ergonomics.  By putting things on different hands, most operations are a "drum roll". For example, `d` `left bracket` over and over can build a line of stuff, and because it's both hands you can press it much, much faster.
-
-You can think of brackets like the mouse buttons. They roughly match vanilla, and you will often see left bracket referred to as clicking on Discord and when discussing with other players.
-
-### The Character
-
-Your character is your body.  You always have one, unless you are dead or in other advanced situations that do not come up much in the base game.
-
-You mostly do not need to be concerned with it, but it must be in range of building unless you place ghosts (10 tiles by default)
-
-Your character is also what you "pick things up from". For example, putting your character on a belt and holding `f` picks up from that belt, approximately.  This is not precisely announced due to API limitations.
-
-To remember this, your character is the thing with arms.  If you need your arms, then the position of the character matters.
-
-For convenience, Factorio does not require you be close for everything, thus the larger building radius and the ability to place ghosts anywhere.
-
-Unfortunately, however, API limitations mean that we cannot precisely announce when the problem is that you are out of range.  If you get an error bonk and can't figure out what else it could be, try moving closer.
-
-The following sections elaborate on mod features.  Not all interactions are covered because many are very simple.  See the key list above for the full list.
-
-### The Cursor and Hand
-
-The cursor is where you are looking and operating.  As the cursor moves around, the entity you are operating on changes with it.  This is called selecting an entity.
-
-The most basic use of the cursor is mining.  To do so, put the cursor on an entity and hold `right bracket`.  Ore must be right next to your character; rocks, trees and buildings can be mined from as far as you can build.  This is also how you remove placed buildings.
-Note that some entities take a while to mine.  An example of such is the rocket pieces in the initial crash site, all of which may be removed.
-
-What the game calls the hand is not your character's hand, but your virtual hand.  Your hand's position is always at the cursor.
+`i` anchors the cursor one tile in front of your character, so it moves as you walk. Press it again to free the cursor.
 
 ### Alt mode and status icons
 
-The cursor reads the icons the game draws on an entity, as a sighted player sees them.  Status icons such as no power, no fuel or no ammo are read whenever the game shows them.  The rest are alt mode icons: a machine's recipe and modules, a chest's contents, filters, the fluid in a pipe, a turret's ammo, a combinator's signals.  These are read only while alt mode is on, which the game's own key toggles (`alt` by default).  An icon shown more than once is read once, an item with its count, and a quality badge is read with its icon.  Toggling alt mode says so.  These are the game's own icons, so modded entities read the same way.
+The cursor reads the icons the game draws on an entity. Status icons such as no power, no fuel or no ammo are read whenever the game shows them. The rest are alt mode icons: a machine's recipe and modules, a chest's contents, filters, the fluid in a pipe, a turret's ammo, a combinator's signals. These are read only while alt mode is on, which the game's own key toggles (`alt` by default). These are the game's own icons, so modded entities read the same way.
 
-### Building
+## Building
 
-To build, you click with `left bracket` with something buildable in hand.  This will place the entity.  You are holding the top left corner.  It is important to note that the sighted build from the center.  This isn't keyboard friendly, so we changed it, but it sometimes matters when reading things or discussing with the sighted.
+With something buildable in hand, `[` places it. You hold a building by its north-west corner, so the cursor's tile is the building's top left. Sighted players hold buildings by the centre; it can matter when you talk with them.
 
-See the page on blueprints and blueprint books for more info on those special cases.
+`shift + [` places a ghost instead. Ghosts mark where something will be built later, and can be placed at any range. Construction robots, and Kruise Kontrol, build them.
 
-To place a ghost, add `shift`.  Ghosts are entities that mark where something will be built later, and can be placed at any range.  This is useful in the early game because Kruise Kontrol can build them for you; `ctrl + alt + right bracket` on a ghost starts building all ghosts.  In the late game, this is how you interact with construction robots.
+`r` and `shift + r` rotate the building in hand, and `h` and `v` flip it; the mod says the new direction. On a placed building they rotate or flip it.
+
+With a building or blueprint in hand, `i` detaches the cursor: the build stays where it is while you move the cursor to look around it. `ctrl` with `w`, `a`, `s` or `d` then moves the build one tile, and `[` builds it where it is. `i` again brings the cursor back to it.
+
+See [blueprints and planners](blueprints-and-planners.md) for blueprints.
 
 ### What the preview shows
 
@@ -149,108 +61,72 @@ With something buildable in hand, each cursor move reads what the game's preview
 - `replaces`, `turns` or `changes` what building it would affect.
 - `links to` the roboports a roboport would connect to, and `in network` or `no network` for a logistic chest.
 
-These are the game's own highlights, so modded entities read the same way.  During a drag only what blocks the build is read.
+These are the game's own highlights, so modded entities read the same way. During a drag only what blocks the build is read.
 
-For a few items, the mod adds special behavior:
+### Drag building
 
-- For underground belts, the underground belt will become an exit if it was going to match an entrance.
-- For the offshore pump, which has weird placement rules, the scanner's build spots category lists every place within 30 tiles of your character where the pump in hand fits, nearest first.
+Hold `[` and move the cursor to place a line. This is the game's own drag building, the same as a sighted player dragging with the mouse button held, so it follows the game's rules:
 
-### Drag Building
+- The line stays straight, along the way you first moved. Steps to the side build nothing.
+- To turn a belt line, press `r` while still holding `[`, then step the cursor the way the belt should go. `r` says "turn at next step", and the step says the corner and its new direction.
+- Electric poles are placed as far apart as they can reach.
 
-Hold `left bracket` and move the cursor to place a line of stuff.  This is the game's own drag building, the same as a sighted player holding the mouse button and dragging, so it follows vanilla's rules:
+While `[` is held, cursor steps are silent unless something blocks the build; the game's build sound marks each placed entity.
 
-- The line stays straight, along the way you first moved.  Steps to the side build nothing.
-- To turn a belt line, press `r` while still holding `left bracket`, then step the cursor the way the belt should go.  `r` says "turn at next step", and the step says the corner and its new direction.
-- Electric poles are placed the maximum distance from the last pole.
+To build a line while walking, anchor the cursor with `i`, hold `[`, and walk:
 
-While `left bracket` is held, cursor steps are silent unless something blocks the build; the game's build sound marks each placed entity.
+- Walk your character to where the line should start.
+- Put a belt in hand, press `i`, and hold `[`.
+- Walk in a straight line to where the belts should stop, then let go.
 
-To build a line while walking, press `i` so the cursor stays one tile in front of your character, then hold `left bracket` and run:
+### The audio ruler
 
-- Walk your character to where you want the line to start
-- Put a belt in hand, press `i`, and hold `left bracket`
-- Run your character in a straight line to where you want the belts to stop, then let go
+The ruler is for alignment. `ctrl + alt + b`, or the audio ruler button on the shortcut bar, puts the audio ruler tool in hand. Click a tile with it (`[`) and a ruler forms an audio cross there. When your cursor or character crosses it, it plays a tone. You can place as many rulers as you like; `shift + [` on a ruler's line removes the nearest one on it.
 
-### The Ruler
+Cursor skipping stops where the cursor comes into line with more rulers than before: entering a line, a crossing line, or a ruler's own tile.
 
-The ruler is for alignment.  `ctrl + alt + b`, or the audio ruler button on the shortcut bar, puts the audio ruler tool in hand.  Click a tile with it (`left bracket`) and a ruler forms an audio cross there.  When your cursor or character crosses it, it plays a tone.  You can place as many rulers as you like; `shift + left bracket` on a ruler's line removes the nearest one on it.
+Each ruler is drawn on the ground, 100 tiles along each arm, in its owner's colour, so sighted players see it too. The tool works with the mouse as well: click to place, shift click to remove.
 
-Cursor skipping stops where the cursor comes into line with more rulers than before: entering a line, a crossing line, or a ruler's own tile.  It does not stop going along a line or off it.
+For example, to place a belt going east, find where it should end, move a few tiles north, and place a ruler. Then hold `[` and walk east until you hear the ruler. The line does not stop by itself at the ruler.
 
-Each ruler is drawn on the ground, 100 tiles along each arm, in its owner's colour, so sighted players see it too.  The tool works with the mouse as well: click to place, shift click to remove.
+## Mining and clearing
 
-You can use rulers to quickly place large numbers of items.  For example, to place a belt going east, find where you want it to end, arrow a few tiles north, and place your ruler.  Then, you can hold `left bracket` and run in a straight line until your character hits the ruler, like hitting a wall.  IMPORTANT: the line does not stop itself at the ruler, these are still separate features.
+Hold `]` on something to mine it. Ore must be next to your character; rocks, trees and buildings can be mined from as far as you can reach. This is also how you take buildings back.
 
-### Cursor Skipping
+`shift + x` instantly clears the trees, rocks and items on the ground within 5 tiles of the cursor. On a ghost it removes the ghosts within 10 tiles, and `ctrl + shift + x` on a ghost removes those within 100 tiles.
 
-For larger distances, the mod offers cursor skipping.  Holding `shift` plus the cursor movement keys will move up to 100 tiles in any given direction, stopping at the first "change".  Change is somewhat ill-defined.  Examples which count include water to ground, belt corners, and rows of entities beginning or ending.
+## The pipette
 
-Many entities are larger than 1x1 and moving 3 tiles to place the next one is annoying.  For this reason we also offer skip by preview.  `ctrl + WASD` moves the cursor so that, if you built the item, it would form a perfect row or column.  For example an assembling machine is 3x3, so pressing `ctrl + d` would move you 3 tiles east. This also works on blueprints.
+This is the game's own. `q` with an empty hand puts the most fitting thing for what the cursor is on in your hand: the same building, if you have one, a drill for ore, an offshore pump for water.
 
-### Larger Cursors and Placing Tiles
+## Kruise Kontrol
 
-Exploring the map one tile at a time is annoying, so the mod offers larger cursors.  Larger cursors are boxes, for example 3x3, 5x5, etc.  They perform two functions:
-
-- As the larger cursor moves, a summary of everything in the box is announced.
-- If building tiles such as landfill, clicking fills the entire cursor box with the tile (not a cheat--vanilla offers a similar function)
-
-To change the size of your cursor, use `shift + i` to increase it and `ctrl + i` to decrease it.
-
-In larger cursor mode, your cursor is at the center of the box and the box is always odd in dimension. So for example 3x3 is 1 tile in every direction from your cursor.
-
-Two control changes happen when your cursor is larger than 1x1:
-
-- `WASD` now moves by the size of the cursor instead of by 1 tile
-- `ctrl + WASD` moves by 1 tile instead of performing skip by preview
-
-
-### The Pipette tool
-
-This is a vanilla function but deserves brief coverage.  Pressing `q` with an empty hand on a tile or entity puts "the most appropriate thing" in your hand.  For entities, this is the same entity if you have some in your inventory.  For tiles it depends: water, for example, is an offshore pump, and resources are drills.
-
-It's not complicated at all, but it's important to know it exists
-
-
-### Automation with Kruise Kontrol
-
-Kruise Kontrol is a mod that we forked which provides some automation functions.  It is useful because it can make up for not being able to use the mouse.
-
-Place your cursor on a tile or item and press `ctrl + alt + right bracket` to trigger it.  Pressing `enter` cancels.
+[Kruise Kontrol](https://mods.factorio.com/mod/Kruise_Kontrol) is a mod that automates walking and simple jobs, which makes up for not having a mouse. Put the cursor on something and press `ctrl + alt + ]`. `enter` cancels.
 
 What happens depends on what the cursor is on:
 
-- If an empty tile, you walk to it
-- If a resource, rock, or tree, you mine it
-- If a ghost, you build it, crafting as needed
-- If an item marked for upgrade or deconstruction, you upgrade or deconstruct
-- If on something that takes fuel, you refuel it
-- If on an enemy, you fight it.
+- An empty tile: you walk to it.
+- A resource, rock or tree: you mine it.
+- A ghost: you build it, crafting as needed.
+- Something marked for upgrade or deconstruction: you upgrade or deconstruct it.
+- Something that takes fuel: you refuel it.
+- An enemy: you fight it.
 
-Kruise Kontrol supports vehicles, and can thus be used to easily drive places.
+It keeps doing the job until there is nothing more nearby; started on a ghost, it builds every ghost it can find and has the items for. It drives vehicles too. FactorioAccess says what Kruise Kontrol reports.
 
-It will continue the current action until there is nothing else to act on close by.  Triggering on a ghost for example will build all ghosts until it can't find any ghosts or can't find the items to build it.
+## Belts
 
+A belt's window has FactorioAccess's belt analyzer beside it, with four views:
 
-### Belts
+- This belt, its two lanes in four slots each.
+- Upstream, everything on the belts feeding it.
+- Downstream, everything on the belts it feeds.
+- Total, both, plus this belt.
 
-Belts are explained in the tutorial and mostly match vanilla but there are some specific notes that should be coverred here.
+It stops where the circuit network would: at a splitter or a belt's end. It does not go round a loop more than once, so on a loop upstream and downstream mean little.
 
-The mod provides the belt analyzer.  This is a 4-tab interface:
+Percentages over 100% and two items in one slot have two causes. In Space Age, stacked belts make a belt more than full. Otherwise, belts briefly squeeze items together where inserters or drills drop them, at corners and before splitters. In the base game without stack inserters, numbers far over 100% may be a bug; please report it.
 
-- This belt is a 2x4 grid, showing the current belt discretized into 8 slots
-- Upstream is a summary of all belts behind this one ("toward the source of the river")
-- Downstream is a summary of all belts ahead of this one
-- Total is both upstream and downstream, plus this belt
+## Time of day
 
-The reason it deserves documentation is because of some edge cases which you may need to be aware of.
-
-First, note that it stops where the circuit network would: at a splitter or a pouring end.  It also doesn't traverse loops more than once, and may give somewhat nonsensical results in that situation (which part of the loop is upstream?)
-
-There are two odd behaviors you may observe, both happening for roughly the same reason: percents over 100% and seeing two items on the same belt slot.
-
-This can happen for two reasons.  The first is that you are playing space age with stacked belts.  In that case the percentage is a measure of how "stacked" the belt is.
-
-The second is a bit more subtle.  Belts have 8 slots for items in the steady state.  But when inserters or drills place items on them, they form corners, or they feed a splitter this stops being true by a small amount.  This happens because the game allows things to temporarily crunch together by a little bit to keep things running.  The specific rules for when this occurs are not straightforward, but in general the easiest way to see percents over 100% is to turn a belt segment to the side so that it becomes a corner, then turn it straight again after it fills up.
-
-This said, if you are playing in 2.0 base or space age without stack inserters and see numbers significantly over 100%, you may have found a bug; please report it to us.
+`t` reads the time of day. The game has no clock, only light: you hear day, dusk, night or dawn, and at dusk and dawn how much light there is.

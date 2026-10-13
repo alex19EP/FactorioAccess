@@ -1,156 +1,63 @@
-# UIs: the mod's windows and menus
+# Windows
+
+FactorioAccess has no menus of its own. It reads the game's own windows, the same ones sighted players use, and moves through them from the keyboard. Using a window through FactorioAccess clicks it exactly as the mouse would, so what you do there is what the game does.
 
 ## Keys
 
-### For interacting
+| Key | What it does |
+| --- | --- |
+| arrows, or `w`, `a`, `s`, `d` | Move |
+| `ctrl + up`, `ctrl + down` | Jump to the previous or next region, such as a heading or a group |
+| `shift + w`, `a`, `s`, `d` | Skip across a picture or a map, as on the map |
+| `tab`, `shift + tab` | Next or previous part of the window |
+| `home`, `end` | First or last item |
+| `enter` or `[` | Click; with `shift` or `ctrl` held, shift click or control click |
+| `]` or `backspace` | Right click, or open and close a submenu |
+| `\` | Middle click |
+| `y` | Read the tooltip |
+| `k` | Read where you are, such as a slot's row and column |
+| `ctrl + tab`, `ctrl + shift + tab` | Move to the next or previous part of the screen |
+| `escape` | Close the window |
 
-Get help: shift + slash (/)
+## Opening windows
 
-Move in a UI: `wasd`
+- `[` on a building opens its window.
+- `e` opens your character screen: your inventory, crafting, logistics and equipment.
+- `]` on an item in an inventory slot opens the item, such as a blueprint, a planner or armor.
+- `escape` opens the game menu, with Settings, Controls and Mod settings.
+- The game's other keys open their windows: `ctrl + t` research, `p` production statistics, `l` logistic networks, `o` the trains overview, `b` the blueprint library, `tab` or `m` the map. See [the key reference](keys.md).
+- `alt + [` opens Factoriopedia on what the cursor is on.
 
-Move as far as possible in a given direction: `ctrl + WASD`
+## Moving through a window
 
-Drag items in the rare menu that supports it: `shift + wasd`
+A window is read as a few parts, such as the building's inventory, its recipe and your own inventory. `tab` moves to the next part and says its name. Inside a part, the arrows move between slots, buttons and fields, and FactorioAccess says each one as you land on it.
 
-Read information for a slot or control: `k` (e.g. recipe ingredients, kind of equipment, building dimensions, etc)
+`ctrl + tab` moves beyond the window to the other parts of the screen: the quickbar, the shortcut bar, the crafting queue, the HUD's research, alerts and goal. `ctrl + tab` with no window open does the same.
 
+Where the game shows a tooltip only on hovering, `y` reads it.
 
-Read alt information for a control: `y` (rarely used, most notably in the crafting menus where it tells you what the products of a recipe do).
+## Using controls
 
-Activate an item: `left bracket`
+`enter` (or `[`) clicks, as the left mouse button would; `]` right clicks. So an inventory works just as it does with the mouse:
 
-Type a secondary value (rarely used): `m`
+- `[` on a slot picks its items up into your hand, or puts the hand's items down.
+- `]` on a slot picks up half of it.
+- `shift + [` moves the whole stack to the other inventory, such as from a chest to your character.
+- `ctrl + [` moves all items of that kind.
 
-In an inventory, fast transfer to a related inventory: `shift + left bracket` for whole, replace with `right bracket` for half
+In crafting, `[` crafts one, `]` crafts five, and `shift + [` crafts all you can.
 
-In an inventory, set a filter on this slot: `alt + left bracket`
+Some controls take a value:
 
-In an inventory, clear a slot's filter: `alt + right bracket`
+- A text field takes your typing; `enter` confirms it.
+- A drop-down opens on `enter`. Pick with the arrows and `enter`.
+- A slider in a list is adjusted after `enter`: the arrows then change its value, and `enter` or `escape` stops.
+- A control with a submenu opens it with `]` and closes it with `]` again.
 
-In an inventory, adjust number of unlocked slots: `-` and `=`, add `shift` for 5, add `ctrl` to move to 0 or max.
+## FactorioAccess's views beside a window
 
-In the crafting menu, craft 5: `shift + left bracket`
+Where a window lacks something worth saying, FactorioAccess adds a view beside it, as an ordinary part of the window that sighted players see too: what a belt carries (see [basics](basics.md)), where a pipe connects, what a pole is wired to. `tab` reaches it after the window's own parts.
 
-Craft all: `ctrl + shift + left bracket`
+## Settings
 
-In inventories, use an item in the given slot: `ctrl + shift + left bracket`
-
-In inventories, send slot to trash: `o`
-
-Move between subtabs: `tab`, add `shift` to go backward
-
-Move between tabs: `ctrl + tab`, add `shift` for back
-
-In queues: cancel one: `left bracket`
-
-In queues, cancel 5: `shift + left bracket`
-
-In queues, cancel all: `ctrl + shift + left bracket`
-
-Cancel a textbox: `escape`
-
-Pause the game: `shift + escape`
-
-Close the active UI: `e` with a UI open
-
-Announce the active UI: `shift + e`
-
-Go back one level: `alt + e`
-
-Safe clear: `backspace` (e.g. flush fluid, reset some values to 0)
-
-Dangerous delete: `ctrl + backspace` (e.g. destroy planners)
-
-### Opening
-
-Access the character UI: `e` with nothing open
-
-Access the world menu: `alt w`
-
-Access your logistics GUI: `ctrl + shift + l`
-
-Access the logistics GUI of the selected entity: `ctrl + l`
-
-Access the normal configuration GUIs of an entity: `left bracket`
-
-For items supporting it, access the item's UI: `right bracket` with the item in hand
-
-Open the production warnings UI: `p`
-
-Open the game's alerts window: `ctrl + tab` to the HUD's status, then `enter` on an alert category. `enter` on an alert opens remote view on it.
-
-Open the prototype lister, primarily used with trains: alt + p
-
-Access the beta circuit navigator: `ctrl + n` on an entity connected to a network
-
-
-## Description
-
-The mod offers a rich UI system composed of a number of standard widgets, organized in standard fashions.  This discusses what you can expect.
-
-Before we get started, some important rules:
-
-- When the UI is open, what is in your hand no longer matters. You will be operating on whatever is selected instead. So for example ctrl + backspace can delete a planner from the inventory, even if your hand is empty
-- UIs may close unexpectedly if the entity they are for goes away or your hand changes, because often they require that entity or item to function
-- When manipulating things like equipment, you are (un)equipping the currently open entity.  This is different from 1.1.
-  - Note: for now you need to drop equipment into an inventory and equip it from there. We will have proper equipment grids soon rather than the old 1.1 functions.
-
-
-Most entities have UIs.  The fastest way to find out what you can do is to click things and explore!
-
-### Tabs and subtabs
-
-if you were to open your character/main UI and explore it as a flat list of tabs, you'd discover that it is 10+ items long!  For this reason, the mod has introduced the concept of tabs and subtabs (note to contributors: for historical reasons, this is not what they are called in the code).
-
-A tab is something like "all inventories", "everything to do with crafting".
-
-A subtab is a grid or a menu, etc.
-
-You move between tabs with ctrl + tab (shift to go back) and subtabs with tab (shift to go back).  So, just like your desktop UI.  What is different is that there is no concept of controls.  instead, all subtabs use WASD for navigation and are usually some form of menu.
-
-Not all tabs are always present. For example personal logistic trash does not show up until it is unlocked, and circuit network related tabs are only guaranteed to be present on entities connected to the circuit network (the latter is weird because of the API, parts of which only work once the item is in a network).  In some cases, UIs can change while you operate them.  For example, setting recipes sometimes changes the number of inventories an entity has.
-
-### Standard Widgets: the Menu or Form
-
-Used to configure things, set up the circuit network, etc., menus are standard vertical menus with occasional horizontal rows.  Rows are announced as "row of 4 items" and navigated with A and D.  To select an item click it with `left bracket`.  In rare circumstances, type a value instead with `m`.
-
-An example of a simple menu is blueprint configuration.  Examples of very complicated menus include the logistic section editor, which uses one row per request, and circuit network configurations, which use horizontal controls for configuring conditions.
-
-
-### Standard Widgets: inventory grids
-
-Inventory grids are things like your inventory, chests, etc. and support a variety of interactions.  In the game, inventories are not grids, but we modify it for convenience, and assume that it's always 10 columns wide.  if an inventory is not a multiple of 10, there will be some unused slots at the bottom.
-
-The first thing to know is how to perform item specific actions: use `ctrl + shift + left bracket`.  A list follows:
-
-- With a blueprint and on a blueprint book, add it to the book
-- With a repair pack on something damaged, equip it
-- On an entity with equipment selected, equip it
-
-The second most important feature of inventories is fast transfers.  If you open an entity which is not yourself and are not in remote view, then it is possible to move things back and forth from your own inventory quickly with shift + brackets. Left moves entire stacks and right moves half stacks.  To mvoe from the item to yourself, do this on the item' s inventories.  Your inventory is always added for convenience as the last tab.  SO to move in the other direction, from yourself to the entity, go there and use the same keys.
-
-In inventories, `k` announces information about an item if known.
-
-### Category Rows
-
-The category rows control shows up only in a few places, but they are important: the warnings menu, crafting, and research.  It consists of a number of stacked rows of different lengths.  Each row has some items in it.
-
-As a concrete example, the crafting menu breaks recipes down by category and the warnings menu makes the warning type the categories.
-
-You switch category with `w`/`s` and move in the category with `a`/`d`.
-
-It does still support all other operations, e.g. `ctrl + a` moves to start of category.
-
-### Item Selectors
-
-For advanced features such as the circuit network and logistics, the mod exposes the item selector.
-
-An item selector is used when you must select an item, recipe, signal, etc. from a huge list.  It is a tree-type control with some number of rows.
-
-You move through the current level with `a`/`d`, move to children with `s`, and move to parents with `w`.  Only the bottom-most row is selectable.
-
-An example makes this clearer.  Suppose I wanted to select transport belt.  I would:
-
-- Use `a`/`d` to find item, then `s` to go down
-- Use `a`/`d` to find logistics, then `s` to go down
-- Use `a`/`d` to find transport belt, then `left bracket` to click
+FactorioAccess's settings are in the game's Mod settings window: `escape`, Settings, Mod settings. Controls, including FactorioAccess's own keys, are in the Controls window beside it.

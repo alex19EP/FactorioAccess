@@ -16,7 +16,7 @@ Set your aiming preference direction: w, a, s, or d
 
 Use a capsule in the given direction: shift + w, a, s, or d
 
-Use a capsule in the given direction, at max range: control + shift + w, a, s, d
+Use a capsule in the given direction even in safe mode: control + shift + w, a, s, d
 
 Use a capsule on yourself, even if it is dangerous to do so: left bracket
 
@@ -44,7 +44,7 @@ IMPORTANT: before reading further, please note that unlike most audiogames, in F
 poison capsules poison you.  Your grenades can blow you up.  Etc.  We do not disable this mechanic.
 
 To make combat possible, we offer two related functions: an aim assist and an audio radar.  Both of these respect your
-zoom level, set with + and -, which is also linked visually to the graphics. To use combat features, you enter combat
+zoom level, set with = and -, which is also linked visually to the graphics. To use combat features, you enter combat
 mode with control shift i, which changes the meanings of some keys.
 
 This document also explains vehicle driving and equipment.
@@ -140,14 +140,6 @@ Your guns, ammo and armor are on the game's toolbar beside the quickbar. Press c
 
 Early game you start with a pistol and that's it, so for a while you don't have to worry about much of this.
 
-Equipment in Factorio is equipped into an equipment grid, and each piece of equipment has a size.  You must pick from one of two ways to equip stuff:
+Equipment in Factorio goes into an equipment grid, and each piece of equipment has a size. The grid is in the armor's window, which `]` on the armor opens, and in a vehicle's window. Put equipment in hand and click a grid cell with `[` to place it there, or `shift + [` on the equipment in your inventory while the grid is open to put it in the first place it fits. `y` on a piece of equipment reads its tooltip, which gives its size.
 
-- In the equipment overview tab, you can click equipment and it will be shoved into the first spot it can fit.
-- Instead you can put it in hand and manually place it in the grid.
-
-Our recommended strategy is to use the first method, equipping from largest to smallest. Equipment dimensions are
-announced with k on the equipment in your inventory.
-
-The main use of the equipment grid is to see why you still have some free slots, assuming that you do.  For the most part, equipping largest to smallest will use almost all space, but sometimes the advanced player may wish to optimize.  It does not matter where equipment is relative to other pieces of equipment, only that it is somewhere in the grid.
-
-Otherwise, these menus are normal UIs, and have help text in the labels explaining how to use them.
+Equipping from largest to smallest uses almost all the space. It does not matter where equipment is relative to other pieces, only that it is somewhere in the grid.
