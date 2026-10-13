@@ -14,8 +14,8 @@ using agui::Widget;
 namespace
 {
 
-void AddText(graph::GraphBuilder& builder, const std::string& key, const Widget* label,
-    std::function<std::string()> text = {})
+void AddText(
+    graph::GraphBuilder& builder, const std::string& key, const Widget* label, std::function<std::string()> text = {})
 {
     if (!text)
         text = [label]() { return LabelText(label); };
@@ -53,7 +53,8 @@ void AddStation(graph::GraphBuilder& builder, const std::string& key, const agui
         if (!Shows(condition))
             continue;
         builder.StartRow("condition");
-        AddRowItems(builder, std::format("{}/condition/{}", key, i), {condition}, {agui::scheduleConditionDrag(condition)});
+        AddRowItems(
+            builder, std::format("{}/condition/{}", key, i), {condition}, {agui::scheduleConditionDrag(condition)});
         builder.EndRow();
     }
     AddControl(builder, key + "/add", station.addCondition);
