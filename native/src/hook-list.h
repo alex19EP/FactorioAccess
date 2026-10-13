@@ -18,6 +18,7 @@
      "EntitySelector::checkIfEntitySelectionUpdateShouldBeCreated")                                                    \
    X(processCustomInput, cursor::customInputDetour(), cursor::customInputOriginal(),                                   \
      "PlayerInputSource::processCustomInput")                                                                          \
+   X(mainLoopProcessEvent, cursor::processEventDetour(), cursor::processEventOriginal(), "MainLoop::processEvent")     \
    X(sendRenderStateChanges, cursor::renderStateDetour(), cursor::renderStateOriginal(),                               \
      "PlayerInputSource::sendRenderStateChanges")                                                                      \
    X(dragBuildingUpdate, world::dragUpdateDetour(), world::dragUpdateOriginal(), "ClientDragBuildingContext::update")  \

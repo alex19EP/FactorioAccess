@@ -174,6 +174,7 @@ struct Injected {
    uint16_t mod;
    bool down;
    std::string text; // a text input event instead of a key, when not empty
+   bool repeat = false;
 };
 
 std::deque<Injected> g_injected; // under g_mutex
@@ -206,6 +207,7 @@ bool nextInjected(void* event) {
    put(event, kKeyOffset, next.key);
    put(event, kModOffset, next.mod);
    put(event, kDownOffset, next.down);
+   put(event, kRepeatOffset, next.repeat);
    return true;
 }
 
@@ -277,10 +279,10 @@ std::vector<KeyEvent> drain() {
    return std::exchange(g_navigator.queue, {});
 }
 
-void injectKey(uint32_t key, bool shift, bool ctrl, bool alt, bool down) {
+void injectKey(uint32_t key, bool shift, bool ctrl, bool alt, bool down, bool repeat) {
    uint16_t mod = (shift ? kModLeftShift : 0) | (ctrl ? kModLeftCtrl : 0) | (alt ? kModLeftAlt : 0);
    std::scoped_lock lock(g_mutex);
-   g_injected.push_back({key, mod, down, {}});
+   g_injected.push_back({key, mod, down, {}, down && repeat});
 }
 
 void injectText(std::string text) {

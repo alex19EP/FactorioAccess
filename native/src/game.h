@@ -1827,6 +1827,15 @@ struct Layout {
    // Event const&, ControlContext const*, unsigned) const tells which, without marking the keys used.
    uintptr_t processCustomInput = 0;
    uintptr_t controlTriggeredQuietly = 0;
+   // ProcessResult MainLoop::processEvent(Event const&, bool) hands a held key's repeats (a KEY_DOWN
+   // with KeyboardEvent::repeat) to the GUI only, never to the game's controls, so no mod control
+   // repeats. Event: type (Event::Type), the union's keyboard.repeat, and its size (a key event
+   // holds nothing to free, so a byte copy of one is a valid Event).
+   uintptr_t mainLoopProcessEvent = 0;
+   uint32_t eventType = 0;
+   uint32_t eventKeyRepeat = 0;
+   uint32_t eventSize = 0;
+   uint32_t eventKeyDown = 0;
    // void PlayerInputSource::sendRenderStateChanges(): the first thing every MainLoop::processEvents
    // does, while the update thread waits.
    uintptr_t sendRenderStateChanges = 0;

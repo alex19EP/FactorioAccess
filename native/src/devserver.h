@@ -15,7 +15,9 @@
 //   POST /key                 body: chords such as `tab shift+tab down enter wait=60 escape`;
 //                             answers with what was spoken while they ran; `text=a_b%5Fc`
 //                             types "a b_c"; `down=shift ... up=shift` holds modifiers (shift,
-//                             ctrl, alt, joined by +) over the keys and waits between
+//                             ctrl, alt, joined by +) over the keys and waits between;
+//                             `press=d repeat=d release=d` holds a key down, sends the system's
+//                             repeat of it held, and lets it go
 //   GET  /dump                the widget tree of every visible window, as gui-dumps writes it
 //   GET  /cursor              the view (controller, camera, zoom, screen, map cell) and the cursor
 namespace fa::dev {

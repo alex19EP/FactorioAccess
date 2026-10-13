@@ -250,6 +250,10 @@ std::string runKeys(std::string_view spec) {
       // that acts while a modifier is held, such as the rail planner's obstacle avoidance.
       std::optional<Chord> hold;
       bool holdDown = false;
+      // "press=d" only puts the key down, "repeat=d" sends the system's repeat of it held, and
+      // "release=d" lets it go: a key held over the steps between, such as the build key during a
+      // drag. Modifiers go with "down=" and "up=".
+      enum class Phase { Tap, Down, Repeat, Up } phase = Phase::Tap;
    };
    std::vector<Step> steps;
    for (std::string_view word : words(spec)) {
@@ -269,6 +273,16 @@ std::string runKeys(std::string_view spec) {
          auto modifiers = parseModifiers(std::string_view(token).substr(down ? 5 : 3));
          if (!modifiers) return std::format("[error] bad modifiers: {}\n", word);
          steps.push_back({std::nullopt, 0, {}, modifiers, down});
+         continue;
+      }
+      if (token.starts_with("press=") || token.starts_with("repeat=") || token.starts_with("release=")) {
+         const size_t equals = token.find('=');
+         auto chord = parseChord(std::string_view(token).substr(equals + 1));
+         if (!chord) return std::format("[error] unknown key: {}\n", word);
+         const Step::Phase phase = token.starts_with("press=")    ? Step::Phase::Down
+                                   : token.starts_with("repeat=") ? Step::Phase::Repeat
+                                                                  : Step::Phase::Up;
+         steps.push_back({chord, 0, {}, std::nullopt, false, phase});
          continue;
       }
       if (token == "wait") {
@@ -321,6 +335,14 @@ std::string runKeys(std::string_view spec) {
       if (!first) waitFrames(kFramesBetweenKeys);
       first = false;
       const Chord& chord = *step.chord;
+      if (step.phase != Step::Phase::Tap) {
+         const bool withShift = chord.shift || held.shift;
+         const bool withCtrl = chord.ctrl || held.ctrl;
+         const bool withAlt = chord.alt || held.alt;
+         input::injectKey(chord.key, withShift, withCtrl, withAlt, step.phase != Step::Phase::Up,
+                          step.phase == Step::Phase::Repeat);
+         continue;
+      }
       // Modifiers go down frames before the key and up after the game has acted on it, as a
       // person's do: the game reads them from its key state when it handles the key. Held ones
       // stay down.

@@ -97,8 +97,9 @@ std::vector<KeyEvent> drain();
 // typed key: to the navigator while it claims the key, to the game otherwise. For the dev server.
 // The game marks a key held from its down event to its up event, and controls that ask whether
 // their key is held (`ControlInput::isActive`) read that mark frames later, so the up goes in
-// frames after the down, as a person's does.
-void injectKey(uint32_t key, bool shift, bool ctrl, bool alt, bool down);
+// frames after the down, as a person's does. With `repeat`, a down is the system's repeat of a key
+// held down.
+void injectKey(uint32_t key, bool shift, bool ctrl, bool alt, bool down, bool repeat = false);
 
 // Queues typed text (UTF-8) into the game's event stream, as the text a key press makes: what a
 // focused text field takes, where key events alone type nothing. For the dev server.

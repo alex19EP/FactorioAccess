@@ -55,6 +55,15 @@ const void* selectedAt(int32_t tileX, int32_t tileY);
 const void* selectedAtPoint(int32_t x, int32_t y);
 bool waterAt(int32_t tileX, int32_t tileY);
 
+// For a drag build's steps (cursor.h), in the game's input handling: the ground's prototype on the
+// tile `tileX`, `tileY` (null where the map has none, or outside a game with a view) and its name as
+// the reader says it, and the name of `entity` as a building the cursor enters, a ghost as the reader
+// names one; empty for what is no building there: ore, and what the skip keys pass over (robots,
+// corpses).
+const void* groundAt(int32_t tileX, int32_t tileY);
+std::string groundName(int32_t tileX, int32_t tileY);
+std::string buildingName(const void* entity);
+
 // For the skip keys, where the view draws no live world on the tile: whether the force charted it,
 // and what the chart's picture shows there (mappicture.h), as the reader says it. Nothing where the
 // view shows the live world.

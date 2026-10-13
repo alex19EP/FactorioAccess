@@ -16,6 +16,14 @@
 // cycle key (fa-s-f) moves it within its tile to the next point where the mouse selects something
 // else, so the game selects each overlapping thing in turn; a movement key goes back to the centre.
 //
+// Held down, the movement keys and Ctrl with them repeat at the system's key repeat rate: the game
+// gives a held key's repeats to its GUI only (text boxes), and this lets those of these keys reach
+// the game as presses. The skip and cycle keys move once a press.
+//
+// While the build control drags a build along, a step says only what changes under the cursor: the
+// ground when it differs from the tile before, and a building that was there before the drag, once
+// as the cursor enters it. Whatever blocks the build there is said with it, by the game's reason.
+//
 // A building or blueprint in hand goes where the cursor is (world.h) until the player detaches the
 // cursor from it: the build stays pinned in place, drawn and built there, while the cursor moves on
 // alone to explore around it, saying on each tile what the build puts there and whether it fits
@@ -85,10 +93,17 @@ bool viewHand(int playerIndex, std::string hand);
 // tile, a `name=value` a line.
 std::string describe();
 
-// MinHook detours for PlayerInputSource::processCustomInput and
+// For the build preview, as it speaks while a drag build goes on (world.h): what the drag's last step
+// found changed under the cursor, to say before the preview's own words, then forgotten. The building
+// is left out when it is `inTheWay`, which the preview's reason names. Empty when nothing is waiting.
+std::string takeDragNews(const void* inTheWay);
+
+// MinHook detours for PlayerInputSource::processCustomInput, MainLoop::processEvent and
 // PlayerInputSource::sendRenderStateChanges, and where MinHook keeps the originals.
 void* customInputDetour();
 void** customInputOriginal();
+void* processEventDetour();
+void** processEventOriginal();
 void* renderStateDetour();
 void** renderStateOriginal();
 

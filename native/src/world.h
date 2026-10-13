@@ -95,8 +95,8 @@ std::optional<CursorPosition> pinnedBuild();
 // The build preview says what its tint means, never the colour: when the entity in hand's preview
 // moves, turns or changes entity while the mod drives the cursor, this client says the game's
 // reason it cannot be built, out of reach or already built, after what the mod says of the move;
-// nothing where it can be built. While the build control drags, the mod says nothing of the move
-// and this only what blocks the build.
+// nothing where it can be built. While the build control drags, this says what the drag's step found
+// changed under the cursor (cursor.h), then only what blocks the build.
 
 // MinHook detours for Player::getCursorMapPosition, PlayerInputSource::getCursorMapPosition,
 // GameView::getMapPosition, ClientDragBuildingContext::update, ControlInput::isActive, Player::getSimpleBuildInput,

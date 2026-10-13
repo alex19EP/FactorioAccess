@@ -2,7 +2,8 @@
 """In-game checks of the native cursor and its camera, over the DLL's dev server (src/devserver.h).
 
 The mod's Lua tests run without graphics, so no view is shown there and the DLL's cursor cannot run.
-These checks drive a game that shows one: movement keys and the screen's edge, the pull back onto the
+These checks drive a game that shows one: movement keys, held or pressed, and the screen's edge, a
+drag build's steps, the pull back onto the
 screen when zooming in, a far jump opening remote view, the camera following the cursor, a camera the
 game moves bringing the cursor, leaving remote view, the full map's cells, the skip and cycle keys, an
 item lying away from its tile's centre, the scanner's keys leaving the cursor where it is but for
@@ -154,6 +155,16 @@ def movement_keys_step_a_tile(game):
         if seen[-1] != want:
             return False, f"after {key} the cursor is at {seen[-1]}, not {want}"
     return True, f"{seen}"
+
+
+@check
+def a_held_movement_key_repeats(game):
+    x, y = game.home()["cursor"]
+    game.keys("press=d repeat=d repeat=d repeat=d release=d")
+    state = game.state()
+    if state["cursor"] != (x + 4, y):
+        return False, f"d held with three repeats left the cursor at {state['cursor']}, not {x + 4},{y}"
+    return True, f"{x},{y} to {state['cursor']}"
 
 
 @check
@@ -322,6 +333,54 @@ def skip_stops_at_the_first_tile_that_differs(game):
     if state["cursor"] != (x + 9, row):
         return False, f"skip off the chest stopped at {state['cursor']}"
     return True, f"stopped on the chest, then the ground after it; said {said.strip()!r}"
+
+
+@check
+def a_held_skip_key_skips_once(game):
+    x, row = build_strip(game)
+    game.jump(x, row)
+    game.until(lambda s: s["cursor"] == (x, row), 60)
+    said = game.keys("down=shift press=d repeat=d repeat=d release=d up=shift")
+    state = game.state()
+    if state["cursor"] != (x + 8, row):
+        return False, f"shift+d held from {x},{row} stopped at {state['cursor']}, not on the chest at {x + 8},{row}"
+    return True, f"one skip, to the chest; said {said.strip()!r}"
+
+
+@check
+def a_drag_says_the_ground_and_buildings_it_meets(game):
+    x, row = build_strip(game)
+    sand = ",".join(f"{{name='sand-1',position={{{i},{row}}}}}" for i in (x + 4, x + 5))
+    # Pipes, which face no way: a drag of them never depends on the build direction.
+    game.console(
+        f"local s=game.player.surface s.set_tiles{{{sand}}} "
+        f"s.create_entity{{name='pipe',position={{{mid(x + 6)},{mid(row)}}},force='player'}} "
+        f"game.player.cursor_stack.set_stack{{name='pipe',count=50}}"
+    )
+    game.jump(x + 1, row)
+    game.until(lambda s: s["cursor"] == (x + 1, row), 60)
+    said = game.keys("press=[ press=d " + "repeat=d " * 7 + "release=d release=[ wait=20")
+    state = game.state()
+    pipes = game.value(
+        f"game.player.surface.count_entities_filtered{{name='pipe',area={{{{{x + 1},{row}}},{{{x + 10},{row + 1}}}}}}}"
+    )
+    game.console("game.player.clear_cursor()")
+    if state["cursor"] != (x + 9, row):
+        return False, f"the drag ended at {state['cursor']}, not {x + 9},{row}; said {said!r}"
+    if int(pipes) < 6:
+        return False, f"the drag left {pipes} pipes; said {said!r}"
+    problems = []
+    for word, times in (("Sand", 1), ("Grass", 1), ("Wooden chest", 1)):
+        if said.count(word) != times:
+            problems.append(f"{word!r} {said.count(word)} times, not {times}")
+    # The pipe that was there, with the ground it is on; the chest by the game's reason only.
+    if "Pipe, Grass" not in said:
+        problems.append("the pipe already there was not said with the ground")
+    if "Wooden chest is in the way" not in said:
+        problems.append("the chest in the way was not said")
+    if problems:
+        return False, f"{'; '.join(problems)}; said {said!r}"
+    return True, f"said {said.strip()!r}"
 
 
 @check

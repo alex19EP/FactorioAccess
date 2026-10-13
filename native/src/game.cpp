@@ -1318,6 +1318,11 @@ bool resolve(pdb::SymbolTable& symbols) {
    address(layout.processCustomInput, "?processCustomInput@PlayerInputSource@@QEAA_NAEBVEvent@@AEBVControlContext@@@Z");
    address(layout.controlTriggeredQuietly,
            "?triggeredByWithoutSideEffect@ControlInput@@AEBAPEBVControlInputValue@@AEBVEvent@@PEBVControlContext@@I@Z");
+   address(layout.mainLoopProcessEvent, "?processEvent@MainLoop@@YA?AW4ProcessResult@@AEBVEvent@@_N@Z");
+   offset(layout.eventType, "Event", "type");
+   offset(layout.eventKeyRepeat, "Event", "keyboard.repeat");
+   size(layout.eventSize, "Event");
+   enumerator(layout.eventKeyDown, "Event::Type", "KEY_DOWN");
    address(layout.sendRenderStateChanges, "?sendRenderStateChanges@PlayerInputSource@@UEAAXXZ");
    offset(layout.gameViewSurfaceIndex, "GameView", "cachedSurfaceView.surfaceIndex");
    offset(layout.gameViewCentre, "GameView", "cachedSurfaceView.surfaceViewData.position");

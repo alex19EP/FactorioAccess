@@ -181,6 +181,9 @@ constexpr std::array<MoveKey, 13> kMoveKeys{{
 // How far a skip looks for a change.
 constexpr int kSkipLimit = 100;
 
+// Whether holding the key down repeats it (cursor.h).
+bool repeats(KeyKind kind) { return kind == KeyKind::Step || kind == KeyKind::BySize; }
+
 // Their ControlInputs in the game's control settings, found again when the settings are rebuilt.
 struct MoveInputs {
    const std::byte* first = nullptr;
@@ -384,6 +387,67 @@ void cycleForKey(const View& view, Position cursor) {
    reader::readPoint(stop.x, stop.y, vocab::kPosition(next + 1, stops.size()));
 }
 
+// The drag build under way, as its steps found it: the tiles the cursor has stood on (the drag may
+// have built on them since, so what is there now is not said), and the building on the tile before,
+// said once as the cursor entered it. Only the game's input handling touches these.
+std::vector<std::pair<int32_t, int32_t>> g_dragTiles;
+const void* g_dragBuilding = nullptr;
+// What the last step found changed, waiting for the build preview to say it with its own words
+// (takeDragNews), or for a few frames to pass without one. Under g_mutex.
+struct DragNews {
+   std::string ground;
+   const void* building;
+   std::string buildingName;
+   int frames;
+};
+std::optional<DragNews> g_dragNews;
+// The preview of the step's tile is drawn some frames after the step, more while the game is busy.
+constexpr int kDragNewsFrames = 10;
+
+void endDrag() {
+   g_dragTiles.clear();
+   g_dragBuilding = nullptr;
+}
+
+// A step of a drag build from `from` to `to`, read before the drag builds there.
+void dragStep(Position from, Position to) {
+   const int32_t fromX = tileOf(from.x), fromY = tileOf(from.y), x = tileOf(to.x), y = tileOf(to.y);
+   // The drag began by building where the cursor stood.
+   if (g_dragTiles.empty()) g_dragTiles.emplace_back(fromX, fromY);
+   const bool revisited = std::find(g_dragTiles.begin(), g_dragTiles.end(), std::pair{x, y}) != g_dragTiles.end();
+   if (!revisited) g_dragTiles.emplace_back(x, y);
+   const void* entity = reader::selectedAt(x, y);
+   std::string name = reader::buildingName(entity);
+   const void* building = name.empty() ? nullptr : entity;
+   const bool entered = building && building != g_dragBuilding && !revisited;
+   g_dragBuilding = building;
+   DragNews news{reader::groundAt(x, y) != reader::groundAt(fromX, fromY) ? reader::groundName(x, y) : std::string(),
+                 entered ? building : nullptr, entered ? std::move(name) : std::string(), 0};
+   std::scoped_lock lock(g_mutex);
+   if (news.ground.empty() && news.buildingName.empty())
+      g_dragNews.reset();
+   else
+      g_dragNews = std::move(news);
+}
+
+std::string newsText(const DragNews& news, const void* inTheWay) {
+   std::string text = news.ground;
+   if (!news.buildingName.empty() && news.building != inTheWay)
+      text = news.buildingName + (text.empty() ? "" : ", " + text);
+   return text;
+}
+
+// Says news the build preview did not take within a few frames.
+void flushDragNews() {
+   std::optional<DragNews> news;
+   {
+      std::scoped_lock lock(g_mutex);
+      if (!g_dragNews || ++g_dragNews->frames < kDragNewsFrames) return;
+      news = std::exchange(g_dragNews, std::nullopt);
+   }
+   speech::say(newsText(*news, nullptr), true);
+}
+
 void moveForKey(const void* event, const void* context) {
    if (!event) return;
    {
@@ -411,9 +475,14 @@ void moveForKey(const void* event, const void* context) {
       return;
    }
    place(target);
+   if (size > 0) {
+      record(target, Step::Moved);
+      return;
+   }
    // A drag build builds on the tile after this; the game's build preview tells what blocks it.
    const int playerIndex = at<uint16_t>(view->player, layout.playerIndex) + 1;
-   if (size > 0 || world::dragBuild(playerIndex)) {
+   if (world::dragBuild(playerIndex)) {
+      dragStep(*cursor, target);
       record(target, Step::Moved);
       return;
    }
@@ -531,6 +600,7 @@ void sayDragTurn(int playerIndex) {
 
 void reset() {
    g_heardDragTurns.reset();
+   endDrag();
    g_lastController.reset();
    g_landedTile.reset();
    g_pans.clear();
@@ -648,6 +718,8 @@ void frame(void* source) {
    const int playerIndex = at<uint16_t>(view->player, layout.playerIndex) + 1;
    checkPin(*view, playerIndex);
    sayDragTurn(playerIndex);
+   if (!world::dragBuild(playerIndex)) endDrag();
+   flushDragNews();
    // The scanner keeps LuaSurface::index, the engine's index + 1.
    scanner::frame(playerIndex, at<uint32_t>(view->view, layout.gameViewSurfaceIndex) + 1);
    // A building in hand builds from the tile's centre, wherever the cycle key left the cursor in it.
@@ -722,6 +794,33 @@ CustomInputFunction g_customInputOriginal = nullptr;
 bool detourCustomInput(void* source, const void* event, const void* context) {
    moveForKey(event, context);
    return g_customInputOriginal(source, event, context);
+}
+
+constexpr size_t kEventCapacity = 64;
+
+// Whether `event` is a held key's repeat of a movement key that repeats (cursor.h).
+bool repeatsAsPress(const void* event) {
+   if (at<uint32_t>(event, layout.eventType) != layout.eventKeyDown || !at<bool>(event, layout.eventKeyRepeat) ||
+       layout.eventSize > kEventCapacity)
+      return false;
+   {
+      std::scoped_lock lock(g_mutex);
+      if (!g_keys) return false;
+   }
+   const MoveKey* key = triggeredMove(event, nullptr);
+   return key && repeats(key->kind);
+}
+
+using ProcessEventFunction = uint32_t (*)(const void* event, bool flag);
+ProcessEventFunction g_processEventOriginal = nullptr;
+
+// A repeat goes on as a press: a copy of its event without the repeat flag.
+uint32_t detourProcessEvent(const void* event, bool flag) {
+   if (!repeatsAsPress(event)) return g_processEventOriginal(event, flag);
+   alignas(8) std::byte copy[kEventCapacity];
+   std::memcpy(copy, event, layout.eventSize);
+   put<bool>(copy, layout.eventKeyRepeat, false);
+   return g_processEventOriginal(copy, flag);
 }
 
 using RenderStateFunction = void (*)(void* source);
@@ -850,8 +949,19 @@ std::string describe() {
    return out;
 }
 
+std::string takeDragNews(const void* inTheWay) {
+   std::optional<DragNews> news;
+   {
+      std::scoped_lock lock(g_mutex);
+      news = std::exchange(g_dragNews, std::nullopt);
+   }
+   return news ? newsText(*news, inTheWay) : std::string();
+}
+
 void* customInputDetour() { return reinterpret_cast<void*>(&detourCustomInput); }
 void** customInputOriginal() { return reinterpret_cast<void**>(&g_customInputOriginal); }
+void* processEventDetour() { return reinterpret_cast<void*>(&detourProcessEvent); }
+void** processEventOriginal() { return reinterpret_cast<void**>(&g_processEventOriginal); }
 void* renderStateDetour() { return reinterpret_cast<void*>(&detourRenderState); }
 void** renderStateOriginal() { return reinterpret_cast<void**>(&g_renderStateOriginal); }
 

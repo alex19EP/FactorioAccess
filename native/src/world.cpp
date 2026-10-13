@@ -1,5 +1,6 @@
 #include "world.h"
 
+#include "cursor.h"
 #include "facts.h"
 #include "footprint.h"
 #include "game.h"
@@ -540,11 +541,14 @@ std::string checkReason(const std::byte* result) {
    return takeSpeakable(message);
 }
 
-std::string previewMeaning(const void* settings, const void* entity, Position position, bool drag) {
+// `inTheWay` gets the entity that blocks the build, if one does, said or not.
+std::string previewMeaning(const void* settings, const void* entity, Position position, bool drag,
+                           const void*& inTheWay) {
    const std::byte* player = at<const std::byte*>(settings, layout.settingsPlayer);
    const std::byte* adapter = stateAdapter(player);
    alignas(8) std::byte result[game::kBuildCheckResultCapacity];
    checkBuild(settings, entity, result);
+   inTheWay = nullptr;
 
    const bool tooFar = at<bool>(settings, layout.settingsTooFar);
    if (!tooFar) g_outOfReachSaid = false;
@@ -556,13 +560,14 @@ std::string previewMeaning(const void* settings, const void* entity, Position po
    }
    if (type == game::kBuildCheckIgnorable) return drag ? std::string() : std::string(vocab::kAlreadyBuilt);
    if (type == game::kBuildCheckCollidesWithEntity) {
-      const std::byte* inTheWay = at<const std::byte*>(result, layout.buildCheckResultEntity);
+      const std::byte* blocker = at<const std::byte*>(result, layout.buildCheckResultEntity);
+      inTheWay = blocker;
       if (drag) {
-         const auto where = at<Position>(inTheWay, layout.entityPosition);
+         const auto where = at<Position>(blocker, layout.entityPosition);
          if (where.x == position.x && where.y == position.y &&
-             at<const void*>(inTheWay, layout.entityPrototypeOf) == at<const void*>(entity, layout.entityPrototypeOf))
+             at<const void*>(blocker, layout.entityPrototypeOf) == at<const void*>(entity, layout.entityPrototypeOf))
             return {};
-      } else if (inTheWay == selectedEntity(adapter)) {
+      } else if (blocker == selectedEntity(adapter)) {
          return {};
       }
    }
@@ -611,7 +616,14 @@ void detourSettingsDraw(const void* settings, void* drawQueue, const void* entit
    if (g_spokenPreview == t_preview.key) return;
    g_spokenPreview = t_preview.key;
    const bool drag = localDragging();
-   highlights::preview(settings, entity, previewMeaning(settings, entity, t_preview.key.position, drag), drag);
+   const void* inTheWay = nullptr;
+   std::string meaning = previewMeaning(settings, entity, t_preview.key.position, drag, inTheWay);
+   // What the drag's step found changed under the cursor comes first (cursor.h).
+   if (drag) {
+      std::string news = cursor::takeDragNews(meaning.empty() ? nullptr : inTheWay);
+      if (!news.empty()) meaning = meaning.empty() ? std::move(news) : news + ", " + meaning;
+   }
+   highlights::preview(settings, entity, std::move(meaning), drag);
 }
 
 // TilePosition: two ints, passed by value in one register. NamedBool<Tag> is one byte and

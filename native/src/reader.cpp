@@ -753,6 +753,27 @@ bool waterAt(int32_t tileX, int32_t tileY) {
    return here && prototypes::waterLike(tileKindOf(tilePrototypeAt(here->surface, Position{tileX, tileY})));
 }
 
+const void* groundAt(int32_t tileX, int32_t tileY) {
+   const std::optional<Local> here = local();
+   return here ? tilePrototypeAt(here->surface, Position{tileX, tileY}) : nullptr;
+}
+
+std::string groundName(int32_t tileX, int32_t tileY) {
+   const std::optional<Local> here = local();
+   return here ? tileName(here->surface, Position{tileX, tileY}) : std::string();
+}
+
+std::string buildingName(const void* entity) {
+   if (!entity || facts::skipsOver(entity)) return {};
+   const std::byte* prototype = at<const std::byte*>(entity, layout.entityPrototypeOf);
+   const std::string_view type = typeName(prototype);
+   if (type == "resource") return {};
+   if (type != "entity-ghost") return localisedName(prototype);
+   const std::byte* inner = at<const std::byte*>(entity, layout.scanGhostInner);
+   const std::string innerName = inner ? localisedName(at<const std::byte*>(inner, layout.entityPrototypeOf)) : "";
+   return vocab::translate("fa.ent-info-ghost", {localisedName(prototype), innerName});
+}
+
 std::vector<Stop> stopsIn(int32_t tileX, int32_t tileY) {
    const std::optional<Local> here = local();
    if (!here) return {};
