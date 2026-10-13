@@ -761,6 +761,8 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.splitterGoesTo, "SplitterLogic", "nextItemGoesTo");
    offset(layout.splitterFilter, "SplitterLogic", "filter");
    enumerator(layout.splitterRight, "SplitterDirection", "Right");
+   offset(layout.splitterSecondaryLeftLine, "Splitter", "secondaryLeftLine");
+   offset(layout.splitterSecondaryRightLine, "Splitter", "secondaryRightLine");
    offset(layout.loaderFilters, "Loader", "filter");
    offset(layout.loaderPerLane, "LoaderPrototype", "perLaneFilters");
    offset(layout.loaderType, "Loader", "type");

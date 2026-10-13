@@ -1073,9 +1073,15 @@ struct Layout {
    uint32_t splitterGoesTo = 0;        // ::nextItemGoesTo, SplitterDirection
    uint32_t splitterFilter = 0;        // ::filter
    uint32_t splitterRight = 0;         // SplitterDirection Right
+   // The lanes of a splitter's second half (its first half's are TransportBeltConnectable's
+   // leftLine and rightLine): Splitter::secondaryLeftLine and secondaryRightLine,
+   // TransportLineConnector. Splitter::getItemInsertionSpecification picks one of the four across
+   // its width, the first half's on the left.
+   uint32_t splitterSecondaryLeftLine = 0;
+   uint32_t splitterSecondaryRightLine = 0;
    uint32_t loaderFilters = 0;         // Loader::filter, std::array of 5
    // A loader that filters each lane on its own: its first filter the left lane's, its second the
-   // right's.
+   // right's (Loader::matchesFilter takes filter[line index - 1]).
    uint32_t loaderPerLane = 0;         // LoaderPrototype::perLaneFilters, bool
    uint32_t loaderType = 0;            // Loader::type, LoaderType
    uint32_t loaderOutput = 0;          // LoaderType Output

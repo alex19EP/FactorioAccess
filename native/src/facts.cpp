@@ -723,11 +723,16 @@ LaneRange rangeOf(Belt belt, int index) {
            at<int32_t>(connector, layout.connectorEnd)};
 }
 
-// The compass side lane 1 (left) or 2 (right) of a transport belt lies on as the belt leaves its
-// tile.
+// The compass side the left (1) or right (2) lane of a belt connectable lies on: counterclockwise or
+// clockwise of its stored direction, the frame every getItemInsertionSpecification picks a lane in
+// (a lateral offset below 0 takes leftLine). On a transport belt that is the way it leaves its tile;
+// an underground exit stores the way back.
 uint8_t laneSide(Belt belt, int index) {
    return index == 1 ? counterclockwise(belt.direction()) : clockwise(belt.direction());
 }
+
+// Belts side by side read alike when their west or north lane comes first.
+bool saidFirst(uint8_t side) { return side == kWest || side == kNorth; }
 
 // TransportLine::firstGapIndex when no item has room behind it.
 constexpr uint32_t kNoGap = 0xffffffff;
@@ -921,8 +926,8 @@ LaneWords laneWords(const Carried& lane, const Lane& here) {
 }
 
 // What a transport belt carries on each lane, each lane named by the compass side it lies on as
-// the belt leaves its tile (the belt analyzer's names), so no lane needs turning to face the belt.
-// The west or north lane comes first, so belts side by side read alike whichever way they run.
+// the belt leaves its tile (the belt analyzer's names), so no lane needs turning to face the belt;
+// the west or north lane first.
 std::string beltContents(Belt belt) {
    struct Side {
       Carried carried;
@@ -936,7 +941,7 @@ std::string beltContents(Belt belt) {
       Carried found = carried(here, range);
       sides[index - 1] = {std::move(found), std::move(here), laneSide(belt, index)};
    }
-   if (sides[1].side == kWest || sides[1].side == kNorth) std::swap(sides[0], sides[1]);
+   if (saidFirst(sides[1].side)) std::swap(sides[0], sides[1]);
 
    std::vector<std::string> lanes;
    std::optional<LaneWords> first;
@@ -1227,11 +1232,12 @@ const std::byte* reachedAt(const std::byte* entity, double dx, double dy, const 
 const std::byte* unlinkedReach(const std::byte* inserter, double dx, double dy, bool pickup);
 
 // The compass side of the lane an inserter reaching `dx`, `dy` tiles drops onto, when it drops
-// onto a transport belt: the lane the game's hover marks, picked by the game as
-// Inserter::dropHeldItem picks it.
+// onto anything with belt lanes (a belt, an underground belt, a splitter, a loader): the lane the
+// game's hover marks, picked by the game as Inserter::dropHeldItem picks it. On a splitter it is a
+// lane of the half the inserter reaches.
 std::optional<uint8_t> dropLane(const std::byte* inserter, const std::byte* target, double dx, double dy) {
+   if (!agui::objectAsBase(target, ".?AVTransportBeltConnectable@@")) return std::nullopt;
    const Belt belt{target};
-   if (!belt.isTransportBelt()) return std::nullopt;
    // ItemInsertionSpecification: the line chosen, then where on it.
    struct Insertion {
       const std::byte* line;
@@ -1245,8 +1251,10 @@ std::optional<uint8_t> dropLane(const std::byte* inserter, const std::byte* targ
    Insertion insertion{};
    virtualAt<Insertion* (*)(const void*, Insertion*, const Position*, uint8_t)>(
       target, layout.beltInsertionSpecification)(target, &insertion, &drop, mirrored);
-   if (insertion.line == target + layout.beltLeftLine) return laneSide(belt, 1);
-   if (insertion.line == target + layout.beltRightLine) return laneSide(belt, 2);
+   const bool splitter = belt.type() == "splitter";
+   const auto chose = [&](uint32_t line) { return insertion.line == target + line; };
+   if (chose(layout.beltLeftLine) || (splitter && chose(layout.splitterSecondaryLeftLine))) return laneSide(belt, 1);
+   if (chose(layout.beltRightLine) || (splitter && chose(layout.splitterSecondaryRightLine))) return laneSide(belt, 2);
    return std::nullopt;
 }
 
@@ -2216,7 +2224,7 @@ std::vector<std::string> drawnIcons(const void* object, const void* renderParame
              std::ranges::any_of(filters, [&](const std::byte* filter) { return internalName(filter) == icon.name; });
    };
    // A loader that filters each lane on its own: its first filter is the left lane's, its second
-   // the right's, either one unset.
+   // the right's (laneSide), either one unset.
    const std::byte* lanes[2] = {};
    bool perLane = false;
    if (const std::byte* loader = agui::objectAsBase(entity, ".?AVLoader@@")) {
@@ -2276,8 +2284,14 @@ std::vector<std::string> drawnIcons(const void* object, const void* renderParame
                icons, [&](const entityicons::Icon& drawnIcon) { return drawnIcon.denied && isFilter(drawnIcon); });
             if (perLane) {
                if (denies) items.emplace_back(vocab::kFilterDenies);
-               if (lanes[0]) items.push_back(vocab::kLeftLane(localisedName(lanes[0])));
-               if (lanes[1]) items.push_back(vocab::kRightLane(localisedName(lanes[1])));
+               // Each lane by its compass side, the west or north one first, as a belt's lanes.
+               const Belt belt{entity};
+               const bool rightFirst = saidFirst(laneSide(belt, 2));
+               for (int n = 0; n < 2; ++n) {
+                  const int i = rightFirst ? 1 - n : n;
+                  if (lanes[i])
+                     items.push_back(vocab::kLaneFilter(directionName(laneSide(belt, i + 1)), localisedName(lanes[i])));
+               }
             } else {
                for (size_t i = 0; i < filters.size(); ++i) {
                   const std::string name = localisedName(filters[i]);
