@@ -58,6 +58,7 @@ local test_files = {
    "pins-tags-scanner-test", -- Test the scanner's pins and map tags
    "view-limit-test", -- Test the cursor kept on the screen in the character view
    "god-mode-test", -- Test FA without a character, as in the sandbox
+   "train-map-targets-test", -- Test what a click on the map would add to a train's schedule
    "fluid-views-test", -- Test the views read with a pipe's window
    "pole-views-test", -- Test the views read with an electric pole's window
    "map-overlays-test", -- Test what the map's overlays say over a map cell

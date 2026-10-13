@@ -14,6 +14,11 @@ On the map, in map view, add a temporary stop where the cursor is: control + lef
 
 On the map, add the train stop under the cursor to the schedule: shift + left bracket
 
+On the map, each cursor move ends with what these two would add, as the game draws it while control or shift is held:
+"temporary stop" when a rail is within 20 tiles, or "no path to temporary stop" when the train cannot reach it, then
+"stop" and the name of the nearest train stop within 20 tiles, again with "no path to" when the train cannot reach it.
+The same is said in map view while you ride a train with no window open, where the two clicks also work.
+
 ## Explanation
 
 IMPORTANT: See https://wiki.factorio.com/Railway if you don't know how rails work. This is documentation of mod
@@ -30,7 +35,8 @@ run into other trains.
 
 A sighted player who wants to drive a train through a complicated base, and the accessible way for you to do so, is to
 add a temporary stop. Open the locomotive, press control + tab to go to the map, put the cursor near the track where you
-want to go, and press control + left bracket. The game adds the temporary stop to the schedule and the train heads
+want to go (the map says "temporary stop" there, or "no path to temporary stop"), and press control + left bracket.
+The game adds the temporary stop to the schedule and the train heads
 there. Add "passenger not present" to it as a wait condition if it should wait for you to get off.
 
 What we do offer is a radar that tells you which way and how fast a train is moving. When sitting in a moving train, you

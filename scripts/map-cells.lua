@@ -6,12 +6,14 @@ cell: a square of tiles about a thirtieth of the screen across, rounded to a pow
 240 tiles across, 512 at 15360). Cells lie on a grid aligned to their size, so one is inside a chunk
 or made of whole chunks. The DLL moves the cursor (native/src/cursormoves.h computes the cell the
 same way) to the centre of the next cell, and moving reads what the cell holds, then what the map's
-overlays that are on show over it (map-overlays.lua).
+overlays that are on show over it (map-overlays.lua), then where a click would send the train whose
+window is open (train-map-targets.lua).
 ]]
 local Cursor = require("scripts.cursor")
 local FaInfo = require("scripts.fa-info")
 local MapOverlays = require("scripts.map-overlays")
 local Speech = require("scripts.speech")
+local TrainMapTargets = require("scripts.train-map-targets")
 
 local native = rawget(_G, "fa_native")
 
@@ -34,6 +36,7 @@ function mod.read(pindex, size)
    local skip = overlays and not overlays.worker_robots and MapOverlays.WORKER_ROBOT_TYPES or nil
    message:fragment(FaInfo.area_scan_summary_info(pindex, left_top, right_bottom, skip))
    if overlays then MapOverlays.describe(message, player, left_top, right_bottom, overlays) end
+   TrainMapTargets.describe(message, player, { x = cursor.x + 0.5, y = cursor.y + 0.5 })
    Speech.speak(pindex, message:build())
 end
 

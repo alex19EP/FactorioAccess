@@ -154,6 +154,8 @@ FactorioAccess reads every game window and moves through it from the keyboard. S
 | `ctrl + [` on the map | Add a temporary stop near the cursor, in map view |
 | `shift + [` on the map | Add the train stop under the cursor to the schedule |
 
+On the map, each cursor move also says what these two would add: a temporary stop on the nearest rail and the nearest train stop, each within 20 tiles, with "no path to" when the train cannot reach it.
+
 See [rails](rails.md).
 
 ## Kruise Kontrol
