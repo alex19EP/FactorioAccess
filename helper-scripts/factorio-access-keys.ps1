@@ -1,13 +1,12 @@
 <#
 .SYNOPSIS
-Moves Factorio's own controls to the keys FactorioAccess expects: walking to the arrow keys, connect
-and disconnect train to CONTROL + J and CONTROL + K, research to CONTROL + T, zoom to = and -, and
-every mouse button control onto a key: left button [, right button ], middle button \.
+Moves Factorio's controls to the keys FactorioAccess expects: walking to the arrow keys, connect and
+disconnect train to CONTROL + J and CONTROL + K, research to CONTROL + T, zoom to = and -, and every
+mouse button control onto a key: left button [, right button ], middle button \.
 
 .DESCRIPTION
 Edits the [controls] section of Factorio's config.ini. Close Factorio first: it rewrites config.ini
-when it exits. A copy of the old file is kept beside it. Controller bindings are left alone, and so
-are the controls of mods, FactorioAccess's own included: only the game's controls are moved.
+when it exits. A copy of the old file is kept beside it. Controller bindings are left alone.
 
 Fixed bindings come from $fixedBindings below:
 - move-up, move-down, move-left and move-right become UP, DOWN, LEFT and RIGHT, leaving WASD to the
@@ -20,18 +19,13 @@ Fixed bindings come from $fixedBindings below:
   alternative slot gets EQUALS and MINUS, so the plain wheel keeps working. FactorioAccess speaks
   each zoom change.
 
-Every game control bound to mouse button 1, 2 or 3 (with any modifiers) gets the same binding on
+Every control bound to mouse button 1, 2 or 3 (with any modifiers) gets the same binding on
 LEFTBRACKET, RIGHTBRACKET or BACKSLASH. The key goes into the control's free alternative slot, so the
 mouse keeps working. A control whose two slots are both taken has its mouse buttons replaced by the
 keys instead. The game itself accepts these: only its settings screen refuses a key for a mouse-only
 control, config.ini is read without that check, and a key binding triggers a control like a mouse
 binding. Inventory and crafting slots are the exception: the game turns their controls into the
 mouse buttons slot buttons react to, so their keys do nothing there. They are bound anyway.
-
-The game's controls are the ones its locale names, in data\<mod>\locale\en\*.cfg of the game folder:
-the engine's under [controls], and the base game's own keys, such as give-blueprint, under
-[controls] or [shortcut-name]. Earlier versions of this script also gave mod controls bracket keys;
-an alternative slot that holds the key form of the mod control's own mouse binding is cleared.
 
 With -Revert the keys come off again. A fixed binding that still holds its key goes back to the
 game's default. Added mouse alternatives are cleared and replaced bindings go back to their mouse
@@ -40,13 +34,14 @@ binding is treated as one of ours. Bindings left at their defaults, the commente
 touched: a mod's own default on a bracket key stays.
 
 .PARAMETER GameDir
-The game folder, the one holding bin, data and config-path.cfg. Its config-path.cfg says where its
+The game folder, the one holding bin and config-path.cfg. Its config-path.cfg says where its
 config.ini is, as the game reads it: inside the folder for the portable (zip) version, in
 %APPDATA%\Factorio\config for Steam and the installer. Defaults to the script's own folder when that
-is a game folder, and otherwise to the Steam copy of the game, found through Steam's library folders.
+is a game folder; otherwise %APPDATA%\Factorio\config\config.ini is edited, which suits Steam and the
+installer but not a portable copy.
 
 .PARAMETER ConfigPath
-config.ini to edit, in place of the one the game folder names.
+config.ini to edit, in place of finding it through -GameDir.
 
 .EXAMPLE
 factorio-access-keys.cmd
@@ -95,66 +90,29 @@ function ConvertTo-MouseBinding([string]$binding) {
    return $null
 }
 
-function Test-GameDir([string]$dir) {
-   return (Test-Path -LiteralPath (Join-Path $dir 'config-path.cfg')) -and (Test-Path -LiteralPath (Join-Path $dir 'data\core'))
-}
-
-# The game folder of the Steam copy, from Steam's library folders, or $null.
-function Find-SteamGame {
-   $steam = (Get-ItemProperty -Path 'HKCU:\Software\Valve\Steam' -Name SteamPath -ErrorAction SilentlyContinue).SteamPath
-   if (-not $steam) { return $null }
-   $libraries = @($steam)
-   $vdf = Join-Path $steam 'steamapps\libraryfolders.vdf'
-   if (Test-Path -LiteralPath $vdf) {
-      foreach ($line in [IO.File]::ReadAllLines($vdf)) {
-         if ($line -match '^\s*"path"\s+"(.*)"\s*$') { $libraries += $Matches[1].Replace('\\', '\') }
-      }
-   }
-   foreach ($library in $libraries) {
-      $dir = Join-Path $library 'steamapps\common\Factorio'
-      if (Test-GameDir $dir) { return [IO.Path]::GetFullPath($dir) }
-   }
-   return $null
-}
-
-# The config.ini the game in $gameDir uses, as config-path.cfg names it.
+# The config.ini the game in $gameDir uses, as config-path.cfg names it, or $null when $gameDir is
+# not a game folder.
 function Find-GameConfig([string]$gameDir) {
-   foreach ($line in [IO.File]::ReadAllLines((Join-Path $gameDir 'config-path.cfg'))) {
+   $cfg = Join-Path $gameDir 'config-path.cfg'
+   if (-not (Test-Path -LiteralPath $cfg)) { return $null }
+   foreach ($line in [IO.File]::ReadAllLines($cfg)) {
       if ($line -match '^config-path=(.*)$') {
          $dir = $Matches[1].Replace('__PATH__executable__', (Join-Path $gameDir 'bin\x64'))
          $dir = $dir.Replace('__PATH__system-write-data__', (Join-Path $env:APPDATA 'Factorio'))
          return [IO.Path]::GetFullPath((Join-Path $dir 'config.ini'))
       }
    }
-   throw "$gameDir\config-path.cfg names no config-path."
+   return $null
 }
 
-# The names of the game's own controls, from the [controls] and [shortcut-name] sections of the
-# English locale of every mod the game ships (core, base, space-age and the rest).
-function Get-GameControls([string]$gameDir) {
-   $names = [Collections.Generic.HashSet[string]]::new()
-   foreach ($cfg in Get-ChildItem -Path (Join-Path $gameDir 'data\*\locale\en\*.cfg')) {
-      $section = ''
-      foreach ($line in [IO.File]::ReadAllLines($cfg.FullName)) {
-         if ($line -match '^\[(.*)\]') { $section = $Matches[1]; continue }
-         if (($section -eq 'controls' -or $section -eq 'shortcut-name') -and $line -match '^([A-Za-z0-9_.-]+)=') {
-            [void]$names.Add($Matches[1])
-         }
-      }
-   }
-   return , $names
+if (-not $ConfigPath -and $GameDir) {
+   $ConfigPath = Find-GameConfig ([IO.Path]::GetFullPath($GameDir))
+   if (-not $ConfigPath) { throw "$GameDir is not a game folder: it has no config-path.cfg." }
 }
-
-if ($GameDir) {
-   $GameDir = [IO.Path]::GetFullPath($GameDir)
-   if (-not (Test-GameDir $GameDir)) { throw "$GameDir is not a game folder: it has no config-path.cfg and data folder." }
-} elseif (Test-GameDir $PSScriptRoot) {
-   $GameDir = $PSScriptRoot
-} else {
-   $GameDir = Find-SteamGame
-   if (-not $GameDir) { throw 'Found no game folder. Run this from the game folder, or pass -GameDir with it.' }
+if (-not $ConfigPath) {
+   $ConfigPath = Find-GameConfig $PSScriptRoot
+   if (-not $ConfigPath) { $ConfigPath = Join-Path $env:APPDATA 'Factorio\config\config.ini' }
 }
-if (-not $ConfigPath) { $ConfigPath = Find-GameConfig $GameDir }
 
 if (Get-Process -Name factorio -ErrorAction SilentlyContinue) {
    throw 'Factorio is running. Close it first: it rewrites config.ini when it exits.'
@@ -162,9 +120,7 @@ if (Get-Process -Name factorio -ErrorAction SilentlyContinue) {
 if (-not (Test-Path -LiteralPath $ConfigPath)) {
    throw "No config.ini at $ConfigPath. Start Factorio once to create it, or pass -GameDir with the game folder."
 }
-$gameControls = Get-GameControls $GameDir
-if ($gameControls.Count -eq 0) { throw "$GameDir\data has no English locale to read the game's controls from." }
-Write-Host "Editing $ConfigPath, with the controls of $GameDir"
+Write-Host "Editing $ConfigPath"
 
 # The game writes some lines with LF and the rest with CRLF. Splitting with the endings captured
 # gives line, ending, line, ending, ...; only lines (even indices) are edited, so every other byte
@@ -236,16 +192,10 @@ foreach ($name in @($entries.Keys)) {
    $primary = $entries[$name].Value
    $altName = "$name-alternative"
    $alternative = if ($entries.Contains($altName)) { $entries[$altName].Value } else { $null }
-   # Only set lines can be ours; a commented line is the game's or a mod's own default.
-   $altMouse = if ($null -ne $alternative -and $entries[$altName].Set) { ConvertTo-MouseBinding $alternative } else { $null }
-
-   if (-not $gameControls.Contains($name)) {
-      # A mod's control: clear the key an earlier version of this script added beside its mouse button.
-      if ($altMouse -and $altMouse -eq $primary) { Set-Binding $altName '' $true }
-      continue
-   }
 
    if ($Revert) {
+      # Only set lines can be ours; a commented line is the game's or a mod's own default.
+      $altMouse = if ($null -ne $alternative -and $entries[$altName].Set) { ConvertTo-MouseBinding $alternative } else { $null }
       if ($altMouse -and $altMouse -eq $primary) {
          Set-Binding $altName '' $true
          continue

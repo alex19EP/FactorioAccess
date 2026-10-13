@@ -1,8 +1,8 @@
 --Here: Functions related to Kruise Kontrol
 --
--- Jobs start from Kruise Kontrol's own control, CONTROL + ALT + mouse-button-2 unless the player
--- binds it to a key in the game's Controls window. The game cursor follows the FA cursor, so the job
--- lands there. Enter cancels, also handled by Kruise Kontrol.
+-- Jobs start from Kruise Kontrol's own control, CONTROL + ALT + mouse-button-2, which
+-- helper-scripts/factorio-access-keys.ps1 also puts on CONTROL + ALT + RIGHTBRACKET. The game cursor
+-- follows the FA cursor, so the job lands there. Enter cancels, also handled by Kruise Kontrol.
 --
 -- Kruise Kontrol says what it is doing with text it draws over the character: a remark that lasts
 -- two seconds and is redrawn for every new one, and a status line, such as pathfinding, that keeps
