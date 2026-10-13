@@ -1332,6 +1332,36 @@ struct Layout {
    uint32_t trainsWidgetEmpty = 0;           // TrainsWidget::noTrainsSubheader, agui::Frame
    uint32_t trainCardMinimap = 0;            // TrainWithMinimap::minimapSlot, LocomotiveMinimapSlot
    uint32_t trainCardStatus = 0;             // TrainWithMinimap::statusButton, agui::TextButton
+   // A locomotive's window (TrainGui): its Schedule and Cargo tabs, the schedule a ScheduleGui.
+   uint32_t trainGuiTabs = 0;                // TrainGui::tabs, agui::TabbedPane
+   uint32_t trainGuiScheduleTab = 0;         // TrainGui::scheduleTab, agui::Tab
+   uint32_t trainGuiSchedule = 0;            // TrainGui::scheduleGui, ScheduleGui
+   // A schedule (ScheduleGui): the note of a group's shared schedule, the stations (a drag pane of
+   // ScheduleStationGui), the interrupts (a drag pane of ScheduleInterruptGui) and the buttons
+   // adding either.
+   uint32_t scheduleGroupNote = 0;           // ScheduleGui::trainGroupNote, agui::Label
+   uint32_t scheduleAddStation = 0;          // ScheduleGui::addStationButton, agui::TextButton
+   uint32_t scheduleAddInterrupt = 0;        // ScheduleGui::addInterruptButton, agui::TextButton
+   uint32_t scheduleStations = 0;            // ScheduleGui::scheduleDragPane, DragPaneWidget<VerticalFlow>
+   uint32_t scheduleInterrupts = 0;          // ScheduleGui::scheduleInterruptsDragPane, likewise
+   // What holds wait conditions (ScheduleConditionGuiHolder: a station, an interrupt's triggers):
+   // a drag pane of ScheduleConditionGui and the button adding one.
+   uint32_t conditionHolderConditions = 0;   // ::conditionsDragPane, ConditionDragPane
+   uint32_t conditionHolderAdd = 0;          // ::addWaitConditionButton, agui::TextButton
+   // A station of a schedule (ScheduleStationGui, a ScheduleConditionGuiHolder): its go-to button
+   // (toggled on the station the train heads to), name, change and remove buttons, and the unload
+   // checkbox (a space platform's).
+   uint32_t scheduleStationGoTo = 0;         // ::goToButton, IconButton
+   uint32_t scheduleStationLabel = 0;        // ::stationLabel, agui::Label
+   uint32_t scheduleStationChange = 0;       // ::changeStationButton, IconButton
+   uint32_t scheduleStationRemove = 0;       // ::removeButton, IconButton
+   uint32_t scheduleStationUnload = 0;       // ::unloadCheckBox, agui::CheckBox
+   uint32_t scheduleConditionDrag = 0;       // ScheduleConditionGui::draggableSpace, DragHandleFiller
+   // An interrupt of a schedule (ScheduleInterruptGui).
+   uint32_t scheduleInterruptGoTo = 0;       // ::gotoButton, IconButton
+   uint32_t scheduleInterruptName = 0;       // ::name, agui::Label
+   uint32_t scheduleInterruptEdit = 0;       // ::editButton, IconButton
+   uint32_t scheduleInterruptRemove = 0;     // ::removeButton, IconButton
    // A game window a mod attached relative GUI elements to (LuaGuiElement anchor) is taken off the
    // root into an invisible CustomGuiGameGuiWrapper: a 3 by 3 table with the window in the middle
    // and a flow on each side holding the mod's elements for that side.

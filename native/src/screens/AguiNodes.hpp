@@ -77,6 +77,13 @@ using Attachments = std::unordered_map<const agui::Widget*, Attachment>;
 void AddSubtree(graph::GraphBuilder& builder, const std::string& prefix, const agui::Widget* widget,
     std::vector<const agui::Widget*> skip = {}, Attachments attachments = {});
 
+/// Declares every label and control `widgets` show, however deeply wrapped, as items of the
+/// builder's current row, in the order shown: labels side by side as one line, a label before a
+/// value control naming it. For a row the game builds of panels (a schedule's wait condition), which
+/// the walker would read top-down. Keys start with `prefix`; widgets in `skip` are left out.
+void AddRowItems(graph::GraphBuilder& builder, const std::string& prefix,
+    const std::vector<const agui::Widget*>& widgets, std::vector<const agui::Widget*> skip = {});
+
 /// A table of buttons as the game lays it out: a row of the grid per table row, keeping the column
 /// on Up and Down. Cells for which `accept` is false (the fillers that end a subgroup's line) are
 /// skipped, and a row of fillers alone is left out. Keys start with `prefix`.

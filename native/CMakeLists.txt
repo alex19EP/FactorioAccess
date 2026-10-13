@@ -136,7 +136,9 @@ add_library(fa_native SHARED
   src/screens/SplitterScreen.cpp
   src/screens/PipeScreen.cpp
   src/screens/ElectricNetworkScreen.cpp
+  src/screens/ScheduleNodes.cpp
   src/screens/TrainNodes.cpp
+  src/screens/TrainScreen.cpp
   src/screens/TrainStopScreen.cpp
   src/screens/QuickBarScreen.cpp
   src/screens/ShortcutBarScreen.cpp

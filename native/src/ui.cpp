@@ -38,6 +38,7 @@
 #include "screens/ModsScreen.hpp"
 #include "screens/NewGameScreen.hpp"
 #include "screens/PipeScreen.hpp"
+#include "screens/TrainScreen.hpp"
 #include "screens/TrainStopScreen.hpp"
 #include "screens/ModWindowsScreen.hpp"
 #include "screens/QuickBarScreen.hpp"
@@ -171,6 +172,8 @@ void start() {
    manager.Register(std::make_unique<screens::ElectricNetworkScreen>());
    // A train stop's window, with the trains whose schedules have it and the trains on the way.
    manager.Register(std::make_unique<screens::TrainStopScreen>());
+   // A train's window, with its schedule.
+   manager.Register(std::make_unique<screens::TrainScreen>());
    // The windows mods and the scenario put on the screen, while Ctrl+Tab has moved to them; it
    // also announces one that shows up.
    manager.Register(std::make_unique<screens::ModWindowsScreen>());

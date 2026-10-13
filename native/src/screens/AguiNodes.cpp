@@ -553,10 +553,47 @@ private:
             leaves, [](const Widget* leaf) { return agui::kind(leaf) == Kind::TextBox && !agui::readOnly(leaf); });
         if (!column)
             _builder.StartRow(rowKey);
+        Items(leaves, key);
+        if (!column)
+            _builder.EndRow();
+    }
+
+public:
+    /// Every label, control and labelled switch `widget` shows, however deeply wrapped, in the order
+    /// shown.
+    void Leaves(const Widget* widget, std::vector<const Widget*>& leaves, int depth = 0) const
+    {
+        if (depth > kMaxDepth || Skipped(widget) || !Shows(widget))
+            return;
+        Kind kind = KindOf(widget);
+        if (agui::derivesFrom(widget, "LabeledSwitch") || IsControl(kind))
+        {
+            leaves.push_back(widget);
+            return;
+        }
+        if (kind == Kind::Label)
+        {
+            if (!Phrase(widget).empty())
+                leaves.push_back(widget);
+            return;
+        }
+        ForEachChild(widget, [&](const Widget* child, const std::string&) { Leaves(child, leaves, depth + 1); });
+    }
+
+    /// The items of one row, into the builder's current row: labels side by side as one line, a
+    /// label before a value control naming it.
+    void Items(const std::vector<const Widget*>& leaves, const std::string& key)
+    {
+        auto isLabel = [](const Widget* leaf) { return KindOf(leaf) == Kind::Label; };
         for (std::size_t i = 0; i < leaves.size(); ++i)
         {
             const Widget* leaf = leaves[i];
             std::string cellKey = key + "." + std::to_string(i);
+            if (agui::derivesFrom(leaf, "LabeledSwitch"))
+            {
+                Add(cellKey, LabeledSwitchNode(leaf));
+                continue;
+            }
             if (isLabel(leaf))
             {
                 // A label right before a value control is that control's name.
@@ -578,10 +615,9 @@ private:
             }
             Add(cellKey, ControlNode(leaf));
         }
-        if (!column)
-            _builder.EndRow();
     }
 
+private:
     // A header grid (IsHeaderGrid): a row per item, in a context naming it (with the icons it
     // shows, which tell apart rows of the same name), and a cell per setting named by its column
     // header. Rows share a key, so Up/Down keep the column. A slider among the cells adjusts only
@@ -1243,6 +1279,17 @@ void AddSubtree(graph::GraphBuilder& builder, const std::string& prefix, const W
     std::vector<const Widget*> skip, Attachments attachments)
 {
     Walker(builder, prefix, std::move(skip), std::move(attachments)).Visit(widget, "", 0);
+}
+
+void AddRowItems(graph::GraphBuilder& builder, const std::string& prefix, const std::vector<const Widget*>& widgets,
+    std::vector<const Widget*> skip)
+{
+    Walker walker(builder, prefix, std::move(skip), {});
+    std::vector<const Widget*> leaves;
+    for (const Widget* widget : widgets)
+        if (widget)
+            walker.Leaves(widget, leaves);
+    walker.Items(leaves, prefix);
 }
 
 bool AddControl(

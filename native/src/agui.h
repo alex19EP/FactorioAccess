@@ -391,6 +391,49 @@ std::vector<TrainCard> trainCards(const Widget* trainsWidget);
 // The subheader a TrainsWidget shows while it has no trains, or null for any other widget.
 const Widget* trainsWidgetEmpty(const Widget* trainsWidget);
 
+// The parts of a locomotive's window (TrainGui): its tabbed pane, the Schedule tab, and the
+// schedule (a ScheduleGui) that tab shows. All null for any other window.
+struct TrainWindowParts {
+   const Widget* tabs = nullptr;
+   const Widget* scheduleTab = nullptr;
+   const Widget* schedule = nullptr;
+};
+TrainWindowParts trainWindowParts(const Widget* window);
+
+// A station of a schedule (ScheduleStationGui): its name, the go-to button (toggled on the station
+// the train heads to), the change and remove buttons, the unload checkbox (a space platform's),
+// then its wait conditions (ScheduleConditionGui each) and the button adding one.
+struct ScheduleStation {
+   const Widget* label = nullptr;
+   const Widget* goTo = nullptr;
+   const Widget* change = nullptr;
+   const Widget* remove = nullptr;
+   const Widget* unload = nullptr;
+   std::vector<const Widget*> conditions;
+   const Widget* addCondition = nullptr;
+};
+// An interrupt of a schedule (ScheduleInterruptGui): its name and its go-to, edit and remove
+// buttons.
+struct ScheduleInterrupt {
+   const Widget* name = nullptr;
+   const Widget* goTo = nullptr;
+   const Widget* edit = nullptr;
+   const Widget* remove = nullptr;
+};
+// The parts of a schedule (ScheduleGui), in the order shown: the note of a train group's shared
+// schedule, the stations and the button adding one, the interrupts and the button adding one.
+// Empty for any other widget.
+struct ScheduleParts {
+   const Widget* groupNote = nullptr;
+   std::vector<ScheduleStation> stations;
+   const Widget* addStation = nullptr;
+   std::vector<ScheduleInterrupt> interrupts;
+   const Widget* addInterrupt = nullptr;
+};
+ScheduleParts scheduleParts(const Widget* scheduleGui);
+// The drag handle filling a wait condition's row (ScheduleConditionGui), or null for any other widget.
+const Widget* scheduleConditionDrag(const Widget* condition);
+
 // A game window a mod attached relative GUI elements to sits in an invisible window the game puts
 // on the root in its place (CustomGuiGameGuiWrapper). The window it wraps, or null when `widget` is
 // no such wrapper.

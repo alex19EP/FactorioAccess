@@ -204,6 +204,8 @@ inline constexpr Word kEarned{"fa.native-earned"};
 inline constexpr Word kFailed{"fa.native-failed"};
 inline constexpr Word kTracked{"fa.native-tracked"};
 inline constexpr Word kNotTracked{"fa.native-not-tracked"};
+// A schedule's station the train heads to, which the game shows only by its go-to button's look.
+inline constexpr Word kCurrentStop{"fa.native-current-stop"};
 
 // A recipe tooltip's ingredient count in red (not enough, and none to make) or in orange (not
 // enough, made from intermediates when crafted).

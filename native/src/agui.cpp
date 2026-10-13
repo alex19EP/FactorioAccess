@@ -913,6 +913,62 @@ const Widget* trainsWidgetEmpty(const Widget* trainsWidget) {
    return trains ? reinterpret_cast<const Widget*>(trains + layout.trainsWidgetEmpty) : nullptr;
 }
 
+TrainWindowParts trainWindowParts(const Widget* window) {
+   const std::byte* gui = asBase(window, ".?AVTrainGui@@");
+   if (!gui) return {};
+   return {reinterpret_cast<const Widget*>(gui + layout.trainGuiTabs),
+           reinterpret_cast<const Widget*>(gui + layout.trainGuiScheduleTab),
+           reinterpret_cast<const Widget*>(gui + layout.trainGuiSchedule)};
+}
+
+namespace {
+
+const Widget* part(const std::byte* object, uint32_t offset) {
+   return reinterpret_cast<const Widget*>(object + offset);
+}
+
+// A condition holder's wait conditions (ScheduleConditionGui), in the order shown.
+std::vector<const Widget*> holderConditions(const std::byte* holder) {
+   std::vector<const Widget*> conditions;
+   for (const Widget* child : children(part(holder, layout.conditionHolderConditions)))
+      if (asBase(child, ".?AVScheduleConditionGui@@")) conditions.push_back(child);
+   return conditions;
+}
+
+} // namespace
+
+ScheduleParts scheduleParts(const Widget* scheduleGui) {
+   const std::byte* gui = asBase(scheduleGui, ".?AVScheduleGui@@");
+   if (!gui) return {};
+   ScheduleParts parts;
+   parts.groupNote = part(gui, layout.scheduleGroupNote);
+   parts.addStation = part(gui, layout.scheduleAddStation);
+   parts.addInterrupt = part(gui, layout.scheduleAddInterrupt);
+   for (const Widget* child : children(part(gui, layout.scheduleStations))) {
+      const std::byte* station = asBase(child, ".?AVScheduleStationGui@@");
+      const std::byte* holder = asBase(child, ".?AVScheduleConditionGuiHolder@@");
+      if (!station || !holder) continue;
+      parts.stations.push_back({part(station, layout.scheduleStationLabel), part(station, layout.scheduleStationGoTo),
+                                part(station, layout.scheduleStationChange),
+                                part(station, layout.scheduleStationRemove),
+                                part(station, layout.scheduleStationUnload), holderConditions(holder),
+                                part(holder, layout.conditionHolderAdd)});
+   }
+   for (const Widget* child : children(part(gui, layout.scheduleInterrupts))) {
+      const std::byte* interrupt = asBase(child, ".?AVScheduleInterruptGui@@");
+      if (!interrupt) continue;
+      parts.interrupts.push_back(
+         {part(interrupt, layout.scheduleInterruptName), part(interrupt, layout.scheduleInterruptGoTo),
+          part(interrupt, layout.scheduleInterruptEdit), part(interrupt, layout.scheduleInterruptRemove)});
+   }
+   return parts;
+}
+
+const Widget* scheduleConditionDrag(const Widget* condition) {
+   const std::byte* gui = asBase(condition, ".?AVScheduleConditionGui@@");
+   return gui ? part(gui, layout.scheduleConditionDrag) : nullptr;
+}
+
 const Widget* wrappedWindow(const Widget* widget) {
    const std::byte* wrapper = asBase(widget, ".?AVCustomGuiGameGuiWrapper@@");
    if (!wrapper) return nullptr;
