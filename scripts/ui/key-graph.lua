@@ -110,7 +110,6 @@ local mod = {}
 ---@field on_bar_down_small fa.ui.graph.SimpleCallback? Handler for bar down small (-)
 ---@field on_bar_up_large fa.ui.graph.SimpleCallback? Handler for bar up large (shift++)
 ---@field on_bar_down_large fa.ui.graph.SimpleCallback? Handler for bar down large (shift+-)
----@field on_trash fa.ui.graph.SimpleCallback? Handler for trash (o key)
 ---@field on_action1 fa.ui.graph.SimpleCallback? Handler for action1 (m key)
 ---@field on_action2 fa.ui.graph.SimpleCallback? Handler for action2 (comma key)
 ---@field on_action3 fa.ui.graph.SimpleCallback? Handler for action3 (dot key)
@@ -632,14 +631,6 @@ function Graph:on_bar_down_large(ctx)
    self:_with_render(ctx, function()
       local n = self.render.nodes[ctx.state.cur_key]
       self:_maybe_call(n, ctx, "on_bar_down_large", NO_MODIFIERS)
-   end)
-end
-
----@param ctx fa.ui.graph.InternalTabCtx
-function Graph:on_trash(ctx)
-   self:_with_render(ctx, function()
-      local n = self.render.nodes[ctx.state.cur_key]
-      self:_maybe_call(n, ctx, "on_trash", NO_MODIFIERS)
    end)
 end
 

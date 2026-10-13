@@ -96,7 +96,6 @@ end
 ---@field on_bar_down_small? fun(self, pindex: number, modifiers: table?, controller: fa.ui.RouterController)
 ---@field on_bar_up_large? fun(self, pindex: number, modifiers: table?, controller: fa.ui.RouterController)
 ---@field on_bar_down_large? fun(self, pindex: number, modifiers: table?, controller: fa.ui.RouterController)
----@field on_trash? fun(self, pindex: number, modifiers: table?, controller: fa.ui.RouterController)
 ---@field on_action1? fun(self, pindex: number, modifiers: table?, controller: fa.ui.RouterController)
 ---@field on_action2? fun(self, pindex: number, modifiers: table?, controller: fa.ui.RouterController)
 ---@field on_action3? fun(self, pindex: number, modifiers: table?, controller: fa.ui.RouterController)

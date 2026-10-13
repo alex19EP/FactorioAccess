@@ -544,51 +544,6 @@ local function render_inventory_grid(ctx)
                delete_ctx.message:fragment({ "fa.dangerous-delete-not-planner" })
             end
          end,
-         on_trash = function(trash_ctx)
-            -- Check write access for entity
-            if not check_write_access(trash_ctx, entity, nil) then return end
-
-            -- Send item in slot to trash (slot_index captured from loop)
-            local stack = inv[slot_index]
-
-            if not stack or not stack.valid_for_read then
-               trash_ctx.message:fragment({ "fa.trash-nothing-in-slot" })
-               return
-            end
-
-            -- Get the entity's trash inventory
-            local trash_inv = InventoryUtils.find_trash_inventory(entity)
-            if not trash_inv then
-               trash_ctx.message:fragment({ "fa.trash-not-available" })
-               return
-            end
-
-            -- Try to insert into trash
-            local item_name = stack.name
-            local item_count = stack.count
-            local item_quality = stack.quality and stack.quality.name or nil
-
-            local inserted = trash_inv.insert({ name = item_name, count = item_count, quality = item_quality })
-
-            if inserted > 0 then
-               -- Remove from slot
-               stack.count = stack.count - inserted
-
-               -- Announce success
-               local item_description = ItemInfo.item_info({
-                  name = item_name,
-                  count = inserted,
-                  quality = item_quality,
-               })
-               trash_ctx.message:fragment({ "fa.trash-sent-to-trash", item_description })
-
-               if inserted < item_count then
-                  trash_ctx.message:fragment({ "fa.trash-full", tostring(item_count - inserted) })
-               end
-            else
-               trash_ctx.message:fragment({ "fa.trash-full-none-inserted" })
-            end
-         end,
          on_child_result = function(result_ctx, result)
             -- Handle item chooser result for setting slot filter
             if result and type(result) == "string" then

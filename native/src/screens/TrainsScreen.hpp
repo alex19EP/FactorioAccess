@@ -1,7 +1,7 @@
 #pragma once
 
-// The game's trains overview (TrainsGui), opened by its own control (open-trains-gui), the side
-// menu's Trains button, or FA's Alt+W.
+// The game's trains overview (TrainsGui), opened by its own control (open-trains-gui, O) or the
+// side menu's Trains button.
 //
 // Stops:
 //   - the overview: the surface chooser, then the Trains, Stations and Groups tabs;

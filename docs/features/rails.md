@@ -338,7 +338,7 @@ any changes to this system will not break your game nor will it break a save sha
 ### The Global Trains Overview
 
 One unique problem with trains is that they move around and do not stay still long enough for you to click them.  The
-game's trains overview, `alt + w`, lists every train, stop and train group of a surface.
+game's trains overview, `o`, lists every train, stop and train group of a surface.
 
 Each train reads its state; Enter on it shows the train on the map, and the button beside it opens the train's window.
 

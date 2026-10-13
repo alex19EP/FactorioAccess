@@ -56,7 +56,7 @@ You can get to a variety of UIs from this view.
 
 To get to your main inventory, crafting, research, etc. use e.  This is often called the main menu.
 
-To get to the game's trains overview, every train, stop and train group, use alt w.
+To get to the game's trains overview, every train, stop and train group, use o.
 
 To get to the logistics interface for an item once you have unlocked bots, use control alt l.
 

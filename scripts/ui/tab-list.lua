@@ -69,7 +69,6 @@ local mod = {}
 ---@field on_accelerator fun(self, ctx: fa.ui.TabContext, accelerator_name: string)?
 ---@field on_clear fa.ui.SimpleTabHandler?
 ---@field on_dangerous_delete fa.ui.SimpleTabHandler?
----@field on_trash fa.ui.SimpleTabHandler?
 ---@field on_action1 fa.ui.SimpleTabHandler?
 ---@field on_action2 fa.ui.SimpleTabHandler?
 ---@field on_action3 fa.ui.SimpleTabHandler?
@@ -342,8 +341,6 @@ TabList.on_bar_down_small = build_simple_method("on_bar_down_small")
 TabList.on_bar_up_large = build_simple_method("on_bar_up_large")
 ---@type fun(self, number, table?, fa.ui.RouterController)
 TabList.on_bar_down_large = build_simple_method("on_bar_down_large")
----@type fun(self, number, table?, fa.ui.RouterController)
-TabList.on_trash = build_simple_method("on_trash")
 ---@type fun(self, number, table?, fa.ui.RouterController)
 TabList.on_action1 = build_simple_method("on_action1")
 ---@type fun(self, number, table?, fa.ui.RouterController)

@@ -52,7 +52,7 @@ The reason you have multiple sections is because of the group buttons at the bot
 
 To delete groups, use control backspace in the group list, the dangerous delete key.  For advanced users who are also playing with trains, it should be noted here that train groups do not stay around once the last train using them is gone, but logistic groups do.  Logistic groups are "their own thing", but train groups are more like radio channels--it exists if it's being used, otherwise it doesn't.
 
-The last feature of personal logistics--before we move onto chests--is personal trash.  To trash items, press o.  This moves them to your logistic trash inventory, and will cause robots to come take them out of your inventory, and to any available storage chests in the network.
+The last feature of personal logistics--before we move onto chests--is personal trash.  Items you put in the trash slots of your character window are your logistic trash, and will cause robots to come take them out of your inventory, and to any available storage chests in the network.
 
 Now let's turn to requester chests.  A requester chest is just like your own logistic interface, but is for moving items around.  It also has an overview configuration tab, and then a bunch of sections, and it works in all of the same ways.  To access it, press control l with the chest selected.
 
