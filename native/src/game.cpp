@@ -974,6 +974,16 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.interruptEditorConditions, "EditInterruptGui", "conditionsHolder");
    offset(layout.interruptEditorTargets, "EditInterruptGui", "stationsDragPane");
    offset(layout.interruptEditorAddTarget, "EditInterruptGui", "addInterruptStationButton");
+   offset(layout.trainsGuiTabs, "TrainsGui", "tabs");
+   offset(layout.trainsGuiTrains, "TrainsGui", "trainsWidget");
+   offset(layout.trainsGuiTrainsList, "TrainsGui", "trainsList");
+   offset(layout.trainsGuiStationsTab, "TrainsGui", "stationsTab");
+   offset(layout.trainsGuiStationsList, "TrainsGui", "stationsList");
+   offset(layout.trainsGuiStations, "TrainsGui", "stationsTable");
+   offset(layout.trainsGuiNoStations, "TrainsGui", "noStopsFrame");
+   offset(layout.trainsGuiGroupsTab, "TrainsGui", "groupsTab");
+   offset(layout.trainsGuiGroups, "TrainsGui", "groupsWidget");
+   offset(layout.trainsGuiGroupsList, "TrainsGui", "groupsList");
    offset(layout.electricNetworkBars, "ElectricNetworkGuiWindow<ElectricPole>", "satisfactionFlow");
    offset(layout.electricNetworkFlows, "ElectricNetworkGuiWindow<ElectricPole>", "gui");
    offset(layout.electricNetworkConsumption, "ElectricNetworkGuiWindow<ElectricPole>", "gui.inputFrame");

@@ -1374,6 +1374,19 @@ struct Layout {
    uint32_t interruptEditorConditions = 0;       // ::conditionsHolder, ScheduleConditionGuiHolder
    uint32_t interruptEditorTargets = 0;          // ::stationsDragPane, DragPaneWidget<VerticalFlow>
    uint32_t interruptEditorAddTarget = 0;        // ::addInterruptStationButton, agui::TextButton
+   // The trains overview (TrainsGui): its Trains, Stations and Groups tabs, each a list on the left
+   // (the schedules, the stations' names, the groups) choosing the cards on the right: trains
+   // (a TrainsWidget), or stops (a table of TrainStopWithMinimap, or a frame saying there are none).
+   uint32_t trainsGuiTabs = 0;               // TrainsGui::tabs, agui::TabbedPane
+   uint32_t trainsGuiTrains = 0;             // ::trainsWidget, TrainsWidget
+   uint32_t trainsGuiTrainsList = 0;         // ::trainsList, agui::ListBox
+   uint32_t trainsGuiStationsTab = 0;        // ::stationsTab, agui::Tab
+   uint32_t trainsGuiStationsList = 0;       // ::stationsList, agui::ListBox
+   uint32_t trainsGuiStations = 0;           // ::stationsTable, agui::Table
+   uint32_t trainsGuiNoStations = 0;         // ::noStopsFrame, agui::Frame
+   uint32_t trainsGuiGroupsTab = 0;          // ::groupsTab, agui::Tab
+   uint32_t trainsGuiGroups = 0;             // ::groupsWidget, TrainsWidget
+   uint32_t trainsGuiGroupsList = 0;         // ::groupsList, agui::ListBox
    // A game window a mod attached relative GUI elements to (LuaGuiElement anchor) is taken off the
    // root into an invisible CustomGuiGameGuiWrapper: a 3 by 3 table with the window in the middle
    // and a flow on each side holding the mod's elements for that side.

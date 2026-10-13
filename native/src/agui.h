@@ -456,6 +456,19 @@ struct InterruptEditorParts {
 };
 InterruptEditorParts interruptEditorParts(const Widget* window);
 
+// The parts of the trains overview (TrainsGui) for the tab it shows: its tabbed pane, the tab's list
+// on the left (the schedules, the stations' names, the groups), and the cards it chooses: `trains`
+// (a TrainsWidget) on the Trains and Groups tabs, or on the Stations tab `stops` (a TrainStopWithMinimap
+// each) and `noStops`, the frame saying there are none. All empty for any other window.
+struct TrainsOverviewParts {
+   const Widget* tabs = nullptr;
+   const Widget* list = nullptr;
+   const Widget* trains = nullptr;
+   std::vector<const Widget*> stops;
+   const Widget* noStops = nullptr;
+};
+TrainsOverviewParts trainsOverviewParts(const Widget* window);
+
 // A game window a mod attached relative GUI elements to sits in an invisible window the game puts
 // on the root in its place (CustomGuiGameGuiWrapper). The window it wraps, or null when `widget` is
 // no such wrapper.

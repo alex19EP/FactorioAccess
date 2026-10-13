@@ -992,6 +992,26 @@ InterruptEditorParts interruptEditorParts(const Widget* window) {
            part(gui, layout.interruptEditorAddTarget)};
 }
 
+TrainsOverviewParts trainsOverviewParts(const Widget* window) {
+   const std::byte* gui = asBase(window, ".?AVTrainsGui@@");
+   if (!gui) return {};
+   TrainsOverviewParts parts;
+   parts.tabs = part(gui, layout.trainsGuiTabs);
+   if (tabSelected(part(gui, layout.trainsGuiStationsTab))) {
+      parts.list = part(gui, layout.trainsGuiStationsList);
+      for (const Widget* child : children(part(gui, layout.trainsGuiStations)))
+         if (asBase(child, ".?AVTrainStopWithMinimap@@")) parts.stops.push_back(child);
+      parts.noStops = part(gui, layout.trainsGuiNoStations);
+   } else if (tabSelected(part(gui, layout.trainsGuiGroupsTab))) {
+      parts.list = part(gui, layout.trainsGuiGroupsList);
+      parts.trains = part(gui, layout.trainsGuiGroups);
+   } else {
+      parts.list = part(gui, layout.trainsGuiTrainsList);
+      parts.trains = part(gui, layout.trainsGuiTrains);
+   }
+   return parts;
+}
+
 const Widget* wrappedWindow(const Widget* widget) {
    const std::byte* wrapper = asBase(widget, ".?AVCustomGuiGameGuiWrapper@@");
    if (!wrapper) return nullptr;
