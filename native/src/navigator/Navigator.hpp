@@ -59,6 +59,8 @@ private:
 
     void HandleKey(const input::KeyEvent& e);
     void HandleArrow(graph::GraphDir dir, bool ctrl);
+    /// Ctrl+Shift+Up/Down: the focused node's list item moves one place (NodeVtable::OnReorder).
+    void HandleReorder(int by);
     /// Shift+arrow: a canvas's cursor skips to the next change.
     void HandleSkip(graph::GraphDir dir);
     /// After a canvas's cursor moved: say where it is now, keeping the focus.

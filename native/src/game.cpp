@@ -55,6 +55,7 @@ bool resolve(pdb::SymbolTable& symbols) {
    address(layout.dispatchClick, "?dispatchClick@Widget@agui@@QEAAXAEBVMouseEvent@2@@Z");
    address(layout.dispatchMouseUp, "?dispatchMouseUp@Widget@agui@@QEAAXAEBVMouseEvent@2@@Z");
    address(layout.dispatchMouseLeave, "?dispatchMouseLeave@Widget@agui@@QEAAXAEBVMouseEvent@2@@Z");
+   address(layout.dispatchItemDrag, "?dispatchItemDrag@Widget@agui@@QEAAXHH@Z");
    address(layout.determineWidgetUnderMouse, "?determineWidgetUnderMouse@@YA?AU?$Pair@_NPEAVWidget@agui@@@@XZ");
    address(layout.processNextDialog, "?processNextDialog@PlayerInputSource@@QEAA_NXZ");
    address(layout.playerCursorPosition,

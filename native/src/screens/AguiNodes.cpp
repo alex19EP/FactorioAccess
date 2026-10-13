@@ -720,6 +720,8 @@ private:
         std::string context = ContainerLabel(widget);
         if (!context.empty())
             _builder.PushContext(context);
+        if (Reorder)
+            vtable.OnReorder = Reorder;
         _builder.AddItem(graph::ControlId::Referenced(widget, key), std::move(vtable));
         if (!context.empty())
             _builder.PopContext();
@@ -768,6 +770,11 @@ private:
             };
     }
 
+public:
+    /// Given to every node declared: what they stand for moves in its list (NodeVtable::OnReorder).
+    std::function<bool(int by)> Reorder;
+
+private:
     graph::GraphBuilder& _builder;
     std::string _prefix;
     std::vector<const Widget*> _skip;
@@ -1282,14 +1289,34 @@ void AddSubtree(graph::GraphBuilder& builder, const std::string& prefix, const W
 }
 
 void AddRowItems(graph::GraphBuilder& builder, const std::string& prefix, const std::vector<const Widget*>& widgets,
-    std::vector<const Widget*> skip)
+    std::vector<const Widget*> skip, std::function<bool(int by)> reorder)
 {
     Walker walker(builder, prefix, std::move(skip), {});
+    walker.Reorder = std::move(reorder);
     std::vector<const Widget*> leaves;
     for (const Widget* widget : widgets)
         if (widget)
             walker.Leaves(widget, leaves);
     walker.Items(leaves, prefix);
+}
+
+std::string RowText(const Widget* widget, std::vector<const Widget*> skip)
+{
+    graph::GraphBuilder unused;
+    Walker walker(unused, "", std::move(skip), {});
+    std::vector<const Widget*> leaves;
+    walker.Leaves(widget, leaves);
+    std::string text;
+    for (const Widget* leaf : leaves)
+    {
+        std::string part = KindOf(leaf) == Kind::Label ? Phrase(leaf) : NameOf(leaf);
+        if (part.empty())
+            continue;
+        if (!text.empty())
+            text += ' ';
+        text += part;
+    }
+    return text;
 }
 
 bool AddControl(

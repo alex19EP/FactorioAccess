@@ -9,6 +9,8 @@
 // The elements a mod attached to the window (LuaGuiElement anchor), FA's own views of the entity
 // among them, follow the window's stops, a stop each.
 
+#include <functional>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -30,6 +32,13 @@ public:
     bool TypingIn(const graph::GraphNode& node) override;
     void OnCursorMoved(const graph::GraphNode& node) override;
     void OnPop() override;
+    const char* TakeSuggestedLanding() override;
+
+    /// Lands the cursor on the node keyed `key` at the first build, within about two seconds, where
+    /// `ready` holds: for a change the game shows a frame or more after the key that asked for it (a
+    /// schedule's station dragged to its new place, once the game has rebuilt the list). `ready`
+    /// is asked only while the window is still open.
+    void LandWhen(std::string key, std::function<bool()> ready);
 
 protected:
     /// Whether this recipe reads the window.
@@ -65,6 +74,15 @@ private:
 
     const agui::Widget* _window = nullptr;
     std::string _class;
+
+    struct Landing
+    {
+        std::string key;
+        std::function<bool()> ready;
+        int builds = 0; // left before it is given up
+    };
+    std::optional<Landing> _landing;
+    std::string _landed; // what the last TakeSuggestedLanding returned
 };
 
 } // namespace fa::screens

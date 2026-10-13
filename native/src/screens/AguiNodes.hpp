@@ -80,9 +80,15 @@ void AddSubtree(graph::GraphBuilder& builder, const std::string& prefix, const a
 /// Declares every label and control `widgets` show, however deeply wrapped, as items of the
 /// builder's current row, in the order shown: labels side by side as one line, a label before a
 /// value control naming it. For a row the game builds of panels (a schedule's wait condition), which
-/// the walker would read top-down. Keys start with `prefix`; widgets in `skip` are left out.
+/// the walker would read top-down. Keys start with `prefix`; widgets in `skip` are left out. Every
+/// item gets `reorder`, if given (NodeVtable::OnReorder): the row moves in its list.
 void AddRowItems(graph::GraphBuilder& builder, const std::string& prefix,
-    const std::vector<const agui::Widget*>& widgets, std::vector<const agui::Widget*> skip = {});
+    const std::vector<const agui::Widget*>& widgets, std::vector<const agui::Widget*> skip = {},
+    std::function<bool(int by)> reorder = {});
+
+/// What a row the game builds of panels shows, its labels and controls' names in order as one text:
+/// to know the row again after the game rebuilt it elsewhere. Widgets in `skip` are left out.
+std::string RowText(const agui::Widget* widget, std::vector<const agui::Widget*> skip = {});
 
 /// A table of buttons as the game lays it out: a row of the grid per table row, keeping the column
 /// on Up and Down. Cells for which `accept` is false (the fillers that end a subgroup's line) are

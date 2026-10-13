@@ -76,7 +76,34 @@ bool EntityWindowScreen::TypingIn(const graph::GraphNode& node) { return TypingI
 
 void EntityWindowScreen::OnCursorMoved(const graph::GraphNode& node) { FollowCursor(node); }
 
-void EntityWindowScreen::OnPop() { _window = nullptr; }
+void EntityWindowScreen::OnPop()
+{
+    _window = nullptr;
+    _landing.reset();
+}
+
+void EntityWindowScreen::LandWhen(std::string key, std::function<bool()> ready)
+{
+    // Builds run every frame and after every key; 120 is about two seconds.
+    _landing = Landing{std::move(key), std::move(ready), 120};
+}
+
+const char* EntityWindowScreen::TakeSuggestedLanding()
+{
+    if (!_landing)
+        return nullptr;
+    // Asked after Build, which returns early once the window is gone; nothing in it may be read then.
+    if (!_window || FindWindow().window != _window || --_landing->builds <= 0)
+    {
+        _landing.reset();
+        return nullptr;
+    }
+    if (!_landing->ready())
+        return nullptr;
+    _landed = std::move(_landing->key);
+    _landing.reset();
+    return _landed.c_str();
+}
 
 void EntityWindowScreen::AddTitledWindow(graph::GraphBuilder& builder, const std::string& key, const Widget* window,
     std::vector<const Widget*> skip, Attachments attachments)

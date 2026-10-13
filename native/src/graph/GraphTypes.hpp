@@ -156,6 +156,11 @@ struct NodeVtable
     /// behavior, so the kernel stays game-agnostic.
     std::function<void()> OnTooltip;
 
+    /// Optional. Moves what the node stands for one place up (by -1) or down (+1) in its list, as
+    /// dragging it there does (Ctrl+Shift+Up/Down). Returns whether it moved; at the list's end it
+    /// does not, silent as an arrow at an edge is.
+    std::function<bool(int by)> OnReorder;
+
     /// Optional. Horizontal value adjust (a slider): sign is -1 (decrease) / +1 (increase), large
     /// requests a coarse step. When set, Left/Right do NOT navigate.
     std::function<void(int sign, bool large)> OnAdjust;

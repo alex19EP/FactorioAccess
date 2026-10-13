@@ -21,7 +21,8 @@ void TrainScreen::BuildWindow(graph::GraphBuilder& builder, const Widget* window
 
     if (Shows(parts.schedule))
     {
-        AddSchedule(builder, "schedule", parts.schedule);
+        AddSchedule(builder, "schedule", parts.schedule,
+            [this](std::string key, std::function<bool()> ready) { LandWhen(std::move(key), std::move(ready)); });
         return;
     }
     if (tabs)

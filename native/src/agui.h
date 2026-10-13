@@ -402,32 +402,38 @@ TrainWindowParts trainWindowParts(const Widget* window);
 
 // A station of a schedule (ScheduleStationGui): its name, the go-to button (toggled on the station
 // the train heads to), the change and remove buttons, the unload checkbox (a space platform's),
-// then its wait conditions (ScheduleConditionGui each) and the button adding one.
+// then its wait conditions (ScheduleConditionGui each), the drag pane holding them, and the button
+// adding one. `widget` is the station's own, a child of its list's drag pane.
 struct ScheduleStation {
+   const Widget* widget = nullptr;
    const Widget* label = nullptr;
    const Widget* goTo = nullptr;
    const Widget* change = nullptr;
    const Widget* remove = nullptr;
    const Widget* unload = nullptr;
    std::vector<const Widget*> conditions;
+   const Widget* conditionsPane = nullptr;
    const Widget* addCondition = nullptr;
 };
 // An interrupt of a schedule (ScheduleInterruptGui): its name and its go-to, edit and remove
-// buttons.
+// buttons. `widget` is the interrupt's own, a child of the interrupts' drag pane.
 struct ScheduleInterrupt {
+   const Widget* widget = nullptr;
    const Widget* name = nullptr;
    const Widget* goTo = nullptr;
    const Widget* edit = nullptr;
    const Widget* remove = nullptr;
 };
 // The parts of a schedule (ScheduleGui), in the order shown: the note of a train group's shared
-// schedule, the stations and the button adding one, the interrupts and the button adding one.
-// Empty for any other widget.
+// schedule, the stations, their drag pane and the button adding one, the interrupts, their drag
+// pane and the button adding one. Empty for any other widget.
 struct ScheduleParts {
    const Widget* groupNote = nullptr;
    std::vector<ScheduleStation> stations;
+   const Widget* stationsPane = nullptr;
    const Widget* addStation = nullptr;
    std::vector<ScheduleInterrupt> interrupts;
+   const Widget* interruptsPane = nullptr;
    const Widget* addInterrupt = nullptr;
 };
 ScheduleParts scheduleParts(const Widget* scheduleGui);
@@ -442,8 +448,10 @@ struct InterruptEditorParts {
    const Widget* conditionsScroll = nullptr;
    const Widget* targetsScroll = nullptr;
    std::vector<const Widget*> conditions;
+   const Widget* conditionsPane = nullptr;
    const Widget* addCondition = nullptr;
    std::vector<ScheduleStation> targets;
+   const Widget* targetsPane = nullptr;
    const Widget* addTarget = nullptr;
 };
 InterruptEditorParts interruptEditorParts(const Widget* window);
@@ -761,6 +769,12 @@ void scrollIntoView(const Widget* widget);
 // is never moved. (A Button's own Enter key confirms the window instead, hence clicks.)
 enum class MouseButton { Left, Right, Middle };
 void press(const Widget* widget, MouseButton button, bool shift, bool control);
+
+// Moves `child` of a drag pane (a schedule's stations, a station's wait conditions) one place up
+// (`by` -1) or down (+1), as letting go of it there after dragging it does: through the pane's own
+// item drag dispatcher, whose handlers make the change. False, doing nothing, when the child is
+// not in the pane or is already at that end.
+bool dragChild(const Widget* pane, const Widget* child, int by);
 // The same, but at the centre of `over`, a widget inside `widget`: for widgets that act on where
 // they were clicked, such as a table selecting the row under the mouse.
 void pressOver(const Widget* widget, const Widget* over, MouseButton button, bool shift, bool control);

@@ -942,10 +942,10 @@ std::vector<ScheduleStation> paneStations(const Widget* pane) {
       const std::byte* station = asBase(child, ".?AVScheduleStationGui@@");
       const std::byte* holder = asBase(child, ".?AVScheduleConditionGuiHolder@@");
       if (!station || !holder) continue;
-      stations.push_back({part(station, layout.scheduleStationLabel), part(station, layout.scheduleStationGoTo),
+      stations.push_back({child, part(station, layout.scheduleStationLabel), part(station, layout.scheduleStationGoTo),
                           part(station, layout.scheduleStationChange), part(station, layout.scheduleStationRemove),
                           part(station, layout.scheduleStationUnload), holderConditions(holder),
-                          part(holder, layout.conditionHolderAdd)});
+                          part(holder, layout.conditionHolderConditions), part(holder, layout.conditionHolderAdd)});
    }
    return stations;
 }
@@ -957,14 +957,16 @@ ScheduleParts scheduleParts(const Widget* scheduleGui) {
    if (!gui) return {};
    ScheduleParts parts;
    parts.groupNote = part(gui, layout.scheduleGroupNote);
+   parts.stationsPane = part(gui, layout.scheduleStations);
    parts.addStation = part(gui, layout.scheduleAddStation);
+   parts.interruptsPane = part(gui, layout.scheduleInterrupts);
    parts.addInterrupt = part(gui, layout.scheduleAddInterrupt);
-   parts.stations = paneStations(part(gui, layout.scheduleStations));
-   for (const Widget* child : children(part(gui, layout.scheduleInterrupts))) {
+   parts.stations = paneStations(parts.stationsPane);
+   for (const Widget* child : children(parts.interruptsPane)) {
       const std::byte* interrupt = asBase(child, ".?AVScheduleInterruptGui@@");
       if (!interrupt) continue;
       parts.interrupts.push_back(
-         {part(interrupt, layout.scheduleInterruptName), part(interrupt, layout.scheduleInterruptGoTo),
+         {child, part(interrupt, layout.scheduleInterruptName), part(interrupt, layout.scheduleInterruptGoTo),
           part(interrupt, layout.scheduleInterruptEdit), part(interrupt, layout.scheduleInterruptRemove)});
    }
    return parts;
@@ -979,11 +981,14 @@ InterruptEditorParts interruptEditorParts(const Widget* window) {
    const std::byte* gui = asBase(window, ".?AVEditInterruptGui@@");
    if (!gui) return {};
    const std::byte* holder = gui + layout.interruptEditorConditions;
+   const Widget* targets = part(gui, layout.interruptEditorTargets);
    return {part(gui, layout.interruptEditorConditionsScroll),
            part(gui, layout.interruptEditorTargetsScroll),
            holderConditions(holder),
+           part(holder, layout.conditionHolderConditions),
            part(holder, layout.conditionHolderAdd),
-           paneStations(part(gui, layout.interruptEditorTargets)),
+           paneStations(targets),
+           targets,
            part(gui, layout.interruptEditorAddTarget)};
 }
 
@@ -1821,6 +1826,18 @@ void scrollIntoView(const Widget* widget) {
 
 void press(const Widget* widget, MouseButton button, bool shift, bool control) {
    pressOver(widget, widget, button, shift, control);
+}
+
+bool dragChild(const Widget* pane, const Widget* child, int by) {
+   std::span<const Widget* const> items = children(pane);
+   auto it = std::ranges::find(items, child);
+   if (it == items.end()) return false;
+   int from = static_cast<int>(it - items.begin());
+   int to = from + by;
+   if (to < 0 || to >= static_cast<int>(items.size())) return false;
+   using Dispatch = void (*)(const Widget* widget, int from, int to);
+   reinterpret_cast<Dispatch>(layout.dispatchItemDrag)(pane, from, to);
+   return true;
 }
 
 namespace {

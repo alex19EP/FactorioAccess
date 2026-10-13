@@ -84,6 +84,10 @@ struct Layout {
    uintptr_t dispatchClick = 0;
    uintptr_t dispatchMouseUp = 0;
    uintptr_t dispatchMouseLeave = 0;
+   // void agui::Widget::dispatchItemDrag(int from, int to): what a drag pane (DragPane::stopDragging)
+   // calls on itself when a dragged child is let go, running the pane's item drag handlers (a
+   // schedule's sends the reorder's input action).
+   uintptr_t dispatchItemDrag = 0;
    // Pair<bool, agui::Widget*> determineWidgetUnderMouse(): whether the real mouse is over a GUI
    // rather than the game view. A GUI control bound like a world control (craft and build on the
    // left button, craft-5 and mine on the right) is held only while it says so.

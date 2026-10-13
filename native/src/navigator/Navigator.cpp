@@ -165,6 +165,8 @@ void Navigator::HandleKey(const input::KeyEvent& e)
             HandleArrow(graph::GraphDir::Up, e.ctrl);
         else if (!e.ctrl)
             HandleSkip(graph::GraphDir::Up);
+        else if (e.key == input::keys::Up)
+            HandleReorder(-1);
         break;
     case input::keys::Down:
     case input::keys::S:
@@ -172,6 +174,8 @@ void Navigator::HandleKey(const input::KeyEvent& e)
             HandleArrow(graph::GraphDir::Down, e.ctrl);
         else if (!e.ctrl)
             HandleSkip(graph::GraphDir::Down);
+        else if (e.key == input::keys::Down)
+            HandleReorder(+1);
         break;
     case input::keys::Left:
     case input::keys::A:
@@ -287,6 +291,14 @@ void Navigator::HandleArrow(graph::GraphDir dir, bool ctrl)
         graph::KeyGraph::TreeResult tr = dir == graph::GraphDir::Right ? _graph->TreeRight() : _graph->TreeLeft();
         AnnounceTree(tr);
     }
+}
+
+void Navigator::HandleReorder(int by)
+{
+    // The node's own hook makes the change; the screen lands the cursor where it went.
+    graph::GraphNode* node = _graph->CurrentNode();
+    if (node && node->Vtable.OnReorder)
+        node->Vtable.OnReorder(by);
 }
 
 void Navigator::HandleTab(bool back)
