@@ -586,7 +586,7 @@ end)
 
 ---@param event EventData
 local function update(event)
-   if player().character then story_update(storage.story, event) end
+   if player().character then story_update(storage.story, event, "level-08") end
 end
 
 -- The drive counts the tiles the car covers with the player in it.
