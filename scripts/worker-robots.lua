@@ -58,27 +58,6 @@ local function schedule_personal_logistics_announcement(pindex)
    worker_robots_storage[pindex].pending_logistic_state_announcement = true
 end
 
-function mod.logistics_info_key_handler(pindex)
-   local p = game.get_player(pindex)
-   local ent = p.selected
-   if not ent then return end
-
-   -- At least as of right now there is no entity which can do both requests and filters, and players cannot do filters.
-   if mod.can_set_logistic_filter(ent) then
-      local filter = ent.storage_filter
-      ---@type LocalisedString
-      local result
-      if filter ~= nil then
-         ---@diagnostic disable-next-line param-type-mismatch
-         result = { "fa.logistic-storage-filter-set", Localising.get_localised_name_with_fallback(filter) }
-      else
-         result = { "fa.logistic-storage-filter-nothing" }
-      end
-      Speech.speak(pindex, result)
-      return
-   end
-end
-
 function mod.logistics_request_toggle_handler(pindex)
    -- Now only toggles personal logistics
    schedule_personal_logistics_announcement(pindex)
@@ -88,28 +67,6 @@ function mod.announce_robot_dispatch_status(pindex)
    -- The game's toggle-personal-roboport control will handle the actual toggle
    -- We just set a flag to announce the new state on the next tick
    worker_robots_storage[pindex].pending_dispatch_state_announcement = true
-end
-
-function mod.can_set_logistic_filter(ent)
-   if ent == nil or ent.valid == false then return false end
-   return ent.type == "logistic-container" and ent.prototype.logistic_mode == "storage"
-end
-
----@param pindex integer
----@param ent LuaEntity
----@param name string
-function mod.set_logistic_filter(pindex, ent, name)
-   local filt = ent.get_filter(1)
-
-   if filt and filt.name.name == name then
-      ent.set_filter(1, nil)
-      Speech.speak(pindex, { "fa.robots-storage-filter-cleared" })
-      return
-   end
-
-   ent.set_filter(1, name)
-   local proto = prototypes.item[name]
-   Speech.speak(pindex, { "fa.logistic-storage-filter-set", Localising.get_localised_name_with_fallback(proto) })
 end
 
 ---Format a compiled logistic filter for readout (from point.filters)

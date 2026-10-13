@@ -1,10 +1,8 @@
 --[[
-Readouts the mod builds in Lua: a pipe's shape for the fluid window's own panel, the pollution and
-the nearest damaged building at a position, an item's production statistics, and the summary of an
-area. What an entity is and how it stands is said by the DLL's tile reader (native/src/reader.h),
-for the cursor, the scanner and pins alike.
+Readouts the mod builds in Lua: a pipe's shape for the fluid window's own panel, an item's
+production statistics, and the summary of an area. What an entity is and how it stands is said by
+the DLL's tile reader (native/src/reader.h), for the cursor, the scanner and pins alike.
 ]]
-local util = require("util")
 local serpent = require("serpent")
 local FaUtils = require("scripts.fa-utils")
 local Fluids = require("scripts.fluids")
@@ -13,7 +11,6 @@ local Speech = require("scripts.speech")
 local TileKinds = require("scripts.tile-kinds")
 local MessageBuilder = Speech.MessageBuilder
 local NetworkShape = require("scripts.network-shape")
-local Cursor = require("scripts.cursor")
 
 local mod = {}
 
@@ -62,88 +59,6 @@ function mod.pipe_shape(ent)
       local key = "fa.ent-info-pipe-t-vertical"
       if d == defines.direction.north or d == defines.direction.south then key = "fa.ent-info-pipe-t-horizontal" end
       return { key, FaUtils.direction_lookup(FaUtils.rotate_180(d)) }
-   end
-end
-
---Reads out the relative pollution level at the input position. The categories are based on data like map view shaders, water discoloration rates. For example, in default settings trees are damaged after pollution exceeds 60 and water is discolored after 90, and the deepest shader applies after 150.
-function mod.read_pollution_level_at_position(pos, pindex)
-   local p = game.get_player(pindex)
-   local pol = p.surface.get_pollution(pos)
-   local result
-   if pol <= 0.1 then
-      result = { "fa.pollution-level-none" }
-   elseif pol < 10 then
-      result = { "fa.pollution-level-minimal" }
-   elseif pol < 30 then
-      result = { "fa.pollution-level-low" }
-   elseif pol < 60 then
-      result = { "fa.pollution-level-medium" }
-   elseif pol < 100 then
-      result = { "fa.pollution-level-high" }
-   elseif pol < 150 then
-      result = { "fa.pollution-level-very-high" }
-   elseif pol < 250 then
-      result = { "fa.pollution-level-extremely-high" }
-   else
-      result = { "fa.pollution-level-maximal" }
-   end
-   Speech.speak(pindex, result)
-end
-
---Reads out the distance and direction to the nearest damaged entity within 1000 tiles.
-function mod.read_nearest_damaged_ent_info(pos, pindex)
-   local p = game.get_player(pindex)
-   --Scan for ents of your force
-   local ents = p.surface.find_entities_filtered({ position = pos, radius = 1000, force = p.force })
-   --Check for entities with health
-   if ents == nil or #ents == 0 then
-      Speech.speak(pindex, { "fa.no-damaged-structures-in-range", 1000 })
-      return
-   end
-   local at_least_one_has_damage = false
-   local damaged_ents = {}
-   for i, ent in ipairs(ents) do
-      if ent.is_entity_with_health == true and ent.type ~= "character" and ent.get_health_ratio() < 1 then
-         at_least_one_has_damage = true
-         table.insert(damaged_ents, ent)
-      end
-   end
-   if at_least_one_has_damage == false then
-      Speech.speak(pindex, { "fa.no-damaged-structures-in-range", 1000 })
-      return
-   end
-   --Narrow by distance
-   ---@type LuaEntity?
-   local closest = nil
-   ---@type number
-   local min_dist = 1001
-   for i, ent in ipairs(damaged_ents) do
-      local dist = util.distance(pos, ent.position)
-      if dist < min_dist then
-         min_dist = dist
-         closest = ent
-         if min_dist < 2 then break end
-      end
-   end
-   if closest == nil then
-      Speech.speak(pindex, { "fa.no-damaged-structures-in-range", 1000 })
-      return
-   else
-      --Move cursor to closest
-      Cursor.jump(pindex, closest.position)
-
-      --Report the result
-      min_dist = math.floor(min_dist)
-      local dir = FaUtils.get_direction_biased(closest.position, pos)
-      local aligned_note = ""
-      if FaUtils.is_direction_aligned(closest.position, pos) then aligned_note = "aligned " end
-      Speech.speak(pindex, {
-         "fa.damaged-entity-found",
-         Localising.get_localised_name_with_fallback(closest),
-         min_dist,
-         aligned_note,
-         FaUtils.direction_lookup(dir),
-      })
    end
 end
 

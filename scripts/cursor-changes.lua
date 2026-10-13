@@ -1,4 +1,4 @@
---- Handles cursor stack changes and pipette tool
+--- Handles cursor stack changes
 local mod = {}
 
 local Consts = require("scripts.consts")
@@ -6,19 +6,6 @@ local Blueprints = require("scripts.blueprints")
 local BuildDimensions = require("scripts.build-dimensions")
 
 local dirs = defines.direction
-
---- Pipette tool handler for fa-q key. The game's own pipette runs too and takes the entity's
---- direction as its build direction.
----@param event EventData.CustomInputEvent
-function mod.kb_pipette_tool(event)
-   local pindex = event.player_index
-   local p = game.get_player(pindex)
-
-   if p.is_cursor_empty() then
-      local ent = p.selected
-      if ent and ent.valid then p.pipette(ent.prototype) end
-   end
-end
 
 --- Cursor stack changed handler
 ---@param event EventData.on_player_cursor_stack_changed

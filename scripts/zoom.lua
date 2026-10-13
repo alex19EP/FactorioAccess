@@ -58,14 +58,6 @@ function mod.get_map_cell_size(pindex)
    return mod.map_cell_size_for(mod.get_current_zoom_tiles(pindex)) --[[@as integer]]
 end
 
----Append zoom info to a MessageBuilder
----@param pindex integer
----@param mb fa.MessageBuilder
-function mod.append_zoom_info(pindex, mb)
-   local tiles = mod.get_current_zoom_tiles(pindex)
-   mb:fragment({ "fa.zoom-current", tiles })
-end
-
 ---While the view the player entered is still to be said, gives the DLL the hand to say with it and
 ---returns true; otherwise false, and the caller says the hand. For speech only.
 ---@param pindex integer

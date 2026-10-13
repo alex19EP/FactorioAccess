@@ -20,11 +20,14 @@ local FAR_WALK = 10
 -- Kruise Kontrol is an optional dependency. Its key and Enter, which cancels it, carry the cursor's
 -- position like FA's own keys.
 local KK_KEY = "klient-alt-move-to"
-local KK_CANCEL_KEY = "fa-kk-cancel"
-local KEYS = { "fa-i", KK_CANCEL_KEY }
+local KK_CANCEL_KEY = "klient-cancel-enter"
+local KEYS = { "fa-i" }
 ---@type LuaCustomInputPrototype?
 local kk_input = prototypes.custom_input[KK_KEY]
-if kk_input then KEYS[#KEYS + 1] = KK_KEY end
+if kk_input then
+   KEYS[#KEYS + 1] = KK_KEY
+   KEYS[#KEYS + 1] = KK_CANCEL_KEY
+end
 
 ---@return boolean
 local function kk_installed()
