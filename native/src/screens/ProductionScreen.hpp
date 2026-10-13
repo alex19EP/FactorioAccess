@@ -11,8 +11,9 @@
 //     Consumption, Built and Deconstructed, Kills and Losses). Each column is its caption's context:
 //     the controls the game shows at its top (global statistics, quality, reset filters), then a
 //     row per entry in the game's order, the most first: the game draws them two wide, down the
-//     first half and then the second, and they read as one list. Up and Down move along a column,
-//     Left and Right to the same place in the other.
+//     first half and then the second, and they read as one list. Up and Down move along a column.
+//     Each column has its own order, so Left and Right go from a row to the same entry in the
+//     other column; when it is not there, to the same place, said as "not listed".
 //
 // A row reads the entry's name, its rate ("12.3k/m") and the total drawn on its icon ("45.3k"):
 // the bar beside it only compares the row to the top one, which the order already tells. The

@@ -204,6 +204,8 @@ inline constexpr Word kEarned{"fa.native-earned"};
 inline constexpr Word kFailed{"fa.native-failed"};
 inline constexpr Word kTracked{"fa.native-tracked"};
 inline constexpr Word kNotTracked{"fa.native-not-tracked"};
+// The production statistics' move to the other column when the entry is not in it.
+inline constexpr Word kNotListed{"fa.native-not-listed"};
 // A schedule's station the train heads to, which the game shows only by its go-to button's look.
 inline constexpr Word kCurrentStop{"fa.native-current-stop"};
 // A schedule's icon buttons, which have no tooltip: a station's or an interrupt's go-to (play), a

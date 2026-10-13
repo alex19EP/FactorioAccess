@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <format>
 #include <string>
-#include <unordered_set>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -113,6 +113,9 @@ struct Column
 {
     std::vector<graph::ControlId> controls;
     std::vector<graph::ControlId> rows;
+    // Each row's entry, the end of its key, and back to the row.
+    std::vector<std::string> entries;
+    std::unordered_map<std::string, std::size_t> rowOf;
 
     std::vector<graph::ControlId> Walk() const
     {
@@ -134,18 +137,18 @@ Column AddColumn(graph::GraphBuilder& builder, int index, const agui::Production
 
     std::vector<Row> rows = Rows(parts.table);
     // An entry's key follows it as the rates reorder the rows; the same name twice keeps both.
-    std::unordered_set<std::string> keys;
     for (std::size_t i = 0; i < rows.size(); ++i)
     {
-        std::string key = std::format("lists/{}/{}", index, EntryName(rows[i].slot));
-        while (!keys.insert(key).second)
-            key += '+';
-        graph::ControlId id = graph::ControlId::Structural(key);
+        std::string entry = EntryName(rows[i].slot);
+        while (!column.rowOf.try_emplace(entry, i).second)
+            entry += '+';
+        graph::ControlId id = graph::ControlId::Structural(std::format("lists/{}/{}", index, entry));
         builder.AddNode(id, RowNode(rows[i], static_cast<int>(i + 1), static_cast<int>(rows.size())));
         column.rows.push_back(std::move(id));
+        column.entries.push_back(std::move(entry));
     }
-    for (const auto& [control, key] : {std::pair{parts.global, "global"}, std::pair{parts.quality, "quality"},
-             std::pair{parts.reset, "reset"}})
+    for (const auto& [control, key] :
+        {std::pair{parts.global, "global"}, std::pair{parts.quality, "quality"}, std::pair{parts.reset, "reset"}})
     {
         if (!Shows(control))
             continue;
@@ -159,22 +162,40 @@ Column AddColumn(graph::GraphBuilder& builder, int index, const agui::Production
     return column;
 }
 
+// Up and Down follow a column. Left and Right go from a row to the same entry in the other column,
+// as each column has its own order; to the same place, said as not listed, when the entry is not
+// there, and from a control to the same place.
 void WireColumns(graph::GraphBuilder& builder, const Column& left, const Column& right)
 {
+    const Column* columns[2] = {&left, &right};
     std::vector<graph::ControlId> walks[2] = {left.Walk(), right.Walk()};
+    const std::string notListed(vocab::kNotListed);
     for (int side = 0; side < 2; ++side)
     {
+        const Column& column = *columns[side];
+        const Column& otherColumn = *columns[1 - side];
         const std::vector<graph::ControlId>& walk = walks[side];
         const std::vector<graph::ControlId>& other = walks[1 - side];
+        const graph::GraphDir across = side == 0 ? graph::GraphDir::Right : graph::GraphDir::Left;
         for (std::size_t i = 0; i < walk.size(); ++i)
         {
             if (i > 0)
                 builder.Connect(walk[i], graph::GraphDir::Up, walk[i - 1]);
             if (i + 1 < walk.size())
                 builder.Connect(walk[i], graph::GraphDir::Down, walk[i + 1]);
-            if (!other.empty())
-                builder.Connect(walk[i], side == 0 ? graph::GraphDir::Right : graph::GraphDir::Left,
-                    other[std::min(i, other.size() - 1)]);
+            if (other.empty())
+                continue;
+            const graph::ControlId& place = other[std::min(i, other.size() - 1)];
+            if (i < column.controls.size())
+            {
+                builder.Connect(walk[i], across, place);
+                continue;
+            }
+            auto same = otherColumn.rowOf.find(column.entries[i - column.controls.size()]);
+            if (same != otherColumn.rowOf.end())
+                builder.Connect(walk[i], across, otherColumn.rows[same->second]);
+            else
+                builder.Connect(walk[i], across, place, notListed);
         }
     }
 }
