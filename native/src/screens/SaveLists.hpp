@@ -12,8 +12,8 @@ namespace fa::screens
 /// on the selected one. Enter clicks a save, selecting it; Enter on the selected save presses the
 /// window's confirm (Load, Save), as a double-click does. Backspace on the selected save presses
 /// `remove`, the details' delete button, which asks first.
-void AddSaves(graph::GraphBuilder& builder, const agui::Widget* window, const agui::Widget* list,
-    const agui::Widget* remove);
+void AddSaves(
+    graph::GraphBuilder& builder, const agui::Widget* window, const agui::Widget* list, const agui::Widget* remove);
 
 /// The search field and the sort order buttons as the "search" stop.
 void AddSaveSearch(graph::GraphBuilder& builder, const agui::Widget* window);

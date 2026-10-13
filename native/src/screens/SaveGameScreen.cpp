@@ -15,7 +15,8 @@ bool SaveGameScreen::Handles(const Widget* window) const { return agui::derivesF
 void SaveGameScreen::BuildWindow(graph::GraphBuilder& builder, const Widget* window)
 {
     const Widget* info = agui::member(window, layout.saveMapInfo);
-    AddSaves(builder, window, agui::pointerMember(window, layout.saveMapList), agui::member(info, layout.mapInfoDelete));
+    AddSaves(
+        builder, window, agui::pointerMember(window, layout.saveMapList), agui::member(info, layout.mapInfoDelete));
 
     // The subheader over the list: "Save as", the name field, the sort order buttons.
     builder.BeginStop("name");
