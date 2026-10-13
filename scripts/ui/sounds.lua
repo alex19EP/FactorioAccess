@@ -84,11 +84,6 @@ function mod.play_ui_edge(pindex)
    play_sound_internal(pindex, { path = "inventory-edge" })
 end
 
--- Mining/interaction sounds
-function mod.play_mine(pindex)
-   play_sound_internal(pindex, { path = "player-mine" })
-end
-
 -- Inventory sounds
 function mod.play_close_inventory(pindex)
    play_sound_internal(pindex, { path = "Close-Inventory-Sound", volume_modifier = 0.75 })

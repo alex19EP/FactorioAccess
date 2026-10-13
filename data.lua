@@ -235,15 +235,6 @@ data:extend({
 
    {
       type = "sound",
-      name = "player-mine",
-      category = "gui-effect",
-      filename = "__FactorioAccess__/audio/player-mine_02.ogg",
-      volume = 1,
-      preload = true,
-   },
-
-   {
-      type = "sound",
       name = "player-turned",
       category = "gui-effect",
       filename = "__FactorioAccess__/audio/player-turned-1face_dir.ogg",

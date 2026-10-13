@@ -1,11 +1,10 @@
 --[[
 Audio Cues
 Centralized management of various audio cues that need to be played periodically.
-Handles driving alerts and mining sounds.
+Handles driving alerts.
 ]]
 
 local Driving = require("scripts.driving")
-local PlayerMiningTools = require("scripts.player-mining-tools")
 local VanillaMode = require("scripts.vanilla-mode")
 
 local mod = {}
@@ -69,12 +68,6 @@ function mod.on_init()
          end
       end
    end, 15, 2, true)
-
-   -- Mining sounds
-   mod.register_cue("mining", function(pindex, tick)
-      local p = game.get_player(pindex)
-      if p ~= nil and p.mining_state.mining == true then PlayerMiningTools.play_mining_sound(pindex) end
-   end, 30, 8, true)
 end
 
 return mod

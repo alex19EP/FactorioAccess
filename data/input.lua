@@ -227,13 +227,6 @@ data:extend({
 
    {
       type = "custom-input",
-      name = "fa-delete",
-      key_sequence = "DELETE",
-      consuming = "none",
-   },
-
-   {
-      type = "custom-input",
       name = "fa-r",
       key_sequence = "",
       linked_game_control = "rotate",
@@ -289,13 +282,6 @@ data:extend({
       type = "custom-input",
       name = "fa-s-q",
       key_sequence = "SHIFT + Q",
-      consuming = "none",
-   },
-
-   {
-      type = "custom-input",
-      name = "fa-s-v",
-      key_sequence = "SHIFT + V",
       consuming = "none",
    },
 

@@ -46,7 +46,6 @@ local Speech = require("scripts.speech")
 local MessageBuilder = Speech.MessageBuilder
 local MovementHistory = require("scripts.movement-history")
 local PlayerInit = require("scripts.player-init")
-local PlayerMiningTools = require("scripts.player-mining-tools")
 require("scripts.rich-text") -- registers rich text processor with speech.lua
 local RailRoute = require("scripts.rails.rail-route")
 local Rulers = require("scripts.rulers")
@@ -107,7 +106,6 @@ require("scripts.ui.help")
 require("scripts.ui.menus.tutorial")
 local GameGui = require("scripts.ui.game-gui")
 local UiRouter = require("scripts.ui.router")
-local VehicleCycler = require("scripts.vehicle-cycler")
 local Viewpoint = require("scripts.viewpoint")
 local Wires = require("scripts.wires")
 local Walking = require("scripts.walking")
@@ -1392,34 +1390,6 @@ end
 EventManager.on_event("fa-c-tab", next_part(1))
 EventManager.on_event("fa-cs-tab", next_part(-1))
 
----@param event EventData.CustomInputEvent
-local function kb_delete(event)
-   local pindex = event.player_index
-   local router = UiRouter.get_router(pindex)
-   local p = game.get_player(pindex)
-   local hand = p.cursor_stack
-
-   if hand and hand.valid_for_read then
-      local is_planner = hand.is_blueprint
-         or hand.is_blueprint_book
-         or hand.is_deconstruction_item
-         or hand.is_upgrade_item
-      if is_planner then
-         if FaUtils.confirm_action(pindex, hand.export_stack(), "Press again to delete the planner in hand.") then
-            p.cursor_stack_temporary = true
-            p.clear_cursor()
-         end
-      end
-   end
-end
-EventManager.on_event(
-   "fa-delete",
-   ---@param event EventData.CustomInputEvent
-   function(event, pindex)
-      kb_delete(event)
-   end
-)
-
 -- The base game's own toggle keys; FA speaks the new state
 EventManager.on_event(
    "toggle-personal-logistic-requests",
@@ -1530,14 +1500,6 @@ EventManager.on_event(
    ---@param event EventData.CustomInputEvent
    function(event, pindex)
       BuildingTools.flip_item_in_hand(event)
-   end
-)
-
-EventManager.on_event(
-   "fa-s-v",
-   ---@param event EventData.CustomInputEvent
-   function(event, pindex)
-      VehicleCycler.cycle_to_next_vehicle(pindex)
    end
 )
 

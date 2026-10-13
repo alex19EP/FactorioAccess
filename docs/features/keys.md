@@ -93,8 +93,6 @@ See [the scanner](scanner.md).
 
 | Key | What it does |
 | --- | --- |
-| `delete` | Delete the planner in hand; press twice |
-| `shift + v` | Move the cursor to the next vehicle near it |
 | `ctrl + alt + b` | Take the audio ruler tool |
 | `ctrl + tab`, `ctrl + shift + tab` | Move between the parts of the screen: an open window, the quickbar, the shortcut bar, the HUD |
 

@@ -32,7 +32,7 @@ Cut: `ctrl + x`
 
 Paste: `ctrl + v`
 
-Delete the blueprint, book or planner in hand: `delete`, twice
+Destroy a blueprint or book: the destroy button in its window
 
 ## Description
 
