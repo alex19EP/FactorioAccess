@@ -10,29 +10,6 @@ local mod = {}
 mod.INT32_MAX = 2147483647
 mod.INT32_MIN = -2147483648
 
-mod.ENT_NAMES_CLEARED_AS_OBSTACLES = {
-   "tree-01-stump",
-   "tree-02-stump",
-   "tree-03-stump",
-   "tree-04-stump",
-   "tree-05-stump",
-   "tree-06-stump",
-   "tree-07-stump",
-   "tree-08-stump",
-   "tree-09-stump",
-   "small-scorchmark",
-   "small-scorchmark-tintable",
-   "medium-scorchmark",
-   "medium-scorchmark-tintable",
-   "big-scorchmark",
-   "big-scorchmark-tintable",
-   "huge-scorchmark",
-   "huge-scorchmark-tintable",
-   "big-rock",
-   "huge-rock",
-   "big-sand-rock",
-}
-
 -- The unit vectors of the directions in order north going clockwise.  If indexed by defines.direction, this gives back
 -- the unit vector pointing in that direction.  Note that this is a 0-indexed table, 0 is north, directions go
 -- clockwise, 15 is northnorthwest.

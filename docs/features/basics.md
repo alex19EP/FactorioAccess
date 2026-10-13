@@ -89,11 +89,9 @@ Each ruler is drawn on the ground, 100 tiles along each arm, in its owner's colo
 
 For example, to place a belt going east, find where it should end, move a few tiles north, and place a ruler. Then hold `[` and walk east until you hear the ruler. The line does not stop by itself at the ruler.
 
-## Mining and clearing
+## Mining
 
-Hold `]` on something to mine it. Ore must be next to your character; rocks, trees and buildings can be mined from as far as you can reach. This is also how you take buildings back.
-
-`shift + x` instantly clears the trees, rocks and items on the ground within 5 tiles of the cursor. On a ghost it removes the ghosts within 10 tiles, and `ctrl + shift + x` on a ghost removes those within 100 tiles.
+Hold `]` on something to mine it. Ore must be next to your character; rocks, trees and buildings can be mined from as far as you can reach. This is also how you take buildings back. To clear many trees, rocks or ghosts at once, use a deconstruction planner; see [blueprints and planners](blueprints-and-planners.md).
 
 ## The pipette
 

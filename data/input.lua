@@ -234,20 +234,6 @@ data:extend({
 
    {
       type = "custom-input",
-      name = "fa-s-x",
-      key_sequence = "SHIFT + X",
-      consuming = "none",
-   },
-
-   {
-      type = "custom-input",
-      name = "fa-cs-x",
-      key_sequence = "CONTROL + SHIFT + X",
-      consuming = "none",
-   },
-
-   {
-      type = "custom-input",
       name = "fa-r",
       key_sequence = "",
       linked_game_control = "rotate",

@@ -93,8 +93,6 @@ See [the scanner](scanner.md).
 
 | Key | What it does |
 | --- | --- |
-| `shift + x` | Instantly clear trees, rocks and items on the ground within 5 tiles of the cursor; on a ghost, remove the ghosts within 10 tiles |
-| `ctrl + shift + x` | On a ghost, remove the ghosts within 100 tiles |
 | `delete` | Delete the planner in hand; press twice |
 | `shift + v` | Move the cursor to the next vehicle near it |
 | `ctrl + alt + b` | Take the audio ruler tool |

@@ -11,7 +11,6 @@ local logger = Logging.Logger("control")
 
 local util = require("util")
 
-local AreaOperations = require("scripts.area-operations")
 local AudioCues = require("scripts.audio-cues")
 local Blueprints = require("scripts.blueprints")
 local BuildingTools = require("scripts.building-tools")
@@ -1418,30 +1417,6 @@ EventManager.on_event(
    ---@param event EventData.CustomInputEvent
    function(event, pindex)
       kb_delete(event)
-   end
-)
-
---Area mining for obstacles, trees, rocks, etc.
-EventManager.on_event(
-   "fa-s-x",
-   ---@param event EventData.CustomInputEvent
-   function(event, pindex)
-      local router = UiRouter.get_router(pindex)
-
-      AreaOperations.mine_area(pindex)
-   end
-)
-
---Mines groups of entities depending on the name or type. Includes trees and rocks.
-
-EventManager.on_event(
-   "fa-cs-x",
-   ---@param event EventData.CustomInputEvent
-   function(event, pindex)
-      local router = UiRouter.get_router(pindex)
-
-      local ent = game.get_player(pindex).selected
-      if ent and ent.valid then AreaOperations.super_mine_area(pindex) end
    end
 )
 
