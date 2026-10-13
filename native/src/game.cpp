@@ -1502,6 +1502,7 @@ bool resolve(pdb::SymbolTable& symbols) {
    classSlot(layout.entityValidPickupTarget, "Entity", "validMachinePickupTargetInternal");
    classSlot(layout.entityValidDropTarget, "Entity", "validMachineDropTargetInternal");
    offset(layout.inserterDropVector, "Inserter", "dropoffVector");
+   classSlot(layout.beltInsertionSpecification, "TransportBeltConnectable", "getItemInsertionSpecification");
    address(layout.entityToBeUpgraded, "?isToBeUpgraded@Entity@@QEBA_NXZ");
    offset(layout.turretPriorityList, "Turret", "priorityList");
    offset(layout.turretIgnoreOthers, "Turret", "ignoreUnprioritised");

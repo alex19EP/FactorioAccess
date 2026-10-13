@@ -300,8 +300,8 @@ inline constexpr Word kUndergroundConnection{"fa.ent-info-underground-belt-conne
 inline constexpr Word kUndergroundNotConnected{"fa.ent-info-underground-belt-not-connected"};
 inline constexpr Word kBeltLeftTurn{"fa.ent-info-belt-shape-left"};
 inline constexpr Word kBeltRightTurn{"fa.ent-info-belt-shape-right"};
-inline constexpr Word kBeltLeftSideload{"fa.ent-info-belt-shape-left-sideload"};
-inline constexpr Word kBeltRightSideload{"fa.ent-info-belt-shape-right-sideload"};
+// A sideload, with the side it comes in from ("with sideload from the West").
+inline constexpr Word kBeltSideload{"fa.ent-info-belt-shape-sideload"};
 inline constexpr Word kBeltDoubleSideload{"fa.ent-info-belt-shape-double-sideload"};
 inline constexpr Word kBeltMerge{"fa.ent-info-belt-shape-merge"};
 inline constexpr Word kBeltUnit{"fa.ent-info-belt-shape-unit"};
@@ -338,12 +338,13 @@ inline constexpr Word kPoleSupplying{"fa.ent-info-electric-pole-supplying"};
 inline constexpr Word kPoleDrawingFrom{"fa.ent-info-electric-pole-drawing-from"};
 // What a belt carries, by lane: the most common item, how many tiles behind (0), here (1) or
 // ahead (2) it was found, how many other items, the lane here (1 full, 2 stopped, 3 backed up),
-// and the other item when there is one; both lanes take two sets.
+// the other item when there is one, and the compass side the lane lies on; then "has" with one
+// lane's words or two. Both lanes alike take the first six without a side.
 inline constexpr Word kBeltCarriesNothing{"fa.ent-info-belt-contents-empty"};
-inline constexpr Word kBeltCarriesLeft{"fa.ent-info-belt-contents-left"};
-inline constexpr Word kBeltCarriesRight{"fa.ent-info-belt-contents-right"};
+inline constexpr Word kBeltLane{"fa.ent-info-belt-contents-lane"};
+inline constexpr Word kBeltCarriesOne{"fa.ent-info-belt-contents-one"};
+inline constexpr Word kBeltCarriesTwo{"fa.ent-info-belt-contents-two"};
 inline constexpr Word kBeltCarriesBothSame{"fa.ent-info-belt-contents-both-same"};
-inline constexpr Word kBeltCarriesBoth{"fa.ent-info-belt-contents-both"};
 // A splitter's priorities, each side named with the way it leads.
 inline constexpr Word kSplitterInputBalanced{"fa.splitter-info-input-balanced"};
 inline constexpr Word kSplitterInputLeft{"fa.splitter-info-input-priority-left"};
@@ -382,6 +383,8 @@ inline constexpr Word kInserterHolding{"fa.ent-info-inserter-holding"};
 inline constexpr Word kInserterHoldingCount{"fa.ent-info-inserter-holding-count"};
 inline constexpr Word kInserterPicksUp{"fa.ent-info-inserter-picks-up-from"};
 inline constexpr Word kInserterDrops{"fa.ent-info-inserter-drops-to"};
+// Onto a transport belt, with the compass side of the lane it drops on.
+inline constexpr Word kInserterDropsOnLane{"fa.ent-info-inserter-drops-to-lane"};
 inline constexpr Word kGround{"fa.ent-info-ground"};
 // How rich an ore tile looks, by the picture the game draws it with, from the poorest to the richest.
 inline constexpr Word kOreLook[8] = {{"fa.native-ore-look-1"}, {"fa.native-ore-look-2"}, {"fa.native-ore-look-3"},

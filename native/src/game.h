@@ -2114,6 +2114,13 @@ struct Layout {
    uint32_t inserterHeldStack = 0;
    uint32_t inserterPickupVector = 0;
    uint32_t inserterDropVector = 0;
+   // The lane an inserter drops onto, as Inserter::dropHeldItem picks it: ItemInsertionSpecification
+   // TransportBeltConnectable::getItemInsertionSpecification(MapPosition const&,
+   // NamedBool<MirroringTag> mirrored) const (a slot, returned through a pointer) at the entity
+   // position plus dropoffVector, the inserter's own mirroring breaking a tie on the belt's middle.
+   // Its first member is the TransportLineConnector* it chose; on a transport belt that is leftLine
+   // or rightLine.
+   uint32_t beltInsertionSpecification = 0;
    // An inserter links its targets only once it runs, so one that never had energy has none. The
    // game's hover still highlights what it would use (Inserter::drawPickupTarget, drawDropTarget):
    // the first entity on the tile for which these say yes (bool, a vtable slot each).

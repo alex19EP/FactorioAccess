@@ -15,6 +15,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <optional>
 #include <string_view>
 #include <utility>
 
@@ -249,10 +250,9 @@ std::vector<std::string> beltShape(Belt belt, const Design* design) {
       out.emplace_back(vocab::kBeltMerge);
    else if (left && right)
       out.emplace_back(vocab::kBeltDoubleSideload);
-   else if (left)
-      out.emplace_back(vocab::kBeltLeftSideload);
-   else if (right)
-      out.emplace_back(vocab::kBeltRightSideload);
+   // The side a sideload comes in from, whose lane it fills.
+   else if (left || right)
+      out.push_back(vocab::kBeltSideload(directionName(opposite((left ? left : right).direction()))));
 
    if (!hasInput && !hasOutput)
       out.emplace_back(vocab::kBeltUnit);
@@ -723,6 +723,12 @@ LaneRange rangeOf(Belt belt, int index) {
            at<int32_t>(connector, layout.connectorEnd)};
 }
 
+// The compass side lane 1 (left) or 2 (right) of a transport belt lies on as the belt leaves its
+// tile.
+uint8_t laneSide(Belt belt, int index) {
+   return index == 1 ? counterclockwise(belt.direction()) : clockwise(belt.direction());
+}
+
 // TransportLine::firstGapIndex when no item has room behind it.
 constexpr uint32_t kNoGap = 0xffffffff;
 
@@ -914,28 +920,38 @@ LaneWords laneWords(const Carried& lane, const Lane& here) {
    return out;
 }
 
-// What a transport belt carries on each lane.
+// What a transport belt carries on each lane, each lane named by the compass side it lies on as
+// the belt leaves its tile (the belt analyzer's names), so no lane needs turning to face the belt.
+// The west or north lane comes first, so belts side by side read alike whichever way they run.
 std::string beltContents(Belt belt) {
-   const LaneRange leftRange = rangeOf(belt, 1);
-   const LaneRange rightRange = rangeOf(belt, 2);
-   const Lane leftLane = laneOf(leftRange);
-   const Lane rightLane = laneOf(rightRange);
-   const Carried left = carried(leftLane, leftRange);
-   const Carried right = carried(rightLane, rightRange);
-   if (left.items.empty() && right.items.empty()) return vocab::kBeltCarriesNothing;
-   if (right.items.empty()) {
-      const LaneWords l = laneWords(left, leftLane);
-      return vocab::kBeltCarriesLeft(l.name, l.distance, l.way, l.others, l.state, l.secondName);
+   struct Side {
+      Carried carried;
+      Lane here;
+      uint8_t side;
+   };
+   Side sides[2];
+   for (int index = 1; index <= 2; ++index) {
+      const LaneRange range = rangeOf(belt, index);
+      Lane here = laneOf(range);
+      Carried found = carried(here, range);
+      sides[index - 1] = {std::move(found), std::move(here), laneSide(belt, index)};
    }
-   if (left.items.empty()) {
-      const LaneWords r = laneWords(right, rightLane);
-      return vocab::kBeltCarriesRight(r.name, r.distance, r.way, r.others, r.state, r.secondName);
+   if (sides[1].side == kWest || sides[1].side == kNorth) std::swap(sides[0], sides[1]);
+
+   std::vector<std::string> lanes;
+   std::optional<LaneWords> first;
+   for (const Side& s : sides) {
+      if (s.carried.items.empty()) continue;
+      const LaneWords w = laneWords(s.carried, s.here);
+      if (first && *first == w)
+         return vocab::kBeltCarriesBothSame(w.name, w.distance, w.way, w.others, w.state, w.secondName);
+      first = w;
+      lanes.push_back(
+         vocab::kBeltLane(w.name, w.distance, w.way, w.others, w.state, w.secondName, directionName(s.side)));
    }
-   const LaneWords l = laneWords(left, leftLane);
-   const LaneWords r = laneWords(right, rightLane);
-   if (l == r) return vocab::kBeltCarriesBothSame(l.name, l.distance, l.way, l.others, l.state, l.secondName);
-   return vocab::kBeltCarriesBoth(l.name, l.distance, l.way, l.others, l.state, l.secondName, r.name, r.distance, r.way,
-                                  r.others, r.state, r.secondName);
+   if (lanes.empty()) return vocab::kBeltCarriesNothing;
+   if (lanes.size() == 1) return vocab::kBeltCarriesOne(lanes[0]);
+   return vocab::kBeltCarriesTwo(lanes[0], lanes[1]);
 }
 
 // A splitter's input and output priorities and its filter (transport-belts.lua's
@@ -1210,8 +1226,32 @@ const std::byte* reachedAt(const std::byte* entity, double dx, double dy, const 
 
 const std::byte* unlinkedReach(const std::byte* inserter, double dx, double dy, bool pickup);
 
+// The compass side of the lane an inserter reaching `dx`, `dy` tiles drops onto, when it drops
+// onto a transport belt: the lane the game's hover marks, picked by the game as
+// Inserter::dropHeldItem picks it.
+std::optional<uint8_t> dropLane(const std::byte* inserter, const std::byte* target, double dx, double dy) {
+   const Belt belt{target};
+   if (!belt.isTransportBelt()) return std::nullopt;
+   // ItemInsertionSpecification: the line chosen, then where on it.
+   struct Insertion {
+      const std::byte* line;
+      int32_t position;
+   };
+   uint8_t mirrored = 0;
+   virtualAt<void* (*)(const void*, uint8_t*)>(inserter, layout.entityIsMirrored)(inserter, &mirrored);
+   // dropHeldItem's drop point: the vector in fixed point, truncated.
+   const Position position = at<Position>(inserter, layout.entityPosition);
+   const Position drop{position.x + static_cast<int32_t>(dx * kScale), position.y + static_cast<int32_t>(dy * kScale)};
+   Insertion insertion{};
+   virtualAt<Insertion* (*)(const void*, Insertion*, const Position*, uint8_t)>(
+      target, layout.beltInsertionSpecification)(target, &insertion, &drop, mirrored);
+   if (insertion.line == target + layout.beltLeftLine) return laneSide(belt, 1);
+   if (insertion.line == target + layout.beltRightLine) return laneSide(belt, 2);
+   return std::nullopt;
+}
+
 // What an inserter holds, and where it picks up and drops: the entity there or the ground, how
-// many tiles and which way.
+// many tiles and which way, and on a belt the lane it drops onto.
 std::string inserterState(const std::byte* entity, const std::byte* inserter, const Design* design) {
    std::vector<std::string> words;
    const std::byte* held = inserter + layout.inserterHeldStack;
@@ -1221,17 +1261,22 @@ std::string inserterState(const std::byte* entity, const std::byte* inserter, co
       words.push_back(vocab::kInserterHolding(item ? localisedName(item) : std::string()));
       if (count > 1) words.push_back(vocab::kInserterHoldingCount(count));
    }
-   auto reach = [&](const vocab::Word& word, const std::byte* linked, uint32_t vector, bool pickup) {
+   auto reach = [&](const std::byte* linked, uint32_t vector, bool pickup) {
       const double dx = at<double>(inserter, vector);
       const double dy = at<double>(inserter, vector + static_cast<uint32_t>(sizeof(double)));
       const auto tiles = static_cast<int64_t>(std::lround(std::sqrt(dx * dx + dy * dy)));
       const std::byte* target = reachedAt(entity, dx, dy, linked, design);
       if (!target && !design) target = unlinkedReach(entity, dx, dy, pickup);
-      words.push_back(word(targetName(target), tiles, directionName(wayOf(dx, dy))));
+      const std::string way = directionName(wayOf(dx, dy));
+      if (pickup)
+         words.push_back(vocab::kInserterPicksUp(targetName(target), tiles, way));
+      else if (const std::optional<uint8_t> lane = target ? dropLane(entity, target, dx, dy) : std::nullopt)
+         words.push_back(vocab::kInserterDropsOnLane(targetName(target), tiles, way, directionName(*lane)));
+      else
+         words.push_back(vocab::kInserterDrops(targetName(target), tiles, way));
    };
-   reach(vocab::kInserterPicksUp, at<const std::byte*>(inserter, layout.inserterPickupTarget),
-         layout.inserterPickupVector, true);
-   reach(vocab::kInserterDrops, dropTargetOf(inserter), layout.inserterDropVector, false);
+   reach(at<const std::byte*>(inserter, layout.inserterPickupTarget), layout.inserterPickupVector, true);
+   reach(dropTargetOf(inserter), layout.inserterDropVector, false);
    return joined(words);
 }
 
