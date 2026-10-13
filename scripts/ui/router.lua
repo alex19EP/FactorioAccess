@@ -142,7 +142,6 @@ mod.UI_NAMES = {
    AMMO_SELECTOR = "ammo_selector",
    ENTITY_CHOOSER = "entity_chooser",
    HELP = "help",
-   TUTORIAL = "tutorial",
    PROTOTYPE_LISTER = "prototype_lister",
    -- Test UI names (used in automated tests)
    TEST_ASSEMBLING_MACHINE = "test-assembling-machine",
