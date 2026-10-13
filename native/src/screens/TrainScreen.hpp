@@ -29,6 +29,13 @@ public:
 protected:
     bool Handles(const agui::Widget* window) const override;
     void BuildWindow(graph::GraphBuilder& builder, const agui::Widget* window) override;
+
+private:
+    /// On the map, says a station row the schedule gains, as the window beside the map shows it.
+    void WatchSchedule(const agui::Widget* window);
+
+    /// The schedule's rows the last frame on the map; none off it.
+    std::optional<std::vector<std::string>> _mapStations;
 };
 
 } // namespace fa::screens
