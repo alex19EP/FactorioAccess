@@ -337,11 +337,10 @@ any changes to this system will not break your game nor will it break a save sha
 
 ### The Global Trains Overview
 
-One unique problem with trains is that they move around and do not stay still long enough for you to click them.  To
-solve this problem, a trains menu is available in the world menu, `alt + w`.
+One unique problem with trains is that they move around and do not stay still long enough for you to click them.  The
+game's trains overview, `alt + w`, lists every train, stop and train group of a surface.
 
-This menu lets you open the train by clicking the name; move your cursor to the train; and toggle the train to manual
-mode.
+Each train reads its state; Enter on it shows the train on the map, and the button beside it opens the train's window.
 
 A typical workflow (for now):
 

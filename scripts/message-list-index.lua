@@ -31,10 +31,9 @@ mod.MESSAGE_LISTS = {
    ["map-help"] = true,
    ["menu-help"] = true,
    ["spidertron-remote-protohelp"] = true,
-   ["trains-overview-help"] = true,
    ["warnings-menu-help"] = true,
 }
 
-mod.MESSAGE_LISTS_HASH = "cee3948ec5b05983516c372bd2701e38913ea6140f446ba833f9131ae02788d8"
+mod.MESSAGE_LISTS_HASH = "96859bcf628fa7301432d4d64faa7d1dffe4bff00cb295e18ac98652f9db4324"
 
 return mod

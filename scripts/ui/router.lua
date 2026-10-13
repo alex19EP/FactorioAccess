@@ -113,8 +113,6 @@ end
 
 ---@enum fa.ui.UiName
 mod.UI_NAMES = {
-   -- World menu for global/cross-surface information (trains, etc.)
-   WORLD = "world",
    -- New inventory, but we need the old name for a little bit while we roll over.
    GENERIC_INVENTORY = "inventory2",
    -- BUILDING and VEHICLE removed - migrating to capability-based UI
