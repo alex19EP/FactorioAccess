@@ -47,9 +47,19 @@ void AddStation(graph::GraphBuilder& builder, const std::string& key, const agui
     std::string name = LabelText(label);
     if (!name.empty())
         builder.PushContext(name, "", false);
-    for (std::size_t i = 0; i < station.conditions.size(); ++i)
+    AddConditions(builder, key, station.conditions, station.addCondition);
+    if (!name.empty())
+        builder.PopContext();
+}
+
+} // namespace
+
+void AddConditions(graph::GraphBuilder& builder, const std::string& key, const std::vector<const Widget*>& conditions,
+    const Widget* add)
+{
+    for (std::size_t i = 0; i < conditions.size(); ++i)
     {
-        const Widget* condition = station.conditions[i];
+        const Widget* condition = conditions[i];
         if (!Shows(condition))
             continue;
         builder.StartRow("condition");
@@ -57,12 +67,18 @@ void AddStation(graph::GraphBuilder& builder, const std::string& key, const agui
             builder, std::format("{}/condition/{}", key, i), {condition}, {agui::scheduleConditionDrag(condition)});
         builder.EndRow();
     }
-    AddControl(builder, key + "/add", station.addCondition);
-    if (!name.empty())
-        builder.PopContext();
+    AddControl(builder, key + "/add", add);
 }
 
-} // namespace
+void AddStations(graph::GraphBuilder& builder, const std::string& key,
+    const std::vector<agui::ScheduleStation>& stations, const Widget* add)
+{
+    for (std::size_t i = 0; i < stations.size(); ++i)
+        if (Shows(stations[i].label))
+            AddStation(builder, std::format("{}/station/{}", key, i), stations[i]);
+    builder.SetRegion(key + "/end");
+    AddControl(builder, key + "/add", add);
+}
 
 void AddSchedule(graph::GraphBuilder& builder, const std::string& key, const Widget* schedule)
 {
@@ -71,11 +87,7 @@ void AddSchedule(graph::GraphBuilder& builder, const std::string& key, const Wid
     builder.BeginStop(key);
     if (parts.groupNote && Shows(parts.groupNote))
         AddText(builder, key + "/note", parts.groupNote);
-    for (std::size_t i = 0; i < parts.stations.size(); ++i)
-        if (Shows(parts.stations[i].label))
-            AddStation(builder, std::format("{}/station/{}", key, i), parts.stations[i]);
-    builder.SetRegion(key + "/end");
-    AddControl(builder, key + "/add", parts.addStation);
+    AddStations(builder, key, parts.stations, parts.addStation);
 
     std::string interrupts = key + "/interrupts";
     builder.BeginStop(interrupts);

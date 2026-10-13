@@ -11,6 +11,7 @@
 //   - the interrupts: a row each (its name, go to, edit, remove), then the button adding one.
 
 #include <string>
+#include <vector>
 
 #include "agui.h"
 #include "graph/GraphBuilder.hpp"
@@ -20,5 +21,15 @@ namespace fa::screens
 
 /// Declares the schedule's two stops, keyed `key` and `key` + "/interrupts".
 void AddSchedule(graph::GraphBuilder& builder, const std::string& key, const agui::Widget* schedule);
+
+/// Into the current stop: a row per station, each followed by its wait conditions, Ctrl+Up and
+/// Ctrl+Down moving between them, then `add`, the button adding a station.
+void AddStations(graph::GraphBuilder& builder, const std::string& key,
+    const std::vector<agui::ScheduleStation>& stations, const agui::Widget* add);
+
+/// Into the current stop: a row per wait condition (ScheduleConditionGui), the game's own widgets
+/// left to right, then `add`, the button adding a condition.
+void AddConditions(graph::GraphBuilder& builder, const std::string& key,
+    const std::vector<const agui::Widget*>& conditions, const agui::Widget* add);
 
 } // namespace fa::screens

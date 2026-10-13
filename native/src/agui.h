@@ -434,6 +434,20 @@ ScheduleParts scheduleParts(const Widget* scheduleGui);
 // The drag handle filling a wait condition's row (ScheduleConditionGui), or null for any other widget.
 const Widget* scheduleConditionDrag(const Widget* condition);
 
+// The parts of the window editing an interrupt (EditInterruptGui): the scroll panes of its trigger
+// conditions and of its targets, the conditions (ScheduleConditionGui each) and the button adding
+// one, the targets (stations, each with its wait conditions) and the button adding one. All empty
+// for any other window.
+struct InterruptEditorParts {
+   const Widget* conditionsScroll = nullptr;
+   const Widget* targetsScroll = nullptr;
+   std::vector<const Widget*> conditions;
+   const Widget* addCondition = nullptr;
+   std::vector<ScheduleStation> targets;
+   const Widget* addTarget = nullptr;
+};
+InterruptEditorParts interruptEditorParts(const Widget* window);
+
 // A game window a mod attached relative GUI elements to sits in an invisible window the game puts
 // on the root in its place (CustomGuiGameGuiWrapper). The window it wraps, or null when `widget` is
 // no such wrapper.

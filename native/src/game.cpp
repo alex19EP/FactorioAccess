@@ -968,6 +968,11 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.scheduleInterruptName, "ScheduleInterruptGui", "name");
    offset(layout.scheduleInterruptEdit, "ScheduleInterruptGui", "editButton");
    offset(layout.scheduleInterruptRemove, "ScheduleInterruptGui", "removeButton");
+   offset(layout.interruptEditorConditionsScroll, "EditInterruptGui", "conditionsScroll");
+   offset(layout.interruptEditorTargetsScroll, "EditInterruptGui", "targetsScroll");
+   offset(layout.interruptEditorConditions, "EditInterruptGui", "conditionsHolder");
+   offset(layout.interruptEditorTargets, "EditInterruptGui", "stationsDragPane");
+   offset(layout.interruptEditorAddTarget, "EditInterruptGui", "addInterruptStationButton");
    offset(layout.electricNetworkBars, "ElectricNetworkGuiWindow<ElectricPole>", "satisfactionFlow");
    offset(layout.electricNetworkFlows, "ElectricNetworkGuiWindow<ElectricPole>", "gui");
    offset(layout.electricNetworkConsumption, "ElectricNetworkGuiWindow<ElectricPole>", "gui.inputFrame");

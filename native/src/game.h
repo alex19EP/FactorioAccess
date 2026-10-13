@@ -1362,6 +1362,14 @@ struct Layout {
    uint32_t scheduleInterruptName = 0;       // ::name, agui::Label
    uint32_t scheduleInterruptEdit = 0;       // ::editButton, IconButton
    uint32_t scheduleInterruptRemove = 0;     // ::removeButton, IconButton
+   // The window editing an interrupt (EditInterruptGui, a FloatingGuiWindow): its trigger
+   // conditions (a ScheduleConditionGuiHolder in a scroll pane) and its targets (a drag pane of
+   // ScheduleStationGui in another), with the button adding a target.
+   uint32_t interruptEditorConditionsScroll = 0; // ::conditionsScroll, agui::VerticalScrollPane
+   uint32_t interruptEditorTargetsScroll = 0;    // ::targetsScroll, agui::VerticalScrollPane
+   uint32_t interruptEditorConditions = 0;       // ::conditionsHolder, ScheduleConditionGuiHolder
+   uint32_t interruptEditorTargets = 0;          // ::stationsDragPane, DragPaneWidget<VerticalFlow>
+   uint32_t interruptEditorAddTarget = 0;        // ::addInterruptStationButton, agui::TextButton
    // A game window a mod attached relative GUI elements to (LuaGuiElement anchor) is taken off the
    // root into an invisible CustomGuiGameGuiWrapper: a 3 by 3 table with the window in the middle
    // and a flow on each side holding the mod's elements for that side.
