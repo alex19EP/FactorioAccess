@@ -1,10 +1,9 @@
--- Chapter 3, the scanner: categories, subcategories and entries, Home, remote view, coordinates, and
--- Kruise Kontrol sent to what the scanner found.
+-- Chapter 3, the scanner: categories, subcategories and entries, Home, remote view, and Kruise
+-- Kontrol sent to what the scanner found.
 --
 -- The map is the campaign's base map (helper-scripts/campaign-base-map): grass and sand, 400 by 400,
 -- a pond of water from 16, -14 to 23, -9. This level adds rocks, a small forest, a patch each of
--- copper, coal and stone, an iron patch near the start and one far to the east, off the screen, and a
--- chest for the coordinates hint.
+-- copper, coal and stone, and an iron patch near the start and one far to the east, off the screen.
 
 ---@diagnostic disable-next-line: unresolved-require
 require("story")
@@ -37,7 +36,6 @@ local TREES = {
    { -27, -10 },
    { -22, -9 },
 }
-local CHEST = { x = -12, y = -13 }
 
 -- Kruise Kontrol is an optional dependency. Home, its key and Enter, which cancels it, carry the
 -- cursor's position like FA's own keys.
@@ -155,7 +153,6 @@ local function build_map()
    for i, tree in ipairs(TREES) do
       surface.create_entity({ name = string.format("tree-0%d", (i - 1) % 9 + 1), position = { tree[1], tree[2] } })
    end
-   surface.create_entity({ name = "wooden-chest", position = { CHEST.x + 0.5, CHEST.y + 0.5 }, force = "player" })
    game.forces.player.chart(surface, { { -200, -200 }, { 200, 200 } })
 end
 
@@ -193,7 +190,6 @@ local story_table = {
             set_goal("")
          end,
       },
-      hint_node("coordinates", CHEST.x, CHEST.y),
       {
          condition = story_elapsed_check(1),
          action = function(event, story)
