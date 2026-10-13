@@ -471,6 +471,30 @@ struct TrainsOverviewParts {
 };
 TrainsOverviewParts trainsOverviewParts(const Widget* window);
 
+// A column of the production statistics window's tab (a FlowDataFrame): its subheader, which holds
+// the caption ("Production") and, while the game shows them, the global statistics checkbox, the
+// quality dropdown and the reset filters button; and its table of rows (TableItem: the item's slot
+// with the total drawn on it, a bar, and the rate).
+struct ProductionColumn {
+   const Widget* subheader = nullptr;
+   const Widget* global = nullptr;
+   const Widget* quality = nullptr;
+   const Widget* reset = nullptr;
+   const Widget* table = nullptr;
+};
+// The parts of the production statistics window (ProductionGui): its tabbed pane, the subheader of
+// time span buttons, and the two columns of the tab it shows. All null for any other window.
+struct ProductionParts {
+   const Widget* tabs = nullptr;
+   const Widget* precisions = nullptr;
+   ProductionColumn columns[2];
+};
+ProductionParts productionParts(const Widget* window);
+
+// The number a slot button draws on itself ("45.3k"), written as the game writes it; empty when it
+// draws none. Main thread only.
+std::string slotNumberText(const Widget* slot);
+
 // A game window a mod attached relative GUI elements to sits in an invisible window the game puts
 // on the root in its place (CustomGuiGameGuiWrapper). The window it wraps, or null when `widget` is
 // no such wrapper.

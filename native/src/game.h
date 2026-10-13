@@ -895,6 +895,14 @@ struct Layout {
    uint32_t providerBasePrototype = 0;    // PrototypeBase const* PrototypeProvider::getBasePrototype() const
    uint32_t providerQualityPrototype = 0; // QualityPrototype const* PrototypeProvider::getQualityPrototype() const
    uint32_t buttonNumberCount = 0;        // double ButtonNumber::getCount() const, the number drawn on it
+   uint32_t buttonNumberRoundType = 0;    // Rounding ButtonNumber::getRoundType() const, how it is drawn
+   // StringUtil::shortNumberFormat(double, Compactness, UseDecimal, Rounding, NumDecimals), returning
+   // a std::string: how ButtonNumber::drawNumber writes the number ("45.3k"), with the arguments it
+   // passes besides the rounding.
+   uintptr_t shortNumberFormat = 0;
+   uint32_t compactnessCompact = 0; // StringUtil::Compactness::Compact
+   uint32_t useDecimalAuto = 0;     // StringUtil::UseDecimal::Auto
+   uint32_t numDecimalsOne = 0;     // StringUtil::NumDecimals::One
 
    uint32_t progressBarValue = 0; // agui::ProgressBar::value, 0 to 1
 
@@ -1344,6 +1352,21 @@ struct Layout {
    uint32_t electricNetworkProduction = 0;   // ::gui.outputFrame, FlowDataFrame
    uint32_t electricNetworkStorage = 0;      // ::gui.storageFrame, FlowDataFrame
    uint32_t flowFrameGraph = 0;              // FlowDataFrame::graph, Graph
+   // The production statistics window (ProductionGui): its tabs (items, fluids, buildings,
+   // pollution, kills), the time span buttons in its subheader, and per tab a FlowGui of two
+   // FlowDataFrame columns (production and consumption, built and deconstructed, kills and losses).
+   // Each tab is its own FlowGui template, so the column's members are resolved per tab, relative
+   // to the column.
+   static constexpr int kProductionTabs = 5;
+   uint32_t productionTabs = 0;                          // ProductionGui::tabbedPane, agui::TabbedPane
+   uint32_t productionPrecisions = 0;                    // ProductionGui::insideFrame.subheader
+   uint32_t productionFlows[kProductionTabs] = {};       // ProductionGui::itemProductionGui, ..., FlowGui
+   uint32_t productionColumns[kProductionTabs][2] = {};  // <flow>.inputFrame, <flow>.outputFrame
+   uint32_t flowColumnSubheader[kProductionTabs] = {};   // FlowDataFrame::subheader (FrameWithSubheader)
+   uint32_t flowColumnGlobal[kProductionTabs] = {};      // ::globalStatisticsCheckBox, agui::CheckBox
+   uint32_t flowColumnQuality[kProductionTabs] = {};     // ::qualitySelectionDropDown, agui::DropDown
+   uint32_t flowColumnReset[kProductionTabs] = {};       // ::resetFiltersButton, IconButton
+   uint32_t flowColumnTable[kProductionTabs] = {};       // ::table, agui::Table of TableItem rows
    // A train stop's window (TrainStopGui): its tabs of the trains whose schedules have the stop and
    // of the trains on the way to it, each a TrainsWidget. A TrainsWidget is a table of cards
    // (TrainWithMinimap), a train each: a minimap button that opens the train's window, and a

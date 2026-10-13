@@ -130,6 +130,7 @@ add_library(fa_native SHARED
   src/screens/TrackedAchievementsScreen.cpp
   src/screens/ModWindowsScreen.cpp
   src/screens/PreviewCanvas.cpp
+  src/screens/ProductionScreen.cpp
   src/screens/GameDialogScreen.cpp
   src/screens/MachineScreen.cpp
   src/screens/BeltScreen.cpp

@@ -41,6 +41,7 @@
 #include "screens/PipeScreen.hpp"
 #include "screens/TrainScreen.hpp"
 #include "screens/TrainStopScreen.hpp"
+#include "screens/ProductionScreen.hpp"
 #include "screens/TrainsScreen.hpp"
 #include "screens/ModWindowsScreen.hpp"
 #include "screens/QuickBarScreen.hpp"
@@ -179,6 +180,8 @@ void start() {
    manager.Register(std::make_unique<screens::InterruptScreen>());
    // The trains overview: every train, stop and group of a surface.
    manager.Register(std::make_unique<screens::TrainsScreen>());
+   // The production statistics: what is made and used, built, polluted and killed.
+   manager.Register(std::make_unique<screens::ProductionScreen>());
    // The windows mods and the scenario put on the screen, while Ctrl+Tab has moved to them; it
    // also announces one that shows up.
    manager.Register(std::make_unique<screens::ModWindowsScreen>());

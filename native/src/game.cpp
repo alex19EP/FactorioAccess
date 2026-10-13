@@ -645,6 +645,13 @@ bool resolve(pdb::SymbolTable& symbols) {
    classSlot(layout.providerBasePrototype, "PrototypeProvider", "getBasePrototype");
    classSlot(layout.providerQualityPrototype, "PrototypeProvider", "getQualityPrototype");
    classSlot(layout.buttonNumberCount, "ButtonNumber", "getCount");
+   classSlot(layout.buttonNumberRoundType, "ButtonNumber", "getRoundType");
+   address(layout.shortNumberFormat,
+           "?shortNumberFormat@StringUtil@@YA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@"
+           "NW4Compactness@1@W4UseDecimal@1@W4Rounding@@W4NumDecimals@1@@Z");
+   enumerator(layout.compactnessCompact, "StringUtil::Compactness", "Compact");
+   enumerator(layout.useDecimalAuto, "StringUtil::UseDecimal", "Auto");
+   enumerator(layout.numDecimalsOne, "StringUtil::NumDecimals", "One");
    offset(layout.progressBarValue, "agui::ProgressBar", "value");
 
    offset(layout.entityMainWindow, "GameGuiWithControllerInventory", "mainWindow");
@@ -1002,6 +1009,31 @@ bool resolve(pdb::SymbolTable& symbols) {
           "FlowDataFrame<FlowStatistics<IDWithQuality<ID<EntityPrototype,unsigned short> >,double,ElectricityTag>,"
           "ElectricPole,FlowGuiEnabler<0> >",
           "graph");
+   offset(layout.productionTabs, "ProductionGui", "tabbedPane");
+   offset(layout.productionPrecisions, "ProductionGui", "insideFrame.subheader");
+   {
+      // In the order of the window's tabs.
+      static constexpr const char* flows[Layout::kProductionTabs] = {
+         "itemProductionGui", "fluidProductionGui", "buildingStatisticsGui", "pollutionStatisticsGui", "killsGui"};
+      static constexpr const char* columns[2] = {"inputFrame", "outputFrame"};
+      for (int tab = 0; tab < Layout::kProductionTabs; ++tab) {
+         offset(layout.productionFlows[tab], "ProductionGui", flows[tab]);
+         for (int column = 0; column < 2; ++column)
+            offset(layout.productionColumns[tab][column], "ProductionGui",
+                   std::format("{}.{}", flows[tab], columns[column]).c_str());
+         // A column's members, relative to the column: both columns of a tab are one type.
+         auto inColumn = [&](uint32_t& out, const char* member) {
+            uint32_t at = 0;
+            offset(at, "ProductionGui", std::format("{}.inputFrame.{}", flows[tab], member).c_str());
+            out = at - layout.productionColumns[tab][0];
+         };
+         inColumn(layout.flowColumnSubheader[tab], "subheader");
+         inColumn(layout.flowColumnGlobal[tab], "globalStatisticsCheckBox");
+         inColumn(layout.flowColumnQuality[tab], "qualitySelectionDropDown");
+         inColumn(layout.flowColumnReset[tab], "resetFiltersButton");
+         inColumn(layout.flowColumnTable[tab], "table");
+      }
+   }
    offset(layout.relativeWrapperTable, "CustomGuiGameGuiWrapper", "table");
    offset(layout.relativeWrapperTop, "CustomGuiGameGuiWrapper", "topFlow");
    offset(layout.relativeWrapperLeft, "CustomGuiGameGuiWrapper", "leftFlow");

@@ -735,6 +735,31 @@ SlotButton slotButton(const Widget* slot) {
    return button;
 }
 
+std::string slotNumberText(const Widget* slot) {
+   // As ButtonNumber::paintNumber has drawNumber write it, which also prefixes numberPrefix(): no
+   // slot that FA reads this way has a prefix.
+   const std::byte* number = asBaseChecked(slot, ".?AVButtonNumber@@");
+   double count = callVirtualAt<double>(number, layout.buttonNumberCount);
+   if (count == 0) return {};
+   auto rounding = callVirtualAt<uint8_t>(number, layout.buttonNumberRoundType);
+   using Format = MsvcString* (*)(MsvcString* out, double value, uint8_t compactness, uint8_t useDecimal,
+                                  uint8_t rounding, uint8_t decimals);
+   MsvcString made{};
+   reinterpret_cast<Format>(layout.shortNumberFormat)(&made, count, static_cast<uint8_t>(layout.compactnessCompact),
+                                                      static_cast<uint8_t>(layout.useDecimalAuto), rounding,
+                                                      static_cast<uint8_t>(layout.numDecimalsOne));
+   bool large = made.capacity >= sizeof(made.buffer);
+   std::string text(large ? made.pointer : made.buffer, made.size);
+   if (large) {
+      // Freed as the game's own std::string frees it: its allocator keeps the true start of a large
+      // block just before it.
+      void* block = const_cast<char*>(made.pointer);
+      if (made.capacity + 1 >= 0x1000) block = reinterpret_cast<void**>(block)[-1];
+      reinterpret_cast<void (*)(void*)>(layout.gameOperatorDelete)(block);
+   }
+   return text;
+}
+
 double progress(const Widget* bar) {
    return at<double>(asBaseChecked(bar, ".?AVProgressBar@agui@@"), layout.progressBarValue);
 }
@@ -1013,6 +1038,27 @@ TrainsOverviewParts trainsOverviewParts(const Widget* window) {
    } else {
       parts.list = part(gui, layout.trainsGuiTrainsList);
       parts.trains = part(gui, layout.trainsGuiTrains);
+   }
+   return parts;
+}
+
+ProductionParts productionParts(const Widget* window) {
+   const std::byte* gui = asBase(window, ".?AVProductionGui@@");
+   if (!gui) return {};
+   ProductionParts parts;
+   parts.tabs = part(gui, layout.productionTabs);
+   parts.precisions = part(gui, layout.productionPrecisions);
+   for (int tab = 0; tab < game::Layout::kProductionTabs; ++tab) {
+      // The tabbed pane holds the selected tab's content alone; the others are taken out of it,
+      // still visible.
+      if (!parent(part(gui, layout.productionFlows[tab]))) continue;
+      for (int column = 0; column < 2; ++column) {
+         const std::byte* frame = gui + layout.productionColumns[tab][column];
+         parts.columns[column] = {part(frame, layout.flowColumnSubheader[tab]),
+                                  part(frame, layout.flowColumnGlobal[tab]), part(frame, layout.flowColumnQuality[tab]),
+                                  part(frame, layout.flowColumnReset[tab]), part(frame, layout.flowColumnTable[tab])};
+      }
+      break;
    }
    return parts;
 }
