@@ -322,6 +322,14 @@ TileSize blueprintSize(const std::byte* blueprint) {
    return size;
 }
 
+// How the blueprint in hand is rotated and flipped, or nothing without one.
+std::optional<uint32_t> blueprintTurn(const std::byte* player) {
+   return withHeldBlueprint(player, [](const std::byte* blueprint) -> std::optional<uint32_t> {
+      if (!blueprint) return std::nullopt;
+      return at<uint8_t>(blueprint, layout.blueprintRotation) | at<uint8_t>(blueprint, layout.blueprintFlip) << 8u;
+   });
+}
+
 // Where the cursor has to be for the blueprint in hand, rotated and flipped as it is built, to have
 // the north-west corner of its tile box on the tile `cursor` is on. False without a blueprint, for
 // one with a snapping grid, and for one of only off-grid entities, which goes where the cursor is.
@@ -459,19 +467,28 @@ int detourPrepareBuilding(void* renderer, const void* player, const Position* cu
    Position anchor;
    const Position* position = anchoredPosition(player, input, anchor) ? &anchor : pin ? &*pin : cursor;
    const auto entity = at<uint16_t>(input, layout.simpleBuildInputEntity);
-   // A frame that gathers the pinned build's pieces (footprint.h): every EntityToBeBuiltSettings::
-   // draw and BuildingRenderer::drawTileToBeBuilt adds one.
+   // The pieces of the pinned build, or of a blueprint that follows the cursor (footprint.h).
+   std::optional<footprint::Placement> placement;
+   if (!holdsRailPlanner(player)) {
+      if (pin)
+         placement = footprint::Placement{pin->x, pin->y, 0, true};
+      else if (entity == 0 && !at<const void*>(input, layout.simpleBuildInputTile))
+         if (const std::optional<uint32_t> turn = blueprintTurn(static_cast<const std::byte*>(player)))
+            placement = footprint::Placement{position->x, position->y, *turn, false};
+   }
+   // A frame that gathers them: every EntityToBeBuiltSettings::draw and
+   // BuildingRenderer::drawTileToBeBuilt adds one.
    struct Gathering {
-      std::optional<Position> at;
-      Gathering(std::optional<Position> pin, bool blueprint) {
-         if (!pin || !footprint::wants(pin->x, pin->y)) return;
-         at = pin;
-         footprint::begin(blueprint);
+      bool active = false;
+      Gathering(const std::optional<footprint::Placement>& placement, bool blueprint) {
+         if (!placement || !footprint::wants(*placement)) return;
+         active = true;
+         footprint::begin(*placement, blueprint, localDragging());
       }
       ~Gathering() {
-         if (at) footprint::end(at->x, at->y);
+         if (active) footprint::end();
       }
-   } gathering(holdsRailPlanner(player) ? std::nullopt : pin, entity == 0);
+   } gathering(placement, entity == 0);
    if (entity == 0) {
       g_spokenPreview.reset();
       return g_prepareBuildingOriginal(renderer, player, position, drawQueue);

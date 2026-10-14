@@ -13,10 +13,23 @@
 // the screen, so the pieces it reaches are always among them.
 namespace fa::footprint {
 
+// A blueprint in hand that follows the cursor is gathered too, for its summary alone: what blocks it
+// and what is already built is said each time it moves or turns, as the preview of a building in
+// hand says what blocks it.
+//
+// Where the build is drawn (fixed point), how it is turned and flipped, and whether it is pinned.
+struct Placement {
+   int32_t x;
+   int32_t y;
+   uint32_t turn;
+   bool pinned;
+   bool operator==(const Placement&) const = default;
+};
+
 // From world.cpp's preview hooks, on the thread that draws the preview: whether to gather the
-// pieces of the build drawn at `x`, `y` (fixed point) this frame. True when it moved, now and then
-// for a world that changes under it, and while an announcement waits.
-bool wants(int32_t x, int32_t y);
+// pieces of the build drawn at `placement` this frame. True when it moved or turned; for a pinned
+// build also now and then, for a world that changes under it, and while an announcement waits.
+bool wants(const Placement& placement);
 
 enum class Fit { Fits, AlreadyBuilt, Blocked };
 struct Piece {
@@ -32,19 +45,20 @@ struct Piece {
 // Between begin and end, on the thread that called begin, every piece the preview drew (a
 // blueprint's tiles among them) and each entity on the map that building it would replace, turn,
 // remove or otherwise change, with the words that say so ("removes Tree") and its tiles. A
-// blueprint's pieces get a summary.
-void begin(bool blueprint);
+// blueprint's pieces get a summary. While the build control drags, a blueprint that follows the
+// cursor has just been built where it stands, and its summary leaves out what is already built.
+void begin(const Placement& placement, bool blueprint, bool drag);
 bool gathering();
 void add(Piece piece);
 void alter(std::string words, int32_t left, int32_t top, int32_t right, int32_t bottom);
-void end(int32_t x, int32_t y);
+void end();
 
 // Forgets the pieces: the build is no longer pinned.
 void clear();
 
 // For a step of the detached cursor onto the tile `tileX`, `tileY`: the pieces there and what
-// building them does to the map there, or that the step left the build; empty elsewhere. Before
-// the tile's own reading.
+// building them does to the map there, or that the step left the build; empty elsewhere, and while
+// the build follows the cursor. Before the tile's own reading.
 std::string tilePrefix(int32_t tileX, int32_t tileY);
 
 // Says `lead`, then for a blueprint what blocks it or is already built, then what is on the tile

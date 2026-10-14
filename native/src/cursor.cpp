@@ -228,6 +228,9 @@ bool g_vanilla = false;
 bool g_keys = false;
 bool g_anchored = false;
 std::vector<skip::Ruler> g_rulers;
+// The last movement key's move came into line with the rulers: the key, held, repeats no more, so a
+// drag build stops there. Pressed again, it goes on.
+bool g_repeatHalted = false;
 // The mod jumped the cursor: the next frame opens remote view if the screen does not hold it.
 bool g_jumped = false;
 // When to say the zoom and a view the player entered, and what the mod says is in hand, to say with
@@ -268,6 +271,12 @@ std::optional<Position> currentCursor() {
 }
 
 void place(Position position) { world::placeCursor({position.x, position.y}); }
+
+// A move by a key that repeats when held, from `from` to `to`: whether its repeats stop there.
+void haltRepeatAtRulers(Position from, Position to) {
+   std::scoped_lock lock(g_mutex);
+   g_repeatHalted = skip::comesIntoLine(g_rulers, tileOf(from.x), tileOf(from.y), tileOf(to.x), tileOf(to.y));
+}
 
 // What was in hand and in view when the build was pinned: holding anything else, or another surface
 // in view, re-attaches it. Under g_mutex.
@@ -342,6 +351,7 @@ void skipForKey(const MoveKey& key, const View& view, Position cursor) {
       const Position target = tileCentre(x, y);
       const bool next = nextOfKind(cursor, target);
       place(target);
+      haltRepeatAtRulers(cursor, target);
       reader::read(x, y, vocab::kSkippedByPreview(shift));
       record(target, Step::Read, 1, next);
       return;
@@ -458,6 +468,10 @@ void moveForKey(const void* event, const void* context) {
    if (!cursor) return;
    const MoveKey* key = triggeredMove(event, context);
    if (!key) return;
+   {
+      std::scoped_lock lock(g_mutex);
+      g_repeatHalted = false;
+   }
    const std::optional<View> view = localView();
    if (!view) return;
    if (key->kind == KeyKind::Cycle) {
@@ -479,6 +493,7 @@ void moveForKey(const void* event, const void* context) {
       record(target, Step::Moved);
       return;
    }
+   haltRepeatAtRulers(*cursor, target);
    // A drag build builds on the tile after this; the game's build preview tells what blocks it.
    const int playerIndex = at<uint16_t>(view->player, layout.playerIndex) + 1;
    if (world::dragBuild(playerIndex)) {
@@ -798,14 +813,15 @@ bool detourCustomInput(void* source, const void* event, const void* context) {
 
 constexpr size_t kEventCapacity = 64;
 
-// Whether `event` is a held key's repeat of a movement key that repeats (cursor.h).
+// Whether `event` is a held key's repeat of a movement key that repeats (cursor.h), and its last
+// move did not come into line with the rulers.
 bool repeatsAsPress(const void* event) {
    if (at<uint32_t>(event, layout.eventType) != layout.eventKeyDown || !at<bool>(event, layout.eventKeyRepeat) ||
        layout.eventSize > kEventCapacity)
       return false;
    {
       std::scoped_lock lock(g_mutex);
-      if (!g_keys) return false;
+      if (!g_keys || g_repeatHalted) return false;
    }
    const MoveKey* key = triggeredMove(event, nullptr);
    return key && repeats(key->kind);

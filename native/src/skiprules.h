@@ -31,6 +31,22 @@ inline uint32_t rulerWeight(std::span<const Ruler> rulers, int32_t x, int32_t y)
    return weight;
 }
 
+// Whether a straight move from `fromX`, `fromY` to `toX`, `toY` comes into line with the rulers on
+// the way, where a skip would stop: a held movement key stops repeating there.
+inline bool comesIntoLine(std::span<const Ruler> rulers, int32_t fromX, int32_t fromY, int32_t toX, int32_t toY) {
+   const int32_t dx = toX > fromX ? 1 : toX < fromX ? -1 : 0;
+   const int32_t dy = toY > fromY ? 1 : toY < fromY ? -1 : 0;
+   uint32_t lastWeight = rulerWeight(rulers, fromX, fromY);
+   for (int32_t x = fromX, y = fromY; x != toX || y != toY;) {
+      x += dx;
+      y += dy;
+      const uint32_t weight = rulerWeight(rulers, x, y);
+      if (weight > lastWeight) return true;
+      lastWeight = weight;
+   }
+   return false;
+}
+
 // The strongest way a tile lies in line with the rulers, for the tone the cursor plays coming onto
 // it (scripts/rulers.lua): a tile off a line, on one, or on a ruler itself.
 enum class Alignment { None, Close, OnLine, AtRuler };

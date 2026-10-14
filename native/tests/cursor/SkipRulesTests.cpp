@@ -299,6 +299,22 @@ TEST(Ruler_AlignmentIsTheStrongestOfAnyRuler)
     CHECK(rulerAlignment({}, 0, 0) == Alignment::None);
 }
 
+TEST(Rulers_HeldKeyStopsComingIntoLine)
+{
+    using fa::skip::comesIntoLine;
+    const std::vector<Ruler> rulers{{5, 0}};
+    // Onto the ruler's column, and onto the ruler itself from along its row.
+    CHECK(comesIntoLine(rulers, 4, 3, 5, 3));
+    CHECK(comesIntoLine(rulers, 4, 0, 5, 0));
+    // Along the column, and off it.
+    CHECK(!comesIntoLine(rulers, 5, 3, 5, 4));
+    CHECK(!comesIntoLine(rulers, 5, 3, 6, 3));
+    // A move of several tiles that crosses the column on the way.
+    CHECK(comesIntoLine(rulers, 3, 3, 7, 3));
+    CHECK(!comesIntoLine(rulers, 6, 3, 9, 3));
+    CHECK(!comesIntoLine({}, 0, 0, 1, 0));
+}
+
 TEST(Skip_GivesUpAtTheLimit)
 {
     World world;

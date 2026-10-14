@@ -18,7 +18,9 @@
 //
 // Held down, the movement keys and Ctrl with them repeat at the system's key repeat rate: the game
 // gives a held key's repeats to its GUI only (text boxes), and this lets those of these keys reach
-// the game as presses. The skip and cycle keys move once a press.
+// the game as presses. The skip and cycle keys move once a press. A held key stops where its move
+// comes into line with the player's audio rulers, as a skip stops (skiprules.h), so a drag build
+// ends there; pressed again, it goes on.
 //
 // While the build control drags a build along, a step says only what changes under the cursor: the
 // ground when it differs from the tile before, and a building that was there before the drag, once

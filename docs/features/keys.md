@@ -67,7 +67,7 @@ These are the game's defaults, after the keys script:
 | `alt + k` | Read the cursor's distance east or west and north or south of your character |
 | `alt + j` | Read your character's coordinates |
 
-Hold `w`, `a`, `s`, `d`, alone or with `ctrl`, to keep moving at your system's key repeat rate. The skips and the cycle move once a press.
+Hold `w`, `a`, `s`, `d`, alone or with `ctrl`, to keep moving at your system's key repeat rate. The skips and the cycle move once a press. A held key stops where the cursor comes into line with an audio ruler, as a skip does; press it again to go on.
 
 While you drag a building along with `[` held, each step says only what changes under the cursor: the ground when it differs from the tile before, a building that was already there as the cursor enters it, and why the building can't go there.
 

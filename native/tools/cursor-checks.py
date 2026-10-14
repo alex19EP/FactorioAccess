@@ -383,6 +383,72 @@ def a_drag_says_the_ground_and_buildings_it_meets(game):
     return True, f"said {said.strip()!r}"
 
 
+def ruler_click(game, action, x, y):
+    """A click of the audio ruler tool on the tile `x`, `y`: `action` is "place" or "remove". The
+    console runs outside a key event, where the mod's cursor is unknown, so the click gets the tile."""
+    game.console(
+        f'local R=package.loaded["__FactorioAccess__/scripts/rulers.lua"] '
+        f'local C=package.loaded["__FactorioAccess__/scripts/cursor.lua"] local tile=C.tile '
+        f"C.tile=function() return {{x={x},y={y}}} end game.player.clear_cursor() "
+        f"R.give_tool(game.player.index) R.{action}(game.player.index) C.tile=tile",
+        mod=True,
+    )
+    game.wait(10)
+    game.console("game.player.clear_cursor()")
+
+
+@check
+def a_held_drag_stops_at_a_ruler(game):
+    x, row = build_strip(game)
+    # A ruler off the strip, whose column crosses it.
+    ruler_click(game, "place", x + 5, row - 2)
+    try:
+        game.console("game.player.cursor_stack.set_stack{name='pipe',count=50}")
+        game.jump(x + 1, row)
+        game.until(lambda s: s["cursor"] == (x + 1, row), 60)
+        game.keys("press=[ press=d " + "repeat=d " * 6 + "release=d release=[ wait=20")
+        held = game.state()["cursor"]
+        game.keys("press=d release=d")
+        pressed = game.state()["cursor"]
+        game.console("game.player.clear_cursor()")
+    finally:
+        ruler_click(game, "remove", x + 5, row - 2)
+    if held != (x + 5, row):
+        return False, f"the held drag ended at {held}, not on the ruler's column at {x + 5},{row}"
+    if pressed != (x + 6, row):
+        return False, f"pressed again, the cursor went to {pressed}, not {x + 6},{row}"
+    return True, f"stopped at {held}, went on to {pressed}"
+
+
+@check
+def an_attached_blueprint_says_what_blocks_it(game):
+    x, row = build_strip(game)
+    # Two chests side by side; the cursor holds the blueprint's north-west corner.
+    game.console(
+        "local s=game.player.cursor_stack s.set_stack{name='blueprint'} "
+        "s.set_blueprint_entities{{entity_number=1,name='wooden-chest',position={0.5,0.5}},"
+        "{entity_number=2,name='wooden-chest',position={1.5,0.5}}}"
+    )
+    game.jump(x + 6, row)
+    game.until(lambda s: s["cursor"] == (x + 6, row), 60)
+    game.wait(20)
+    # The blueprint covers the chest from two tiles, then clear ground, then the pole.
+    seen = {}
+    for at in ("chest", "chest again", "clear", "pole"):
+        seen[at] = game.keys("d wait=20")
+    game.console("game.player.clear_cursor()")
+    problems = []
+    if "1 already built" not in seen["chest"]:
+        problems.append(f"onto the chest said {seen['chest']!r}")
+    if "blocked" in seen["clear"] or "already built" in seen["clear"]:
+        problems.append(f"onto clear ground said {seen['clear']!r}")
+    if "1 blocked" not in seen["pole"]:
+        problems.append(f"onto the pole said {seen['pole']!r}")
+    if problems:
+        return False, "; ".join(problems)
+    return True, f"{seen}"
+
+
 @check
 def cycle_goes_through_the_tile_and_wraps(game):
     x, row = build_strip(game)

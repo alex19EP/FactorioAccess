@@ -28,9 +28,9 @@ struct Alteration {
 };
 
 struct Pieces {
+   Placement placement{};
    bool blueprint = false;
-   int32_t x = 0;
-   int32_t y = 0;
+   bool drag = false;
    std::vector<Piece> pieces;
    std::vector<Alteration> alterations;
 };
@@ -100,7 +100,8 @@ std::string tileWords(const Pieces& pieces, int32_t tileX, int32_t tileY) {
    return out;
 }
 
-// "2 blocked, Tree is in the way, 1 already built"; nothing when it all fits.
+// "2 blocked, Tree is in the way, 1 already built"; nothing when it all fits. A drag leaves out
+// what it has just built.
 std::string summary(const Pieces& pieces) {
    int blocked = 0, built = 0;
    const Piece* firstBlocked = nullptr;
@@ -110,7 +111,7 @@ std::string summary(const Pieces& pieces) {
    }
    std::string out;
    if (blocked) out = vocab::kFootprintBlocked(blocked, firstBlocked->reason);
-   if (built) out += (out.empty() ? "" : ", ") + vocab::kFootprintAlreadyBuilt(built);
+   if (built && !pieces.drag) out += (out.empty() ? "" : ", ") + vocab::kFootprintAlreadyBuilt(built);
    return out;
 }
 
@@ -126,16 +127,16 @@ std::string compose(const Announcement& announcement, const Pieces& pieces) {
 
 } // namespace
 
-bool wants(int32_t x, int32_t y) {
+bool wants(const Placement& placement) {
    {
       std::scoped_lock lock(g_mutex);
-      if (g_announcement || !g_pieces || g_pieces->x != x || g_pieces->y != y) return true;
+      if (g_announcement || !g_pieces || g_pieces->placement != placement) return true;
    }
-   return ++g_framesSinceGathered >= kRefreshFrames;
+   return placement.pinned && ++g_framesSinceGathered >= kRefreshFrames;
 }
 
-void begin(bool blueprint) {
-   g_gathering = {blueprint, 0, 0, {}, {}};
+void begin(const Placement& placement, bool blueprint, bool drag) {
+   g_gathering = {placement, blueprint, drag, {}, {}};
    g_framesSinceGathered = 0;
    t_gathering = true;
 }
@@ -150,15 +151,17 @@ void alter(std::string words, int32_t left, int32_t top, int32_t right, int32_t 
    g_gathering.alterations.push_back({std::move(words), left, top, right, bottom});
 }
 
-void end(int32_t x, int32_t y) {
+void end() {
    t_gathering = false;
-   g_gathering.x = x;
-   g_gathering.y = y;
    std::string words;
    {
       std::scoped_lock lock(g_mutex);
       g_pieces = std::move(g_gathering);
-      if (g_announcement && g_announcement->x == x && g_announcement->y == y) {
+      const Placement& placement = g_pieces->placement;
+      // Following the cursor, the build is gathered only as it moves or turns.
+      if (!placement.pinned) {
+         if (g_pieces->blueprint) words = summary(*g_pieces);
+      } else if (g_announcement && g_announcement->x == placement.x && g_announcement->y == placement.y) {
          words = compose(*g_announcement, *g_pieces);
          g_announcement.reset();
       }
@@ -175,7 +178,7 @@ void clear() {
 
 std::string tilePrefix(int32_t tileX, int32_t tileY) {
    std::scoped_lock lock(g_mutex);
-   if (!g_pieces) return {};
+   if (!g_pieces || !g_pieces->placement.pinned) return {};
    const bool wasInside = std::exchange(g_wasInside, inside(*g_pieces, tileX, tileY));
    if (std::string words = tileWords(*g_pieces, tileX, tileY); !words.empty()) return words;
    return wasInside && !g_wasInside ? std::string(vocab::kFootprintOutside) : std::string();
