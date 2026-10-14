@@ -965,9 +965,10 @@ std::string ToneWord(const Widget* label, const Widget* tooltip)
     return tone == agui::LabelTone::Red ? vocab::kMissing : vocab::kFromIntermediates;
 }
 
+// After the count and name, which tell one ingredient from the next.
 std::string WithTone(const std::string& word, std::string line)
 {
-    return word.empty() ? line : std::format("{}, {}", word, line);
+    return word.empty() ? line : std::format("{}, {}", line, word);
 }
 
 // A row of texts only (an ingredient's count and name) is one line.
