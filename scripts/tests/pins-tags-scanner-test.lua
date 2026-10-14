@@ -38,6 +38,7 @@ describe("Scanner pins and map tags", function()
             assert(player.surface.create_entity({ name = "iron-ore", position = { x - 7, y - 8 }, amount = 200 }))
          ore = { rich, poor }
          player.add_pin({ label = "Home", surface = player.surface, position = { x + 3, y + 3 } })
+         player.add_pin({ surface = player.surface, position = { x + 3.5, y - 2.5 } })
          player.add_pin({ entity = chest })
          local ore_pin = player.add_pin({ entity = ore[1] })
          ore_pin.targets = ore
@@ -45,20 +46,33 @@ describe("Scanner pins and map tags", function()
 
       ctx:at_tick(2, function()
          local extras = Extras.pins(player)
-         ctx:assert_equals(3, #extras, "Each pin on the surface is listed")
+         ctx:assert_equals(4, #extras, "Each pin on the surface is listed")
 
-         local found_label, found_chest, found_ore = false, false, false
+         -- As the pins panel names a place: its coordinates cut toward zero
+         local position = player.position --[[@as MapPosition.struct]]
+         local x, y = math.floor(position.x), math.floor(position.y)
+         local function cut(value)
+            return value >= 0 and math.floor(value) or math.ceil(value)
+         end
+         local place = string.format("{%d, %d}", cut(x + 3.5), cut(y - 2.5))
+
+         local found_label, found_place, found_chest, found_ore = false, false, false, false
          for _, extra in ipairs(extras) do
             ctx:assert_equals(SC.CATEGORIES.PINS, extra.category)
             ctx:assert(extra.valid(), "A listed pin is valid")
             local readout = extra.readout()
             ctx:assert(contains(readout, "fa.scanner-pin"), "Every readout says it is a pin")
-            if contains(readout, "Home") then found_label = true end
+            if contains(readout, "Home") then
+               found_label = true
+               ctx:assert(not contains(readout, place), "A labelled pin is named by its label alone")
+            end
+            if contains(readout, place) then found_place = true end
             -- The DLL's tile reader says the entity
             if readout.entity == chest then found_chest = true end
             if contains(readout, "fa.scanner-pin-resource") and contains(readout, "500") then found_ore = true end
          end
          ctx:assert(found_label, "A labelled pin reads its label")
+         ctx:assert(found_place, "An unlabelled place pin reads its coordinates")
          ctx:assert(found_chest, "An entity pin has the entity read")
          ctx:assert(found_ore, "A resource patch pin reads what is left of it")
 

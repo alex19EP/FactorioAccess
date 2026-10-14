@@ -91,13 +91,22 @@ local function describe_resource_patch(message, resources)
    message:list_item({ "fa.scanner-pin-resource", Localising.get_localised_name_with_fallback(prototype), amount })
 end
 
----What a pin points to, other than an entity the DLL reads.
+---A coordinate as the pins panel prints it, cut toward zero.
+---@param value number
+---@return integer
+local function pin_coordinate(value)
+   return value >= 0 and math.floor(value) or math.ceil(value)
+end
+
+---What an unlabelled pin is called, other than an entity the DLL reads, as the pins panel names it
+---(Pin::str): its alerts, its tag, its place, its player, or its resource patch.
 ---@param message fa.MessageBuilder
 ---@param pin LuaPin
 local function describe_target(message, pin)
-   local targets = pin.targets
-   if #targets > 0 then
-      describe_resource_patch(message, targets)
+   local alert_type = pin.alert_type
+   if alert_type then
+      local count = #pin.alert_positions
+      message:list_item({ "gui-alert-tooltip." .. ALERT_TOOLTIP_KEYS[alert_type], count })
       return
    end
 
@@ -107,17 +116,21 @@ local function describe_target(message, pin)
       return
    end
 
+   local position = pin.position
+   if position then
+      local point = position --[[@as MapPosition.struct]]
+      message:list_item(string.format("{%d, %d}", pin_coordinate(point.x), pin_coordinate(point.y)))
+      return
+   end
+
    local bound = pin.player
    if bound then
       message:list_item(bound.name)
       return
    end
 
-   local alert_type = pin.alert_type
-   if alert_type then
-      local count = #pin.alert_positions
-      message:list_item({ "gui-alert-tooltip." .. ALERT_TOOLTIP_KEYS[alert_type], count })
-   end
+   local targets = pin.targets
+   if #targets > 0 then describe_resource_patch(message, targets) end
 end
 
 ---The places, entities, tags, players and alerts the player pinned, which the game lists on the
@@ -143,8 +156,12 @@ function mod.pins(player)
                   return { words = label, entity = target, after = { "fa.scanner-pin" } }
                end
                local message = Speech.MessageBuilder.new()
-               message:list_item(label)
-               describe_target(message, pin)
+               -- The game names a labelled pin by its label alone
+               if label then
+                  message:list_item(label)
+               else
+                  describe_target(message, pin)
+               end
                message:list_item({ "fa.scanner-pin" })
                return { words = message:build() }
             end,
