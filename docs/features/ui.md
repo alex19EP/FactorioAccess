@@ -65,6 +65,8 @@ The game's pins panel lists the places, buildings, resource patches, tags, playe
 
 The scanner lists your pins too, under its pins category.
 
+For a pin set to show on the map from afar, the game draws an arrow at the edge of the screen pointing to it while it is off screen. FactorioAccess plays a sound for those arrows: every 2 seconds while the cursor or your character moves, each such pin sounds from its direction, muffled when it is to the south and quieter the farther it is. "Pin arrow sonification" in the game's Mod settings turns these off. The scanner plays the same sound when it reaches such a pin.
+
 ## FactorioAccess's views beside a window
 
 Where a window lacks something worth saying, FactorioAccess adds a view beside it, as an ordinary part of the window that sighted players see too: what a belt carries (see [basics](basics.md)), where a pipe connects, what a pole is wired to. `tab` reaches it after the window's own parts.

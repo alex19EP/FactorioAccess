@@ -260,6 +260,16 @@ data:extend({
       preload = true,
    },
 
+   -- The scanner on a pin the game points an arrow at from the edge of the screen (always visible)
+   {
+      type = "sound",
+      name = "scanner-pin-arrow",
+      category = "game-effect",
+      filename = "__FactorioAccess__/audio/pin-arrow.wav",
+      volume = 1,
+      preload = true,
+   },
+
    {
       type = "sound",
       name = "train-alert-high",

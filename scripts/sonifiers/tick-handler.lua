@@ -16,6 +16,7 @@ local GridSonifier = require("scripts.sonifiers.grid-sonifier")
 local EnemyRadar = require("scripts.sonifiers.combat.enemy-radar")
 local SpawnerRadar = require("scripts.sonifiers.combat.spawner-radar")
 local HealthBar = require("scripts.sonifiers.health-bar")
+local PinArrows = require("scripts.sonifiers.pin-arrows")
 
 local mod = {}
 
@@ -47,6 +48,9 @@ function mod.on_tick()
 
       -- Health bar sonification
       HealthBar.on_tick_per_player(pindex)
+
+      -- The arrows at the screen's edge toward always visible pins off screen
+      if mod_settings[SETTING_NAMES.SONIFICATION_PIN_ARROWS].value then PinArrows.on_tick_per_player(pindex) end
 
       ::continue::
    end

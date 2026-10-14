@@ -1,6 +1,7 @@
 local TestRegistry = require("scripts.test-registry")
 local describe, it = TestRegistry.describe, TestRegistry.it
 local Extras = require("scripts.scanner.extras")
+local PinArrows = require("scripts.sonifiers.pin-arrows")
 local SC = require("scripts.scanner.scanner-consts")
 
 ---Whether a localised string or readout holds `wanted` anywhere inside it.
@@ -37,8 +38,8 @@ describe("Scanner pins and map tags", function()
          local poor =
             assert(player.surface.create_entity({ name = "iron-ore", position = { x - 7, y - 8 }, amount = 200 }))
          ore = { rich, poor }
-         player.add_pin({ label = "Home", surface = player.surface, position = { x + 3, y + 3 } })
-         player.add_pin({ surface = player.surface, position = { x + 3.5, y - 2.5 } })
+         player.add_pin({ label = "Home", surface = player.surface, position = { x + 3, y + 3 } }).always_visible = true
+         player.add_pin({ surface = player.surface, position = { x + 3.5, y - 2.5 } }).always_visible = false
          player.add_pin({ entity = chest })
          local ore_pin = player.add_pin({ entity = ore[1] })
          ore_pin.targets = ore
@@ -65,8 +66,12 @@ describe("Scanner pins and map tags", function()
             if contains(readout, "Home") then
                found_label = true
                ctx:assert(not contains(readout, place), "A labelled pin is named by its label alone")
+               ctx:assert_equals("scanner-pin-arrow", readout.sound, "An always visible pin has the arrow's sound")
             end
-            if contains(readout, place) then found_place = true end
+            if contains(readout, place) then
+               found_place = true
+               ctx:assert_nil(readout.sound, "A pin not always visible has no sound")
+            end
             -- The DLL's tile reader says the entity
             if readout.entity == chest then found_chest = true end
             if contains(readout, "fa.scanner-pin-resource") and contains(readout, "500") then found_ore = true end
@@ -141,6 +146,38 @@ describe("Scanner pins and map tags", function()
          ctx:assert_not_nil(id, "The pin is handed to the DLL")
          player.clear_pins()
          ctx:assert(contains(Extras.readout(player.index, 1, assert(id)), "Gone"), "A removed pin reads as it was")
+      end)
+   end)
+
+   it("sounds the arrows: always visible pins off screen", function(ctx)
+      ---@type LuaPlayer
+      local player
+
+      ctx:init(function()
+         player = assert(game.get_player(1))
+         player.clear_pins()
+         local position = player.position --[[@as MapPosition.struct]]
+         local function pin(label, dx, dy, always_visible)
+            player.add_pin({
+               label = label,
+               surface = player.surface,
+               position = { position.x + dx, position.y + dy },
+            }).always_visible =
+               always_visible
+         end
+         pin("Far", 5000, 0, true)
+         pin("Here", 0, 0, true)
+         pin("Hidden", 0, -5000, false)
+      end)
+
+      ctx:at_tick(2, function()
+         local labels = {}
+         for _, pin in ipairs(PinArrows.arrow_pins(player)) do
+            table.insert(labels, pin.label)
+         end
+         ctx:assert_equals(1, #labels, "Only one pin has an arrow")
+         ctx:assert_equals("Far", labels[1], "The always visible pin off screen has the arrow")
+         player.clear_pins()
       end)
    end)
 end)

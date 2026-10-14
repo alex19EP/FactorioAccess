@@ -100,6 +100,8 @@ local function announce(pindex, event, target)
          or { words = Localising.get_localised_name_with_fallback(prototypes.entity[entry.prototype]) }
    end
 
+   if readout.sound then player.play_sound({ path = readout.sound }) end
+
    -- In remote view distances are from where the scan was sorted, such as the place a map search
    -- jumped to
    local from = player.position

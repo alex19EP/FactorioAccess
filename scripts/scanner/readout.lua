@@ -12,6 +12,7 @@ local mod = {}
 ---@field words LocalisedString?
 ---@field entity LuaEntity?
 ---@field after LocalisedString?
+---@field sound SoundPath? played as the entry is said
 
 -- Spawners are grouped by how polluted they are. native/src/scanner.cpp kSpawnerPollution groups
 -- them at these thresholds.

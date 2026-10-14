@@ -59,7 +59,7 @@ end
 ---surface.
 ---@param pin LuaPin
 ---@return integer?
-local function pin_surface_index(pin)
+function mod.pin_surface_index(pin)
    -- Typed uint32, but nil for a pin bound to an entity rather than a position
    ---@diagnostic disable-next-line: unnecessary-if
    if pin.surface_index then return pin.surface_index end
@@ -141,19 +141,21 @@ function mod.pins(player)
    local extras = {}
    for _, pin in ipairs(player.get_pins()) do
       local center = pin.get_pin_center()
-      if center and pin_surface_index(pin) == player.surface_index then
+      if center and mod.pin_surface_index(pin) == player.surface_index then
          table.insert(extras, {
             category = SC.CATEGORIES.PINS,
             key = "pin",
             position = center,
             valid = function()
-               return pin.valid and pin_surface_index(pin) == player.surface_index and pin.get_pin_center() ~= nil
+               return pin.valid and mod.pin_surface_index(pin) == player.surface_index and pin.get_pin_center() ~= nil
             end,
             readout = function()
                local label = pin.label ~= "" and pin.label or nil
+               -- The game points an arrow at an always visible pin from the edge of the screen
+               local sound = pin.always_visible and "scanner-pin-arrow" or nil
                local target = pin.targets[1]
                if target and target.type ~= "resource" then
-                  return { words = label, entity = target, after = { "fa.scanner-pin" } }
+                  return { words = label, entity = target, after = { "fa.scanner-pin" }, sound = sound }
                end
                local message = Speech.MessageBuilder.new()
                -- The game names a labelled pin by its label alone
@@ -163,7 +165,7 @@ function mod.pins(player)
                   describe_target(message, pin)
                end
                message:list_item({ "fa.scanner-pin" })
-               return { words = message:build() }
+               return { words = message:build(), sound = sound }
             end,
          })
       end
