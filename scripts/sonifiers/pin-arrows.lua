@@ -2,9 +2,9 @@
 Pin arrows: the arrows the game draws at the edge of the screen toward each always visible pin that
 is off screen (Pin::draw), as sound.
 
-Every 2 seconds, if the cursor or the camera moved since the last time, each such pin plays the
-pin arrow sound one after another, panned toward it, muffled when it is south of the screen's
-centre and quieter the farther it is.
+While the scanner is in its pins category, every 2 seconds, if the cursor or the camera moved
+since the last time, each such pin plays the pin arrow sound one after another, panned toward it,
+muffled when it is south of the screen's centre and quieter the farther it is.
 
 The cursor is known only to the client with the DLL, and only that player hears these, so the state
 here is this client's own: it plays sounds and never changes the game.
@@ -115,6 +115,13 @@ function mod.on_tick_per_player(pindex)
       states[pindex] = state
       -- Where things are at the start is not a move
       moved(player, state)
+   end
+
+   -- Only while the scanner is on the pins, where the player looks for them
+   if native.scanner_current_category(pindex) ~= "pins" then
+      state.queue = {}
+      moved(player, state)
+      return
    end
 
    if game.tick % CHECK_INTERVAL == 0 and #state.queue == 0 and moved(player, state) then

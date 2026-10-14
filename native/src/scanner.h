@@ -106,4 +106,8 @@ struct Category {
 };
 std::optional<Category> category(int playerIndex);
 
+// The category the scanner's cursor is in now, by its key ("pins"), for this client's player; nothing
+// before the first scanner key. For sounds and speech only.
+std::optional<std::string> currentCategory(int playerIndex);
+
 } // namespace fa::scanner

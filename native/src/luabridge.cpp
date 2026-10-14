@@ -730,6 +730,15 @@ int scannerCategory(lua_State* L) {
    return 1;
 }
 
+// fa_native.scanner_current_category(pindex): the category the scanner is in now, by its key
+// ("pins"), or nil before the first scanner key. For sounds and speech only.
+int scannerCurrentCategory(lua_State* L) {
+   const auto category = scanner::currentCategory(static_cast<int>(checkInteger(L, 1)));
+   if (!category) return 0;
+   pushString(L, *category);
+   return 1;
+}
+
 void pushRoutePoint(lua_State* L, const railplanner::RoutePoint& point) {
    pushNumber(L, static_cast<double>(point.x) / game::kMapPositionScale);
    setField(L, -2, "x");
@@ -793,6 +802,7 @@ constexpr Function kFunctions[] = {
    {"scanner_mod_ui", &scannerModUi},
    {"scanner_entry", &scannerEntry},
    {"scanner_category", &scannerCategory},
+   {"scanner_current_category", &scannerCurrentCategory},
    {"rail_route", &railRoute},
 };
 

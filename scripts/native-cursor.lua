@@ -24,6 +24,7 @@ local mod = {}
 ---@field open_selected_info fun(player_index: integer)
 ---@field audio fun(player_index: integer, command: fa.LauncherAudio.Command)
 ---@field rail_route fun(player_index: integer): fa.NativeRailRoute?
+---@field scanner_current_category fun(player_index: integer): string?
 
 ---@class fa.NativeRailPoint
 ---@field x number Tiles

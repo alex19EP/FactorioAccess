@@ -2541,4 +2541,11 @@ std::optional<Category> category(int playerIndex) {
    return std::exchange(g_category, std::nullopt);
 }
 
+std::optional<std::string> currentCategory(int playerIndex) {
+   if (!localPlayer(currentGame(), playerIndex)) return std::nullopt;
+   std::scoped_lock lock(g_mutex);
+   if (!g_cursor.category) return std::nullopt;
+   return std::string(kCategoryKeys[*g_cursor.category]);
+}
+
 } // namespace fa::scanner
