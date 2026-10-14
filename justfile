@@ -101,6 +101,11 @@ setup-tools: _require-steam
 lint-locale:
     @python lint_localisation.py lint
 
+# Test the dev updater with isolated portable and Steam fixtures, without network or a game
+test-updater:
+    @powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File helper-scripts/tests/update-tests.ps1
+    @pwsh.exe -NoLogo -NoProfile -File helper-scripts/tests/update-tests.ps1
+
 # The generator writes CRLF, which stylua rejects, so formatting follows it.
 
 # Regenerate the message-list locale files from the .txt files under locale/
@@ -118,7 +123,7 @@ test-mod timeout="300":
      python launch_factorio.py @exe --run-tests --timeout {{timeout}}; exit $LASTEXITCODE
 
 # Everything CI checks, plus the native tests
-check: format-check lint lint-locale test test-mod
+check: format-check lint lint-locale test test-mod test-updater
 
 # Build the mod portal zip the same way the publish workflow does
 package:

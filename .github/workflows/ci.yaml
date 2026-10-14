@@ -3,6 +3,18 @@ on:
   pull_request: {}
 
 jobs:
+  check-updater:
+    runs-on: windows-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    - name: Windows PowerShell 5.1 updater tests
+      shell: powershell
+      run: ./helper-scripts/tests/update-tests.ps1
+    - name: PowerShell 7 updater tests
+      shell: pwsh
+      run: ./helper-scripts/tests/update-tests.ps1
+
   check-format:
     runs-on: ubuntu-latest
     steps:
@@ -26,4 +38,3 @@ jobs:
         git ls-files -z native/src native/tests native/tools \
           | grep -zE '\.(c|cpp|h|hpp)$' \
           | xargs -0 clang-format --dry-run --Werror
-

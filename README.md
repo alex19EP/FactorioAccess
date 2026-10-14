@@ -51,7 +51,7 @@ The game can be purchased from Factorio.com or from Steam. Any purchase gives ac
 The mod comes in two parts, and you need both. Both are attached to each release on [the releases page](../../releases).
 
 - `FactorioAccess_<version>.zip` is the mod itself. It goes in the mods folder as it is, without extracting it.
-- `FactorioAccess-native.zip` holds the DLLs, `bin\x64\winmm.dll` and `bin\x64\fa_native.dll`, and the keys script, `factorio-access-keys.cmd`. It is extracted into the game folder.
+- `FactorioAccess-native.zip` holds the DLLs, `bin\x64\winmm.dll` and `bin\x64\fa_native.dll`, the keys script, `factorio-access-keys.cmd`, and the dev updater, `factorio-access-update.cmd`. It is extracted into the game folder.
 
 The same steps work for the zip, Steam and regular Windows versions of the game.
 
@@ -73,6 +73,8 @@ The same steps work for the zip, Steam and regular Windows versions of the game.
 1. If you bought Space Age, go into the Mods menu of the game's main menu and disable elevated rails, quality, and Space Age.
 
 To update, close the game, extract the new `FactorioAccess-native.zip` into the game folder and replace the mod zip in the mods folder. Always update both parts together. A DLL and a mod from different releases may not work together. Then start the game once, exit it, and run `factorio-access-keys.cmd` again, so new controls get their keys too.
+
+For the latest development build from [alex19EP/FactorioAccess](https://github.com/alex19EP/FactorioAccess/releases/tag/dev), close the game and run `factorio-access-update.cmd`. It downloads and installs both parts together. The updater comes in the native archive and uses Windows PowerShell, which is included with Windows. When it is in the game folder, it uses that installation; otherwise it finds Factorio in your Steam libraries. For a portable copy elsewhere, run `factorio-access-update.cmd -GameDir "D:\Games\Factorio"`. It reads the game's configuration to locate the mods folder; pass `-ModsDir "D:\My mods"` if your launch options select a different mods folder or configuration. Unpacked FactorioAccess folders, including development junctions, must be moved out of mods first. Saves, settings and other mods are preserved. After updating, start the game once, exit it, and run `factorio-access-keys.cmd` again.
 
 To uninstall the DLL, delete `winmm.dll`, `winmm.pdb`, `fa_native.dll` and `fa_native.pdb` from `bin\x64`. The mod does not work without them.
 

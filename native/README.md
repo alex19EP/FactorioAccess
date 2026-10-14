@@ -71,6 +71,8 @@ bin/x64/fa_native.dll
 bin/x64/fa_native.pdb
 factorio-access-keys.cmd
 factorio-access-keys.ps1
+factorio-access-update.cmd
+factorio-access-update.ps1
 ```
 
 `factorio-access-keys.cmd` runs `factorio-access-keys.ps1` through Windows PowerShell. It edits the
@@ -80,6 +82,13 @@ mouse button gets the same binding on LEFTBRACKET, RIGHTBRACKET or BACKSLASH. It
 `config.ini` through the game folder's `config-path.cfg`, as the game does, so it serves the zip
 and the Steam versions. `-GameDir` names the game folder when the script runs from elsewhere, and
 `-Revert` undoes the changes. The source is in `helper-scripts/`.
+
+With the game closed, `factorio-access-update.cmd` downloads both archives from the latest `dev`
+release of `alex19EP/FactorioAccess` and updates the DLLs, helper scripts and mod zip together.
+It uses the game folder it is installed in, or finds the Steam installation across Steam libraries.
+Use `-GameDir "D:\Games\Factorio"` for another installation and `-ModsDir` to override the mods
+folder when launch options select a different configuration. It reads `config-path.cfg` and
+`config.ini` for the normal portable and Steam paths. Saves, settings and other mods are preserved.
 
 ## Dev builds
 

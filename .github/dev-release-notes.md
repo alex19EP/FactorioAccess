@@ -8,6 +8,11 @@ The game's version text and `factorio-access-native.log` name this build as `+de
 
 You need Factorio 2.1 on Windows. With the game closed:
 
+If you already have `factorio-access-update.cmd` in the game folder, run it to download and install
+the latest dev DLLs and mod together from `alex19EP/FactorioAccess`. It supports portable and Steam
+installations. For another game folder, pass `-GameDir "D:\Games\Factorio"`. After updating, start
+the game once, exit from the main menu, and run `factorio-access-keys.cmd` for any new controls.
+
 1. Extract `FactorioAccess-native.zip` into the game folder, the one that holds `bin`. This puts `winmm.dll` and `fa_native.dll` in `bin\x64` and adds `factorio-access-keys.cmd`. Replace the files if asked.
 2. Delete any older `FactorioAccess_*.zip` from your mods folder, then copy the new `FactorioAccess_*.zip` there.
 3. Start the game the usual way, without the old launcher, and exit it from the main menu. The game then lists the mod's controls in its `config.ini`.
