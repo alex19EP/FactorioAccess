@@ -1348,6 +1348,17 @@ ChartSearchResults chartSearchResults() {
 
 const Widget* mapViewOptions() { return shownMember(gameView(), layout.gameViewMapViewOptions); }
 
+const Widget* pinsPanel() { return shownMember(gameView(), layout.gameViewPins); }
+
+PinRows pinRows(const Widget* pinsPanel) {
+   PinRows found{member(pinsPanel, layout.pinsGuiList), {}};
+   // Every child of the list is a PinGui (PinsGui::update adds nothing else).
+   for (const Widget* row : children(found.list))
+      found.rows.push_back(
+         {row, member(row, layout.pinGuiEdit), member(row, layout.pinGuiLabel), member(row, layout.pinGuiDelete)});
+   return found;
+}
+
 const Widget* mapEditorPanel() {
    const std::byte* view = gameView();
    const auto* controllerView = view ? at<const Widget*>(view, layout.gameViewControllerView) : nullptr;

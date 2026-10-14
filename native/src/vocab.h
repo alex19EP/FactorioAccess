@@ -150,6 +150,8 @@ inline constexpr Word kModWindowShown{"fa.native-mod-window-shown"};
 inline constexpr Word kUntitledModWindowShown{"fa.native-untitled-mod-window-shown"};
 // Remote view's panel of map overlay toggles and the add tag and add ping buttons.
 inline constexpr Word kMapViewOptions{"fa.native-map-view-options"};
+// The panel of the player's pins at the right, which has no heading on screen.
+inline constexpr Word kPins{"fa.native-pins"};
 // The map editor's panel of editors and settings.
 inline constexpr Word kEditorPanel{"fa.native-editor-panel"};
 // The map editor's keys: the Time editor's "(paused)" after its speed, the tick a tick once

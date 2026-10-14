@@ -364,10 +364,11 @@ bool IsHeaderGrid(const std::vector<const Widget*>& cells, std::size_t columns)
 }
 
 // A slider whose value a field beside it shows, and takes typed: the field's text is the value,
-// Left/Right step the slider, Enter puts the game's focus in the field for typing.
+// Left/Right step the slider, Enter puts the game's focus in the field for typing. Without a
+// `label` beside them the slider names itself.
 graph::NodeVtable SliderWithField(const Widget* slider, const Widget* field, const Widget* label)
 {
-    graph::NodeVtable vtable = ControlNode(slider, label);
+    graph::NodeVtable vtable = label ? ControlNode(slider, label) : ControlNode(slider);
     auto shown = [field]() { return text::speakable(agui::textBoxText(field)); };
     for (graph::NodeAnnouncement& part : vtable.Announcements)
         if (part.Kind == Value)
@@ -533,6 +534,14 @@ private:
         {
             // A setting with a slider and a field showing its value: one control.
             Add(key, SliderWithField(leaves[1], leaves[2], leaves[0]));
+            return;
+        }
+        if (leaves.size() == 2 && agui::kind(leaves[0]) == Kind::Slider && agui::kind(leaves[1]) == Kind::TextBox
+            && !agui::readOnly(leaves[1]))
+        {
+            // The same with its label on a line of its own above (NumberInputGui: a pin's preview
+            // distance): the slider's own value is a step index, the field's the setting's.
+            Add(key, SliderWithField(leaves[0], leaves[1], nullptr));
             return;
         }
         if (leaves.size() == 2 && isLabel(leaves[0]))

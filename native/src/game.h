@@ -1567,6 +1567,21 @@ struct Layout {
    // SimpleConfigItem<bool>; every overlay but station names, player names and tags shows only while
    // showNonstandardMapInfo is also on, as MapViewOptionsGui::updateToggleState shows them.
    uint32_t globalMapViewSettings = 0;   // GlobalContext::mapViewSettings.value, MapViewSettings*
+   // The pins panel at the right (PinsGui, a VerticalScrollPane), shown in every view while the
+   // player has a pin and game_view_settings.show_pins_gui is on (PinsGui::updateVisibility). It is
+   // rebuilt on every change to the pins (PinsGui::update): its pin list, a DragPaneWidget whose
+   // drags send InputAction MovePin, holds one PinGui row per pin in the player's order.
+   uint32_t gameViewPins = 0;            // GameView::pinsGui, std::unique_ptr<PinsGui>
+   uint32_t pinsGuiList = 0;             // PinsGui::pinList, DragPaneWidget<agui::VerticalFlow,0,1>
+   // A row (PinGui, a HorizontalFlow): the edit button (renameIcon, no tooltip), which opens
+   // EditPinGui (label, always visible, preview distance) beside it; a drag handle; the label button
+   // with the pin's name (Pin::str: its label, else what it points at, "{x, y}" for a place), whose
+   // left click opens remote view on the pin (GameView::selectPin), shift click sends the train the
+   // player is in to it, right click (shift to queue) the selected spidertrons; disabled for a player
+   // who is offline. Last the delete button (trash, no tooltip, InputAction RemovePin).
+   uint32_t pinGuiEdit = 0;              // PinGui::editButton, IconButton
+   uint32_t pinGuiLabel = 0;             // PinGui::labelButton, agui::TextButton
+   uint32_t pinGuiDelete = 0;            // PinGui::deleteButton, IconButton
    // The map editor's panel at the left (MapEditorGui, an agui Window), the editor's ControllerView
    // (GameView::controllerView is a MapEditorView there): an Editors tab with a table of editor
    // buttons (MapEditorsGui, IconButtons) over the active editor's tools, and a Settings tab.

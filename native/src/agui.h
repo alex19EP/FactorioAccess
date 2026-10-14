@@ -648,6 +648,24 @@ ChartSearchResults chartSearchResults();
 // tag and add ping buttons, and on the map the overlay toggles. Null in the character view.
 const Widget* mapViewOptions();
 
+// The pins panel at the right (PinsGui) while it shows: in every view, while the player has a pin.
+// Null outside a game, without pins, or while game_view_settings hides it.
+const Widget* pinsPanel();
+// Its rows, one per pin in the player's order, each the game's own buttons: edit (opens the pin's
+// settings), the pin's name (a click opens remote view on it), delete. `list` is the drag pane
+// holding the rows, through which a row moves as dragging it does (dragChild).
+struct PinRow {
+   const Widget* row = nullptr;
+   const Widget* edit = nullptr;
+   const Widget* name = nullptr;
+   const Widget* remove = nullptr;
+};
+struct PinRows {
+   const Widget* list = nullptr;
+   std::vector<PinRow> rows;
+};
+PinRows pinRows(const Widget* pinsPanel);
+
 // The map editor's panel at the left (MapEditorGui) while it shows: the Editors and Settings tabs.
 // Null outside the map editor.
 const Widget* mapEditorPanel();

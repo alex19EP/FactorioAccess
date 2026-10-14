@@ -18,6 +18,7 @@ enum class Part {
    ShortcutBar,
    SideMenu,
    MapViewOptions, // in remote view only
+   Pins, // only while the player has a pin
    Status,
    CraftingQueue,
    TrackedAchievements,
@@ -29,9 +30,9 @@ Part current();
 // what is open again. Parts that are not available are passed over. Safe from any thread.
 void cycle(int direction);
 // Whether a part is on the screen now, as its screen sees it each frame: a scenario can hide the
-// bars, the map view options are in remote view only, and the goal, the crafting queue, the
-// tracked achievements and the mod windows are there only while they have anything. Safe from any
-// thread.
+// bars, the map view options are in remote view only, and the goal, the pins, the crafting queue,
+// the tracked achievements and the mod windows are there only while they have anything. Safe from
+// any thread.
 void setAvailable(Part part, bool available);
 // Back to what is open.
 void close();

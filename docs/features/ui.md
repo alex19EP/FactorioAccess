@@ -32,7 +32,7 @@ FactorioAccess has no menus of its own. It reads the game's own windows, the sam
 
 A window is read as a few parts, such as the building's inventory, its recipe and your own inventory. `tab` moves to the next part and says its name. Inside a part, the arrows move between slots, buttons and fields, and FactorioAccess says each one as you land on it.
 
-`ctrl + tab` moves beyond the window to the other parts of the screen: the quickbar, the shortcut bar, the crafting queue, the HUD's research, alerts and goal. `ctrl + tab` with no window open does the same.
+`ctrl + tab` moves beyond the window to the other parts of the screen: the quickbar, the shortcut bar, the side menu, the pins, the crafting queue, the HUD's research, alerts and goal. `ctrl + tab` with no window open does the same.
 
 Where the game shows a tooltip only on hovering, `y` reads it.
 
@@ -53,6 +53,17 @@ Some controls take a value:
 - A drop-down opens on `enter`. Pick with the arrows and `enter`.
 - A slider in a list is adjusted after `enter`: the arrows then change its value, and `enter` or `escape` stops.
 - A control with a submenu opens it with `]` and closes it with `]` again.
+
+## Pins
+
+The game's pins panel lists the places, buildings, resource patches, tags, players and alerts you pinned. Pin them with the pin button beside a map search result or a group in the alerts window. While you have a pin, `ctrl + tab` reaches the panel, a line per pin named as the game names it: its label, or else what it points at, such as "Iron ore 273k" or "{10, -5}" for a place.
+
+- `enter` on a pin opens the map on it. `shift + enter` sends the train you ride there, and `]` your selected spidertrons.
+- Right of the name, edit opens the pin's settings: its label, whether it shows on the map from afar, and the size of its preview. Type the label and press `enter` to confirm.
+- Remove deletes the pin.
+- `ctrl + shift + up` and `ctrl + shift + down` move a pin up or down the list.
+
+The scanner lists your pins too, under its pins category.
 
 ## FactorioAccess's views beside a window
 

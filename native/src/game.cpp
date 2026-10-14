@@ -1111,6 +1111,11 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.chartSearchPins, "ChartSearchResultGui", "pinButtonFlow");
    offset(layout.gameViewMapViewOptions, "GameView", "mapViewOptionsGui");
    offset(layout.globalMapViewSettings, "GlobalContext", "mapViewSettings.value");
+   offset(layout.gameViewPins, "GameView", "pinsGui");
+   offset(layout.pinsGuiList, "PinsGui", "pinList");
+   offset(layout.pinGuiEdit, "PinGui", "editButton");
+   offset(layout.pinGuiLabel, "PinGui", "labelButton");
+   offset(layout.pinGuiDelete, "PinGui", "deleteButton");
    offset(layout.mapEditorViewGui, "MapEditorView", "mapEditorGui");
    address(layout.editorActionPerformed,
            "?actionPerformed@MapEditorActionHandler@@QEAAXAEBVEditorAction@@AEAVController@@@Z");
