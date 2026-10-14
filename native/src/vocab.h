@@ -78,6 +78,11 @@ inline constexpr Word kNextPage{"fa.native-next-page"};
 inline constexpr Word kAlternative{"fa.native-alternative"};
 // A column heading's button, "sort by name".
 inline constexpr Word kSortBy{"fa.native-sort-by"};
+// The order a list is sorted in, which the game shows as an arrow only.
+inline constexpr Word kSortedAToZ{"fa.native-sorted-a-to-z"};
+inline constexpr Word kSortedZToA{"fa.native-sorted-z-to-a"};
+inline constexpr Word kEnabledFirst{"fa.native-enabled-first"};
+inline constexpr Word kDisabledFirst{"fa.native-disabled-first"};
 inline constexpr Word kContinue{"fa.native-continue"};
 inline constexpr Word kClose{"fa.native-close"};
 inline constexpr Word kConfirm{"fa.native-confirm"};

@@ -803,6 +803,14 @@ TechnologyGraph technologyGraph(const Widget* graph);
 
 // The selected row of an agui::TableWithSelection, the header row counting as 0.
 unsigned selectedRow(const Widget* table);
+// The column an agui::TableWithSelection is sorted by and the game's direction flag for it
+// (Header::ascending), or nothing while it is unsorted. The table's owner gives the flag its
+// meaning: the mods lists sort A to Z, and enabled mods first, with it off.
+struct TableOrdering {
+   unsigned column = 0;
+   bool ascending = false;
+};
+std::optional<TableOrdering> tableOrdering(const Widget* table);
 
 // Calls into the game. Mutating, so main thread inside logic() only.
 bool isFocusable(const Widget* widget);

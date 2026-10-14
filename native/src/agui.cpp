@@ -1085,6 +1085,16 @@ unsigned selectedRow(const Widget* table) {
    return at<uint32_t>(asBaseChecked(table, ".?AVTableWithSelection@agui@@"), layout.tableSelectedIndex);
 }
 
+std::optional<TableOrdering> tableOrdering(const Widget* table) {
+   const std::byte* base = asBaseChecked(table, ".?AVTableWithSelection@agui@@");
+   uint32_t column = at<uint32_t>(base, layout.tableOrderingColumn);
+   const auto& headers = at<MsvcVector<const std::byte>>(base, layout.tableHeaders);
+   if (column == UINT32_MAX || size_t(headers.last - headers.first) <= size_t{column} * layout.tableHeaderSize)
+      return std::nullopt;
+   return TableOrdering{column,
+                        at<bool>(headers.first + size_t{column} * layout.tableHeaderSize, layout.tableHeaderAscending)};
+}
+
 const Widget* quickBar() {
    auto* context = *reinterpret_cast<const std::byte* const*>(layout.globalContext);
    if (!context) return nullptr;

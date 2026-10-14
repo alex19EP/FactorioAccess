@@ -517,6 +517,10 @@ bool resolve(pdb::SymbolTable& symbols) {
    size(layout.listBoxItemSize, "agui::ListBoxItem");
    offset(layout.listBoxItemButton, "agui::ListBoxItem", "button");
    offset(layout.tableSelectedIndex, "agui::TableWithSelection", "selectedIndex");
+   offset(layout.tableOrderingColumn, "agui::TableWithSelection", "columnOrderingIndex");
+   offset(layout.tableHeaders, "agui::TableWithSelection", "headers");
+   size(layout.tableHeaderSize, "agui::TableWithSelection::Header");
+   offset(layout.tableHeaderAscending, "agui::TableWithSelection::Header", "ascending");
 
    // Every Dialog<Result> instantiation lays its members out alike.
    offset(layout.dialogButtons, "GuiTemplate", "Dialog<enum ConfirmCancelResult>.bottomButtonsFlow");

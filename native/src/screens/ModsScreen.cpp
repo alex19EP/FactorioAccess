@@ -543,15 +543,35 @@ void AddSortButtons(graph::GraphBuilder& builder, const Widget* table)
 {
     std::span<const Widget* const> cells = agui::children(table);
     std::size_t columns = std::max(agui::tableColumns(table), 1u);
-    // The header's sort buttons, named by the column they sort.
+    // The header's sort buttons, named by the column they sort, then the order while it is the
+    // one sorted by. Manage's enabled column is headed by the checkbox for all mods, not a label;
+    // ManageModsPane::sortWidgets puts enabled mods first there with the game's flag off.
     for (std::size_t column = 0; column < columns && column < cells.size(); ++column)
     {
         const Widget* sort = FindDescendant(cells[column], "agui::TextButton");
-        const Widget* caption = FindDescendant(cells[column], "agui::Label");
-        if (!sort || !caption)
+        if (!sort || !Shows(sort))
             continue;
-        AddControl(builder, "search/sort" + std::to_string(column), sort,
-            [caption]() { return vocab::kSortBy(LabelText(caption)); });
+        bool byEnabled = FindDescendant(cells[column], "agui::CheckBox") != nullptr;
+        const Widget* caption = byEnabled ? nullptr : FindDescendant(cells[column], "agui::Label");
+        if (!byEnabled && !caption)
+            continue;
+        auto name = [caption]()
+        { return vocab::kSortBy(caption ? LabelText(caption) : vocab::translate("gui-mod-info.status-enabled", {})); };
+        auto order = [table, column, byEnabled]()
+        {
+            std::optional<agui::TableOrdering> ordering = agui::tableOrdering(table);
+            if (!ordering || ordering->column != column)
+                return std::string();
+            if (byEnabled)
+                return std::string(ordering->ascending ? vocab::kDisabledFirst : vocab::kEnabledFirst);
+            return std::string(ordering->ascending ? vocab::kSortedZToA : vocab::kSortedAToZ);
+        };
+        graph::NodeVtable node = ControlNode(sort, name);
+        for (graph::NodeAnnouncement& part : node.Announcements)
+            if (part.Kind == graph::AnnouncementKinds::Value)
+                part.Text = order;
+        node.StateText = order;
+        builder.AddItem(graph::ControlId::Referenced(sort, "search/sort" + std::to_string(column)), std::move(node));
     }
 }
 

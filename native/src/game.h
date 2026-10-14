@@ -755,6 +755,10 @@ struct Layout {
    uint32_t listBoxItemSize = 0;
    uint32_t listBoxItemButton = 0;    // std::unique_ptr<TextButton>
    uint32_t tableSelectedIndex = 0;   // row, the header row being 0
+   uint32_t tableOrderingColumn = 0;  // columnOrderingIndex, UINT32_MAX while unsorted
+   uint32_t tableHeaders = 0;         // std::vector<TableWithSelection::Header>
+   uint32_t tableHeaderSize = 0;
+   uint32_t tableHeaderAscending = 0; // bool, the column's direction
 
    // Members of the game's windows the screens read by name.
    uint32_t dialogButtons = 0;        // GuiTemplate (Dialog<>) bottomButtonsFlow, the footer
