@@ -1640,9 +1640,12 @@ bool isCraftingMachine(std::string_view type) {
 template <class Visit>
 void eachEntityIn(const std::byte* surface, Position leftTop, Position rightBottom, Visit&& visit) {
    using Search = void* (*)(std::byte* search, const void* surface, const std::byte* area);
+   alignas(8) std::byte corners[game::kBoundingBoxCapacity]{};
+   std::memcpy(corners + layout.boundingLeftTop, &leftTop, sizeof(leftTop));
+   std::memcpy(corners + layout.boundingRightBottom, &rightBottom, sizeof(rightBottom));
+   // The corners with the game's unrotated orientation, or the search misses rotated entities.
    alignas(8) std::byte area[game::kBoundingBoxCapacity]{};
-   std::memcpy(area + layout.boundingLeftTop, &leftTop, sizeof(leftTop));
-   std::memcpy(area + layout.boundingRightBottom, &rightBottom, sizeof(rightBottom));
+   reinterpret_cast<void* (*)(const std::byte* box, std::byte* out)>(layout.boundingAabb)(corners, area);
    alignas(8) std::byte search[game::kEntitySearchCapacity]{};
    reinterpret_cast<Search>(layout.entitySearch)(search, surface, area);
    const auto* first = at<const std::byte* const*>(search, layout.entitySearchContent);

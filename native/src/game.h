@@ -2376,6 +2376,11 @@ struct Layout {
    uint32_t inputStateMouseInWindow = 0;
    uint32_t boundingLeftTop = 0;          // BoundingBox::leftTop
    uint32_t boundingRightBottom = 0;       // BoundingBox::rightBottom
+   // BoundingBox BoundingBox::getAABB() const (returned through a pointer). A box's orientation is
+   // a vector, and an unrotated one is not all zeros: on a box whose orientation x is 0 the call
+   // returns the same corners with the unrotated orientation. A box left zeroed collides with no
+   // rotated entity (BoundingBox::collide), such as a cliff's corners and ends.
+   uintptr_t boundingAabb = 0;
 };
 
 // Bits of agui::Widget::usageBitMask, read from Widget::setVisible and Widget::isEnabled in
