@@ -255,14 +255,22 @@ struct Layout {
    // Flip, Optional<MapPosition> const&) const centres the blueprint's tile box on the grid nearest
    // the cursor: its afterRotationShift is the centre. A blueprint of only off-grid entities is
    // centred on the cursor itself. TileBox Blueprint::getTileBoxIgnoreSnapGrid() const is that box,
-   // before the blueprint is rotated. Blueprints with a snapping grid are placed by other rules.
+   // before the blueprint is rotated. Blueprints with a snapping grid are placed by other rules:
+   // with relative snapping (no positionRelativeToGrid) as an unsnapped one until a drag passes the
+   // last copy built as the grid base; with absolute snapping in the map's grid cells.
+   // MapPosition BuildingModifier::transform(MapPosition) const takes a point of the blueprint to
+   // the map, flipped, rotated and placed; Blueprint::drawReferenceBoxIfRelevant draws the grid cell,
+   // (0, 0) to snapToGrid in the blueprint's frame, through it.
    uintptr_t blueprintBuildingModifier = 0;
    uintptr_t blueprintTileBox = 0;
+   uintptr_t buildingModifierTransform = 0;
    uint32_t buildingModifierSize = 0;
-   uint32_t buildingModifierCentre = 0;    // BuildingModifier::afterRotationShift, MapPosition
-   uint32_t blueprintRotation = 0;         // Blueprint::rotation, Direction
-   uint32_t blueprintFlip = 0;             // Blueprint::flip, Flip (one byte)
-   uint32_t blueprintSnapToGrid = 0;       // Blueprint::snapToGrid's has-value flag, bool
+   uint32_t buildingModifierCentre = 0;      // BuildingModifier::afterRotationShift, MapPosition
+   uint32_t blueprintRotation = 0;           // Blueprint::rotation, Direction
+   uint32_t blueprintFlip = 0;               // Blueprint::flip, Flip (one byte)
+   uint32_t blueprintSnapToGrid = 0;         // Blueprint::snapToGrid's has-value flag, bool
+   uint32_t blueprintGridSize = 0;           // Blueprint::snapToGrid's value, TilePosition
+   uint32_t blueprintAbsoluteSnapping = 0;   // Blueprint::positionRelativeToGrid's has-value flag, bool
    // What is in hand to build. BuildID Player::getBuildID() const: the entity an item places, or the
    // tile, or neither for a blueprint or anything else. The game turns an entity in hand with
    // GameView::buildDirection and, for entities that flip by mirroring, GameView::entityMirrored;

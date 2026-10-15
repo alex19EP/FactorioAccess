@@ -280,6 +280,7 @@ using BuildableBlueprintFunction = const std::byte* (*)(const void* reader);
 using BuildingModifierFunction = void* (*)(const void* blueprint, std::byte* out, Position cursor, uint8_t direction,
                                            uint8_t flip, const Position* gridBase);
 using TileBoxFunction = TileBox* (*)(const void* blueprint, TileBox* out);
+using TransformFunction = Position* (*)(const void* modifier, Position* out, Position position);
 using BuildIdFunction = void* (*)(const void* player, std::byte* out);
 
 // Whether `player` holds the rail planner, which builds the route the game plans rather than a
@@ -330,21 +331,53 @@ std::optional<uint32_t> blueprintTurn(const std::byte* player) {
    });
 }
 
+// How the game places `blueprint`, rotated and flipped as it is held, with the cursor at `cursor`
+// and no drag going on.
+void freeModifier(const std::byte* blueprint, Position cursor, std::byte* modifier) {
+   constexpr Position noGridBase{std::numeric_limits<int32_t>::max(), std::numeric_limits<int32_t>::max()};
+   reinterpret_cast<BuildingModifierFunction>(layout.blueprintBuildingModifier)(
+      blueprint, modifier, cursor, at<uint8_t>(blueprint, layout.blueprintRotation),
+      at<uint8_t>(blueprint, layout.blueprintFlip), &noGridBase);
+}
+
+// Where the cursor has to be for a blueprint with relative snapping to have the north-west corner of
+// its grid cell, the reference box the game draws, on the tile `cursor` is on. Placed as the game
+// places it, the cell's corners are where they land on the map, whatever the rotation and flip; the
+// cursor moves by whole tiles, which move the placement as much. A drag then tiles the copies from
+// the last one built, one cell apart.
+Position gridAnchor(const std::byte* blueprint, Position cursor) {
+   alignas(8) std::byte modifier[game::kBuildingModifierCapacity];
+   freeModifier(blueprint, cursor, modifier);
+   const auto grid = at<TileSize>(blueprint, layout.blueprintGridSize);
+   const auto transform = reinterpret_cast<TransformFunction>(layout.buildingModifierTransform);
+   Position first{}, second{};
+   transform(modifier, &first, {0, 0});
+   transform(modifier, &second, {grid.width * game::kMapPositionScale, grid.height * game::kMapPositionScale});
+   // Arithmetic shifts floor negative coordinates too.
+   const int32_t left = cursor.x >> 8 << 8;
+   const int32_t top = cursor.y >> 8 << 8;
+   return {cursor.x + left - std::min(first.x, second.x), cursor.y + top - std::min(first.y, second.y)};
+}
+
 // Where the cursor has to be for the blueprint in hand, rotated and flipped as it is built, to have
-// the north-west corner of its tile box on the tile `cursor` is on. False without a blueprint, for
-// one with a snapping grid, and for one of only off-grid entities, which goes where the cursor is.
-// A blueprint with rails snaps to the two-tile rail grid, which can move it a tile south or east.
+// the north-west corner of its tile box on the tile `cursor` is on; with relative snapping, the
+// corner of its grid cell (gridAnchor). False without a blueprint, for one with absolute snapping,
+// which goes into the map's grid cell the cursor is in, and for one of only off-grid entities, which
+// goes where the cursor is. A blueprint with rails snaps to the two-tile rail grid, which can move it
+// a tile south or east.
 bool blueprintAnchor(const std::byte* player, Position cursor, Position& out) {
    return withHeldBlueprint(player, [&](const std::byte* blueprint) {
-      if (!blueprint || at<bool>(blueprint, layout.blueprintSnapToGrid)) return false;
+      if (!blueprint) return false;
+      if (at<bool>(blueprint, layout.blueprintSnapToGrid)) {
+         if (at<bool>(blueprint, layout.blueprintAbsoluteSnapping)) return false;
+         out = gridAnchor(blueprint, cursor);
+         return true;
+      }
       // A grid centre is on a half tile; an off-grid blueprint's is the cursor, here one off the
       // half tiles.
       constexpr Position probe{37, 37};
-      constexpr Position noGridBase{std::numeric_limits<int32_t>::max(), std::numeric_limits<int32_t>::max()};
       alignas(8) std::byte modifier[game::kBuildingModifierCapacity];
-      reinterpret_cast<BuildingModifierFunction>(layout.blueprintBuildingModifier)(
-         blueprint, modifier, probe, at<uint8_t>(blueprint, layout.blueprintRotation),
-         at<uint8_t>(blueprint, layout.blueprintFlip), &noGridBase);
+      freeModifier(blueprint, probe, modifier);
       const auto centre = at<Position>(modifier, layout.buildingModifierCentre);
       if (centre.x == probe.x && centre.y == probe.y) return false;
 

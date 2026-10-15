@@ -175,11 +175,14 @@ bool resolve(pdb::SymbolTable& symbols) {
            "?getBuildingModifier@Blueprint@@QEBA?AVBuildingModifier@@VMapPosition@@VDirection@@VFlip@@AEBV?$Optional@"
            "VMapPosition@@U?$OptionalEmptyValue@VMapPosition@@@@@@@Z");
    address(layout.blueprintTileBox, "?getTileBoxIgnoreSnapGrid@Blueprint@@QEBA?AVTileBox@@XZ");
+   address(layout.buildingModifierTransform, "?transform@BuildingModifier@@QEBA?AVMapPosition@@V2@@Z");
    size(layout.buildingModifierSize, "BuildingModifier");
    offset(layout.buildingModifierCentre, "BuildingModifier", "afterRotationShift");
    offset(layout.blueprintRotation, "Blueprint", "rotation");
    offset(layout.blueprintFlip, "Blueprint", "flip");
    offset(layout.blueprintSnapToGrid, "Blueprint", "snapToGrid._Has_value");
+   offset(layout.blueprintGridSize, "Blueprint", "snapToGrid._Value");
+   offset(layout.blueprintAbsoluteSnapping, "Blueprint", "positionRelativeToGrid._Has_value");
    address(layout.playerBuildId, "?getBuildID@Player@@QEBA?AVBuildID@@XZ");
    size(layout.buildIdSize, "BuildID");
    offset(layout.buildIdEntity, "BuildID", "entityID");

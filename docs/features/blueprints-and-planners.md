@@ -67,6 +67,8 @@ Each tile reads what the game draws there: the entity, its direction, which way 
 
 To build a blueprint, click with `left bracket`.  Rotation, flipping, etc. all work the same as buildings, and you are building from the top left, same as buildings.
 
+A blueprint that snaps to a grid with relative snapping is held by the top left of its grid cell, the grid size set in its window, so empty space the cell leaves around the buildings counts. Hold `left bracket` and move to build copies side by side, one cell apart, as the game tiles them. A blueprint with absolute snapping goes into the map's grid cell the cursor is in, as for sighted players.
+
 A blueprint in your inventory takes a slot. Books group blueprints into one slot, and the blueprint library holds them without taking any; see the next sections.
 
 ### Blueprint Books
