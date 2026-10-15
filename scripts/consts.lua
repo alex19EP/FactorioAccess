@@ -2,8 +2,6 @@
 Constants for our mod.  Must load in the data stage as well as runtime.
 ]]
 
-local TableHelpers = require("scripts.table-helpers")
-
 local mod = {}
 
 -- Numeric limits for Factorio's 32-bit integer fields
@@ -48,20 +46,6 @@ mod.RAIL_TYPES = {
    "half-diagonal-rail",
 }
 
----@type table<string, true?>
-mod.RAIL_TYPES_SET = TableHelpers.array_to_set({}, mod.RAIL_TYPES)
-
--- Vehicle entity types (can have drivers/passengers)
----@type table<string, true>
-mod.VEHICLE_TYPES = {
-   ["car"] = true,
-   ["spider-vehicle"] = true,
-   ["locomotive"] = true,
-   ["cargo-wagon"] = true,
-   ["fluid-wagon"] = true,
-   ["artillery-wagon"] = true,
-}
-
 -- Entity types that players can walk over without collision
 mod.ENT_TYPES_YOU_CAN_WALK_OVER = {
    "resource",
@@ -84,94 +68,5 @@ mod.ENT_TYPES_YOU_CAN_WALK_OVER = {
 
 -- Entity names to exclude from various operations
 mod.EXCLUDED_ENT_NAMES = { "highlight-box" }
-
--- Main inventories that represent primary storage for entities
--- These are the inventories used for fast transfer operations
----@type fa.InventoryDefineName[]
-mod.MAIN_INVENTORIES = {
-   "character_main",
-   "chest",
-   "car_trunk",
-   "spider_trunk",
-   "cargo_wagon",
-   "hub_main",
-   "cargo_landing_pad_main",
-   "linked_container_main",
-   "item_main",
-   "cargo_unit",
-   "god_main",
-   "editor_main",
-   "proxy_main",
-   "crafter_input",
-   "lab_input",
-}
-
--- Inventory priorities for sorting in entity UI
--- Lower numbers appear first
----@type table<string, number>
-mod.INVENTORY_PRIORITIES = {
-   -- Primary/main inventories (priority 1)
-   character_main = 1,
-   chest = 1,
-   car_trunk = 1,
-   spider_trunk = 1,
-   cargo_wagon = 1,
-   hub_main = 1,
-   cargo_landing_pad_main = 1,
-   linked_container_main = 1,
-   item_main = 1,
-
-   -- Input inventories (priority 2)
-   crafter_input = 2,
-   lab_input = 2,
-   agricultural_tower_input = 2,
-
-   -- Output inventories (priority 3)
-   crafter_output = 3,
-   agricultural_tower_output = 3,
-   asteroid_collector_output = 3,
-   burnt_result = 3,
-
-   -- Module inventories (priority 4)
-   crafter_modules = 4,
-   beacon_modules = 4,
-   mining_drill_modules = 4,
-   lab_modules = 4,
-
-   -- Special/trash inventories (priority 5)
-   crafter_trash = 5,
-   car_trash = 5,
-   character_trash = 5,
-   spider_trash = 5,
-   hub_trash = 5,
-   lab_trash = 5,
-   cargo_landing_pad_trash = 5,
-   rocket_silo_trash = 5,
-   logistic_container_trash = 5,
-
-   -- Fuel and ammo inventories (priority 6)
-   fuel = 6,
-   artillery_wagon_ammo = 6,
-
-   -- Robot/material inventories (priority 7)
-   roboport_robot = 7,
-   roboport_material = 7,
-   robot_cargo = 7,
-   robot_repair = 7,
-
-   -- Rocket silo special (priority 8)
-   rocket_silo_rocket = 8,
-
-   assembling_machine_dump = 5,
-}
-
--- Logic signal names (virtual signals with special combinator behavior)
--- These are: signal-everything, signal-anything, signal-each
----@type table<string, true>
-mod.LOGIC_SIGNAL_NAMES = {
-   ["signal-everything"] = true,
-   ["signal-anything"] = true,
-   ["signal-each"] = true,
-}
 
 return mod

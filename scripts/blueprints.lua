@@ -7,7 +7,6 @@ local FaUtils = require("scripts.fa-utils")
 local Localising = require("scripts.localising")
 local Speech = require("scripts.speech")
 local MessageBuilder = Speech.MessageBuilder
-local UiRouter = require("scripts.ui.router")
 
 local dirs = defines.direction
 

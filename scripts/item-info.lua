@@ -142,15 +142,6 @@ function mod.inserter_stack_size_with_force(prototype, force)
    end
 end
 
----Get the maximum stack size for a placed inserter entity.
----Accounts for force research bonuses but not any override.
----@param entity LuaEntity
----@return number
-function mod.inserter_max_stack_size(entity)
-   -- Reading force always gives a LuaForce.
-   return mod.inserter_stack_size_with_force(entity.prototype, entity.force --[[@as LuaForce]])
-end
-
 ---Marker to say "other item" in localise_item
 ---@class fa.ItemInfo.ItemOther
 local ITEM_OTHER = {}

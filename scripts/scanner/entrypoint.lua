@@ -17,7 +17,6 @@ local Extras = require("scripts.scanner.extras")
 local FaUtils = require("scripts.fa-utils")
 local Localising = require("scripts.localising")
 local Readout = require("scripts.scanner.readout")
-local UiRouter = require("scripts.ui.router")
 local Speech = require("scripts.speech")
 
 local native = rawget(_G, "fa_native")
@@ -183,12 +182,10 @@ function mod.jump(pindex, event)
    announce(pindex, event, target)
 end
 
--- The mod's own UIs take the scanner keys while open; the DLL must leave those keys alone then.
--- The DLL also keeps its list up to date on its own, starting a refresh when it asks for one; in
--- remote view that keeps the list's origin, which the camera leaves as Home jumps to entries.
+-- The DLL keeps its list up to date on its own, starting a refresh when it asks for one; in remote
+-- view that keeps the list's origin, which the camera leaves as Home jumps to entries.
 ---@param player LuaPlayer
 local function tick_player(player)
-   native.scanner_mod_ui(player.index, UiRouter.get_router(player.index):is_ui_open())
    if native.scanner_tick(player.index, player.surface.index) then
       refresh(player, {
          automatic = true,

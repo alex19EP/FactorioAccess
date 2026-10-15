@@ -1,23 +1,7 @@
---Here: localisation functions, including event handlers
+--Here: localisation functions
 local Speech = require("scripts.speech")
-local MessageLists = require("scripts.message-lists")
 
 local mod = {}
-
-function mod.request_localisation(thing, pindex)
-   local id = game.players[pindex].request_translation(thing.localised_name)
-   local lookup = storage.players[pindex].translation_id_lookup
-   lookup[id] = { thing.object_name, thing.name }
-end
-
-function mod.handler(event)
-   local pindex = event.player_index
-   local player = storage.players[pindex]
-   local successful = event.translated
-
-   -- Check if this is a message list request
-   if successful then MessageLists.on_string_translated(event) end
-end
 
 local function wrapped_pcall(f)
    local good, val = pcall(f)

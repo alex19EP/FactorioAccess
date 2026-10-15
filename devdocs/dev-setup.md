@@ -2,8 +2,8 @@
 
 The repo-root `justfile` is the entry point for every development task: building and deploying
 the native DLL, launching the game, formatting, linting and testing. Run `just` for the list of
-recipes. The recipes call the Python helpers (`launch_factorio.py`, `lint_localisation.py`,
-`build_message_lists.py`), which still work on their own and are where the logic lives.
+recipes. The recipes call the Python helpers (`launch_factorio.py`, `lint_localisation.py`), which
+still work on their own and are where the logic lives.
 
 ## Requirements
 
@@ -90,7 +90,6 @@ choice.
 | `just lint` / `just lint-locale` | EmmyLua (about a second), and unused or missing locale keys |
 | `just setup-tools` | install or update EmmyLua and the Factorio API library in `.tools\` |
 | `just test-mod [timeout]` | the mod's in-game test suite, headless |
-| `just message-lists` | regenerate the message-list locale files, then format |
 | `just build` / `just test` | build the DLL, run the graph kernel tests |
 | `just symbols` | check the DLL's symbols against the installed Factorio builds |
 | `just run` / `just start` / `just stop` | deploy and start, start only, close the game |

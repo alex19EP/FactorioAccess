@@ -22,7 +22,6 @@ local VANILLA_MODE_WHITELIST = {
 
    -- State tracking (silent)
    [defines.events.on_object_destroyed] = true,
-   [defines.events.on_string_translated] = true,
    [defines.events.on_player_display_resolution_changed] = true,
    [defines.events.on_player_display_scale_changed] = true,
    [defines.events.on_player_cursor_stack_changed] = true,

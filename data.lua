@@ -100,27 +100,9 @@ data:extend({
 
    {
       type = "sound",
-      name = "Open-Inventory-Sound",
-      category = "gui-effect",
-      filename = "__core__/sound/gui-green-button.ogg",
-      volume = 1,
-      preload = true,
-   },
-
-   {
-      type = "sound",
       name = "Close-Inventory-Sound",
       category = "gui-effect",
       filename = "__core__/sound/gui-green-confirm.ogg",
-      volume = 1,
-      preload = true,
-   },
-
-   {
-      type = "sound",
-      name = "Change-Menu-Tab-Sound",
-      category = "gui-effect",
-      filename = "__core__/sound/gui-switch.ogg",
       volume = 1,
       preload = true,
    },

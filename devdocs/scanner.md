@@ -134,8 +134,7 @@ the same on every client, and only then asks the DLL (`fa_native.scanner_entry`)
 is speech alone. Category keys move nothing in the game; Lua asks `fa_native.scanner_category` what
 to say.
 
-The DLL leaves the keys alone while a game window is open or one of the mod's own UIs is
-(`fa_native.scanner_mod_ui`, set each tick); those take the keys for themselves.
+The DLL leaves the keys alone while a game window is open, which takes them for itself.
 
 # Adding to the scanner
 

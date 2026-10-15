@@ -1,5 +1,3 @@
-require("syntrax")
-
 --Main file for mod runtime
 local Logging = require("scripts.logging")
 Logging.init()
@@ -12,11 +10,9 @@ local logger = Logging.Logger("control")
 local util = require("util")
 
 local AudioCues = require("scripts.audio-cues")
-local Blueprints = require("scripts.blueprints")
 local BuildingTools = require("scripts.building-tools")
 local BuildDimensions = require("scripts.build-dimensions")
 local BumpDetection = require("scripts.bump-detection")
-local CircuitNetworks = require("scripts.circuit-network")
 local Combat = require("scripts.combat")
 local Consts = require("scripts.consts")
 local SettingDecls = require("scripts.settings-decls")
@@ -24,19 +20,14 @@ local SETTING_NAMES = SettingDecls.SETTING_NAMES
 local Cursor = require("scripts.cursor")
 local CursorChanges = require("scripts.cursor-changes")
 local Daytime = require("scripts.daytime")
-local Driving = require("scripts.driving")
 local HandMonitor = require("scripts.hand-monitor")
-local Electrical = require("scripts.electrical")
 local EventManager = require("scripts.event-manager")
 require("scripts.fa-commands") -- registers FA's console commands
-local FaInfo = require("scripts.fa-info")
 local FaUtils = require("scripts.fa-utils")
 local Hand = require("scripts.hand")
 local F = require("scripts.field-ref")
 local Filters = require("scripts.filters")
 local GameNotices = require("scripts.game-notices")
-local InventoryTransfers = require("scripts.inventory-transfers")
-local InventoryUtils = require("scripts.inventory-utils")
 local ItemInfo = require("scripts.item-info")
 local KruiseKontrol = require("scripts.kruise-kontrol-wrapper")
 local Localising = require("scripts.localising")
@@ -54,10 +45,7 @@ local ScannerLegacy = require("scripts.scanner.legacy")
 local SpidertronRemote = require("scripts.spidertron-remote")
 local TH = require("scripts.table-helpers")
 local TestFramework = require("scripts.test-framework")
-local TransportBelts = require("scripts.transport-belts")
-local UpgradePlanner = require("scripts.upgrade-planner")
 local VanillaMode = require("scripts.vanilla-mode")
-local VirtualTrainDriving = require("scripts.rails.virtual-train-driving")
 local SonifierTickHandler = require("scripts.sonifiers.tick-handler")
 local GridSonifier = require("scripts.sonifiers.grid-sonifier")
 local CraftingBackend = require("scripts.sonifiers.grid-backends.crafting")
@@ -65,45 +53,15 @@ local BattleNotice = require("scripts.sonifiers.battle-notice")
 local ForceGhostEnabler = require("scripts.force-ghost-enabler")
 local AimAssist = require("scripts.combat.aim-assist")
 local Capsules = require("scripts.combat.capsules")
-local PlayerWeapon = require("scripts.combat.player-weapon")
 local ViewLimit = require("scripts.view-limit")
 local Zoom = require("scripts.zoom")
 
--- UI modules (required for registration with router)
+-- Views shown beside the game's entity windows (registered with entity-views)
 require("scripts.ui.belt-analyzer")
 require("scripts.ui.fluid-views")
 require("scripts.ui.pole-views")
-local EntityUI = require("scripts.ui.entity-ui")
-require("scripts.ui.menus.debug-menu")
-require("scripts.ui.menus.rail-builder")
-require("scripts.ui.menus.syntrax-program")
-require("scripts.ui.tabs.item-chooser")
-require("scripts.ui.tabs.signal-chooser")
-require("scripts.ui.tabs.fluid-chooser")
-require("scripts.ui.tabs.entity-chooser")
-require("scripts.ui.tabs.prototype-lister")
-require("scripts.ui.tabs.equipment-selector")
-local Help = require("scripts.ui.help")
-local MessageLists = require("scripts.message-lists")
-require("scripts.ui.logistics-config")
-require("scripts.ui.selectors.logistic-group-selector")
-require("scripts.ui.constant-combinator")
-require("scripts.ui.decider-combinator")
-require("scripts.ui.power-switch")
-require("scripts.ui.programmable-speaker")
-require("scripts.ui.circuit-navigator")
-require("scripts.ui.menus.warnings")
-require("scripts.ui.generic-inventory")
-require("scripts.ui.simple-textbox")
-require("scripts.ui.internal.cursor-coordinate-input")
-require("scripts.ui.internal.syntrax-input")
-require("scripts.ui.help")
-local GameGui = require("scripts.ui.game-gui")
-local UiRouter = require("scripts.ui.router")
 local Viewpoint = require("scripts.viewpoint")
-local Wires = require("scripts.wires")
 local Walking = require("scripts.walking")
-local Warnings = require("scripts.warnings")
 local WorkerRobots = require("scripts.worker-robots")
 local sounds = require("scripts.ui.sounds")
 
@@ -173,8 +131,8 @@ EventManager.on_event(
    end
 )
 
---Tells the DLL what the movement keys do for a player: they move the cursor unless a mod menu has
---them or combat mode aims with them.
+--Tells the DLL what the movement keys do for a player: they move the cursor unless combat mode aims
+--with them.
 ---@param player LuaPlayer
 local function report_cursor_mode(player)
    local pindex = player.index
@@ -182,7 +140,7 @@ local function report_cursor_mode(player)
    Cursor.report_mode(
       pindex,
       VanillaMode.is_enabled(pindex),
-      not UiRouter.get_router(pindex):is_ui_open() and not Combat.is_combat_mode(pindex),
+      not Combat.is_combat_mode(pindex),
       Viewpoint.get_viewpoint(pindex):get_cursor_anchored(),
       Rulers.ruler_tiles(pindex),
       player.mod_settings[SETTING_NAMES.NEXT_MACHINE_SOUND].value --[[@as boolean]]
@@ -207,18 +165,8 @@ EventManager.observe_custom_inputs(function(_, pindex)
    Rulers.on_key(pindex)
 end)
 
-EventManager.on_event(
-   defines.events.on_player_joined_game,
-   ---@param event EventData.on_player_joined_game
-   ---@param pindex integer
-   function(event, pindex)
-      MessageLists.on_player_joined(pindex)
-   end
-)
-
 --Called every tick.
 function on_tick(event)
-   MessageLists.try_translate_all_players()
    report_cursor_modes()
    ScannerEntrypoint.on_tick()
    MovementHistory.update_all_players()
@@ -281,8 +229,6 @@ EventManager.on_event(
    ---@param event EventData.on_player_driving_changed_state
    ---@param pindex integer
    function(event, pindex)
-      local router = UiRouter.get_router(pindex)
-
       MovementHistory.reset_and_increment_generation(pindex)
       game.get_player(pindex).clear_cursor()
       if game.get_player(pindex).driving then
@@ -443,10 +389,6 @@ EventManager.on_event(
       if Rulers.tool_away(pindex) then return end
 
       CursorChanges.on_cursor_stack_changed(event, pindex, read_hand)
-      VirtualTrainDriving.on_cursor_stack_changed(event)
-
-      -- Close UIs that are bound to hand contents
-      UiRouter.on_hand_contents_changed(pindex)
    end
 )
 
@@ -554,35 +496,6 @@ EventManager.on_event(
    end
 )
 
-EventManager.on_event(
-   defines.events.on_gui_closed,
-   ---@param event EventData.on_gui_closed
-   function(event, pindex)
-      local router = UiRouter.get_router(pindex)
-      print(serpent.line(event, { nocode = true }))
-      router:close_ui()
-   end
-)
-
-EventManager.on_event(
-   defines.events.on_gui_opened,
-   ---@param event EventData.on_gui_opened
-   ---@param pindex integer
-   function(event, pindex)
-      local router = UiRouter.get_router(pindex)
-      local p = game.get_player(pindex)
-   end
-)
-
-EventManager.on_event(
-   defines.events.on_object_destroyed,
-   ---@param event EventData.on_object_destroyed
-   function(event) --DOES NOT HAVE THE KEY PLAYER_INDEX
-      -- Close UIs that are bound to this entity
-      UiRouter.on_entity_destroyed(event.registration_number)
-   end
-)
-
 --If a filter inserter is selected, the item in hand is set as its output filter item.
 function set_inserter_filter_by_hand(pindex, ent)
    local stack = game.get_player(pindex).cursor_stack
@@ -633,8 +546,6 @@ EventManager.on_event(
       if players and storage.players[pindex] then storage.players[pindex].display_resolution = new_sc end
    end
 )
-
-EventManager.on_event(defines.events.on_string_translated, Localising.handler)
 
 EventManager.on_event(
    defines.events.on_player_respawned,
@@ -926,8 +837,6 @@ local function read_coords(pindex, start_phrase)
    local ent = storage.players[pindex].building.ent
    local offset = 0
 
-   local router = UiRouter.get_router(pindex)
-
    local position = Cursor.tile(pindex)
    local marked_pos = { x = position.x, y = position.y }
 
@@ -1034,8 +943,6 @@ EventManager.on_event(
    ---@param event EventData.CustomInputEvent
    function(event, pindex)
       -- Check for virtual train driving (its status command reads no tile)
-      if VirtualTrainDriving.on_kb_descriptive_action_name(event) then return end
-
       read_coords(pindex)
    end
 )
@@ -1120,8 +1027,6 @@ EventManager.on_event(
    "fa-a-k",
    ---@param event EventData.CustomInputEvent
    function(event, pindex)
-      local router = UiRouter.get_router(pindex)
-
       kb_read_cursor_distance_vector(event)
    end
 )
@@ -1182,9 +1087,6 @@ EventManager.on_event(
    "fa-j",
    ---@param event EventData.CustomInputEvent
    function(event, pindex)
-      local router = UiRouter.get_router(pindex)
-      local p = game.get_player(pindex)
-
       if Combat.is_combat_mode(pindex) then
          Speech.speak(pindex, { "fa.not-available-in-combat-mode" })
       else
@@ -1272,7 +1174,6 @@ EventManager.on_event(
    "fa-pageup",
    ---@param event EventData.CustomInputEvent
    function(event, pindex)
-      local router = UiRouter.get_router(pindex)
       local p = game.get_player(pindex)
       local ent = p.opened
 
@@ -1308,7 +1209,6 @@ EventManager.on_event(
    "fa-pagedown",
    ---@param event EventData.CustomInputEvent
    function(event, pindex)
-      local router = UiRouter.get_router(pindex)
       local p = game.get_player(pindex)
       local ent = p.opened
 
@@ -1381,13 +1281,11 @@ EventManager.on_event(
    end
 )
 
--- In FA's own menus the UI router takes Ctrl+Tab for their sections. Otherwise it moves to the parts
--- of the screen the native DLL reads, such as the quickbar.
+-- Ctrl+Tab moves to the parts of the screen the native DLL reads, such as the quickbar.
 ---@param direction integer
 local function next_part(direction)
    ---@param pindex integer
    return function(_, pindex)
-      if UiRouter.get_router(pindex):is_ui_open() then return end
       NativeCursor.next_part(pindex, direction)
    end
 end
@@ -1416,8 +1314,6 @@ EventManager.on_event(
 ---@param event EventData.CustomInputEvent
 local function kb_read_item_pickup_state(event)
    local pindex = event.player_index
-   local router = UiRouter.get_router(pindex)
-
    local p = game.get_player(pindex)
    local result = ""
    local check_last_pickup = false
@@ -1565,13 +1461,11 @@ EventManager.on_event(
    end
 )
 
---The game's own info panel for what the cursor points at, read by the DLL (the router handles
---FA's menus via on_read_info)
+--The game's own info panel for what the cursor points at, read by the DLL
 EventManager.on_event(
    "fa-y",
    ---@param event EventData.CustomInputEvent
    function(event, pindex)
-      if UiRouter.get_router(pindex):is_ui_open() then return end
       NativeCursor.open_selected_info(pindex)
    end
 )
@@ -1586,7 +1480,6 @@ EventManager.on_event(
 )
 
 EventManager.on_event("fa-cas-v", function(event, pindex)
-   local router = UiRouter.get_router(pindex)
    local enabling = not VanillaMode.is_enabled(pindex)
 
    if enabling then
@@ -1595,9 +1488,6 @@ EventManager.on_event("fa-cas-v", function(event, pindex)
       sounds.play_confirm(pindex)
 
       VanillaMode.toggle(pindex)
-
-      -- Close any open UI
-      router:close_ui()
 
       -- Exit combat mode if active
       if Combat.is_combat_mode(pindex) then Combat.toggle_combat_mode(pindex) end

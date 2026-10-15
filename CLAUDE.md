@@ -36,7 +36,7 @@ This guide helps LLMs (particularly Claude) work effectively on the FactorioAcce
 
 ### Your Environment
 
-You are running in the repo root. The `justfile` here is the entry point for every task; its paths come from `.env` (see `devdocs/dev-setup.md`). The recipes call the Python helpers (`launch_factorio.py`, `lint_localisation.py`, `build_message_lists.py`), which hold the logic; run those directly only for options no recipe passes.
+You are running in the repo root. The `justfile` here is the entry point for every task; its paths come from `.env` (see `devdocs/dev-setup.md`). The recipes call the Python helpers (`launch_factorio.py`, `lint_localisation.py`), which hold the logic; run those directly only for options no recipe passes.
 
 Commands should always be relative to the current working directory.
 
@@ -114,22 +114,6 @@ local my_storage = storage_manager.declare_storage_module('module_name', {
 local data = my_storage[pindex]
 ```
 
-#### Modern UI Pattern
-```lua
-local Router = require("scripts.ui.router")
-local TabList = require("scripts.ui.tab-list")
-local Menu = require("scripts.ui.menu")  -- exposes Menu.MenuBuilder
-
-local my_menu = TabList.declare_tablist({
-    ui_name = Router.UI_NAMES.MY_MENU,
-    tabs = {
-        -- Tab definitions using KeyGraph
-    }
-})
-```
-
-scripts/ui/controls.lua, scripts/ui/form-builder.lua, and scripts/ui/menu.lua (the MenuBuilder) are the major UI entrypoints for implementing a new GUI. scripts/ui/grid.lua is the grid builder.  scripts/ui/router.lua is the entrypoint for non-UI interaction with the UI system, e.g. opening a UI.
-
 #### Localization (MessageBuilder)
 ```lua
 local message = MessageBuilder.new()
@@ -181,12 +165,7 @@ Lists what is on the surface in categories and subcategories. The list lives in 
 - **Lua side**: `scripts/scanner/entrypoint.lua` (keys, landing, speech), `readout.lua`, `extras.lua` (pins, tags, pump spots)
 
 ### UI System
-Modern graph-based architecture:
-- **Router**: `scripts/ui/router.lua` - Central UI manager
-- **TabList**: Multi-tab support with shared state
-- **Builders**: Menu and Grid builders for common patterns
-- Dynamic rendering with React-like rebuilding
-- Explicit re-render is not possible because the UI does not have a painting step and is really a description of how to say things.  Controls which change values often say their new value.
+FA has no menus of its own. The game's own windows are the UI: the DLL reads them and clicks their widgets (`native/src/screens/`, built on the graph in `native/src/graph/`). What FA adds to a game window is a relative GUI beside it (see "Adding FA's own information to a game window" below). Never add a Lua menu or a key that opens one.
 
 ### Native DLL (required)
 The mod requires the native DLL in `native/` (deployed as `winmm.dll`, a stub, and `fa_native.dll`, the core it loads). There is no Lua-only mode to keep working. With the dev marker, `just reload` loads a rebuilt core and the mod's Lua (`/fareload`, `game.reload_mods`) into the running game.
@@ -301,7 +280,7 @@ Players change settings in the game's own Mod settings window (Escape, Settings,
 
 ## Syntrax (Rail Description Language)
 
-Syntrax is active. The compiler lives in the top-level `syntrax/` module (lexer/parser/compiler/vm), with a CLI at `syntrax-cli.lua` and runtime wiring under `scripts/rails/` and `scripts/ui/menus/` (router UIs `SYNTRAX_INPUT`, `RAIL_BUILDER`, `SYNTRAX_PROGRAM`).
+Syntrax is not reachable from the game: its menus went with FA's Lua UI, and the vanilla rail planner replaces it. The compiler stays in the top-level `syntrax/` module (lexer/parser/compiler/vm), with a CLI at `syntrax-cli.lua`, its tests, and the runner and custom programs in `scripts/rails/`, until it is ported to act through the game's own input or removed.
 
 ## Important Notes
 
@@ -321,46 +300,6 @@ out <player_index> <message>
 This is why `Speech.speak()` is used for user messages.
 
 Remember: This mod makes a visual game accessible through audio. Every feature must be designed with audio-first interaction in mind!
-
-# Message List System for Help and Documentation
-
-The mod includes a message list system for providing help and documentation that integrates with Factorio's localization system.
-
-## Creating Message Lists
-
-1. Create a `.txt` file anywhere under `locale/<language>/` (e.g., `locale/en/ui-help/my-feature.txt` or `locale/en/docs/controls.txt`)
-2. Write messages separated by blank lines:
-   ```
-   ; Comments start with semicolon
-   This is the first message.
-
-   This is the second message.
-   ```
-3. Run `just message-lists` to generate locale files
-4. The message list name is the basename of the file (without `.txt`)
-5. Message list names must be globally unique across all directories
-
-**Windows gotcha**: `build_message_lists.py` writes `scripts/message-list-index.lua` with CRLF line endings, which fails `--format-check` (stylua wants LF). git's `autocrlf` hides this in `git diff`. `just message-lists` formats after regenerating; if you run the script directly, run `just format` after it.
-
-## Using Message Lists in UIs
-
-```lua
-local Help = require("scripts.ui.help")
-
--- In your KeyGraph declaration or TabList callbacks:
-get_help_metadata = function(ctx)
-   return {
-      Help.message_list("my-feature"),  -- From my-feature.txt
-      Help.message({"fa.some-other-message"}),  -- Direct localised string
-   }
-end
-```
-
-## How Users Access Help
-
-- Press `Shift+/` (question mark) while in a UI to open help
-- Use W/S to navigate between help messages
-- Press `Shift+/` again or `E` to close help
 
 # Common LLM Antipatterns
 

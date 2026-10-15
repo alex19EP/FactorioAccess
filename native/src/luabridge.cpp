@@ -663,13 +663,6 @@ int scannerTick(lua_State* L) {
    return 1;
 }
 
-// fa_native.scanner_mod_ui(pindex, open): whether one of the mod's own UIs is open, and so has the
-// scanner keys.
-int scannerModUi(lua_State* L) {
-   scanner::setModUiOpen(static_cast<int>(checkInteger(L, 1)), toBoolean(L, 2));
-   return 0;
-}
-
 // fa_native.scanner_entry(pindex, x, y): what the scanner key whose event carried cursor_position
 // x, y moved onto, as {category, edge, empty, index, count, kind, extra, prototype, text, trees,
 // width, height, x, y, origin_x, origin_y} (see scanner::Entry), or nil. For speech only: other clients
@@ -799,7 +792,6 @@ constexpr Function kFunctions[] = {
    {"audio", &playAudio},
    {"scanner_refresh", &scannerRefresh},
    {"scanner_tick", &scannerTick},
-   {"scanner_mod_ui", &scannerModUi},
    {"scanner_entry", &scannerEntry},
    {"scanner_category", &scannerCategory},
    {"scanner_current_category", &scannerCurrentCategory},

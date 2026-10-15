@@ -5,7 +5,6 @@ local EventManager = require("scripts.event-manager")
 local TestRegistry = require("scripts.test-registry")
 local sounds = require("scripts.ui.sounds")
 local Logging = require("scripts.logging")
-local UiRouter = require("scripts.ui.router")
 
 local mod = {}
 
@@ -31,14 +30,9 @@ local test_files = {
    "simple-smoke-test", -- Very basic tests to verify framework works
    "cursor-test", -- Test the cursor tile key handlers and Cursor.at see
    "wasd-event-test", -- Test that a movement key reads where its event says the cursor went
-   -- Selected tests from feedback
-   "crafting-menu-test", -- Test crafting menu navigation (test #10)
-   "inventory-coordinates-test", -- Test inventory coordinate announcements (test #12)
    -- Additional tests
    "belt-direction-test", -- Test transport belt direction detection
    "rich-text-test", -- Test rich text processing and shorthand parsing
-   "assembler-recipe-test", -- Test assembling machine recipe management
-   "assembling-machine-ui-test", -- Test assembling machine UI with recipe selection
    -- "fa-info-smoke-test", -- Test entity information extraction system (temporarily disabled)
    -- "sound-tests", -- Test sound system integration (temporarily disabled)
    -- "test-rail-basic-ops", -- Test basic rail operations module (rails removed - 2.0 incompatible)
@@ -49,7 +43,6 @@ local test_files = {
 
    -- "event-manager-player-init-test", -- Test EventManager player initialization (requires custom events)
    -- "event-priority-test", -- Test EventManager priority system (requires custom events)
-   "entity-ui-test", -- Test generic entity UI system
    "entity-selection-test", -- Test stable entity ordering (issue #265)
    "rail-grid-adjustment-test", -- Test that TestSurface matches game rail grid adjustment
    "player-weapon-test", -- Test weapon/ammo property detection
@@ -357,12 +350,6 @@ end
 --- Internal: Complete the current test
 function mod._complete_test(passed, error_msg)
    if not current_test then return end
-
-   -- Clean up any open UIs to prevent test contamination
-   for pindex = 1, #game.players do
-      local router = UiRouter.get_router(pindex)
-      if router:is_ui_open() then router:close_ui() end
-   end
 
    -- Run after_each
    if current_test.suite.after_each then pcall(current_test.suite.after_each) end

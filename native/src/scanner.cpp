@@ -1532,7 +1532,6 @@ List g_list;
 Cursor g_cursor;
 std::deque<Move> g_moves;
 std::optional<Category> g_category;
-bool g_modUiOpen = false;
 // The LuaSurface the player is on, as of the last tick; 0 before the first.
 uint32_t g_surface = 0;
 
@@ -2493,12 +2492,6 @@ void stop() {
    pool().stop();
 }
 
-void setModUiOpen(int playerIndex, bool open) {
-   if (!localPlayer(currentGame(), playerIndex)) return;
-   std::scoped_lock lock(g_mutex);
-   g_modUiOpen = open;
-}
-
 void observeKey(const input::KeyEvent* key) {
    world::setKeyCursor(std::nullopt);
    if (!key || !key->down) return;
@@ -2511,7 +2504,6 @@ void observeKey(const input::KeyEvent* key) {
    std::optional<Action> action = actionFor(*key);
    if (!action) return;
    std::scoped_lock lock(g_mutex);
-   if (g_modUiOpen) return;
    std::optional<Position> target = act(*action);
    if (!target) return;
    const world::CursorPosition position{target->x, target->y};

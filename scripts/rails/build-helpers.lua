@@ -1,5 +1,5 @@
 ---Build helpers for ghost-based entity placement
----Used by virtual-train-driving and syntrax-runner
+---Used by syntrax-runner
 
 local StorageManager = require("scripts.storage-manager")
 local BlueprintSynthesizer = require("scripts.blueprint-synthesizer")

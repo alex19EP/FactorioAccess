@@ -64,9 +64,6 @@ void frame(int playerIndex, uint32_t surfaceIndex);
 // leaves its entity links to the game.
 void stop();
 
-// Whether the mod's own UI has the keys, so the scanner keys are not the scanner's. From Lua.
-void setModUiOpen(int playerIndex, bool open);
-
 // A key the game is about to handle, or null for any other poll. On the game thread, while the
 // world stands still (see input::setKeyObserver).
 void observeKey(const input::KeyEvent* key);

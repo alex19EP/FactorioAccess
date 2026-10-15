@@ -106,13 +106,6 @@ test-updater:
     @powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File helper-scripts/tests/update-tests.ps1
     @pwsh.exe -NoLogo -NoProfile -File helper-scripts/tests/update-tests.ps1
 
-# The generator writes CRLF, which stylua rejects, so formatting follows it.
-
-# Regenerate the message-list locale files from the .txt files under locale/
-message-lists:
-    @python build_message_lists.py; if ($LASTEXITCODE) { exit $LASTEXITCODE }; \
-     python launch_factorio.py --format; exit $LASTEXITCODE
-
 # With FACTORIO_SANDBOX_DIR set, the tests run in that install, whose
 # mods\FactorioAccess is a junction to this checkout.  Without it they run in
 # the install this checkout sits in (mods\FactorioAccess of a zip Factorio).

@@ -89,19 +89,6 @@ function mod.play_close_inventory(pindex)
    play_sound_internal(pindex, { path = "Close-Inventory-Sound", volume_modifier = 0.75 })
 end
 
-function mod.play_open_inventory(pindex)
-   play_sound_internal(pindex, { path = "Open-Inventory-Sound" })
-end
-
-function mod.play_inventory_move(pindex)
-   play_sound_internal(pindex, { path = "utility/inventory_move" })
-end
-
--- Menu tab sound
-function mod.play_change_menu_tab(pindex)
-   play_sound_internal(pindex, { path = "Change-Menu-Tab-Sound" })
-end
-
 -- Player movement/action sounds
 function mod.play_player_walk(pindex)
    play_sound_internal(pindex, { path = "player-walk" })
@@ -175,9 +162,6 @@ function mod.play_train_honk_low_long(pindex)
 end
 
 -- Utility sounds
--- Note: play_inventory_click removed - use play_menu_click instead
--- Note: play_inventory_move removed - not used anywhere
-
 function mod.play_cannot_build(pindex)
    play_sound_internal(pindex, { path = "utility/cannot_build" })
 end

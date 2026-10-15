@@ -215,7 +215,6 @@ function mod.initialize(player)
    faplayer.last_aggregate = faplayer.last_aggregate or {}
    faplayer.recent_item_name = faplayer.recent_item_name or ""
    faplayer.recent_fluid_name = faplayer.recent_fluid_name or ""
-   faplayer.spider_menu = faplayer.spider_menu or {}
    faplayer.last_line_id = faplayer.last_line_id or 0
    faplayer.launcher_version = faplayer.launcher_version or "0.0.0"
    faplayer.in_splash_sequence = faplayer.in_splash_sequence or false
@@ -259,26 +258,6 @@ function mod.initialize(player)
    faplayer.entities_scanned = faplayer.entities_scanned or {}
    faplayer.players_distance_described = faplayer.players_distance_described or false
    faplayer.said_owner = faplayer.said_owner or {}
-
-   -- Menu initializations
-
-   faplayer.spider_menu = faplayer.spider_menu or {
-      index = 0,
-      renaming = false,
-      spider = nil,
-   }
-
-   faplayer.blueprint_menu = faplayer.blueprint_menu
-      or {
-         index = 0,
-         edit_label = false,
-         edit_description = false,
-         edit_export = false,
-         edit_import = false,
-      }
-
-   faplayer.localisations = faplayer.localisations or {}
-   faplayer.translation_id_lookup = faplayer.translation_id_lookup or {}
 
    -- Bump detection is now self-initializing via StorageManager
 end

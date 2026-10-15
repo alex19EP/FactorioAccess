@@ -503,15 +503,6 @@ function mod.ent_name_locale(ent)
    return name
 end
 
---Rounds down a number to the nearest thousand after 10 thousand, and nearest 100 thousand after 1 million.
-function mod.simplify_large_number(num_in)
-   local num = num_in
-   num = math.ceil(num)
-   if num > 10000 then num = 1000 * math.floor(num / 1000) end
-   if num > 1000000 then num = 100000 * math.floor(num / 100000) end
-   return num
-end
-
 --Returns a string to say the quantity of an item in terms of stacks, if there is at least one stack
 function mod.express_in_stacks(count, stack_size, precise)
    local result = ""
