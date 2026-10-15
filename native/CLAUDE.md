@@ -51,8 +51,8 @@ already do. Switching generators needs a fresh tree: `just clean` first.
   `fa_symbols_check` fails when the compiler inlined a hooked function anywhere, because those calls
   never reach the hook. Hook the function holding the copy too, or read the copy in Ghidra and add
   it to `kReviewedCopies` in `tools/check_symbols.cpp` with the reason it needs no hook.
-- Do RE in Ghidra through the `mcp__ghidra__*` tools, project `factorio-full`: the DRM-free
-  2.1.21 build with full PDB types. Function addresses differ between the DRM-free and Steam builds;
+- Do RE in Ghidra through the `mcp__ghidra__*` tools, project `factorio-full`, program
+  `/2.1.22/factorio.exe`: the DRM-free 2.1.22 build with full PDB types. Function addresses differ between the DRM-free and Steam builds;
   class layouts match. `xrefs` lists caller addresses only. `get_code` on an address inside a
   function names that function.
 - Write each finding down as you go: the layout, the function, and who calls it.
