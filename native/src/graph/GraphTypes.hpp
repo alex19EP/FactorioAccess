@@ -184,7 +184,7 @@ struct NodeVtable
     /// read-coordinates key.
     std::function<std::string()> PositionText;
 
-    /// Optional. The control's state line, spoken IMMEDIATELY (interrupting) after an
+    /// Optional. The control's state line, spoken IMMEDIATELY after an
     /// activation/adjust that changes state — the synchronous feedback path for rapid key
     /// repeats. Asynchronous/game-driven changes ride the Live announcement watch instead.
     std::function<std::string()> StateText;
@@ -200,7 +200,7 @@ struct NodeVtable
     // navigator casts at its chokepoints. Empty = the host's default for that slot.
 
     /// The game's themed hover sound for a focus MOVE onto this control. Played by the navigator
-    /// exactly on the interrupt (keypress-driven) move paths.
+    /// exactly on the keypress-driven move paths.
     std::any HoverSound;
 
     /// The game's themed click sound for activation. Takes precedence over ActivateSound.

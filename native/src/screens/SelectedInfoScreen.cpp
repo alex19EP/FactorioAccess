@@ -28,7 +28,7 @@ bool SelectedInfoScreen::IsActive()
 {
     const bool overMap = OverMap();
     if (selectedinfo::takeRequest() && overMap && !selectedinfo::open())
-        speech::say(std::string(vocab::kNothingHere), true);
+        speech::say(std::string(vocab::kNothingHere));
     if (!selectedinfo::window())
         return false;
     if (!overMap)

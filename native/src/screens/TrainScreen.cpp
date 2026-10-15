@@ -61,7 +61,7 @@ void TrainScreen::WatchSchedule(const Widget* window)
         std::string line = names[added];
         if (agui::buttonToggled(stations[added].goTo))
             line += ", " + std::string(vocab::kCurrentStop);
-        speech::say(line, false);
+        speech::say(line);
     }
     _mapStations = std::move(names);
 }

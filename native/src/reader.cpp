@@ -722,7 +722,7 @@ void tick() {
       *text = pending->prefix + separator + *text;
    }
    if (!pending->suffix.empty()) *text += (text->empty() ? "" : ", ") + pending->suffix;
-   speech::say(std::move(*text), true);
+   speech::say(std::move(*text));
 }
 
 const void* selectedAt(int32_t tileX, int32_t tileY) {

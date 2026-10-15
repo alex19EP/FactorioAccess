@@ -196,7 +196,7 @@ void tick() {
    std::string said = describe(sourcePlayer(source), selection);
    if (said.empty() || said == g_said) return;
    g_said = said;
-   speech::say(std::move(said), false);
+   speech::say(std::move(said));
 }
 
 } // namespace fa::chart

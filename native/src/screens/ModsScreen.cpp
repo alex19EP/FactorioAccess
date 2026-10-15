@@ -362,7 +362,7 @@ void ModsScreen::BuildExplore(graph::GraphBuilder& builder, const Widget* window
     // How many mods the search found, said when it changes: a search or filter finished.
     std::string found = Shows(count) ? LabelText(count) : std::string();
     if (_browsing && !found.empty() && found != _found)
-        speech::say(found, false);
+        speech::say(found);
     _found = found;
     _browsingNow = true;
 

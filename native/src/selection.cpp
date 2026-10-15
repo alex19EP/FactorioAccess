@@ -88,7 +88,7 @@ void sayFinished(std::byte* view, int32_t mode) {
    if (!action) return;
    std::string said = *action;
    for (const std::string& count : counts) said += ", " + count;
-   speech::say(std::move(said), true);
+   speech::say(std::move(said));
 }
 
 // This client's GameView, which holds the open selection; null outside a game.
@@ -207,7 +207,7 @@ ProcessActionsFunction g_processActionsOriginal = nullptr;
 bool detourProcessActions(void* source, const void* event, bool paused) {
    if (std::byte* view = openSelection(); view && triggersToggleMenu(event)) {
       cancel(view);
-      speech::say(std::string(vocab::kSelectionCancelled), true);
+      speech::say(std::string(vocab::kSelectionCancelled));
       return true;
    }
    return g_processActionsOriginal(source, event, paused);
@@ -373,7 +373,7 @@ void detourDrawCounts(void* renderer, void* queue, const void* color) {
    const int32_t height = std::abs(cursorY - (at<int32_t>(self, layout.selectionRendererStart + 4) >> 8)) + 1;
    std::string said = vocab::kBoxSize(width, height);
    for (const Line& line : lines) said += ", " + line.text;
-   speech::say(std::move(said), false);
+   speech::say(std::move(said));
 }
 
 } // namespace

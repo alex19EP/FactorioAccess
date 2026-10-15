@@ -317,7 +317,7 @@ void Navigator::HandleSkip(graph::GraphDir dir)
 
 void Navigator::SpeakWithin(graph::GraphNode* node)
 {
-    Speak(graph::GraphAnnouncer::LeafText(node), kInterruptOnKeypress);
+    Speak(graph::GraphAnnouncer::LeafText(node));
     // The node stays focused; what changed is where its cursor is, which the move just said.
     _liveBaselineId = node->Id;
     _liveBaseline = ResolveLiveParts(node);
@@ -335,7 +335,7 @@ void Navigator::HandlePosition()
 {
     graph::GraphNode* node = _graph->CurrentNode();
     if (node && node->Vtable.PositionText)
-        Speak(node->Vtable.PositionText(), kInterruptOnKeypress);
+        Speak(node->Vtable.PositionText());
 }
 
 void Navigator::HandleHomeEnd(bool home)
@@ -367,7 +367,7 @@ void Navigator::HandleEnter(bool shift, bool ctrl)
         else
         {
             _adjusting = node->Id;
-            Speak(vocab::kAdjusting, kInterruptOnKeypress);
+            Speak(vocab::kAdjusting);
         }
         return;
     }
@@ -388,7 +388,7 @@ void Navigator::StopAdjusting()
 void Navigator::HandleTooltip()
 {
     if (!_graph->Tooltip())
-        Speak(vocab::kNoTooltip, kInterruptOnKeypress);
+        Speak(vocab::kNoTooltip);
 }
 
 // Backspace is ONE concept with two shapes — the right-click equivalent. A node owning a flyout
@@ -411,13 +411,13 @@ void Navigator::HandleContextMenu()
     }
 
     if (!_graph->Secondary())
-        Speak(vocab::kNoAction, kInterruptOnKeypress);
+        Speak(vocab::kNoAction);
 }
 
 void Navigator::HandleMiddleClick()
 {
     if (!_graph->Tertiary())
-        Speak(vocab::kNoAction, kInterruptOnKeypress);
+        Speak(vocab::kNoAction);
 }
 
 void Navigator::AnnounceMove(const graph::MoveResult& result)
@@ -426,7 +426,7 @@ void Navigator::AnnounceMove(const graph::MoveResult& result)
         return;
     std::string line = graph::GraphAnnouncer::Compose(result.From, result.To, result.TransitionLabel);
     if (!line.empty())
-        Speak(line, kInterruptOnKeypress);
+        Speak(line);
     _lastSpoken = result.To->Id; // the differ stays silent about this landing
 }
 
@@ -445,7 +445,7 @@ void Navigator::AnnounceTree(const graph::KeyGraph::TreeResult& result)
         std::string state = graph::GraphAnnouncer::ExpandedStateText
             ? graph::GraphAnnouncer::ExpandedStateText(node->Expanded)
             : std::string();
-        Speak(state.empty() ? graph::GraphAnnouncer::LeafText(node) : state, kInterruptOnKeypress);
+        Speak(state.empty() ? graph::GraphAnnouncer::LeafText(node) : state);
         _lastSpoken = node->Id;
         break;
     }
@@ -473,7 +473,7 @@ void Navigator::SpeakStateFeedback()
     {
         std::string state = node->Vtable.StateText();
         if (!state.empty())
-            Speak(state, /*interrupt*/ true);
+            Speak(state);
     }
     // Rebaseline the live watch so the same change isn't spoken twice (§7.4).
     _liveBaselineId = node->Id;
@@ -512,7 +512,7 @@ void Navigator::RunFrameDiffer()
         graph::GraphNode* from = _lastSpoken.IsValid() ? _graph->Current()->NodeAt(_lastSpoken) : nullptr;
         std::string line = graph::GraphAnnouncer::Compose(from, node);
         if (!line.empty())
-            Speak(line); // differ landings queue (they follow whatever caused them)
+            Speak(line);
         _lastSpoken = node->Id;
     }
 
@@ -538,7 +538,7 @@ void Navigator::RunLiveWatch(bool focusChangedThisFrame)
     {
         for (std::size_t i = 0; i < parts.size(); i++)
             if (parts[i] != _liveBaseline[i] && !parts[i].empty())
-                Speak(parts[i]); // just the changed part, queued
+                Speak(parts[i]); // just the changed part
     }
     _liveBaseline = std::move(parts);
 }
@@ -645,10 +645,10 @@ void Navigator::UpdateClaims(bool haveRender)
     _claimsPositional = positional;
 }
 
-void Navigator::Speak(const std::string& text, bool interrupt)
+void Navigator::Speak(const std::string& text)
 {
     if (!text.empty())
-        speech::say(text, interrupt);
+        speech::say(text);
 }
 
 std::vector<std::string> Navigator::ResolveLiveParts(graph::GraphNode* node) const

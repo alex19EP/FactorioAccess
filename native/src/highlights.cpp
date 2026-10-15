@@ -348,7 +348,7 @@ std::string text(Report& report) {
 }
 
 void speak(Report& report) {
-   if (std::string said = text(report); !said.empty()) speech::say(std::move(said), false);
+   if (std::string said = text(report); !said.empty()) speech::say(std::move(said));
 }
 
 // Says a report the roboport lines never came for.
@@ -537,7 +537,7 @@ Collecting::~Collecting() {
 void preview(const void* settings, const void* entity, std::string meaning, bool drag) {
    Collector& collector = t_collector;
    if (!collector.active) {
-      if (!meaning.empty()) speech::say(std::move(meaning), false);
+      if (!meaning.empty()) speech::say(std::move(meaning));
       return;
    }
    const auto* preview = static_cast<const std::byte*>(entity);

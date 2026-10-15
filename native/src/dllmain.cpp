@@ -36,7 +36,7 @@ extern "C" __declspec(dllexport) bool fa_core_start(const fa::stub::Api* api) {
    log::open(directory / "factorio-access-native.log", api->generation > 0);
    if (api->version != stub::kApiVersion) {
       log::error("winmm.dll speaks stub API {}, this core {}; deploy both", api->version, stub::kApiVersion);
-      speech::say("FactorioAccess native does not match its winmm.dll", false);
+      speech::say("FactorioAccess native does not match its winmm.dll");
       return false;
    }
    log::info("Loaded into {} (generation {})", modulePath(nullptr).string(), api->generation);
@@ -54,17 +54,17 @@ extern "C" __declspec(dllexport) bool fa_core_start(const fa::stub::Api* api) {
 
    // Fail closed: with any name or layout missing, nothing touches the game.
    if (!resolved) {
-      speech::say("FactorioAccess native does not support this Factorio version", false);
+      speech::say("FactorioAccess native does not support this Factorio version");
       return false;
    }
    ui::start();
    input::setKeyObserver(&scanner::observeKey);
    luabridge::bind(api->bindLua);
    if (!hooks::install()) {
-      speech::say("FactorioAccess native could not hook the game", false);
+      speech::say("FactorioAccess native could not hook the game");
       return false;
    }
-   speech::say(api->generation > 0 ? "FactorioAccess native reloaded" : "FactorioAccess native ready", false);
+   speech::say(api->generation > 0 ? "FactorioAccess native reloaded" : "FactorioAccess native ready");
    return true;
 }
 

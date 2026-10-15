@@ -83,7 +83,8 @@ already do. Switching generators needs a fresh tree: `just clean` first.
   bullets, colons and dashes. The root CLAUDE.md style rules (no colons, and so on) apply to the
   mod's and the DLL's OWN words, which live in `vocab` (see below).
 - Rich-text icons are spoken as their names (`text::speakable`).
-- Every keypress the navigator handles interrupts speech.
+- Nothing the DLL says interrupts speech: every line queues, and the screen reader cuts off its own
+  speech on a keypress. Never add an interrupting call.
 
 ### Localisation of the DLL's own words
 

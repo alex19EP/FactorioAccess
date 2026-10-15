@@ -235,7 +235,7 @@ void afterGuiLogic(const agui::Gui* gui) {
       log::error("Access violation in the navigator at {} touching {:#x}; FactorioAccess native UI is off until "
                  "restart",
                  whereIs(g_faultAt), g_faultAddress);
-      speech::say("FactorioAccess native UI failed and is now off", false);
+      speech::say("FactorioAccess native UI failed and is now off");
    }
 }
 

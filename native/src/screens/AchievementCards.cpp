@@ -104,14 +104,14 @@ graph::NodeVtable CardNode(const Widget* card, bool hud)
     vtable.Announcements.emplace_back([card, hud]() { return StateText(card, hud); }, false, Kinds::Value);
     vtable.Announcements.emplace_back([card, hud]() { return CardText(card, hud); }, false, Kinds::Label);
     if (!TooltipText(card, hud).empty())
-        vtable.OnTooltip = [card, hud]() { speech::say(TooltipText(card, hud), true); };
+        vtable.OnTooltip = [card, hud]() { speech::say(TooltipText(card, hud)); };
     if (agui::achievementCard(card).track && hud)
     {
         // A HUD card's button only stops tracking, and takes the card away with it.
         vtable.OnActivate = [card]()
         {
             agui::press(agui::achievementCard(card).track, agui::MouseButton::Left, false, false);
-            speech::say(std::string(vocab::kNotTracked), true);
+            speech::say(std::string(vocab::kNotTracked));
         };
     }
     else if (agui::achievementCard(card).track)

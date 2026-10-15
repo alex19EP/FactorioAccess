@@ -166,7 +166,7 @@ void end() {
          g_announcement.reset();
       }
    }
-   if (!words.empty()) speech::say(std::move(words), false);
+   if (!words.empty()) speech::say(std::move(words));
 }
 
 void clear() {

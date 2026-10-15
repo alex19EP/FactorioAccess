@@ -5,7 +5,7 @@
 //   §7.1 standard key model (arrows/adjust/tree, Tab stops, Home/End, Ctrl+arrows regions,
 //        Enter family, tooltip verb, secondary)
 //   §7.2 frame differ — a focus change is spoken exactly once, no matter what caused it
-//   §7.4 synchronous StateText feedback after activate/adjust (interrupting)
+//   §7.4 synchronous StateText feedback after activate/adjust
 //   §7.5 live watch — Live parts of the focused node re-speak on change
 //   §7.8 build isolation — a throwing Build renders nothing this frame and is logged once
 //
@@ -13,9 +13,8 @@
 // input hook instead of Windows virtual keys, and the screen-key, quick-nav and tap-vs-hold
 // machinery is left out until a screen needs it.
 //
-// Speech interrupt policy (spec A7): every keypress interrupts what is being said, so the reply
-// to the key the player just pressed is never queued behind stale speech. The frame differ and
-// the live watch queue, since they follow whatever caused them.
+// Speech never interrupts: every line queues, and the screen reader cuts off its own speech on
+// the player's keypress.
 
 #include <memory>
 #include <string>
@@ -55,8 +54,6 @@ public:
     std::string Describe();
 
 private:
-    static constexpr bool kInterruptOnKeypress = true;
-
     void HandleKey(const input::KeyEvent& e);
     void HandleArrow(graph::GraphDir dir, bool ctrl);
     /// Ctrl+Shift+Up/Down: the focused node's list item moves one place (NodeVtable::OnReorder).
@@ -81,7 +78,7 @@ private:
     void AnnounceMove(const graph::MoveResult& result);
     void AnnounceTree(const graph::KeyGraph::TreeResult& result);
 
-    /// §7.4: after an activation/adjust, speak the focused node's StateText interrupting and
+    /// §7.4: after an activation/adjust, speak the focused node's StateText and
     /// rebaseline the live watch so the same change isn't spoken twice.
     void SpeakStateFeedback();
 
@@ -98,8 +95,8 @@ private:
     /// Publish the claim set: the keys the layer owns while attached with a live render.
     void UpdateClaims(bool haveRender);
 
-    void Speak(const std::string& text, bool interrupt = false);
-    void Speak(std::string_view text, bool interrupt = false) { Speak(std::string(text), interrupt); }
+    void Speak(const std::string& text);
+    void Speak(std::string_view text) { Speak(std::string(text)); }
 
     std::vector<std::string> ResolveLiveParts(graph::GraphNode* node) const;
 

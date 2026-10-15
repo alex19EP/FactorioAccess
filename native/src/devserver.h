@@ -32,6 +32,6 @@ void stop();
 void pump();
 
 // Records a spoken line (any thread).
-void onSpeech(std::string_view text, bool interrupt);
+void onSpeech(std::string_view text);
 
 } // namespace fa::dev

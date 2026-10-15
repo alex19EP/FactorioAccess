@@ -59,7 +59,6 @@ constexpr auto kBindRetry = std::chrono::milliseconds(500);
 
 struct Line {
    uint64_t seq;
-   bool interrupt;
    std::string text;
 };
 
@@ -370,7 +369,7 @@ std::string runKeys(std::string_view spec) {
    waitFrames(kFramesAfterKeys);
 
    std::string out;
-   for (const Line& line : speechSince(from)) out += std::format("{}{}\n", line.interrupt ? "! " : "  ", line.text);
+   for (const Line& line : speechSince(from)) out += line.text + "\n";
    return out.empty() ? "(silence)\n" : out;
 }
 
@@ -440,8 +439,7 @@ std::pair<int, std::string> route(const Request& request) {
       std::string param = queryParam(request.query, "since");
       std::from_chars(param.data(), param.data() + param.size(), since);
       std::string out = std::format("next={}\n", speechCursor());
-      for (const Line& line : speechSince(since))
-         out += std::format("{} {}{}\n", line.seq, line.interrupt ? "! " : "  ", line.text);
+      for (const Line& line : speechSince(since)) out += std::format("{} {}\n", line.seq, line.text);
       return {200, out};
    }
 
@@ -677,10 +675,10 @@ void pump() {
    g_jobDone.notify_all();
 }
 
-void onSpeech(std::string_view text, bool interrupt) {
+void onSpeech(std::string_view text) {
    if (!g_running) return;
    std::scoped_lock lock(g_speechMutex);
-   g_speech.push_back({g_nextSeq++, interrupt, std::string(text)});
+   g_speech.push_back({g_nextSeq++, std::string(text)});
    if (g_speech.size() > kSpeechKept) g_speech.pop_front();
 }
 

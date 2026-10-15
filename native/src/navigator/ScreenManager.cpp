@@ -183,7 +183,7 @@ void ScreenManager::Update()
     }
     // A screen taking over announces itself instead.
     if (!top && !leaveLine.empty())
-        speech::say(leaveLine, true);
+        speech::say(leaveLine);
 
     _navigator.Update();
 }

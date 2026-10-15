@@ -237,7 +237,7 @@ void QuickBarScreen::WatchPage()
     std::string line = PageName(rows[0].page);
     if (!rows[0].slots.empty())
         line += ", " + SlotContent(rows[0].slots[0]);
-    speech::say(line, true);
+    speech::say(line);
 }
 
 } // namespace fa::screens

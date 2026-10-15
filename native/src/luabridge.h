@@ -8,7 +8,7 @@
 //   fa_native.set_cursor(player_index, x, y)       the FA cursor, a map position in tiles
 //   fa_native.release_cursor(player_index)         the game cursor follows the mouse again
 //   fa_native.speak(player_index, message)         says a LocalisedString through the screen
-//                                                  reader, interrupting, if it is for this client
+//                                                  reader, if it is for this client
 #include "stub/stub-api.h"
 
 namespace fa::luabridge {

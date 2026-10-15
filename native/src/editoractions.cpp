@@ -172,7 +172,7 @@ void detourActionPerformed(void* handler, const std::byte* action, std::byte* co
    const int playerIndex = at<uint16_t>(player, layout.playerIndex) + 1;
    if (type == layout.editorTogglePause || type == layout.editorIncreaseSpeed || type == layout.editorDecreaseSpeed ||
        type == layout.editorResetSpeed) {
-      speech::say(speedLine(map), true);
+      speech::say(speedLine(map));
    } else if (type == layout.editorTickOnce) {
       std::scoped_lock lock(g_mutex);
       g_tickFrom = at<uint64_t>(map, layout.mapEntityTick);
@@ -180,23 +180,22 @@ void detourActionPerformed(void* handler, const std::byte* action, std::byte* co
               type == layout.editorResourceVariation || type == layout.editorTileVariation) {
       if (const std::optional<cursor::Tile> tile = cursor::position(playerIndex)) reader::read(tile->x, tile->y);
    } else if (type == layout.editorCloneSource) {
-      speech::say(vocab::kCloneSourceSet, true);
+      speech::say(vocab::kCloneSourceSet);
    } else if (type == layout.editorCloneDestination) {
-      speech::say(vocab::kCloneDestinationSet, true);
+      speech::say(vocab::kCloneDestinationSet);
    } else if (removed) {
-      speech::say(area ? vocab::kScriptAreaRemoved(*removed) : vocab::kScriptPositionRemoved(*removed), true);
+      speech::say(area ? vocab::kScriptAreaRemoved(*removed) : vocab::kScriptPositionRemoved(*removed));
    } else if (type == layout.editorCreateScriptRectangle || type == layout.editorCreateScriptPosition) {
       const bool rectangle = type == layout.editorCreateScriptRectangle;
       if (const std::optional<std::string> created = newestScriptName(map, rectangle, surface))
-         speech::say(rectangle ? vocab::kScriptAreaCreated(*created) : vocab::kScriptPositionCreated(*created), true);
+         speech::say(rectangle ? vocab::kScriptAreaCreated(*created) : vocab::kScriptPositionCreated(*created));
    } else if (type == layout.editorSelectScriptRectangle || type == layout.editorSelectScriptPosition) {
       const bool rectangle = type == layout.editorSelectScriptRectangle;
       const uint32_t id = at<uint32_t>(action, layout.editorActionSurface + layout.surfaceAndDataData);
       if (const std::optional<std::string> selected = scriptNameById(map, rectangle, surface, id))
-         speech::say(rectangle ? vocab::kScriptAreaSelected(*selected) : vocab::kScriptPositionSelected(*selected),
-                     true);
+         speech::say(rectangle ? vocab::kScriptAreaSelected(*selected) : vocab::kScriptPositionSelected(*selected));
    } else if (type == layout.editorSwitchToSurface) {
-      speech::say(surfaceLine(map, view(at<MsvcString>(action, layout.editorActionString))), true);
+      speech::say(surfaceLine(map, view(at<MsvcString>(action, layout.editorActionString))));
    }
 }
 
@@ -211,7 +210,7 @@ void frame(const std::byte* player) {
       if (!g_tickFrom || *g_tickFrom == tick) return;
       g_tickFrom.reset();
    }
-   speech::say(vocab::kEditorTick(tick), true);
+   speech::say(vocab::kEditorTick(tick));
 }
 
 void* actionPerformedDetour() { return reinterpret_cast<void*>(&detourActionPerformed); }

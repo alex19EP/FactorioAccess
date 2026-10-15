@@ -186,7 +186,7 @@ std::string nameKeys(lua_State* L, const std::string& text) {
 
 int speak(lua_State* L) {
    if (!world::mayBeLocalPlayer(static_cast<int>(checkInteger(L, 1)))) return 0;
-   speech::say(nameKeys(L, stripRichText(translate(L, 2))), true);
+   speech::say(nameKeys(L, stripRichText(translate(L, 2))));
    return 0;
 }
 

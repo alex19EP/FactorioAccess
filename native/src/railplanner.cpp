@@ -285,7 +285,7 @@ void update(const Drawn& drawn) {
 
    if (!at<bool>(gameViewObject, layout.gameViewRailPlannerActive)) {
       if (state.active) {
-         speech::say(std::string(vocab::kRailPlanEnded), false);
+         speech::say(std::string(vocab::kRailPlanEnded));
          publish(std::nullopt);
       }
       state.active = false;
@@ -307,10 +307,9 @@ void update(const Drawn& drawn) {
       const bool built = state.active && lastEnd && *lastEnd == search.start;
       const std::string direction = vocab::kDirection(search.start.direction);
       if (search.start.layer != 0)
-         speech::say(built ? vocab::kRailPlanBuiltElevated(direction) : vocab::kRailPlanStartElevated(direction),
-                     false);
+         speech::say(built ? vocab::kRailPlanBuiltElevated(direction) : vocab::kRailPlanStartElevated(direction));
       else
-         speech::say(built ? vocab::kRailPlanBuilt(direction) : vocab::kRailPlanStart(direction), false);
+         speech::say(built ? vocab::kRailPlanBuilt(direction) : vocab::kRailPlanStart(direction));
       state.active = true;
       state.start = search.start;
       // The cursor is still where planning started; the route to it is said once it moves.
@@ -323,7 +322,7 @@ void update(const Drawn& drawn) {
    // The game says only that the layer switched.
    if (layer != state.layer) {
       state.layer = layer;
-      speech::say(std::string(layer != 0 ? vocab::kRailPlanLayerElevated : vocab::kRailPlanLayerGround), false);
+      speech::say(std::string(layer != 0 ? vocab::kRailPlanLayerElevated : vocab::kRailPlanLayerGround));
    }
    if (state.seen != search) {
       state.seen = search;
@@ -343,7 +342,7 @@ void update(const Drawn& drawn) {
    const bool asked = g_sayRoute.exchange(false);
    if (said == state.summary && !asked) return;
    state.summary = said;
-   speech::say(std::move(said), false);
+   speech::say(std::move(said));
 }
 
 // NamedBool<Tag>, BuildMode and EntitySelectionMode are one byte each, all by value; the

@@ -32,7 +32,7 @@ void ReadTooltip(std::vector<TooltipLine> lines)
 {
     if (lines.empty())
     {
-        speech::say(std::string(vocab::kNoTooltip), true);
+        speech::say(std::string(vocab::kNoTooltip));
         return;
     }
     if (lines.size() <= kSpokenLines)
@@ -40,7 +40,7 @@ void ReadTooltip(std::vector<TooltipLine> lines)
         std::string text;
         for (const TooltipLine& line : lines)
             text += (text.empty() ? "" : "\n") + line.text;
-        speech::say(text, true);
+        speech::say(text);
         return;
     }
     g_reader = {std::move(lines), nav::ScreenManager::Get().Focused()};

@@ -312,10 +312,10 @@ void nudgeForKey(const MoveKey& key, const View& view, Position cursor, Position
    const int eighth = key.dx > 0 ? 2 : key.dx < 0 ? 6 : key.dy > 0 ? 4 : 0;
    // A rail goal's route follows by itself once the game has searched it (railplanner.h).
    if (pinnedRails()) {
-      speech::say(vocab::kRailGoalNudged(vocab::direction(eighth)), true);
+      speech::say(vocab::kRailGoalNudged(vocab::direction(eighth)));
       railplanner::sayRoute();
    } else {
-      speech::say(vocab::kNudged(vocab::direction(eighth)), true);
+      speech::say(vocab::kNudged(vocab::direction(eighth)));
       footprint::announce({}, tileOf(cursor.x), tileOf(cursor.y));
    }
    record(cursor, Step::Read);
@@ -386,7 +386,7 @@ void skipForKey(const MoveKey& key, const View& view, Position cursor) {
 void cycleForKey(const View& view, Position cursor) {
    const int playerIndex = at<uint16_t>(view.player, layout.playerIndex) + 1;
    if (buildFollowsCursor(playerIndex)) {
-      speech::say(std::string(vocab::kCycleHoldingBuild), true);
+      speech::say(std::string(vocab::kCycleHoldingBuild));
       return;
    }
    const std::vector<reader::Stop> stops = reader::stopsIn(tileOf(cursor.x), tileOf(cursor.y));
@@ -456,7 +456,7 @@ void flushDragNews() {
       if (!g_dragNews || ++g_dragNews->frames < kDragNewsFrames) return;
       news = std::exchange(g_dragNews, std::nullopt);
    }
-   speech::say(newsText(*news, nullptr), true);
+   speech::say(newsText(*news, nullptr));
 }
 
 void moveForKey(const void* event, const void* context) {
@@ -601,7 +601,7 @@ void checkPin(const View& view, int playerIndex) {
       if (pin && held && held->blueprint == pin->blueprint && held->entity == pin->entity && sameSurface) return;
    }
    unpin();
-   speech::say(std::string(vocab::kAttachedCursor), false);
+   speech::say(std::string(vocab::kAttachedCursor));
 }
 
 // Says the direction a belt drag turns to when the game makes the turn, at the step after rotate.
@@ -611,7 +611,7 @@ void sayDragTurn(int playerIndex) {
       std::exchange(g_heardDragTurns, drag ? std::optional<int>(drag->turns) : std::nullopt);
    if (!drag || !heard || *heard == drag->turns) return;
    const int direction = world::buildDirection(playerIndex);
-   if (direction >= 0) speech::say(vocab::kDragTurned(std::string(vocab::kDirection(direction))), true);
+   if (direction >= 0) speech::say(vocab::kDragTurned(std::string(vocab::kDirection(direction))));
 }
 
 void reset() {
@@ -702,15 +702,12 @@ void announceView(const View& view, bool speak) {
    const int32_t cell = cellSize(view);
    const vocab::Word* word = say == viewannounce::Say::View ? viewWord(view.controller) : nullptr;
    if (!word) {
-      speech::say(vocab::kZoomSet(tiles, cell), true);
+      speech::say(vocab::kZoomSet(tiles, cell));
       return;
    }
    std::string text = (*word)(tiles, cell);
    if (!hand.empty()) text += ", " + hand;
-   // A view entered with a window, as remote view opens with a locomotive's, follows the window's
-   // own line rather than cutting it off.
-   const bool window = at<const void*>(view.view, layout.gameViewActiveWindow) != nullptr;
-   speech::say(std::move(text), !window);
+   speech::say(std::move(text));
 }
 
 void frame(void* source) {
@@ -908,8 +905,7 @@ void toggleDetach(int playerIndex) {
    const std::optional<world::HeldBuild> held = rails ? std::nullopt : world::heldBuild(playerIndex);
    if (!held && !rails) {
       speech::say(
-         std::string(world::holdsRailPlanner(playerIndex) ? vocab::kRailDetachNotPlanning : vocab::kNothingToDetach),
-         true);
+         std::string(world::holdsRailPlanner(playerIndex) ? vocab::kRailDetachNotPlanning : vocab::kNothingToDetach));
       return;
    }
    // The build goes on from the tile's centre, where it is built now.
@@ -920,7 +916,7 @@ void toggleDetach(int playerIndex) {
       g_pin = Pin{held && held->blueprint, held ? held->entity : 0,
                   at<uint32_t>(view->view, layout.gameViewSurfaceIndex), rails};
    }
-   speech::say(std::string(vocab::kDetachedCursor), true);
+   speech::say(std::string(vocab::kDetachedCursor));
    if (!rails) footprint::announce({}, tileOf(corner.x), tileOf(corner.y));
 }
 

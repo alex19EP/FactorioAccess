@@ -25,12 +25,12 @@ void start(const std::filesystem::path& directory);
 // Ends the speech thread and Prism with it, dropping what is still queued; before the core unloads.
 void stop();
 
-// Queues text for the screen reader. `interrupt` cuts off whatever is being said and drops
-// anything still queued.
-void say(std::string text, bool interrupt);
+// Queues text for the screen reader. Nothing FA says cuts off what is being said: the screen
+// reader stops its own speech, on a keypress or the player's stop key.
+void say(std::string text);
 
 // Queues text the game shows on its own (flying text, console lines) as it reads: a line at a
-// time, through text::speakable. Never interrupts, so a burst is read through.
+// time, through text::speakable.
 void sayShown(std::string_view text);
 
 // Whether lines stay off the screen reader; see start. The dev server's /mute sets it.

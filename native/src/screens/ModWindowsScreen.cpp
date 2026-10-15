@@ -127,8 +127,7 @@ void ModWindowsScreen::AnnounceNew(const agui::ModScreenWindows& found)
                 continue;
             std::string title = TitleOf(window);
             speech::say(title.empty() ? std::string(vocab::kUntitledModWindowShown)
-                                      : std::string(vocab::kModWindowShown(title)),
-                false);
+                                      : std::string(vocab::kModWindowShown(title)));
         }
     _seen = windows;
 }
@@ -143,7 +142,7 @@ void ModWindowsScreen::SayChangedLabels(const std::vector<const Widget*>& window
     {
         auto before = _labels.find(label);
         if (before != _labels.end() && before->second != text && !text.empty())
-            speech::say(text, false);
+            speech::say(text);
     }
     _labels = std::move(labels);
 }
