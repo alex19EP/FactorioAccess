@@ -106,22 +106,6 @@ Frozen pipe picture variation used when owner machine is flipped. If no picture 
 
 **Optional:** Yes
 
-### minimum_temperature
-
-The minimum temperature allowed into the fluidbox. Only applied if a `filter` is specified.
-
-**Type:** `float`
-
-**Optional:** Yes
-
-### maximum_temperature
-
-The maximum temperature allowed into the fluidbox. Only applied if a `filter` is specified.
-
-**Type:** `float`
-
-**Optional:** Yes
-
 ### max_pipeline_extent
 
 The max extent that a pipeline with this fluidbox can span. A given pipeline's extent is calculated as the min extent of all the fluidboxes that comprise it.

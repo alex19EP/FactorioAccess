@@ -8,7 +8,7 @@ A pin owned by a player.
 
 The index of this pin (unique to this player).
 
-Note that this index has no corelation to the position of the pin within [LuaPlayer::get_pins](runtime:LuaPlayer::get_pins)
+Note that this index has no correlation to the position of the pin within [LuaPlayer::get_pins](runtime:LuaPlayer::get_pins)
 
 **Read type:** `uint32`
 
@@ -62,7 +62,7 @@ If writing, and this pin was not bound to a specific surface and position, the d
 
 ### chart_tag
 
-The custom chart tag - if this pin specificaly binds to a chart tag.
+The custom chart tag - if this pin specifically binds to a chart tag.
 
 The chart tag must be on the same force as the owning player.
 

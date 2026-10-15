@@ -344,6 +344,7 @@ Set new entities to be a part of this blueprint.
 **Parameters:**
 
 - `entities` Array[`BlueprintEntity`] - The new blueprint entities.
+- `fix_positions` `boolean` *(optional)* - If false, positions will be left unchanged unless invalid for the current snapping.
 
 ### get_blueprint_tiles
 

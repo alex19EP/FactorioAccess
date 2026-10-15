@@ -10,6 +10,12 @@ Called after a player alt-reverse-selects an area with a selection-tool item.
 
 The area selected.
 
+### cursor_position
+
+**Type:** `MapPosition`
+
+The player cursor position.
+
 ### entities
 
 **Type:** Array[`LuaEntity`]
@@ -33,6 +39,16 @@ Identifier of the event.
 **Type:** `uint32`
 
 The player doing the selection.
+
+### position
+
+**Type:** `MapPosition`
+
+The position where the player started the selection.
+
+### selection_mode
+
+**Type:** `defines.selection_mode`
 
 ### surface
 

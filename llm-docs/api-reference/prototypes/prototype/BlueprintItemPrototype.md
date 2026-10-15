@@ -71,3 +71,11 @@ This property is hardcoded to `false`.
 
 **Overrides parent:** Yes
 
+### build_preview_tints
+
+Tints of the building preview when this blueprint is held in the cursor. Every property is optional here, any that are not given use the color from [UtilityConstants::build_preview_tints](prototype:UtilityConstants::build_preview_tints).
+
+**Type:** `BuildPreviewTints`
+
+**Optional:** Yes
+

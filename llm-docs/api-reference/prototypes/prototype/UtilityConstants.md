@@ -36,27 +36,9 @@ The base game uses more entries here that are applied via the `ammo-category.lua
 
 **Required:** Yes
 
-### building_buildable_too_far_tint
+### build_preview_tints
 
-**Type:** `Color`
-
-**Required:** Yes
-
-### building_buildable_tint
-
-**Type:** `Color`
-
-**Required:** Yes
-
-### building_not_buildable_tint
-
-**Type:** `Color`
-
-**Required:** Yes
-
-### building_ignorable_tint
-
-**Type:** `Color`
+**Type:** `BuildPreviewTints`
 
 **Required:** Yes
 

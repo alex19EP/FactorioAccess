@@ -954,9 +954,9 @@ The heat buffer prototype this entity uses, if any.
 
 **Optional:** Yes
 
-### building_grid_bit_shift
+### build_grid_size
 
-The log2 of [grid size](prototype:EntityPrototype::build_grid_size) of the building.
+The [grid size](prototype:EntityPrototype::build_grid_size) of the building.
 
 **Read type:** `uint32`
 
@@ -1008,9 +1008,69 @@ Whether this generator prototype destroys non-fuel fluids.
 
 **Subclasses:** Generator
 
+### minimum_input_temperature
+
+The minimum input temperature that this prototype accepts, if specified. An input fluid below this temperature will cause the machine to stop working.
+
+**Read type:** `float`
+
+**Optional:** Yes
+
+**Subclasses:** Boiler, FusionGenerator, FusionReactor, Generator, MiningDrill
+
+### maximum_input_temperature
+
+The maximum input temperature that this prototype accepts, if specified. An input fluid above this temperature will cause the machine to stop working.
+
+**Read type:** `float`
+
+**Optional:** Yes
+
+**Subclasses:** Boiler, FusionGenerator, FusionReactor, Generator, MiningDrill
+
+### minimum_fuel_temperature
+
+The minimum fuel temperature that this thruster accepts, if specified. Fuel below this temperature will cause the thruster to stop working.
+
+**Read type:** `float`
+
+**Optional:** Yes
+
+**Subclasses:** Thruster
+
+### maximum_fuel_temperature
+
+The maximum fuel temperature that this thruster accepts, if specified. Fuel above this temperature will cause the thruster to stop working.
+
+**Read type:** `float`
+
+**Optional:** Yes
+
+**Subclasses:** Thruster
+
+### minimum_oxidizer_temperature
+
+The minimum oxidizer temperature that this thruster accepts, if specified. Oxidizer below this temperature will cause the thruster to stop working.
+
+**Read type:** `float`
+
+**Optional:** Yes
+
+**Subclasses:** Thruster
+
+### maximum_oxidizer_temperature
+
+The maximum oxidizer temperature that this thruster accepts, if specified. Oxidizer above this temperature will cause the thruster to stop working.
+
+**Read type:** `float`
+
+**Optional:** Yes
+
+**Subclasses:** Thruster
+
 ### target_temperature
 
-The target temperature of this boiler or fusion reactor prototype. If `nil` on a fusion reactor, the target temperature is the default temperature of the output fluid.
+The target temperature of this boiler or fusion reactor prototype. If `nil` on a fusion reactor, the target temperature is the default temperature of the output fluid. If specified on a boiler, an input fluid above this temperature will cause the boiler to stop working.
 
 **Read type:** `float`
 
@@ -3328,7 +3388,7 @@ When lightning hits a lightning attractor this amount of energy is transferred t
 
 **Optional:** Yes
 
-**Subclasses:** AssemblingMachine
+**Subclasses:** AssemblingMachine, Furnace
 
 ### default_working_signal
 
@@ -3336,7 +3396,7 @@ When lightning hits a lightning attractor this amount of energy is transferred t
 
 **Optional:** Yes
 
-**Subclasses:** AssemblingMachine
+**Subclasses:** AssemblingMachine, Furnace
 
 ### disabled_when_recipe_not_researched
 
@@ -3648,7 +3708,7 @@ When lightning hits a lightning attractor this amount of energy is transferred t
 
 **Optional:** Yes
 
-**Subclasses:** Container
+**Subclasses:** Container, ProxyContainer
 
 ### default_status
 
@@ -3657,6 +3717,14 @@ When lightning hits a lightning attractor this amount of energy is transferred t
 **Optional:** Yes
 
 **Subclasses:** Container
+
+### default_empty_slots_signal
+
+**Read type:** `SignalID`
+
+**Optional:** Yes
+
+**Subclasses:** Container, LinkedContainer, ProxyContainer, SpacePlatformHub, CargoLandingPad
 
 ### expires
 
@@ -4941,6 +5009,14 @@ When lightning hits a lightning attractor this amount of energy is transferred t
 ### can_launch_without_landing_pads
 
 **Read type:** `boolean`
+
+**Optional:** Yes
+
+**Subclasses:** RocketSilo
+
+### default_launched_signal
+
+**Read type:** `SignalID`
 
 **Optional:** Yes
 

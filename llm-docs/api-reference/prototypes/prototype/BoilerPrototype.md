@@ -59,7 +59,23 @@ Note that `fire` and `fire_glow` alpha is set to the light intensity of the ener
 
 ### target_temperature
 
-Only loaded, and mandatory if `mode` is `"output-to-separate-pipe"`. This is the temperature that the input fluid must reach to be moved to the output fluid box.
+Only loaded, and mandatory if `mode` is `"output-to-separate-pipe"`. The boiler heats the input fluid to exactly this temperature and moves the fluid to the output fluid box. An input fluid above this temperature will cause the boiler to stop working.
+
+**Type:** `float`
+
+**Optional:** Yes
+
+### minimum_input_temperature
+
+If specified, an input fluid below this temperature will cause the boiler to stop working.
+
+**Type:** `float`
+
+**Optional:** Yes
+
+### maximum_input_temperature
+
+If specified, an input fluid above this temperature will cause the boiler to stop working.
 
 **Type:** `float`
 

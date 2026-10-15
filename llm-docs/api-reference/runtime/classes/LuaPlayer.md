@@ -1102,6 +1102,8 @@ Gets a copy of the currently selected blueprint in the clipboard queue into the 
 
 Starts selection with selection tool from the specified position. Does nothing if the player's cursor is not a selection tool.
 
+This method affects a player's input state and does not directly affect game state. The effects of calling this method will not be immediately observable, especially in multiplayer.
+
 **Parameters:**
 
 - `position` `MapPosition` - The position to start selection from.
@@ -1110,6 +1112,8 @@ Starts selection with selection tool from the specified position. Does nothing i
 ### clear_selection
 
 Clears the player's selection tool selection position.
+
+This method affects a player's input state and does not directly affect game state. The effects of calling this method will not be immediately observable, especially in multiplayer.
 
 ### enter_space_platform
 

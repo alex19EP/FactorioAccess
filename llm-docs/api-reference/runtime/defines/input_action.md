@@ -26,10 +26,6 @@
 
 ### admin_action
 
-### alt_reverse_select_area
-
-### alt_select_area
-
 ### alt_select_blueprint_entities
 
 ### alternative_copy
@@ -53,6 +49,8 @@
 ### cancel_new_blueprint
 
 ### cancel_research
+
+### cancel_select_area
 
 ### cancel_upgrade
 
@@ -87,6 +85,8 @@
 ### change_research_condition
 
 ### change_riding_state
+
+### change_select_area
 
 ### change_selector_combinator_parameters
 
@@ -376,8 +376,6 @@
 
 ### reset_assembling_machine
 
-### reverse_select_area
-
 ### rotate_entity
 
 ### select_area
@@ -516,11 +514,11 @@
 
 ### start_research
 
+### start_select_area
+
 ### start_walking
 
 ### stop_drag_build
-
-### super_forced_select_area
 
 ### swap_asteroid_chunk_slots
 

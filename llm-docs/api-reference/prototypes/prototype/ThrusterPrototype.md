@@ -38,6 +38,38 @@ If a [filter](prototype:FluidBox::filter) is set for this fluidbox it determines
 
 **Required:** Yes
 
+### minimum_fuel_temperature
+
+If specified, fuel fluid below this temperature will cause the thruster to stop working.
+
+**Type:** `float`
+
+**Optional:** Yes
+
+### maximum_fuel_temperature
+
+If specified, fuel fluid above this temperature will cause the thruster to stop working.
+
+**Type:** `float`
+
+**Optional:** Yes
+
+### minimum_oxidizer_temperature
+
+If specified, oxidizer fluid below this temperature will cause the thruster to stop working.
+
+**Type:** `float`
+
+**Optional:** Yes
+
+### maximum_oxidizer_temperature
+
+If specified, oxidizer fluid above this temperature will cause the thruster to stop working.
+
+**Type:** `float`
+
+**Optional:** Yes
+
 ### graphics_set
 
 **Type:** `ThrusterGraphicsSet`

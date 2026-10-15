@@ -477,6 +477,12 @@ Enables 'Space Age' functionality for this rocket silo, allowing it to supply sp
 
 **Default:** False
 
+### default_launched_signal
+
+**Type:** `SignalIDConnector`
+
+**Optional:** Yes
+
 ### robot_door
 
 **Type:** `RobotDoorSpecification`

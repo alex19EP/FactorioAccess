@@ -107,6 +107,10 @@ This only counts item ingredients, not fluid ingredients! This means if ingredie
 
 ### fluid_boxes_off_when_no_fluid_recipe
 
+Whether the [fluid boxes](prototype:CraftingMachinePrototype::fluid_boxes) are disabled when this assembling machine has no recipe set.
+
+If a recipe is set, this property does not affect fluidbox behavior. Instead, whether fluidboxes are enabled depends on whether the recipe needs them, e.g. if a recipe without fluid ingredients is set, the input fluidboxes will be disabled.
+
 **Type:** `boolean`
 
 **Optional:** Yes

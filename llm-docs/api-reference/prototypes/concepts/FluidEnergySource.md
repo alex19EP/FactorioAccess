@@ -102,7 +102,7 @@ The number of fluid units the energy source uses per tick. If used with `scale_f
 
 ### maximum_temperature
 
-`0` means unlimited maximum temperature. If this is non-zero while `scale_fluid_usage` is `false` and `fluid_usage_per_tick` is not specified, the game will use this value to calculate `fluid_usage_per_tick`. To do that, the filter on the `fluid_box` must be set.
+If this is specified while `scale_fluid_usage` is `false` and `fluid_usage_per_tick` is not specified, the game will use this value to calculate `fluid_usage_per_tick`. To do that, the filter on the `fluid_box` must be set.
 
 Only loaded if `burns_fluid` is `false`.
 
@@ -110,7 +110,21 @@ Only loaded if `burns_fluid` is `false`.
 
 **Optional:** Yes
 
-**Default:** 0
+### minimum_input_temperature
+
+If specified, an input fluid below this temperature will cause the fluid energy source to stop working.
+
+**Type:** `float`
+
+**Optional:** Yes
+
+### maximum_input_temperature
+
+If specified, an input fluid above this temperature will cause the fluid energy source to stop working.
+
+**Type:** `float`
+
+**Optional:** Yes
 
 ### spent_fluid
 

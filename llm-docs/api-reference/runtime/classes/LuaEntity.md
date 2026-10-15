@@ -416,7 +416,9 @@ Energy stored in the entity's energy buffer (energy stored in electrical devices
 
 ### temperature
 
-The temperature of this entity's heat energy source. `nil` if this entity does not use a heat energy source.
+The temperature of this entity's heat energy source or this entity's heat buffer. `nil` if this entity does not use a heat energy source or does not have a heat buffer.
+
+The following entity types have a heat buffer: heat pipe, reactor and heat interface.
 
 **Read type:** `double`
 
@@ -492,7 +494,9 @@ The belt connectable neighbours of this belt connectable entity. Only entities t
 
 ### heat_neighbours
 
-The entities connected to this entities heat buffer.
+The entities connected to this entity's heat energy source or this entity's heat buffer.
+
+The following entity types have a heat buffer: heat pipe, reactor and heat interface.
 
 **Read type:** Array[`LuaEntity`]
 
@@ -3101,6 +3105,23 @@ Read all signals from the selected wire connector.
 
 - Array[`Signal`] *(optional)* - Current values of all signals.
 
+### get_signals_changed
+
+Checks if signals on a circuit connector changed recently.
+
+Returns `true` if signals changed since last tick. If a tick of last check is provided, returns `true` if signals changed since the specified tick. May also return `true` spuriously in other situations when values seen on this connector may be different, caused by addition of wires, removal of wires, circuit network merges, circuit network splits, input network selection changes, etc.
+
+`nil` if entity has no circuit connector with provided identifier.
+
+**Parameters:**
+
+- `wire_connector_id` `defines.wire_connector_id`
+- `tick_of_last_check` `MapTick` *(optional)* - Value of [LuaGameScript::tick](runtime:LuaGameScript::tick) of the previous check.
+
+**Returns:**
+
+- `boolean` *(optional)*
+
 ### supports_backer_name
 
 Whether this entity supports a backer name.
@@ -3410,7 +3431,7 @@ Get a fluidbox filter, such as the filter of a pump.
 
 **Returns:**
 
-- `FluidFilter` *(optional)*
+- `LuaFluidPrototype` *(optional)*
 
 ### set_fluid_filter
 
@@ -3421,7 +3442,7 @@ Some entities cannot have their fluidbox filter set, notably fluid wagons and cr
 **Parameters:**
 
 - `index` `FluidStorageIndex`
-- `filter` `FluidFilter` *(optional)*
+- `filter` `FluidID` *(optional)*
 
 **Returns:**
 
@@ -3605,7 +3626,7 @@ Gets the filter of the given fluid storage's segment. The filter is based on the
 
 **Returns:**
 
-- `FluidFilter` *(optional)*
+- `LuaFluidPrototype` *(optional)*
 
 ### get_fluid_segment_capacity
 

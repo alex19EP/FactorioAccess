@@ -103,6 +103,22 @@ Note: Categories containing resources which produce items, fluids, or items+flui
 
 **Optional:** Yes
 
+### minimum_input_temperature
+
+Only loaded if `input_fluid_box` is defined. If specified, an input fluid below this temperature will cause the mining drill to stop working.
+
+**Type:** `float`
+
+**Optional:** Yes
+
+### maximum_input_temperature
+
+Only loaded if `input_fluid_box` is defined. If specified, an input fluid above this temperature will cause the mining drill to stop working.
+
+**Type:** `float`
+
+**Optional:** Yes
+
 ### graphics_set
 
 **Type:** `MiningDrillGraphicsSet`

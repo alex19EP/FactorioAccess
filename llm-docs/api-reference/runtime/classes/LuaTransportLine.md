@@ -155,7 +155,7 @@ Gives position of the selected item on this transport line.
 
 **Parameters:**
 
-- `index` `uint32` - Index of the item. Allowed values are from 1 up to #len.
+- `index` `uint32` - Index of the item. Allowed values are from 1 up to [# (length)](runtime:LuaTransportLine::length_operator).
 
 **Returns:**
 

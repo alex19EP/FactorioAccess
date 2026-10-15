@@ -66,6 +66,14 @@ Used by ghosts.
 
 Used by cargo bays.
 
+### input_fluid_too_cold
+
+Used by entities that consume fluids or have a fluid energy source.
+
+### input_fluid_too_hot
+
+Used by entities that consume fluids or have a fluid energy source.
+
 ### item_ingredient_shortage
 
 Used by crafting machines.

@@ -73,3 +73,19 @@ If set to `true`, the available power output is based on the [FluidPrototype::fu
 
 **Default:** 1
 
+### minimum_input_temperature
+
+If specified, an input fluid below this temperature will cause the fusion generator to stop working.
+
+**Type:** `float`
+
+**Optional:** Yes
+
+### maximum_input_temperature
+
+If specified, an input fluid above this temperature will cause the fusion generator to stop working.
+
+**Type:** `float`
+
+**Optional:** Yes
+

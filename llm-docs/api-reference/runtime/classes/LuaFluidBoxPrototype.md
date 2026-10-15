@@ -36,22 +36,6 @@ The filter, if any is set.
 
 **Optional:** Yes
 
-### minimum_temperature
-
-The minimum temperature, if any is set.
-
-**Read type:** `double`
-
-**Optional:** Yes
-
-### maximum_temperature
-
-The maximum temperature, if any is set.
-
-**Read type:** `double`
-
-**Optional:** Yes
-
 ### secondary_draw_orders
 
 The secondary draw orders for the 4 possible connection directions.

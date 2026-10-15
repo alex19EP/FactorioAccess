@@ -50,7 +50,25 @@ The smoke sources for this prototype, if any.
 
 ### maximum_temperature
 
-**Read type:** `double`
+**Read type:** `float`
+
+**Optional:** Yes
+
+### minimum_input_temperature
+
+The minimum input temperature that this energy source accepts, if specified. An input fluid below this temperature will cause the energy source to stop working.
+
+**Read type:** `float`
+
+**Optional:** Yes
+
+### maximum_input_temperature
+
+The maximum input temperature that this energy source accepts, if specified. An input fluid above this temperature will cause the energy source to stop working.
+
+**Read type:** `float`
+
+**Optional:** Yes
 
 ### fluid_box
 

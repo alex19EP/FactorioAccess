@@ -95,6 +95,22 @@ Must be positive.
 
 **Required:** Yes
 
+### minimum_input_temperature
+
+If specified, an input fluid below this temperature will cause the fusion reactor to stop working.
+
+**Type:** `float`
+
+**Optional:** Yes
+
+### maximum_input_temperature
+
+If specified, an input fluid above this temperature will cause the fusion reactor to stop working.
+
+**Type:** `float`
+
+**Optional:** Yes
+
 ### target_temperature
 
 The temperature of the fluid to output. If not defined, the default temperature of the output fluid will be used.

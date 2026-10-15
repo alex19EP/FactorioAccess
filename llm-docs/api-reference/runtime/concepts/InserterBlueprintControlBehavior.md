@@ -44,7 +44,7 @@ Defaults to `false`.
 
 ### circuit_set_stack_size
 
-Defaults to `false`.
+Defaults to `false`. Whether the inserter hand size is controlled by the circuit network.
 
 **Type:** `boolean`
 

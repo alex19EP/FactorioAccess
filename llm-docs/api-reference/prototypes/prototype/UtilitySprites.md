@@ -1418,6 +1418,18 @@ The sprite will be drawn on top of [fluid turrets](prototype:FluidTurretPrototyp
 
 **Required:** Yes
 
+### side_menu_master_mute_muted_icon
+
+**Type:** `Sprite`
+
+**Required:** Yes
+
+### side_menu_master_mute_unmuted_icon
+
+**Type:** `Sprite`
+
+**Required:** Yes
+
 ### side_menu_menu_icon
 
 **Type:** `Sprite`

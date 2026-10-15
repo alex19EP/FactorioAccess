@@ -6,6 +6,32 @@
 
 *These properties apply when the value is a struct/table.*
 
+### shader_variation
+
+**Type:** `EffectVariation`
+
+**Optional:** Yes
+
+**Default:** "water"
+
+### noise_textures
+
+Shader variants `"water"` and `"wetland-water"` must have 1 texture, and `"lava"` and `"oil"` must have 2 textures.
+
+**Type:** Array[`EffectTexture`]
+
+**Optional:** Yes
+
+### image_textures
+
+The image is split into 512x512 slices which are used as randomly chosen variations.
+
+Shader variant `"water"` must have 0 textures, `"lava"` and `"wetland-water"` must have 1 texture, and `"oil"` must have 2 textures.
+
+**Type:** Array[`EffectArrayTexture`]
+
+**Optional:** Yes
+
 ### specular_lightness
 
 Affects specular lightness for `"water"` `shader_variation`. Affects panning/warping vector for all other `shader_variation`s.
@@ -82,14 +108,6 @@ Affects specular threshold for `"water"` and `"wetland-water"` `shader_variation
 
 **Required:** Yes
 
-### textures
-
-Texture size must be 512x512. Shader variant `"water"` must have 1 texture, `"lava"` and `"wetland-water"` must have 2 textures and `"oil"` must have 4 textures.
-
-**Type:** Array[`EffectTexture`]
-
-**Required:** Yes
-
 ### near_zoom
 
 If they are set to a tuple, the properties `animation_scale`, `dark_threshold`, `reflection_threshold` and `specular_threshold` are linearly interpolated between each of their two values based on the current zoom level expressed as a ratio between `near_zoom` and `far_zoom`. E.g. if current zoom level is equal to `near_zoom`, the first tuple value is picked.
@@ -115,46 +133,6 @@ If they are set to a tuple, the properties `animation_scale`, `dark_threshold`, 
 Value 0 makes water appear as water in water mask, but does not occlude lights, and doesn't overwrite lightmap alpha drawn to pixel previously (by background layer of tile transition, or underwater sprite). Light emitted by water-like-tile (for example lava) will blend additively with previously rendered light. Value 1 makes water occlude lights, but won't be recognized as water in water mask used for masking decals by water.
 
 **Type:** `float`
-
-**Optional:** Yes
-
-**Default:** 1
-
-### shader_variation
-
-**Type:** `EffectVariation`
-
-**Optional:** Yes
-
-**Default:** "water"
-
-### texture_variations_rows
-
-**Type:** `uint8`
-
-**Optional:** Yes
-
-**Default:** 1
-
-### texture_variations_columns
-
-**Type:** `uint8`
-
-**Optional:** Yes
-
-**Default:** 1
-
-### secondary_texture_variations_rows
-
-**Type:** `uint8`
-
-**Optional:** Yes
-
-**Default:** 1
-
-### secondary_texture_variations_columns
-
-**Type:** `uint8`
 
 **Optional:** Yes
 

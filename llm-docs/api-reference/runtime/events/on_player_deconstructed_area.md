@@ -16,6 +16,12 @@ If normal selection or alt selection was used.
 
 The area selected.
 
+### cursor_position
+
+**Type:** `MapPosition`
+
+The player cursor position.
+
 ### item
 
 **Type:** `string`
@@ -33,6 +39,12 @@ Identifier of the event.
 **Type:** `uint32`
 
 The player doing the selection.
+
+### position
+
+**Type:** `MapPosition`
+
+The position where the player started the selection.
 
 ### quality
 

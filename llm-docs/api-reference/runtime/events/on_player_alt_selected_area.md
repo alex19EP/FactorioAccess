@@ -10,6 +10,12 @@ Called after a player alt-selects an area with a selection-tool item.
 
 The area selected.
 
+### cursor_position
+
+**Type:** `MapPosition`
+
+The player cursor position.
+
 ### entities
 
 **Type:** Array[`LuaEntity`]
@@ -34,11 +40,21 @@ Identifier of the event.
 
 The player doing the selection.
 
+### position
+
+**Type:** `MapPosition`
+
+The position where the player started the selection.
+
 ### quality
 
 **Type:** `string`
 
 The item quality used to select the area.
+
+### selection_mode
+
+**Type:** `defines.selection_mode`
 
 ### surface
 

@@ -164,7 +164,11 @@ See the [events page](runtime:events) for more info on what events contain and w
 
 ### on_player_built_tile
 
+### on_player_cancel_selected_area
+
 ### on_player_cancelled_crafting
+
+### on_player_change_selected_area
 
 ### on_player_changed_force
 
@@ -261,6 +265,8 @@ See the [events page](runtime:events) for more info on what events contain and w
 ### on_player_set_quick_bar_slot
 
 ### on_player_setup_blueprint
+
+### on_player_start_selected_area
 
 ### on_player_super_forced_selected_area
 

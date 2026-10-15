@@ -61,6 +61,22 @@ Used to calculate the `max_power_output` if it is not defined and `burns_fluid` 
 
 **Required:** Yes
 
+### minimum_input_temperature
+
+If specified, an input fluid below this temperature will cause the generator to stop working.
+
+**Type:** `float`
+
+**Optional:** Yes
+
+### maximum_input_temperature
+
+If specified, an input fluid above this temperature will cause the generator to stop working.
+
+**Type:** `float`
+
+**Optional:** Yes
+
 ### smoke
 
 **Type:** Array[`SmokeSource`]

@@ -32,7 +32,7 @@ The hand read mode for the inserter.
 
 ### circuit_set_stack_size
 
-If the stack size of the inserter is set through the circuit network or not.
+If the hand stack size of the inserter is set through the circuit network or not.
 
 **Read type:** `boolean`
 
