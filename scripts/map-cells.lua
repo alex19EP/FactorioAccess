@@ -1,10 +1,11 @@
 --[[
 Map cells: how the cursor moves on the full map.
 
-Zoomed out to the map, a tile is a fraction of a pixel, so the movement keys move the cursor by a
-cell: a square of tiles about a thirtieth of the screen across, rounded to a power of two (8 tiles at
-240 tiles across, 512 at 15360). Cells lie on a grid aligned to their size, so one is inside a chunk
-or made of whole chunks. The DLL moves the cursor (native/src/cursormoves.h computes the cell the
+On the map nothing is selected, and zoomed out a tile shrinks to a pixel and below, so the movement
+keys move the cursor by a cell: the smallest power-of-two square of tiles that spans 8 pixels on the
+screen. Where Tab opens the map a tile is 8 pixels, so a cell is a tile; a cell is 8 tiles where a
+tile is a pixel. The size follows the zoom and the display scale, not the screen's size. Cells lie on
+a grid aligned to their size, so one is inside a chunk or made of whole chunks. The DLL moves the cursor (native/src/cursormoves.h computes the cell the
 same way) to the centre of the next cell, and moving reads what the cell holds, then what the map's
 overlays that are on show over it (map-overlays.lua), then where a click would send the train whose
 window is open (train-map-targets.lua).

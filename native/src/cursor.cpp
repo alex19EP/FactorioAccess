@@ -148,10 +148,11 @@ bool followsCursor(uint8_t controller) {
 
 Screen screen(const View& view) { return cursormoves::screenOf(view.centre, view.size, view.tilesPerPixel); }
 
-// The full map's cell size (cursormoves::cellSize), zero off the full map.
+// The full map's cell size (cursormoves::cellSize), zero off the full map, which the game enters
+// by its own rule (more than its furthest game view across the screen).
 int32_t cellSize(const View& view) {
    if (at<uint8_t>(view.player, layout.playerRenderMode) != game::kRenderModeChart) return 0;
-   return cursormoves::cellSize(view.size, view.tilesPerPixel);
+   return cursormoves::cellSize(view.tilesPerPixel);
 }
 
 // The movement keys, by the mod's custom input names: a step, a skip (Shift), a move by the size of

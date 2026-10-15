@@ -92,16 +92,17 @@ TEST(Cursor_StepAtTheScreenEdgeLeavesTheScreen)
     CHECK_FALSE(screen.holds(stepTarget(Tile(0, -16), 0, -1, 0)));
 }
 
-TEST(Cursor_CellIsAThirtiethOfTheScreenToAPowerOfTwo)
+TEST(Cursor_CellSpansEightPixelsToAPowerOfTwo)
 {
-    // 1920 pixels across at so many tiles a pixel.
-    CHECK_EQ(1, cellSize(kFullHd, 20.0 / 1920));
-    CHECK_EQ(1, cellSize(kFullHd, 30.0 / 1920));
-    CHECK_EQ(4, cellSize(kFullHd, 100.0 / 1920));
-    CHECK_EQ(8, cellSize(kFullHd, 240.0 / 1920));
-    CHECK_EQ(32, cellSize(kFullHd, 960.0 / 1920));
-    // The longer side counts, held upright too.
-    CHECK_EQ(32, cellSize(Pixel{1080, 1920}, 960.0 / 1920));
+    // Tab's zoom 0.25: a tile is 8 pixels, so the cell is a tile.
+    CHECK_EQ(1, cellSize(1.0 / 8));
+    CHECK_EQ(1, cellSize(1.0 / 32));
+    // 4 pixels a tile, then 1, then a quarter of one.
+    CHECK_EQ(2, cellSize(1.0 / 4));
+    CHECK_EQ(8, cellSize(1.0));
+    CHECK_EQ(32, cellSize(4.0));
+    // Between rungs the next power of two up: 3 pixels a tile needs 3 tiles, so 4.
+    CHECK_EQ(4, cellSize(1.0 / 3));
 }
 
 TEST(Cursor_FullMapMovesToTheNextCellsCentre)

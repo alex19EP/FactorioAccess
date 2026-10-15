@@ -57,13 +57,16 @@ inline Screen screenOf(Position centre, Pixel size, double tilesPerPixel) {
            static_cast<int32_t>(std::floor(centreY + halfHeight)) - 1};
 }
 
-// On the full map a movement key moves a cell: a square of tiles about a thirtieth of the screen
-// across, rounded to a power of two, on a grid of its own size (the mod's map-cells.lua reads it so
-// too).
-inline int32_t cellSize(Pixel size, double tilesPerPixel) {
-   const double tiles = std::floor(std::max(size.x, size.y) * tilesPerPixel + 0.5);
-   const double exponent = std::floor(std::log2(tiles / 30.0) + 0.5);
-   return exponent < 0 ? 1 : int32_t{1} << static_cast<int>(exponent);
+// The fewest pixels a map cell spans on the screen.
+constexpr double kCellPixels = 8;
+
+// On the full map a movement key moves a cell: the smallest power-of-two square of tiles that spans
+// kCellPixels on the screen, so a tile while a tile is that wide (the map Tab opens), on a grid of
+// its own size (the mod's zoom.lua computes it so too). It follows the zoom and the display scale,
+// not the screen's size.
+inline int32_t cellSize(double tilesPerPixel) {
+   const double exponent = std::ceil(std::log2(kCellPixels * tilesPerPixel) - 1e-9);
+   return exponent <= 0 ? 1 : int32_t{1} << static_cast<int>(exponent);
 }
 
 // Where a movement key going `dx`, `dy` takes the cursor: the next tile's centre, or with `cell`

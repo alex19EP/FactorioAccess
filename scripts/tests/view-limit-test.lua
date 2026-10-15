@@ -112,12 +112,12 @@ describe("Cursor limited to the screen", function()
       end)
 
       ctx:at_tick(3, function()
-         ctx:assert_equals(8, Zoom.map_cell_size_for(240), "A cell is a thirtieth of the screen")
-         ctx:assert_equals(512, Zoom.map_cell_size_for(15360))
-         -- 600 tiles across: a thirtieth is 20, the nearest power of two 16
-         ctx:assert_equals(600, Zoom.get_current_zoom_tiles(1))
-         local size = Zoom.map_cell_size_for(600) --[[@as integer]]
-         ctx:assert_equals(16, size)
+         ctx:assert_equals(1, Zoom.map_cell_size_for(8), "At Tab's zoom a cell is a tile")
+         ctx:assert_equals(2, Zoom.map_cell_size_for(4))
+         ctx:assert_equals(512, Zoom.map_cell_size_for(1 / 64))
+         -- Zoom 0.1: a tile is 3.2 pixels, so 8 pixels take 2.5 tiles, the next power of two 4
+         local size = Zoom.map_cell_size_for(player.zoom * 32 * player.display_density_scale)
+         ctx:assert_equals(4, size)
          Speech.start_capture()
          Cursor.at(1, { x = size / 2, y = size / 2 }, function()
             MapCells.read(1, size)

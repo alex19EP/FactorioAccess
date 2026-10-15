@@ -39,23 +39,27 @@ function mod.get_current_zoom_tiles(pindex)
    return math.floor(screen_dimension / (player.zoom * base_pixels_per_tile * player.display_density_scale) + 0.5)
 end
 
--- Map cells across the screen; see map-cells.lua.
-local CELLS_PER_SCREEN = 30
+-- The fewest pixels a map cell spans on the screen; see map-cells.lua.
+local CELL_PIXELS = 8
 
----The size in tiles of a map cell on a screen `tiles` across.
----@param tiles number
----@return number A power of two, below 1 on a screen narrower than CELLS_PER_SCREEN tiles
-function mod.map_cell_size_for(tiles)
-   return 2 ^ math.floor(math.log(tiles / CELLS_PER_SCREEN, 2) + 0.5)
+---The size in tiles of a map cell where a tile is `pixels_per_tile` pixels across: the smallest
+---power of two spanning CELL_PIXELS.
+---@param pixels_per_tile number
+---@return integer
+function mod.map_cell_size_for(pixels_per_tile)
+   local exponent = math.ceil(math.log(CELL_PIXELS / pixels_per_tile, 2) - 1e-9)
+   if exponent <= 0 then return 1 end
+   return math.floor(2 ^ exponent)
 end
 
 ---The size in tiles of a map cell, by which the cursor moves on the full map. Nil off the full map.
+---It follows the zoom and the display scale, not the screen's size.
 ---@param pindex integer
 ---@return integer?
 function mod.get_map_cell_size(pindex)
-   if game.get_player(pindex).render_mode ~= defines.render_mode.chart then return nil end
-   -- The full map spans over 200 tiles, so a cell is at least 8
-   return mod.map_cell_size_for(mod.get_current_zoom_tiles(pindex)) --[[@as integer]]
+   local player = game.get_player(pindex)
+   if player.render_mode ~= defines.render_mode.chart then return nil end
+   return mod.map_cell_size_for(player.zoom * base_pixels_per_tile * player.display_density_scale)
 end
 
 ---While the view the player entered is still to be said, gives the DLL the hand to say with it and
