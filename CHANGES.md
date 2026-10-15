@@ -10,6 +10,8 @@
 - H, V, Alt+L and Alt+F follow the game's flip, personal logistics and personal roboport controls, wherever you bind them.
 - Pavement Drive Assist is no longer supported.
 - The keys script finds Kruise Kontrol's controls like any other mouse control: Ctrl+Alt+] starts a job.
+- With Kruise Kontrol installed, Ctrl+Shift+] has it only walk (or drive) to the cursor, so ore, trees and rocks under the cursor are not mined.
+- Every FA key has a name in the game's Controls settings, so all of them can be found and rebound there.
 - Building, mining and selection tools act where the FA cursor is. Selection tools work with two presses, as on a gamepad.
 - The spidertron remote is the game's own: select spidertrons with two presses of left bracket (shift adds, control removes), send them with right bracket, queue a waypoint with shift right bracket. FA says how many are selected and what each order did, and the cursor says whether a spidertron is selected, what it follows and where it walks. FA's spidertron menus, its remote cycling on m and dot, and its clear keys are gone.
 - A blueprint's picture reads each tile as the cursor reads the world: a belt's shape (turns, side-loads, merges), an underground belt's partner and distance, what an inserter picks up from and drops to, where a drill outputs, pipe and heat pipe shapes, pole wires, then in alt mode the icons in the cursor's words, and the floor under an entity. Shift with an arrow skips as the cursor does and says how far, and stepping onto the next machine of a row alike plays the next machine sound.
