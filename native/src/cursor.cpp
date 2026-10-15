@@ -4,6 +4,7 @@
 #include "editoractions.h"
 #include "cursormoves.h"
 #include "facts.h"
+#include "flyingtext.h"
 #include "footprint.h"
 #include "game.h"
 #include "railplanner.h"
@@ -842,10 +843,20 @@ uint32_t detourProcessEvent(const void* event, bool flag) {
 using RenderStateFunction = void (*)(void* source);
 RenderStateFunction g_renderStateOriginal = nullptr;
 
+// Where the view draws flying text over the map, as CursorRenderer::prepare does: its surface, in
+// the world and not on the full map.
+std::optional<flyingtext::Shown> flyingTextShown() {
+   const std::optional<View> view = localView();
+   if (!view || at<bool>(view->view, layout.gameViewChartMode)) return std::nullopt;
+   return flyingtext::Shown{at<uint32_t>(view->view, layout.gameViewSurfaceIndex), screen(*view)};
+}
+
 void detourRenderState(void* source) {
    g_renderStateOriginal(source);
    const std::byte* context = globalContext();
-   if (context && at<void*>(context, layout.globalPlayerInputSource) == source) frame(source);
+   if (!context || at<void*>(context, layout.globalPlayerInputSource) != source) return;
+   flyingtext::frame(flyingTextShown());
+   frame(source);
 }
 
 } // namespace

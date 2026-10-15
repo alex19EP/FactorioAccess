@@ -559,6 +559,10 @@ struct Layout {
    uintptr_t addLocalFlyingText = 0;
    uintptr_t constructGuiFlyingText = 0;
    uint32_t localMapFlyingTextText = 0; // LocalMapFlyingText::text (agui::FlyingText), std::string
+   // LocalMapFlyingText::startingPosition: where the text rises from, a SurfaceIndex (uint32) and a
+   // MapPosition. CursorRenderer::prepare draws a text only on the surface the view shows.
+   uint32_t localMapFlyingTextSurface = 0;
+   uint32_t localMapFlyingTextPosition = 0;
    // Console lines: void OutputConsole::add(std::string const& playerName, Color, LocalisedString
    // const& body, Player const*, PrintSettings const&, std::vector<SavedSpecialItemReference>&&).
    uintptr_t outputConsoleAdd = 0;
@@ -1895,6 +1899,9 @@ struct Layout {
    uint32_t gameViewSurfaceIndex = 0;
    uint32_t gameViewCentre = 0;
    uint32_t gameViewZoom = 0;
+   // ZoomData::chartMode, a bool: the view draws the full map, not the world
+   // (RenderParameters::centerOn makes it the CHART render mode, which draws no map flying text).
+   uint32_t gameViewChartMode = 0;
    uintptr_t gameViewDisplaySize = 0;
    uint32_t displayDensity = 0;    // InterfaceSettings::displayDensityValue, a double
    uintptr_t gameViewSurface = 0;  // Surface const& GameView::getSurface() const

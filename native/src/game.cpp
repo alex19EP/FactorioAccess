@@ -369,6 +369,8 @@ bool resolve(pdb::SymbolTable& symbols) {
            "std@@@std@@SAXAEAV?$allocator@VGuiFlyingText@agui@@@1@QEAVGuiFlyingText@agui@@AEAVPoint@4@AEBV?$basic_"
            "string@DU?$char_traits@D@std@@V?$allocator@D@2@@1@AEAVColor@4@AEAPEBVFont@4@AEAH6@Z");
    offset(layout.localMapFlyingTextText, "LocalMapFlyingText", "text");
+   offset(layout.localMapFlyingTextSurface, "LocalMapFlyingText", "startingPosition.surfaceIndex");
+   offset(layout.localMapFlyingTextPosition, "LocalMapFlyingText", "startingPosition.position");
    address(layout.outputConsoleAdd,
            "?add@OutputConsole@@QEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@VColor@@"
            "AEBVLocalisedString@@PEBVPlayer@@AEBUPrintSettings@@$$QEAV?$vector@VSavedSpecialItemReference@@V?$"
@@ -1370,6 +1372,7 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.gameViewSurfaceIndex, "GameView", "cachedSurfaceView.surfaceIndex");
    offset(layout.gameViewCentre, "GameView", "cachedSurfaceView.surfaceViewData.position");
    offset(layout.gameViewZoom, "GameView", "cachedSurfaceView.surfaceViewData.zoomData.zoom");
+   offset(layout.gameViewChartMode, "GameView", "cachedSurfaceView.surfaceViewData.zoomData.chartMode");
    address(layout.gameViewDisplaySize, "?getDisplaySize@GameView@@QEBA?AVPixelSize@@XZ");
    offset(layout.displayDensity, "InterfaceSettings", "displayDensityValue");
    address(layout.gameViewSurface, "?getSurface@GameView@@QEBAAEBVSurface@@XZ");
