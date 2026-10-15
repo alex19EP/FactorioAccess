@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <string>
+#include <vector>
 
 // What a pinned building or blueprint (cursor.h, detaching) would build, piece by piece, as the
 // game's build preview draws and checks it: each piece's name, the way it faces, its tiles, and
@@ -41,6 +42,11 @@ struct Piece {
    int32_t bottom;
    Fit fit;
    std::string reason; // the game's, for a blocked piece
+   // A blueprint's piece, while the build is pinned, as the blueprint window's picture reads it: the
+   // facts of its design on each of its tiles, row by row from the top left (facts::describeDesign,
+   // its facing left out), and what is drawn on it (facts::drawnOnBlueprintEntity).
+   std::vector<std::string> tileFacts;
+   std::string drawn;
 };
 // Between begin and end, on the thread that called begin, every piece the preview drew (a
 // blueprint's tiles among them) and each entity on the map that building it would replace, turn,
@@ -49,6 +55,8 @@ struct Piece {
 // cursor has just been built where it stands, and its summary leaves out what is already built.
 void begin(const Placement& placement, bool blueprint, bool drag);
 bool gathering();
+// Whether the pieces gathered want their details: the build is pinned, where its pieces are read.
+bool gatheringDetails();
 void add(Piece piece);
 void alter(std::string words, int32_t left, int32_t top, int32_t right, int32_t bottom);
 void end();

@@ -162,7 +162,9 @@ void detourDrawInfoIcon(void* drawQueue, const void* sprite, uint16_t quality, c
 }
 
 // The queue entities are drawn into to read them. Nothing renders it; it is cleared after each read.
-std::byte* g_queue = nullptr;
+// One for each thread that reads: the tile reader in the Gui's logic, the build preview where the
+// game draws it.
+thread_local std::byte* t_queue = nullptr;
 
 // How many sprites in the SpriteDrawOrderVector at `vector` show more than the empty 1 by 1 one.
 size_t seenSprites(const std::byte* vector) {
@@ -209,18 +211,18 @@ std::optional<Drawn> read(const void* entity) {
 }
 
 std::optional<Drawn> read(const void* entity, const void* parameters) {
-   if (!g_queue) {
-      g_queue = static_cast<std::byte*>(::operator new(layout.drawQueueSize, std::align_val_t{16}));
-      reinterpret_cast<void* (*)(void*, const void*)>(layout.drawQueueConstruct)(g_queue, parameters);
+   if (!t_queue) {
+      t_queue = static_cast<std::byte*>(::operator new(layout.drawQueueSize, std::align_val_t{16}));
+      reinterpret_cast<void* (*)(void*, const void*)>(layout.drawQueueConstruct)(t_queue, parameters);
    }
-   std::memcpy(g_queue + layout.drawQueueRenderParameters, &parameters, sizeof(parameters));
+   std::memcpy(t_queue + layout.drawQueueRenderParameters, &parameters, sizeof(parameters));
 
    Drawn drawn;
    t_drawn = &drawn;
-   virtualAt<void (*)(const void*, void*)>(entity, layout.entityDraw)(entity, g_queue);
+   virtualAt<void (*)(const void*, void*)>(entity, layout.entityDraw)(entity, t_queue);
    t_drawn = nullptr;
-   drawn.orders = queued(g_queue);
-   reinterpret_cast<void (*)(void*)>(layout.drawQueueClear)(g_queue);
+   drawn.orders = queued(t_queue);
+   reinterpret_cast<void (*)(void*)>(layout.drawQueueClear)(t_queue);
    return drawn;
 }
 

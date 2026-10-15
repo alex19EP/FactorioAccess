@@ -73,20 +73,24 @@ bool inside(const Pieces& pieces, int32_t tileX, int32_t tileY) {
    return any && tileX >= left && tileX <= right && tileY >= top && tileY <= bottom;
 }
 
-// "Iron chest East planned, already built".
-std::string describe(const Piece& piece) {
-   std::string out = piece.direction >= 0
-                        ? vocab::kFootprintPieceFacing(piece.name, vocab::direction(piece.direction / 2))
-                        : vocab::kFootprintPiece(piece.name);
-   if (piece.fit == Fit::AlreadyBuilt) out += ", " + std::string(vocab::kAlreadyBuilt);
-   if (piece.fit == Fit::Blocked && !piece.reason.empty()) out += ", " + piece.reason;
-   return out;
-}
-
 void append(std::string& out, const std::string& part) {
    if (part.empty()) return;
    if (!out.empty()) out += ", ";
    out += part;
+}
+
+// The piece read on the tile `tileX`, `tileY`: "Assembling machine 2 East planned, already built,
+// producing Iron gear wheel".
+std::string describe(const Piece& piece, int32_t tileX, int32_t tileY) {
+   std::string out = piece.direction >= 0
+                        ? vocab::kFootprintPieceFacing(piece.name, vocab::direction(piece.direction / 2))
+                        : vocab::kFootprintPiece(piece.name);
+   if (piece.fit == Fit::AlreadyBuilt) append(out, std::string(vocab::kAlreadyBuilt));
+   if (piece.fit == Fit::Blocked) append(out, piece.reason);
+   const size_t index = size_t(tileY - piece.top) * size_t(piece.right - piece.left + 1) + size_t(tileX - piece.left);
+   if (index < piece.tileFacts.size()) append(out, piece.tileFacts[index]);
+   append(out, piece.drawn);
+   return out;
 }
 
 // The pieces on the tile, then what building them does to the map there: "Landfill planned,
@@ -94,7 +98,7 @@ void append(std::string& out, const std::string& part) {
 std::string tileWords(const Pieces& pieces, int32_t tileX, int32_t tileY) {
    std::string out;
    for (const Piece& piece : pieces.pieces)
-      if (covers(piece, tileX, tileY)) append(out, describe(piece));
+      if (covers(piece, tileX, tileY)) append(out, describe(piece, tileX, tileY));
    for (const Alteration& alteration : pieces.alterations)
       if (covers(alteration, tileX, tileY)) append(out, alteration.words);
    return out;
@@ -142,6 +146,8 @@ void begin(const Placement& placement, bool blueprint, bool drag) {
 }
 
 bool gathering() { return t_gathering; }
+
+bool gatheringDetails() { return t_gathering && g_gathering.placement.pinned; }
 
 void add(Piece piece) { g_gathering.pieces.push_back(std::move(piece)); }
 

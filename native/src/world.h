@@ -124,6 +124,10 @@ void* buildFromCursorDetour();
 void** buildFromCursorOriginal();
 void* settingsDrawDetour();
 void** settingsDrawOriginal();
+// MinHook detour for DrawBlueprintToBeBuiltLogic::drawEntitiesCore: the blueprint in hand's
+// entities this frame, which a pinned blueprint's pieces are read among (footprint.h).
+void* drawBlueprintEntitiesDetour();
+void** drawBlueprintEntitiesOriginal();
 // MinHook detour for BuildingRenderer::drawTileToBeBuilt: a pinned blueprint's tiles (footprint.h).
 void* drawTileDetour();
 void** drawTileOriginal();

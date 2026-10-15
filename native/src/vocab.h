@@ -277,7 +277,6 @@ inline constexpr Word kWith{"fa.native-with"};
 inline constexpr Word kInput{"fa.native-input"};
 inline constexpr Word kOutput{"fa.native-output"};
 inline constexpr Word kOutputSignal{"fa.native-output-signal"};
-inline constexpr Word kRecipeLocked{"fa.native-recipe-locked"};
 inline constexpr Word kOnFloor{"fa.native-on-floor"};
 // ArithmeticCombinatorParameters::Operation, Comparison and SelectorCombinatorParameters::Operation
 // in the game's order. A selector's Select is said with its maximum or minimum.

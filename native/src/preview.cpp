@@ -9,7 +9,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
-#include <format>
 #include <optional>
 #include <string_view>
 #include <vector>
@@ -71,8 +70,6 @@ using SelectionFunction = std::byte* (*)(const void* blueprint, std::byte* out, 
 using TileSelectionFunction = std::byte* (*)(const void* tiles, std::byte* out, const MapPosition* at);
 using TileBoxFunction = TileBox* (*)(const void* blueprint, TileBox* out);
 using PixelShiftFunction = MapPosition* (*)(const void* picture, MapPosition* out, const MapPosition* absolute);
-using ShowEntityInfoFunction = bool (*)(const void* adapter);
-using SignalPrototypeFunction = const std::byte* (*)(const void* signal);
 using LocalisedStr = const MsvcString* (*)(const void* localisedString, const void* localeProvider);
 
 constexpr int32_t kScale = game::kMapPositionScale;
@@ -108,26 +105,6 @@ std::string named(uintptr_t list, uint16_t id, uint8_t quality) {
    return prototype ? qualityPrefix(quality) + localisedName(prototype) : std::string();
 }
 
-// An IDWithQuality<ItemID> or <RecipeID>.
-std::string idName(uintptr_t list, const std::byte* id) {
-   return named(list, at<uint16_t>(id, layout.idWithQualityBase), at<uint8_t>(id, layout.idWithQualityQuality));
-}
-
-// A SignalID (an item, fluid, virtual signal, entity, recipe and so on), empty when unset. The
-// game takes a signal as set when the index in its low 16 bits is.
-std::string signalName(const std::byte* signal) {
-   if ((at<uint32_t>(signal, 0) & 0xffff) == 0) return {};
-   const std::byte* prototype = reinterpret_cast<SignalPrototypeFunction>(layout.signalPrototype)(signal);
-   if (!prototype) return {};
-   return qualityPrefix(at<uint8_t>(signal, layout.signalQuality)) + localisedName(prototype);
-}
-
-// A SignalOrConstant's signal; a constant shows no icon.
-std::string operandName(const std::byte* operand) {
-   if (at<uint8_t>(operand, layout.signalOrConstantType) != layout.signalOrConstantIsSignal) return {};
-   return signalName(operand + layout.signalOrConstantSignal);
-}
-
 std::string join(const std::vector<std::string>& parts, std::string_view separator = ", ") {
    std::string joined;
    for (const std::string& part : parts) {
@@ -138,136 +115,11 @@ std::string join(const std::vector<std::string>& parts, std::string_view separat
    return joined;
 }
 
-template <size_t N>
-std::string wordFor(const uint32_t (&values)[N], const vocab::Word (&words)[N], uint32_t value) {
-   for (size_t i = 0; i < N; ++i)
-      if (values[i] == value) return words[i];
-   return {};
-}
-
-bool altMode(const std::byte* widget) {
-   const std::byte* player = at<const std::byte*>(widget, layout.picturePlayer);
-   if (!player) return false;
-   const std::byte* adapter = at<const std::byte*>(player, layout.playerLatencyAdapter);
-   if (!adapter) adapter = player + layout.playerGameStateAdapter;
-   return virtualAt<ShowEntityInfoFunction>(adapter, layout.adapterShowEntityInfo)(adapter);
-}
-
-// The interface setting that adds a combinator's signals to alt mode.
-bool combinatorSettingsShown() {
-   auto* context = *reinterpret_cast<const std::byte* const*>(layout.globalContext);
-   const std::byte* settings = context ? at<const std::byte*>(context, layout.globalInterfaceSettings) : nullptr;
-   return settings && at<bool>(settings, layout.showCombinatorSettings);
-}
-
-// A combinator's operation, drawn on its display at all times; with alt mode and the setting, the
-// signals around it ("Iron plate multiply Copper plate, output Signal A").
-void addOperation(std::vector<std::string>& parts, std::string_view operation, const std::string& first,
-                  const std::string& second, const std::string& output, bool signals) {
-   if (signals && (!first.empty() || !second.empty()))
-      parts.push_back(join({first, std::string(operation), second}, " "));
-   else if (!operation.empty())
-      parts.emplace_back(operation);
-   if (signals && !output.empty()) parts.push_back(vocab::kOutputSignal(output));
-}
-
-// What the game draws on an entity at all times besides its picture and its icons: which way a
-// loader faces, a combinator's operation, a display panel's icon and text.
-void addAlwaysShown(std::vector<std::string>& parts, const std::byte* entity, bool alt) {
-   bool signals = alt && combinatorSettingsShown();
-   if (const std::byte* loader = agui::objectAsBase(entity, ".?AVLoader@@")) {
-      parts.emplace_back(at<uint8_t>(loader, layout.loaderType) == layout.loaderOutput ? vocab::kOutput
-                                                                                       : vocab::kInput);
-   } else if (const std::byte* arithmetic = agui::objectAsBase(entity, ".?AVArithmeticCombinator@@")) {
-      const std::byte* parameters = arithmetic + layout.arithmeticParameters;
-      addOperation(
-         parts,
-         wordFor(layout.arithmeticOperations, vocab::kArithmetic, at<uint8_t>(parameters, layout.arithmeticOperation)),
-         operandName(parameters + layout.arithmeticFirst), operandName(parameters + layout.arithmeticSecond),
-         signalName(parameters + layout.arithmeticOutput), signals);
-   } else if (const std::byte* decider = agui::objectAsBase(entity, ".?AVDeciderCombinator@@")) {
-      const auto& conditions = at<MsvcVector<const std::byte>>(decider, layout.deciderConditions);
-      const auto& outputs = at<MsvcVector<const std::byte>>(decider, layout.deciderOutputs);
-      std::string output = outputs.first != outputs.last ? signalName(outputs.first + layout.deciderOutputSignal) : "";
-      if (conditions.first != conditions.last) {
-         const std::byte* condition = conditions.first;
-         addOperation(
-            parts, wordFor(layout.comparisons, vocab::kComparisons, at<uint8_t>(condition, layout.conditionComparator)),
-            signalName(condition + layout.conditionFirst), operandName(condition + layout.conditionSecond), output,
-            signals);
-      } else if (signals && !output.empty()) {
-         parts.push_back(vocab::kOutputSignal(output));
-      }
-   } else if (const std::byte* selector = agui::objectAsBase(entity, ".?AVSelectorCombinator@@")) {
-      const std::byte* parameters = selector + layout.selectorParameters;
-      uint8_t operation = at<uint8_t>(parameters, layout.selectorOperation);
-      std::string word;
-      if (operation != layout.selectorSelect)
-         word = wordFor(layout.selectorOperations, vocab::kSelector, operation);
-      else
-         word = at<bool>(parameters, layout.selectorMax) ? vocab::kSelectMaximum : vocab::kSelectMinimum;
-      if (!word.empty()) parts.push_back(std::move(word));
-      // As SelectorCombinator::draw: only with an index signal set, which Count shows its count
-      // signal in place of.
-      std::string index = signalName(parameters + layout.selectorIndexSignal);
-      if (signals && !index.empty()) {
-         if (operation == layout.selectorSelect)
-            parts.push_back(std::move(index));
-         else if (operation == layout.selectorCount)
-            parts.push_back(signalName(parameters + layout.selectorCountSignal));
-      }
-   } else if (const std::byte* panel = agui::objectAsBase(entity, ".?AVDisplayPanel@@")) {
-      parts.push_back(signalName(panel + layout.panelIcon));
-      if (at<bool>(panel, layout.panelAlwaysShow))
-         parts.push_back(text::speakable(view(at<MsvcString>(panel, layout.panelText))));
-   }
-}
-
-// Whether the picture draws the recipe crossed out: the player's force has not unlocked it, and
-// the player is not in the map editor. As CraftingMachine::draw decides it for a blueprint.
-bool recipeLocked(const std::byte* widget, uint16_t recipe) {
-   const std::byte* player = at<const std::byte*>(widget, layout.picturePlayer);
-   uint8_t force = player ? at<uint8_t>(player, layout.playerForce) : 0;
-   if (!recipe || !force) return false;
-   const std::byte* controller = at<const std::byte*>(player, layout.playerControllerBeforePause);
-   if (!controller) controller = at<const std::byte*>(player, layout.playerController);
-   if (controller && agui::objectAsBase(controller, ".?AVEditorController@@")) return false;
-   const std::byte* map = at<const std::byte*>(player, layout.playerMap);
-   const std::byte* forceData = at<const std::byte* const*>(map, layout.mapForces)[force];
-   const std::byte* recipes = forceData ? at<const std::byte*>(forceData, layout.forceRecipes) : nullptr;
-   if (!recipes) return false;
-   const auto& instances = at<MsvcVector<const std::byte>>(recipes, layout.recipeInstances);
-   const std::byte* instance = instances.first + size_t{recipe} * layout.recipeSize;
-   return instance < instances.last && !at<bool>(instance, layout.recipeEnabled);
-}
-
-// A crafting machine's recipe the picture draws crossed out, with alt mode on, as the icons say
-// the recipe.
-void addLockedRecipe(std::vector<std::string>& parts, const std::byte* widget, const std::byte* entity) {
-   const std::byte* machine = agui::objectAsBase(entity, ".?AVCraftingMachine@@");
-   if (!machine) return;
-   const std::byte* recipe = machine + layout.craftingRecipe;
-   const uint16_t id = at<uint16_t>(recipe, layout.idWithQualityBase);
-   if (id && recipeLocked(widget, id)) parts.emplace_back(vocab::kRecipeLocked);
-}
-
-// The items to be delivered to the blueprint's entity at `index`, which the picture marks on it:
-// "with 2 Speed module, 1 Coal".
-void addDeliveries(std::vector<std::string>& parts, const std::byte* blueprint, uint32_t index) {
+// The blueprint's EntityData at `index`, or null.
+const std::byte* entityDataAt(const std::byte* blueprint, uint32_t index) {
    const auto& entities = at<MsvcVector<const std::byte>>(blueprint, layout.blueprintEntityList);
    const std::byte* data = entities.first + size_t{index} * layout.entityDataSize;
-   if (data >= entities.last) return;
-   const auto& plan = at<MsvcVector<const std::byte>>(data, layout.entityDataInsertPlan);
-   std::vector<std::string> items;
-   for (const std::byte* pair = plan.first; pair < plan.last; pair += layout.insertPairSize) {
-      const std::byte* positions = pair + layout.insertPairPositions;
-      uint64_t count = at<uint32_t>(positions, layout.positionsGridCount);
-      const auto& stacks = at<MsvcVector<const std::byte>>(positions, layout.positionsStacks);
-      for (const std::byte* stack = stacks.first; stack < stacks.last; stack += layout.stackLocationSize)
-         count += at<uint32_t>(stack, layout.stackLocationCount);
-      items.push_back(std::format("{} {}", count, idName(layout.itemPrototypes, pair)));
-   }
-   if (!items.empty()) parts.push_back(vocab::kWith(join(items)));
+   return data < entities.last ? data : nullptr;
 }
 
 // Whether the entity or tile at `index` of the picture's removal list is removed.
@@ -336,20 +188,13 @@ std::string floorUnder(const std::byte* widget, int x, int y) {
 }
 
 std::string describeEntity(const std::byte* widget, const std::byte* entity, uint32_t index, int x, int y) {
-   bool alt = altMode(widget);
-   std::vector<std::string> parts;
-   std::string name = localisedName(at<const std::byte*>(entity, layout.entityPrototypeOf));
-   if (alt)
-      if (const std::byte* owner = agui::objectAsBase(entity, ".?AVEntityWithOwner@@"))
-         name = qualityPrefix(at<uint8_t>(owner, layout.entityQuality)) + name;
-   parts.push_back(std::move(name));
+   const std::byte* renderParameters = widget + layout.pictureRenderParameters;
+   std::vector<std::string> parts{facts::blueprintEntityName(entity, renderParameters)};
    if (removed(widget, layout.parametersEntities, index)) parts.emplace_back(vocab::kRemoved);
    for (std::string& fact : facts::describeDesign(entity, x, y, designOf(widget))) parts.push_back(std::move(fact));
-   addAlwaysShown(parts, entity, alt);
-   for (std::string& icon : facts::drawnIcons(entity, widget + layout.pictureRenderParameters))
-      parts.push_back(std::move(icon));
-   if (alt) addLockedRecipe(parts, widget, entity);
-   addDeliveries(parts, blueprintOf(widget), index);
+   for (std::string& drawn :
+        facts::drawnOnBlueprintEntity(entity, renderParameters, entityDataAt(blueprintOf(widget), index)))
+      parts.push_back(std::move(drawn));
    parts.push_back(floorUnder(widget, x, y));
    return join(parts);
 }

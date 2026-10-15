@@ -31,8 +31,24 @@ struct Design {
 };
 
 // The facts of a blueprint's entity that tell of its design, as describe says them: none of the
-// world's state (what a belt carries, power, networks, trains).
-std::vector<std::string> describeDesign(const void* entity, int32_t tileX, int32_t tileY, const Design& design);
+// world's state (what a belt carries, power, networks, trains). Without `withFacing`, the way it
+// faces is left to the caller, which says it its own way.
+std::vector<std::string> describeDesign(const void* entity, int32_t tileX, int32_t tileY, const Design& design,
+                                        bool withFacing = true);
+
+// A blueprint's entity as a sighted player sees it drawn, alike in the blueprint's picture and in
+// its preview in the world, which both draw it as a blueprint. Its name, with its quality while alt
+// mode is on in `renderParameters` (a RenderParameters*: the picture's own, or the preview's draw
+// queue's). Then, each a list item, what is drawn on it besides its picture: which way a loader
+// faces, a combinator's operation and, with alt mode and the interface setting for combinator
+// settings, its signals, a display panel's icon and text; alt mode's icons (drawnIcons), drawn with
+// `renderParameters`, among them the cross a blueprint draws over a recipe the player's force has
+// not unlocked; the items to be delivered to it, from `entityData` (its
+// BlueprintEntities::EntityData), when given. Where the game translates: the application Gui's
+// logic, or the thread that draws the preview.
+std::string blueprintEntityName(const void* entity, const void* renderParameters);
+std::vector<std::string> drawnOnBlueprintEntity(const void* entity, const void* renderParameters,
+                                                const void* entityData);
 
 // What the info icons the game draws on `entity` show (alt mode), in FA's words where it has them:
 // the recipe as "producing", filters as "Filters for" or

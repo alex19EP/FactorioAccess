@@ -19,7 +19,9 @@
 #include <limits>
 #include <optional>
 #include <string>
+#include <unordered_map>
 #include <utility>
+#include <vector>
 
 namespace fa::world {
 
@@ -624,8 +626,93 @@ std::string previewMeaning(const void* settings, const void* entity, Position po
    return checkReason(result);
 }
 
-// One piece of the pinned build as its preview draws it: name, facing, tiles and whether it fits.
-footprint::Piece pieceOf(const void* settings, const void* entity) {
+// The blueprint in hand's entities as drawEntitiesCore draws them this frame, a
+// BlueprintEntities*; null outside it.
+thread_local const std::byte* t_blueprintEntities = nullptr;
+// Those entities by the tiles their selection boxes cover, made the first time a piece looks for
+// what it reaches in a frame; cleared as the frame's entities go. Only the thread that draws the
+// preview touches them; not thread_local, which a core unloaded while the game runs must not leave
+// destructors in.
+std::unordered_map<uint64_t, std::vector<const void*>> g_blueprintTiles;
+bool g_blueprintTilesMade = false;
+
+template <class Visit>
+void eachBlueprintEntity(Visit&& visit) {
+   struct Vector {
+      const std::byte* first;
+      const std::byte* last;
+      const std::byte* end;
+   };
+   const auto data = at<Vector>(t_blueprintEntities, layout.blueprintEntitiesData);
+   for (const std::byte* entry = data.first; entry < data.last; entry += layout.entityDataSize)
+      if (visit(entry, at<const void*>(entry, layout.entityDataEntity))) return;
+}
+
+// The blueprint's EntityData of `entity`, or null.
+const std::byte* entityDataOf(const void* entity) {
+   const std::byte* found = nullptr;
+   eachBlueprintEntity([&](const std::byte* entry, const void* each) {
+      if (each == entity) found = entry;
+      return found != nullptr;
+   });
+   return found;
+}
+
+uint64_t tileKey(int32_t tileX, int32_t tileY) {
+   return static_cast<uint32_t>(tileX) | static_cast<uint64_t>(static_cast<uint32_t>(tileY)) << 32;
+}
+
+// The blueprint in hand as the facts find what its entities reach (facts.h): among its own
+// entities, as the blueprint window's picture finds them, where they would be built.
+facts::Design designOfHand() {
+   if (!g_blueprintTilesMade) {
+      g_blueprintTilesMade = true;
+      eachBlueprintEntity([](const std::byte*, const void* entity) {
+         const facts::SelectionBox box = facts::selectionBox(entity);
+         for (int32_t y = box.top >> 8; y <= (box.bottom - 1) >> 8; ++y)
+            for (int32_t x = box.left >> 8; x <= (box.right - 1) >> 8; ++x)
+               g_blueprintTiles[tileKey(x, y)].push_back(entity);
+         return false;
+      });
+   }
+   return {[](int32_t x, int32_t y) -> const void* {
+              const auto found = g_blueprintTiles.find(tileKey(x >> 8, y >> 8));
+              if (found == g_blueprintTiles.end()) return nullptr;
+              for (const void* entity : found->second) {
+                 const facts::SelectionBox box = facts::selectionBox(entity);
+                 if (x >= box.left && x < box.right && y >= box.top && y < box.bottom) return entity;
+              }
+              return nullptr;
+           },
+           [](const void*) { return true; }};
+}
+
+// A blueprint's piece as the blueprint window's picture reads it (footprint::Piece): the facts of
+// its design on each of its tiles, and what is drawn on it, with alt mode as `drawQueue` draws it.
+void addDetails(footprint::Piece& piece, const void* drawQueue, const void* entity) {
+   const void* renderParameters = at<const void*>(drawQueue, layout.drawQueueRenderParameters);
+   piece.name = facts::blueprintEntityName(entity, renderParameters);
+   const facts::Design design = designOfHand();
+   for (int32_t y = piece.top; y <= piece.bottom; ++y)
+      for (int32_t x = piece.left; x <= piece.right; ++x) {
+         std::string words;
+         for (const std::string& fact : facts::describeDesign(entity, x, y, design, false)) {
+            if (fact.empty()) continue;
+            if (!words.empty()) words += ", ";
+            words += fact;
+         }
+         piece.tileFacts.push_back(std::move(words));
+      }
+   for (const std::string& part : facts::drawnOnBlueprintEntity(entity, renderParameters, entityDataOf(entity))) {
+      if (part.empty()) continue;
+      if (!piece.drawn.empty()) piece.drawn += ", ";
+      piece.drawn += part;
+   }
+}
+
+// One piece of the pinned build as its preview draws it: name, facing, tiles and whether it fits,
+// and for a blueprint's piece while the build is pinned what else is drawn of it.
+footprint::Piece pieceOf(const void* settings, const void* drawQueue, const void* entity) {
    const std::byte* prototype = at<const std::byte*>(entity, layout.entityPrototypeOf);
    const MsvcString* name =
       reinterpret_cast<LocalisedStr>(layout.localisedStringStr)(prototype + layout.prototypeLocalisedName, nullptr);
@@ -648,7 +735,24 @@ footprint::Piece pieceOf(const void* settings, const void* entity) {
                : type == game::kBuildCheckIgnorable ? footprint::Fit::AlreadyBuilt
                                                     : footprint::Fit::Blocked;
    if (piece.fit == footprint::Fit::Blocked) piece.reason = checkReason(result);
+   if (t_blueprintEntities && at<const void*>(settings, layout.settingsBlueprint) && footprint::gatheringDetails())
+      addDetails(piece, drawQueue, entity);
    return piece;
+}
+
+using DrawBlueprintEntitiesFunction = void (*)(void* logic, const void* entities);
+DrawBlueprintEntitiesFunction g_drawBlueprintEntitiesOriginal = nullptr;
+
+void detourDrawBlueprintEntities(void* logic, const void* entities) {
+   struct Scope {
+      Scope(const void* entities) { t_blueprintEntities = static_cast<const std::byte*>(entities); }
+      ~Scope() {
+         t_blueprintEntities = nullptr;
+         g_blueprintTiles.clear();
+         g_blueprintTilesMade = false;
+      }
+   } scope(entities);
+   g_drawBlueprintEntitiesOriginal(logic, entities);
 }
 
 using SettingsDrawFunction = void (*)(const void* settings, void* drawQueue, const void* entity);
@@ -658,7 +762,7 @@ SettingsDrawFunction g_settingsDrawOriginal = nullptr;
 // spoken the cursor's move: the cursor reaches the game in the tick, the preview a frame later.
 void detourSettingsDraw(const void* settings, void* drawQueue, const void* entity) {
    g_settingsDrawOriginal(settings, drawQueue, entity);
-   if (footprint::gathering()) footprint::add(pieceOf(settings, entity));
+   if (footprint::gathering()) footprint::add(pieceOf(settings, drawQueue, entity));
    if (!t_preview.active || t_preview.read || at<const void*>(settings, layout.settingsBlueprint) ||
        railplanner::drawing())
       return;
@@ -888,6 +992,8 @@ void* buildFromCursorDetour() { return reinterpret_cast<void*>(&detourBuildFromC
 void** buildFromCursorOriginal() { return reinterpret_cast<void**>(&g_buildFromCursorOriginal); }
 void* settingsDrawDetour() { return reinterpret_cast<void*>(&detourSettingsDraw); }
 void** settingsDrawOriginal() { return reinterpret_cast<void**>(&g_settingsDrawOriginal); }
+void* drawBlueprintEntitiesDetour() { return reinterpret_cast<void*>(&detourDrawBlueprintEntities); }
+void** drawBlueprintEntitiesOriginal() { return reinterpret_cast<void**>(&g_drawBlueprintEntitiesOriginal); }
 void* drawTileDetour() { return reinterpret_cast<void*>(&detourDrawTile); }
 void** drawTileOriginal() { return reinterpret_cast<void**>(&g_drawTileOriginal); }
 

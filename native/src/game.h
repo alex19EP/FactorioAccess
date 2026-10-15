@@ -291,6 +291,14 @@ struct Layout {
    // red. LocalisedString BuildCheckResult::getMessage() const is the game's reason, empty for those
    // three.
    uintptr_t settingsDraw = 0;
+   // A blueprint in hand: void DrawBlueprintToBeBuiltLogic::drawEntitiesCore(BlueprintEntities&),
+   // called only by DrawBlueprintToBeBuiltLogic::drawEntities, makes the blueprint's entities each
+   // frame (BlueprintEntities::data, std::vector<EntityData>), prepares every one where it would be
+   // built, then draws those near the screen through EntityToBeBuiltSettings::draw, then the items
+   // to be delivered to each, from its EntityData::insertPlan, always. The whole blueprint is drawn
+   // with RenderParameters flag 0x1000, as the blueprint window's picture is.
+   uintptr_t drawBlueprintEntities = 0;
+   uint32_t blueprintEntitiesData = 0; // BlueprintEntities::data
    uintptr_t settingsBuildCheckData = 0;
    uintptr_t buildCheckMessage = 0;
    uint32_t adapterBuildabilityCheck = 0;
@@ -1075,16 +1083,10 @@ struct Layout {
    uint32_t entityQuality = 0;         // EntityWithOwner::qualityID, ID<QualityPrototype>
    uint32_t craftingRecipe = 0;        // CraftingMachine::recipeID, IDWithQuality<RecipeID>
    // A blueprint's recipe the player's force has not unlocked is drawn crossed out
-   // (CraftingMachine::draw while rendering a blueprint), except in the map editor (the controller,
-   // or the one before a pause, an EditorController): the force's Recipes::indexToInstance by
-   // recipe ID, each a Recipe with its enabled flag. The player's force and map: playerForce,
-   // playerMap.
-   uint32_t playerControllerBeforePause = 0; // Player::controllerManager.controllerBeforePause, Controller*
+   // (CraftingMachine::draw while rendering a blueprint, RenderParameters flag 0x1000, decides it
+   // for RenderParameters::player; CraftingMachine::drawInternal draws the utility sprite
+   // crafting_machine_recipe_not_unlocked as an info icon, which entityicons reads).
    uint32_t mapForces = 0;             // Map::forceManager.sortedForceDataList.begin_, ForceData** by ForceID
-   uint32_t forceRecipes = 0;          // ForceData::recipes, unique_ptr<Recipes>
-   uint32_t recipeInstances = 0;       // Recipes::indexToInstance, std::vector<Recipe>
-   uint32_t recipeSize = 0;
-   uint32_t recipeEnabled = 0;         // Recipe::enabled, bool
    // Item filters, IDWithQualityFilter: an item ID and a QualityCondition (quality, comparison).
    uint32_t itemFilterSize = 0;
    uint32_t itemFilterId = 0;          // ::baseID, ID<ItemPrototype>

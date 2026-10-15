@@ -41,6 +41,8 @@
    X(playerBuildFromCursor, world::buildFromCursorDetour(), world::buildFromCursorOriginal(),                          \
      "Player::buildFromCursor")                                                                                        \
    X(settingsDraw, world::settingsDrawDetour(), world::settingsDrawOriginal(), "EntityToBeBuiltSettings::draw")        \
+   X(drawBlueprintEntities, world::drawBlueprintEntitiesDetour(), world::drawBlueprintEntitiesOriginal(),              \
+     "DrawBlueprintToBeBuiltLogic::drawEntitiesCore")                                                                  \
    X(renderCursorBox, highlights::renderCursorBoxDetour(), highlights::renderCursorBoxOriginal(),                      \
      "RenderUtil::renderCursorBox")                                                                                    \
    X(renderDoubleCursorBox, highlights::renderDoubleCursorBoxDetour(), highlights::renderDoubleCursorBoxOriginal(),    \

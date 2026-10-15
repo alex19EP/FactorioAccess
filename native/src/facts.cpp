@@ -15,6 +15,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <format>
 #include <optional>
 #include <string_view>
 #include <utility>
@@ -1631,6 +1632,154 @@ bool isCraftingMachine(std::string_view type) {
    return type == "assembling-machine" || type == "furnace" || type == "rocket-silo";
 }
 
+// ---- what a blueprint's entity shows ----
+
+struct StdString {
+   union {
+      char buffer[16];
+      const char* pointer;
+   };
+   size_t size;
+   size_t capacity;
+};
+
+std::string_view viewOf(const StdString& string) {
+   return {string.capacity >= sizeof(string.buffer) ? string.pointer : string.buffer, string.size};
+}
+
+template <class T>
+struct StdVector {
+   T* first;
+   T* last;
+   T* end;
+};
+
+bool altModeIn(const void* renderParameters) {
+   return (at<uint32_t>(renderParameters, layout.renderParametersFlags) & game::kRenderShowEntityInfo) != 0;
+}
+
+// A quality's name and a space before the name it qualifies, or nothing for normal quality or none.
+std::string qualityPrefix(uint8_t quality) {
+   const std::byte* prototype = quality ? prototypeAt(layout.qualityPrototypes, quality) : nullptr;
+   if (!prototype || internalName(prototype) == "normal") return {};
+   return localisedName(prototype) + " ";
+}
+
+// An IDWithQuality<ItemID>.
+std::string itemName(const std::byte* id) {
+   const std::byte* prototype = prototypeAt(layout.itemPrototypes, at<uint16_t>(id, layout.idWithQualityBase));
+   return prototype ? qualityPrefix(at<uint8_t>(id, layout.idWithQualityQuality)) + localisedName(prototype) : "";
+}
+
+// A SignalID (an item, fluid, virtual signal, entity, recipe and so on), empty when unset. The
+// game takes a signal as set when the index in its low 16 bits is.
+std::string signalName(const std::byte* signal) {
+   if ((at<uint32_t>(signal, 0) & 0xffff) == 0) return {};
+   using SignalPrototype = const std::byte* (*)(const void* signal);
+   const std::byte* prototype = reinterpret_cast<SignalPrototype>(layout.signalPrototype)(signal);
+   if (!prototype) return {};
+   return qualityPrefix(at<uint8_t>(signal, layout.signalQuality)) + localisedName(prototype);
+}
+
+// A SignalOrConstant's signal; a constant shows no icon.
+std::string operandName(const std::byte* operand) {
+   if (at<uint8_t>(operand, layout.signalOrConstantType) != layout.signalOrConstantIsSignal) return {};
+   return signalName(operand + layout.signalOrConstantSignal);
+}
+
+template <size_t N>
+std::string wordFor(const uint32_t (&values)[N], const vocab::Word (&words)[N], uint32_t value) {
+   for (size_t i = 0; i < N; ++i)
+      if (values[i] == value) return words[i];
+   return {};
+}
+
+// The interface setting that adds a combinator's signals to alt mode.
+bool combinatorSettingsShown() {
+   auto* context = *reinterpret_cast<const std::byte* const*>(layout.globalContext);
+   const std::byte* settings = context ? at<const std::byte*>(context, layout.globalInterfaceSettings) : nullptr;
+   return settings && at<bool>(settings, layout.showCombinatorSettings);
+}
+
+// A combinator's operation, drawn on its display at all times; with alt mode and the setting, the
+// signals around it ("Iron plate multiply Copper plate, output Signal A").
+void addOperation(std::vector<std::string>& parts, std::string_view operation, const std::string& first,
+                  const std::string& second, const std::string& output, bool signals) {
+   if (signals && (!first.empty() || !second.empty()))
+      parts.push_back(joined({first, std::string(operation), second}));
+   else if (!operation.empty())
+      parts.emplace_back(operation);
+   if (signals && !output.empty()) parts.push_back(vocab::kOutputSignal(output));
+}
+
+// What the game draws on an entity at all times besides its picture and its icons: which way a
+// loader faces, a combinator's operation, a display panel's icon and text.
+void addAlwaysShown(std::vector<std::string>& parts, const std::byte* entity, bool alt) {
+   bool signals = alt && combinatorSettingsShown();
+   if (const std::byte* loader = agui::objectAsBase(entity, ".?AVLoader@@")) {
+      parts.emplace_back(at<uint8_t>(loader, layout.loaderType) == layout.loaderOutput ? vocab::kOutput
+                                                                                       : vocab::kInput);
+   } else if (const std::byte* arithmetic = agui::objectAsBase(entity, ".?AVArithmeticCombinator@@")) {
+      const std::byte* parameters = arithmetic + layout.arithmeticParameters;
+      addOperation(
+         parts,
+         wordFor(layout.arithmeticOperations, vocab::kArithmetic, at<uint8_t>(parameters, layout.arithmeticOperation)),
+         operandName(parameters + layout.arithmeticFirst), operandName(parameters + layout.arithmeticSecond),
+         signalName(parameters + layout.arithmeticOutput), signals);
+   } else if (const std::byte* decider = agui::objectAsBase(entity, ".?AVDeciderCombinator@@")) {
+      const auto conditions = at<StdVector<const std::byte>>(decider, layout.deciderConditions);
+      const auto outputs = at<StdVector<const std::byte>>(decider, layout.deciderOutputs);
+      std::string output = outputs.first != outputs.last ? signalName(outputs.first + layout.deciderOutputSignal) : "";
+      if (conditions.first != conditions.last) {
+         const std::byte* condition = conditions.first;
+         addOperation(
+            parts, wordFor(layout.comparisons, vocab::kComparisons, at<uint8_t>(condition, layout.conditionComparator)),
+            signalName(condition + layout.conditionFirst), operandName(condition + layout.conditionSecond), output,
+            signals);
+      } else if (signals && !output.empty()) {
+         parts.push_back(vocab::kOutputSignal(output));
+      }
+   } else if (const std::byte* selector = agui::objectAsBase(entity, ".?AVSelectorCombinator@@")) {
+      const std::byte* parameters = selector + layout.selectorParameters;
+      uint8_t operation = at<uint8_t>(parameters, layout.selectorOperation);
+      std::string word;
+      if (operation != layout.selectorSelect)
+         word = wordFor(layout.selectorOperations, vocab::kSelector, operation);
+      else
+         word = at<bool>(parameters, layout.selectorMax) ? vocab::kSelectMaximum : vocab::kSelectMinimum;
+      if (!word.empty()) parts.push_back(std::move(word));
+      // As SelectorCombinator::draw: only with an index signal set, which Count shows its count
+      // signal in place of.
+      std::string index = signalName(parameters + layout.selectorIndexSignal);
+      if (signals && !index.empty()) {
+         if (operation == layout.selectorSelect)
+            parts.push_back(std::move(index));
+         else if (operation == layout.selectorCount)
+            parts.push_back(signalName(parameters + layout.selectorCountSignal));
+      }
+   } else if (const std::byte* panel = agui::objectAsBase(entity, ".?AVDisplayPanel@@")) {
+      parts.push_back(signalName(panel + layout.panelIcon));
+      if (at<bool>(panel, layout.panelAlwaysShow))
+         parts.push_back(text::speakable(viewOf(at<StdString>(panel, layout.panelText))));
+   }
+}
+
+// The items to be delivered to a blueprint's entity, which the blueprint marks on it, from its
+// BlueprintEntities::EntityData: "with 2 Speed module, 1 Coal".
+void addDeliveries(std::vector<std::string>& parts, const std::byte* data) {
+   const auto plan = at<StdVector<const std::byte>>(data, layout.entityDataInsertPlan);
+   std::vector<std::string> items;
+   for (const std::byte* pair = plan.first; pair < plan.last; pair += layout.insertPairSize) {
+      const std::byte* positions = pair + layout.insertPairPositions;
+      uint64_t count = at<uint32_t>(positions, layout.positionsGridCount);
+      const auto stacks = at<StdVector<const std::byte>>(positions, layout.positionsStacks);
+      for (const std::byte* stack = stacks.first; stack < stacks.last; stack += layout.stackLocationSize)
+         count += at<uint32_t>(stack, layout.stackLocationCount);
+      items.push_back(std::format("{} {}", count, itemName(pair)));
+   }
+   if (!items.empty()) parts.push_back(vocab::kWith(joined(items, ", ")));
+}
+
 // ---- rails ----
 //
 // The rails on a tile, read from the game's own rail graph: a rail's ends, what each joins, the signals and stations.
@@ -2075,7 +2224,7 @@ namespace {
 
 // The facts describe says, or with `design` those of a blueprint's entity: its design only, with
 // what it reaches found in the blueprint.
-std::vector<std::string> factsOf(const std::byte* entity, Position tile, const Design* design) {
+std::vector<std::string> factsOf(const std::byte* entity, Position tile, const Design* design, bool withFacing) {
    const bool live = !design;
    const int32_t tileX = tile.x, tileY = tile.y;
    const Belt candidate{entity};
@@ -2091,7 +2240,7 @@ std::vector<std::string> factsOf(const std::byte* entity, Position tile, const D
       std::string name = trainName(train);
       if (name != backerName(entity)) first.push_back(std::move(name));
    }
-   first.push_back(facing(entity));
+   if (withFacing) first.push_back(facing(entity));
    if (type == "locomotive" || type == "car") first.push_back(vocab::kFacing(directionName(headingOf(entity))));
    if (belt && belt.isUnderground())
       first.emplace_back(belt.isUndergroundExit() ? vocab::kUndergroundExit : vocab::kUndergroundEntrance);
@@ -2164,11 +2313,12 @@ std::vector<std::string> factsOf(const std::byte* entity, Position tile, const D
 } // namespace
 
 std::vector<std::string> describe(const void* entity, int32_t tileX, int32_t tileY) {
-   return factsOf(static_cast<const std::byte*>(entity), Position{tileX, tileY}, nullptr);
+   return factsOf(static_cast<const std::byte*>(entity), Position{tileX, tileY}, nullptr, true);
 }
 
-std::vector<std::string> describeDesign(const void* entity, int32_t tileX, int32_t tileY, const Design& design) {
-   return factsOf(static_cast<const std::byte*>(entity), Position{tileX, tileY}, &design);
+std::vector<std::string> describeDesign(const void* entity, int32_t tileX, int32_t tileY, const Design& design,
+                                        bool withFacing) {
+   return factsOf(static_cast<const std::byte*>(entity), Position{tileX, tileY}, &design, withFacing);
 }
 
 std::vector<std::string> drawnIcons(const void* entity) { return drawnIcons(entity, nullptr); }
@@ -2322,6 +2472,29 @@ std::vector<std::string> drawnIcons(const void* object, const void* renderParame
       items.push_back(joined(words));
    }
    return items;
+}
+
+std::string blueprintEntityName(const void* object, const void* renderParameters) {
+   const auto* entity = static_cast<const std::byte*>(object);
+   std::string name = localisedName(prototypeOf(entity));
+   if (altModeIn(renderParameters))
+      if (const std::byte* owner = agui::objectAsBase(entity, ".?AVEntityWithOwner@@"))
+         name = qualityPrefix(at<uint8_t>(owner, layout.entityQuality)) + name;
+   return name;
+}
+
+std::vector<std::string> drawnOnBlueprintEntity(const void* object, const void* renderParameters,
+                                                const void* entityData) {
+   const auto* entity = static_cast<const std::byte*>(object);
+   const bool alt = altModeIn(renderParameters);
+   std::vector<std::string> parts;
+   addAlwaysShown(parts, entity, alt);
+   // An arithmetic, decider or selector combinator draws as icons only the signals said with its
+   // operation.
+   if (!agui::objectAsBase(entity, ".?AVCombinator@@"))
+      for (std::string& icon : drawnIcons(entity, renderParameters)) parts.push_back(std::move(icon));
+   if (entityData) addDeliveries(parts, static_cast<const std::byte*>(entityData));
+   return parts;
 }
 
 Likeness likenessOf(const void* object) {
