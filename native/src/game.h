@@ -124,8 +124,9 @@ struct Layout {
    uint32_t inputSourceDragContext = 0; // PlayerInputSource::manualBuilder.dragBuildingContext
    uint32_t dragStartPosition = 0;      // ClientDragBuildingContext::startPosition, Optional<MapPosition>
    uint32_t dragTurnPending = 0;        // ClientDragBuildingContext::belt.applySmartDirectionChangeWhenPossible
-   // bool ControlInput::isActive(bool, NamedBool<GuiCheckTag>, bool, NamedBool<CheckModifiersTag>)
-   // const: whether a control is held, as every held control is read.
+   // bool ControlInput::isActive(NamedBool<GuiCheckTag>, NamedBool<CheckIsUsedByActionTag>,
+   // NamedBool<CheckModifiersTag>, NamedBool<IgnoreBlockingTag>) const: whether a control is held, as
+   // every held control is read.
    uintptr_t controlInputIsActive = 0;
    // Zoom. bool PlayerInputSource::processZoom(Event const&) takes a zoom control triggered while
    // not held, a wheel notch, and calls void PlayerInputSource::zoom(ZoomDirection, double steps),
@@ -2064,8 +2065,8 @@ struct Layout {
    uint32_t fluidBoxOwner = 0;     // FluidBox::owner, Entity*
    uint32_t fluidBoxPrototype = 0; // FluidBox::prototype, FluidBoxPrototype*
    // The filter get_fluid_filter reads: the segment's when it has one, else the box's.
-   uint32_t fluidBoxFilter = 0;  // FluidBox::buffer.filter.fluidID, ID<FluidPrototype>
-   uint32_t segmentFilter = 0;   // FluidSegment::buffer.filter.fluidID
+   uint32_t fluidBoxFilter = 0;  // FluidBox::buffer.filter, ID<FluidPrototype>
+   uint32_t segmentFilter = 0;   // FluidSegment::buffer.filter
    uint32_t fluidConnectionOpposite = 0; // FluidBoxConnection::oppositeIndex, uint16: its index on the target
    // FluidBoxPrototype::connectionDefinitions, a SmallVector<PipeConnectionDefinition,5>, one per
    // FluidBox::connections entry in the same order.

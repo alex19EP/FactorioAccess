@@ -73,7 +73,8 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.dragStartPosition, "ClientDragBuildingContext", "startPosition");
    offset(layout.dragTurnPending, "ClientDragBuildingContext", "belt.applySmartDirectionChangeWhenPossible");
    address(layout.controlInputIsActive,
-           "?isActive@ControlInput@@QEBA_N_NV?$NamedBool@VGuiCheckTag@@@@0V?$NamedBool@VCheckModifiersTag@@@@@Z");
+           "?isActive@ControlInput@@QEBA_NV?$NamedBool@VGuiCheckTag@@@@V?$NamedBool@VCheckIsUsedByActionTag@@@@V?$"
+           "NamedBool@VCheckModifiersTag@@@@V?$NamedBool@VIgnoreBlockingTag@@@@@Z");
    address(layout.processZoom, "?processZoom@PlayerInputSource@@AEAA_NAEBVEvent@@@Z");
    address(layout.playerInputSourceZoom, "?zoom@PlayerInputSource@@AEAAXW4ZoomDirection@@N@Z");
    offset(layout.controlSettingsZoomIn, "ControlSettings", "zoomIn");
@@ -1474,8 +1475,8 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.fluidBoxSetEnd, "FluidBoxSet", "end_");
    offset(layout.fluidBoxOwner, "FluidBox", "owner");
    offset(layout.fluidBoxPrototype, "FluidBox", "prototype");
-   offset(layout.fluidBoxFilter, "FluidBox", "buffer.filter.fluidID");
-   offset(layout.segmentFilter, "FluidSegment", "buffer.filter.fluidID");
+   offset(layout.fluidBoxFilter, "FluidBox", "buffer.filter");
+   offset(layout.segmentFilter, "FluidSegment", "buffer.filter");
    offset(layout.fluidConnectionOpposite, "FluidBoxConnection", "oppositeIndex");
    offset(layout.pipeDefinitionsBegin, "FluidBoxPrototype", "connectionDefinitions.begin_");
    size(layout.pipeDefinitionSize, "PipeConnectionDefinition");

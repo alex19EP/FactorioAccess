@@ -66,21 +66,12 @@ Given a fluidbox, determine if it must be a specific fluid, using the following 
 
 Otherwise return nil.  Either there's no requirement or the user has managed to mix fluids.
 ]]
----Normalize a FluidID (string | LuaFluidPrototype | Fluid) to its fluid name.
----@param fluid_id FluidID?
----@return string?
-local function fluid_id_name(fluid_id)
-   if not fluid_id then return nil end
-   if type(fluid_id) == "string" then return fluid_id end
-   return fluid_id.name
-end
-
 ---@param entity LuaEntity
 ---@param index integer
 ---@return string?
 local function get_local_fluidbox_constraint(entity, index)
    local filt = entity.get_fluid_filter(index)
-   if filt and filt.fluid then return fluid_id_name(filt.fluid) end
+   if filt then return filt.name end
    if not entity.has_fluid_segment(index) then return end
    local seg = entity.get_fluid_segment_fluid(index)
    if seg then return seg.name end
@@ -248,7 +239,7 @@ function mod.build_fluid_descriptors(entity)
       for i = 1, fluids_count do
          local prototype = entity.get_fluid_box_prototype(i)
          local filter = entity.get_fluid_filter(i)
-         local locked_fluid = filter and filter.fluid and fluid_id_name(filter.fluid)
+         local locked_fluid = filter and filter.name
          local fluid_data = entity.get_fluid(i)
 
          -- Determine the production type
