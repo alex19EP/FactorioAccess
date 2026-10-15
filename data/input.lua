@@ -378,3 +378,17 @@ data:extend({
       consuming = "none",
    },
 })
+
+-- Kruise Kontrol's walk to the cursor, never a job. Bound like its own controls: on the right
+-- button, and on its key, right bracket.
+if mods["Kruise_Kontrol"] ~= nil then
+   data:extend({
+      {
+         type = "custom-input",
+         name = "fa-cs-rightbracket",
+         key_sequence = "CONTROL + SHIFT + mouse-button-2",
+         alternative_key_sequence = "CONTROL + SHIFT + RIGHTBRACKET",
+         consuming = "none",
+      },
+   })
+end

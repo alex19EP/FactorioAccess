@@ -160,4 +160,4 @@ See [rails](rails.md).
 
 ## Kruise Kontrol
 
-With the [Kruise Kontrol](https://mods.factorio.com/mod/Kruise_Kontrol) mod installed, `ctrl + alt + ]` sends your character to what the cursor is on, and `ctrl + alt + shift + ]` queues it after the current job. `enter` cancels. FactorioAccess says what Kruise Kontrol reports.
+With the [Kruise Kontrol](https://mods.factorio.com/mod/Kruise_Kontrol) mod installed, `ctrl + alt + ]` sends your character to what the cursor is on, and `ctrl + alt + shift + ]` queues it after the current job. `ctrl + shift + ]`, FactorioAccess's own key, only walks there, so ore, trees and rocks under the cursor are not mined. `enter` cancels. FactorioAccess says what Kruise Kontrol reports.

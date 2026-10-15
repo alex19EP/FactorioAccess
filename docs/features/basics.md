@@ -114,6 +114,8 @@ What happens depends on what the cursor is on:
 
 It keeps doing the job until there is nothing more nearby; started on a ghost, it builds every ghost it can find and has the items for. It drives vehicles too. FactorioAccess says what Kruise Kontrol reports.
 
+To just walk, whatever the cursor is on, press `ctrl + shift + ]` instead. This is FactorioAccess's key, there only with Kruise Kontrol installed: it has Kruise Kontrol walk to the cursor as it does to an empty tile, so ore, trees and rocks are not mined. In a car, tank or spidertron it drives there, as Kruise Kontrol always does in one.
+
 ## Belts
 
 A belt's window has FactorioAccess's belt analyzer beside it, with four views:

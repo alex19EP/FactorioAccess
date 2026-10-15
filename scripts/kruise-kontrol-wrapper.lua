@@ -3,6 +3,7 @@
 -- Jobs start from Kruise Kontrol's own control, CONTROL + ALT + mouse-button-2, which
 -- helper-scripts/factorio-access-keys.ps1 also puts on CONTROL + ALT + RIGHTBRACKET. The game cursor
 -- follows the FA cursor, so the job lands there. Enter cancels, also handled by Kruise Kontrol.
+-- FA's CONTROL + SHIFT + RIGHTBRACKET only walks there, through Kruise Kontrol's remote interface.
 --
 -- Kruise Kontrol says what it is doing with text it draws over the character: a remark that lasts
 -- two seconds and is redrawn for every new one, and a status line, such as pathfinding, that keeps
@@ -30,6 +31,22 @@ function mod.is_active(pindex)
    if not remote.interfaces[interface_name] then return false end
    local character = game.get_player(pindex).character
    return character ~= nil and not remote.call(interface_name, "is_idle", character)
+end
+
+---Has Kruise Kontrol walk the character to a position. Its own control picks a job from what is
+---there, mining ore, trees and rocks; without a target it walks, as it does to an empty tile.
+---@param pindex integer
+---@param position MapPosition
+function mod.walk_to(pindex, position)
+   local player = assert(game.get_player(pindex))
+   local character = player.character
+   if not character then return end
+   -- In remote view the cursor can be on another surface
+   if player.surface ~= character.surface then
+      Speech.speak(pindex, { "wrong-surface" })
+      return
+   end
+   remote.call(interface_name, "command", character, nil, position)
 end
 
 ---Speaks the Kruise Kontrol text that appeared over each player's character since the last call.

@@ -1201,6 +1201,17 @@ EventManager.on_event(
    end
 )
 
+-- The key exists only with Kruise Kontrol
+if script.active_mods["Kruise_Kontrol"] ~= nil then
+   EventManager.on_event(
+      "fa-cs-rightbracket",
+      ---@param event EventData.CustomInputEvent
+      function(event, pindex)
+         KruiseKontrol.walk_to(pindex, event.cursor_position)
+      end
+   )
+end
+
 EventManager.on_event(
    defines.events.on_lua_shortcut,
    ---@param event EventData.on_lua_shortcut
