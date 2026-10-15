@@ -194,7 +194,9 @@ size_t queued(const std::byte* queue) {
    return count;
 }
 
-const std::byte* mainRenderParameters() {
+} // namespace
+
+const void* mainRenderParameters() {
    auto* context = *reinterpret_cast<const std::byte* const*>(layout.globalContext);
    auto* game = context ? at<const std::byte*>(context, layout.globalGame) : nullptr;
    auto* view = game ? at<const std::byte*>(game, layout.gameView) : nullptr;
@@ -202,10 +204,8 @@ const std::byte* mainRenderParameters() {
    return renderer ? renderer + layout.gameRendererParameters : nullptr;
 }
 
-} // namespace
-
 std::optional<Drawn> read(const void* entity) {
-   const std::byte* parameters = mainRenderParameters();
+   const void* parameters = mainRenderParameters();
    if (!parameters) return std::nullopt;
    return read(entity, parameters);
 }

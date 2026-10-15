@@ -1655,7 +1655,8 @@ struct StdVector {
 };
 
 bool altModeIn(const void* renderParameters) {
-   return (at<uint32_t>(renderParameters, layout.renderParametersFlags) & game::kRenderShowEntityInfo) != 0;
+   return renderParameters &&
+          (at<uint32_t>(renderParameters, layout.renderParametersFlags) & game::kRenderShowEntityInfo) != 0;
 }
 
 // A quality's name and a space before the name it qualifies, or nothing for normal quality or none.
@@ -1712,9 +1713,14 @@ void addOperation(std::vector<std::string>& parts, std::string_view operation, c
    if (signals && !output.empty()) parts.push_back(vocab::kOutputSignal(output));
 }
 
-// What the game draws on an entity at all times besides its picture and its icons: which way a
-// loader faces, a combinator's operation, a display panel's icon and text.
-void addAlwaysShown(std::vector<std::string>& parts, const std::byte* entity, bool alt) {
+// A build preview's entity: Entity::usageBitMask, which a display panel draws no text for.
+constexpr uint16_t kPreviewBit = 0x20;
+
+// What the game draws on an entity besides its picture and its icons: which way a loader faces, a
+// combinator's operation (with alt mode and the interface setting, its signals), a display panel's
+// text. DisplayPanel::drawText shows all of it on the panel the player selects (`selected`), else
+// only its first line, with alt mode and the panel set to always show; never on a build preview.
+void addAlwaysShown(std::vector<std::string>& parts, const std::byte* entity, bool alt, bool selected) {
    bool signals = alt && combinatorSettingsShown();
    if (const std::byte* loader = agui::objectAsBase(entity, ".?AVLoader@@")) {
       parts.emplace_back(at<uint8_t>(loader, layout.loaderType) == layout.loaderOutput ? vocab::kOutput
@@ -1758,9 +1764,14 @@ void addAlwaysShown(std::vector<std::string>& parts, const std::byte* entity, bo
             parts.push_back(signalName(parameters + layout.selectorCountSignal));
       }
    } else if (const std::byte* panel = agui::objectAsBase(entity, ".?AVDisplayPanel@@")) {
-      parts.push_back(signalName(panel + layout.panelIcon));
-      if (at<bool>(panel, layout.panelAlwaysShow))
-         parts.push_back(text::speakable(viewOf(at<StdString>(panel, layout.panelText))));
+      // Its icon is an info icon, said with the others.
+      if (at<uint16_t>(entity, layout.entityUsageBits) & kPreviewBit) return;
+      std::string_view text = viewOf(at<StdString>(panel, layout.panelText));
+      if (!selected) {
+         if (!alt || !at<bool>(panel, layout.panelAlwaysShow)) return;
+         text = text.substr(0, text.find('\n'));
+      }
+      parts.push_back(text::speakable(text));
    }
 }
 
@@ -2321,8 +2332,6 @@ std::vector<std::string> describeDesign(const void* entity, int32_t tileX, int32
    return factsOf(static_cast<const std::byte*>(entity), Position{tileX, tileY}, &design, withFacing);
 }
 
-std::vector<std::string> drawnIcons(const void* entity) { return drawnIcons(entity, nullptr); }
-
 std::vector<std::string> drawnIcons(const void* object, const void* renderParameters) {
    const auto* entity = static_cast<const std::byte*>(object);
    const std::optional<entityicons::Drawn> drawn =
@@ -2483,18 +2492,29 @@ std::string blueprintEntityName(const void* object, const void* renderParameters
    return name;
 }
 
-std::vector<std::string> drawnOnBlueprintEntity(const void* object, const void* renderParameters,
-                                                const void* entityData) {
-   const auto* entity = static_cast<const std::byte*>(object);
-   const bool alt = altModeIn(renderParameters);
+namespace {
+
+std::vector<std::string> drawnOn(const std::byte* entity, const void* renderParameters, const void* entityData,
+                                 bool selected) {
    std::vector<std::string> parts;
-   addAlwaysShown(parts, entity, alt);
+   addAlwaysShown(parts, entity, altModeIn(renderParameters), selected);
    // An arithmetic, decider or selector combinator draws as icons only the signals said with its
    // operation.
    if (!agui::objectAsBase(entity, ".?AVCombinator@@"))
       for (std::string& icon : drawnIcons(entity, renderParameters)) parts.push_back(std::move(icon));
    if (entityData) addDeliveries(parts, static_cast<const std::byte*>(entityData));
    return parts;
+}
+
+} // namespace
+
+std::vector<std::string> drawnOnBlueprintEntity(const void* entity, const void* renderParameters,
+                                                const void* entityData) {
+   return drawnOn(static_cast<const std::byte*>(entity), renderParameters, entityData, false);
+}
+
+std::vector<std::string> drawnOnEntity(const void* entity) {
+   return drawnOn(static_cast<const std::byte*>(entity), entityicons::mainRenderParameters(), nullptr, true);
 }
 
 Likeness likenessOf(const void* object) {

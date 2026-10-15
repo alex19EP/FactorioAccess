@@ -648,14 +648,30 @@ void eachBlueprintEntity(Visit&& visit) {
       if (visit(entry, at<const void*>(entry, layout.entityDataEntity))) return;
 }
 
+// The frame's entities by their place among the blueprint's, made the first time a piece asks;
+// cleared as the frame's entities go. Only the thread that draws the preview touches it.
+std::unordered_map<const void*, size_t> g_blueprintIndex;
+
+// The place of `entity` among the blueprint's entities this frame.
+std::optional<size_t> indexOf(const void* entity) {
+   if (g_blueprintIndex.empty()) {
+      size_t index = 0;
+      eachBlueprintEntity([&](const std::byte*, const void* each) {
+         g_blueprintIndex.emplace(each, index++);
+         return false;
+      });
+   }
+   const auto found = g_blueprintIndex.find(entity);
+   if (found == g_blueprintIndex.end()) return std::nullopt;
+   return found->second;
+}
+
 // The blueprint's EntityData of `entity`, or null.
 const std::byte* entityDataOf(const void* entity) {
-   const std::byte* found = nullptr;
-   eachBlueprintEntity([&](const std::byte* entry, const void* each) {
-      if (each == entity) found = entry;
-      return found != nullptr;
-   });
-   return found;
+   const std::optional<size_t> index = indexOf(entity);
+   if (!index) return nullptr;
+   const auto first = at<const std::byte*>(t_blueprintEntities, layout.blueprintEntitiesData);
+   return first + *index * layout.entityDataSize;
 }
 
 uint64_t tileKey(int32_t tileX, int32_t tileY) {
@@ -689,8 +705,7 @@ facts::Design designOfHand() {
 
 // A blueprint's piece as the blueprint window's picture reads it (footprint::Piece): the facts of
 // its design on each of its tiles, and what is drawn on it, with alt mode as `drawQueue` draws it.
-void addDetails(footprint::Piece& piece, const void* drawQueue, const void* entity) {
-   const void* renderParameters = at<const void*>(drawQueue, layout.drawQueueRenderParameters);
+void readDetails(footprint::Piece& piece, const void* renderParameters, const void* entity) {
    piece.name = facts::blueprintEntityName(entity, renderParameters);
    const facts::Design design = designOfHand();
    for (int32_t y = piece.top; y <= piece.bottom; ++y)
@@ -708,6 +723,58 @@ void addDetails(footprint::Piece& piece, const void* drawQueue, const void* enti
       if (!piece.drawn.empty()) piece.drawn += ", ";
       piece.drawn += part;
    }
+}
+
+// A piece's details as last read, kept while the piece stays where it was, faces the same way and
+// alt mode stays the same: a pinned build is gathered again now and then for what fits, which the
+// world changes, while what its pieces show stays.
+struct Details {
+   const void* prototype;
+   int32_t left;
+   int32_t top;
+   int direction;
+   bool alt;
+   std::string name;
+   std::vector<std::string> tileFacts;
+   std::string drawn;
+};
+// By each entity's place among the blueprint's (BlueprintEntities::data, made in the same order
+// each frame), for the blueprint `g_detailsBlueprint`. Only the thread that draws the preview
+// touches them.
+std::vector<std::optional<Details>> g_details;
+const void* g_detailsBlueprint = nullptr;
+
+void addDetails(footprint::Piece& piece, const void* settings, const void* drawQueue, const void* entity) {
+   const void* renderParameters = at<const void*>(drawQueue, layout.drawQueueRenderParameters);
+   const void* blueprint = at<const void*>(settings, layout.settingsBlueprint);
+   if (blueprint != g_detailsBlueprint) {
+      g_details.clear();
+      g_detailsBlueprint = blueprint;
+   }
+   const std::optional<size_t> index = indexOf(entity);
+   if (!index) return readDetails(piece, renderParameters, entity);
+   if (*index >= g_details.size()) g_details.resize(*index + 1);
+   std::optional<Details>& kept = g_details[*index];
+   const Details now{at<const void*>(entity, layout.entityPrototypeOf),
+                     piece.left,
+                     piece.top,
+                     piece.direction,
+                     (at<uint32_t>(renderParameters, layout.renderParametersFlags) & game::kRenderShowEntityInfo) != 0,
+                     {},
+                     {},
+                     {}};
+   if (!kept || kept->prototype != now.prototype || kept->left != now.left || kept->top != now.top ||
+       kept->direction != now.direction || kept->alt != now.alt) {
+      readDetails(piece, renderParameters, entity);
+      kept = now;
+      kept->name = piece.name;
+      kept->tileFacts = piece.tileFacts;
+      kept->drawn = piece.drawn;
+      return;
+   }
+   piece.name = kept->name;
+   piece.tileFacts = kept->tileFacts;
+   piece.drawn = kept->drawn;
 }
 
 // One piece of the pinned build as its preview draws it: name, facing, tiles and whether it fits,
@@ -736,7 +803,7 @@ footprint::Piece pieceOf(const void* settings, const void* drawQueue, const void
                                                     : footprint::Fit::Blocked;
    if (piece.fit == footprint::Fit::Blocked) piece.reason = checkReason(result);
    if (t_blueprintEntities && at<const void*>(settings, layout.settingsBlueprint) && footprint::gatheringDetails())
-      addDetails(piece, drawQueue, entity);
+      addDetails(piece, settings, drawQueue, entity);
    return piece;
 }
 
@@ -750,6 +817,7 @@ void detourDrawBlueprintEntities(void* logic, const void* entities) {
          t_blueprintEntities = nullptr;
          g_blueprintTiles.clear();
          g_blueprintTilesMade = false;
+         g_blueprintIndex.clear();
       }
    } scope(entities);
    g_drawBlueprintEntitiesOriginal(logic, entities);

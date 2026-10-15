@@ -515,7 +515,7 @@ std::string describe(const std::byte* player, const std::byte* entity, Position 
       parts.push_back(std::move(line));
    // A chest's icons are its contents, said already.
    if (!(chestContents && contentsDrawn(entity)))
-      for (std::string& icon : facts::drawnIcons(entity)) parts.push_back(std::move(icon));
+      for (std::string& drawn : facts::drawnOnEntity(entity)) parts.push_back(std::move(drawn));
 
    reinterpret_cast<void* (*)(void*, unsigned)>(layout.entityInfoDestroy)(panel, 0);
    ::operator delete(panel, kAlignment);

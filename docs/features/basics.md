@@ -37,6 +37,8 @@ Your character is also what picks things up. Stand on or beside a belt and hold 
 
 The cursor reads the icons the game draws on an entity. Status icons such as no power, no fuel or no ammo are read whenever the game shows them. The rest are alt mode icons: a machine's recipe and modules, a chest's contents, filters, the fluid in a pipe, a turret's ammo, a combinator's signals. These are read only while alt mode is on, which the game's own key toggles (`alt` by default). These are the game's own icons, so modded entities read the same way.
 
+The cursor also reads what the game draws on an entity besides icons: an arithmetic, decider or selector combinator's operation on its display ("multiply", "greater than", "select maximum"), always; which way a loader works ("input" or "output"); and a display panel's text. In alt mode, with the interface setting for combinator settings, a combinator's operation comes with its signals: "Iron plate multiply, output Signal B".
+
 ## Building
 
 With something buildable in hand, `[` places it. You hold a building by its north-west corner, so the cursor's tile is the building's top left. Sighted players hold buildings by the centre; it can matter when you talk with them.

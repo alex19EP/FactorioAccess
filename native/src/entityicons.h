@@ -32,6 +32,10 @@ struct Drawn {
    size_t orders = 0;
 };
 
+// The main view's render parameters (a RenderParameters*), as of its last frame; null outside a
+// game with a view.
+const void* mainRenderParameters();
+
 // Draws `entity` (an Entity*) and returns what it showed. Nothing outside a game with a view. On
 // the thread that runs the game's Lua, while the game state stands still.
 std::optional<Drawn> read(const void* entity);

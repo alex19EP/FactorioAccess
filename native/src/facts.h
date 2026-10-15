@@ -41,21 +41,25 @@ std::vector<std::string> describeDesign(const void* entity, int32_t tileX, int32
 // mode is on in `renderParameters` (a RenderParameters*: the picture's own, or the preview's draw
 // queue's). Then, each a list item, what is drawn on it besides its picture: which way a loader
 // faces, a combinator's operation and, with alt mode and the interface setting for combinator
-// settings, its signals, a display panel's icon and text; alt mode's icons (drawnIcons), drawn with
-// `renderParameters`, among them the cross a blueprint draws over a recipe the player's force has
-// not unlocked; the items to be delivered to it, from `entityData` (its
-// BlueprintEntities::EntityData), when given. Where the game translates: the application Gui's
-// logic, or the thread that draws the preview.
+// settings, its signals, a display panel's first line of text with alt mode when it is set to
+// always show; alt mode's icons (drawnIcons), drawn with `renderParameters`, among them the cross a
+// blueprint draws over a recipe the player's force has not unlocked; the items to be delivered to
+// it, from `entityData` (its BlueprintEntities::EntityData), when given. Where the game translates:
+// the application Gui's logic, or the thread that draws the preview.
 std::string blueprintEntityName(const void* entity, const void* renderParameters);
 std::vector<std::string> drawnOnBlueprintEntity(const void* entity, const void* renderParameters,
                                                 const void* entityData);
 
+// The same of an entity on the map the player selects, as the main view draws it: a display panel
+// shows all its text. In the application Gui's logic.
+std::vector<std::string> drawnOnEntity(const void* entity);
+
 // What the info icons the game draws on `entity` show (alt mode), in FA's words where it has them:
 // the recipe as "producing", filters as "Filters for" or
 // "Denies", fluids as "Has", a beacon's modules with counts, any other icon by name. Each part a
-// list item; none while the game draws no icons. In the application Gui's logic. Drawn as the main
-// view draws, or with `renderParameters` (a RenderParameters*), such as a blueprint picture's own.
-std::vector<std::string> drawnIcons(const void* entity);
+// list item; none while the game draws no icons. In the application Gui's logic. Drawn with
+// `renderParameters` (a RenderParameters*), such as a blueprint picture's own, or as the main view
+// draws without them.
 std::vector<std::string> drawnIcons(const void* entity, const void* renderParameters);
 
 // What the skip keys tell entities apart by (control.lua's cursor_skip_iteration): its prototype (a
