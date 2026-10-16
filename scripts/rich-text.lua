@@ -117,7 +117,7 @@ function mod.verbalize_rich_text(text)
       end
 
       -- Parse the tag
-      local tag_type, name, params = parse_tag(tag_content)
+      local tag_type, name = parse_tag(tag_content)
 
       if tag_type and TAG_PROTO_MAPS[tag_type] and name then
          -- Known prototype tag
@@ -185,7 +185,6 @@ function mod.parse_rich_text_shorthand(text)
       if colon_pos > pos then table.insert(result, text:sub(pos, colon_pos - 1)) end
 
       -- Check if this is a shorthand (next char should be type indicator)
-      local shorthand_start = colon_pos
       local type_char = text:sub(colon_pos + 1, colon_pos + 1)
 
       -- Check for wildcards first (:*s, :*i, :*f, :*fu)

@@ -75,14 +75,6 @@ local load_map_cached = Functools.cached(function()
    return converted
 end)
 
----Get connection metadata for a given prototype name
----@param name string The prototype name (e.g. "arithmetic-combinator", "power-switch")
----@return fa.CombinatorConnectionData|fa.PowerSwitchConnectionData|nil
-function mod.get_metadata(name)
-   local map = mod.load_map()
-   return map[name]
-end
-
 ---Build the connection bounding box map in data stage
 function mod.build_map()
    local connection_data = {}

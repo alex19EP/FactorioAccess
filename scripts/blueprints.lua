@@ -1,14 +1,10 @@
 --Here: Functions related to ghosts, blueprints and blueprint books
 --Does not include event handlers
 
-local BuildDimensions = require("scripts.build-dimensions")
-local BuildingTools = require("scripts.building-tools")
 local FaUtils = require("scripts.fa-utils")
 local Localising = require("scripts.localising")
 local Speech = require("scripts.speech")
 local MessageBuilder = Speech.MessageBuilder
-
-local dirs = defines.direction
 
 local mod = {}
 
@@ -90,13 +86,6 @@ function mod.create_blueprint(pindex, point_1, point_2, prior_bp_data)
       if ent_count == 0 then bp_data.blueprint.entities = prior_bp_data.blueprint.entities end
       mod.set_stack_bp_from_data(cursor, bp_data)
    end
-
-   --Use this opportunity to update saved information about the blueprint's corners (used when drawing the footprint)
-   local width, height = BuildDimensions.get_stack_build_dimensions(cursor, dirs.north)
-   if width and height then
-      storage.players[pindex].blueprint_width_in_hand = width + 1
-      storage.players[pindex].blueprint_height_in_hand = height + 1
-   end
 end
 
 --Export and import the same blueprint so that its parameters reset, e.g. rotation.
@@ -151,61 +140,7 @@ function mod.get_blueprint_info(stack, in_hand, pindex)
 
    message:fragment({ "fa.blueprints-entities-total", tostring(stack.get_blueprint_entity_count()) })
 
-   --Use this opportunity to update saved information about the blueprint's corners (used when drawing the footprint)
-   if in_hand then
-      local width, height = BuildDimensions.get_stack_build_dimensions(stack, dirs.north)
-      if width and height then
-         storage.players[pindex].blueprint_width_in_hand = width + 1
-         storage.players[pindex].blueprint_height_in_hand = height + 1
-      end
-   end
-
    return message:build()
-end
-
-function mod.get_blueprint_icons_info(bp_table)
-   local result = { "" }
-   --Use icons as extra info (in case it is not named)
-   local icons = bp_table.icons
-   if icons == nil or #icons == 0 then
-      result = { "", result, { "fa.blueprints-no-icons" } }
-      return result
-   end
-
-   for i, signal in ipairs(icons) do
-      if signal.index > 1 then result = { "", result, { "fa.blueprints-and" } } end
-      if signal.signal.name ~= nil then
-         result = { "", result, signal.signal.name }
-      else
-         result = { "", result, { "fa.blueprints-unknown-icon" } }
-      end
-   end
-   return result
-end
-
-function mod.apply_blueprint_import(pindex, text)
-   local bp = game.get_player(pindex).cursor_stack
-   --local result = bp.import_stack("0"..text)
-   local result = bp.import_stack(text)
-   if result == 0 then
-      if bp.is_blueprint then
-         Speech.speak(pindex, { "fa.blueprints-imported-successfully", mod.get_blueprint_label(bp) })
-      elseif bp.is_blueprint_book then
-         Speech.speak(pindex, { "fa.blueprints-imported-book" })
-      else
-         Speech.speak(pindex, { "fa.blueprints-imported-unknown" })
-      end
-   elseif result == -1 then
-      if bp.is_blueprint then
-         Speech.speak(pindex, { "fa.blueprints-imported-with-errors", mod.get_blueprint_label(bp) })
-      elseif bp.is_blueprint_book then
-         Speech.speak(pindex, { "fa.blueprints-imported-book-errors" })
-      else
-         Speech.speak(pindex, { "fa.blueprints-imported-unknown-errors" })
-      end
-   else --result == 1
-      Speech.speak(pindex, { "fa.blueprints-import-failed" })
-   end
 end
 
 --Basic info for when the blueprint book item is read (using inventory API)

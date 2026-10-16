@@ -1,9 +1,7 @@
 --- Handles cursor stack changes
 local mod = {}
 
-local Consts = require("scripts.consts")
 local Blueprints = require("scripts.blueprints")
-local BuildDimensions = require("scripts.build-dimensions")
 
 local dirs = defines.direction
 
@@ -25,10 +23,6 @@ function mod.on_cursor_stack_changed(event, pindex, read_hand)
          if game.get_player(pindex).cursor_stack_temporary == false then
             Blueprints.refresh_blueprint_in_hand(pindex)
          end
-         local width, height = BuildDimensions.get_stack_build_dimensions(stack, dirs.north)
-         if width == nil or height == nil then return end
-         storage.players[pindex].blueprint_width_in_hand = width + 1
-         storage.players[pindex].blueprint_height_in_hand = height + 1
       end
    end
 
@@ -36,10 +30,6 @@ function mod.on_cursor_stack_changed(event, pindex, read_hand)
       storage.players[pindex].previous_hand_item_name = new_item_name
       read_hand(pindex)
    end
-
-   storage.players[pindex].bp_selecting = false
-   storage.players[pindex].blueprint_reselecting = false
-   storage.players[pindex].ghost_rail_planning = false
 end
 
 return mod

@@ -37,11 +37,4 @@ function mod.cached(func)
    end
 end
 
--- Given a value, return a function which returns the value.
-function mod.functionize(value)
-   return function()
-      return value
-   end
-end
-
 return mod

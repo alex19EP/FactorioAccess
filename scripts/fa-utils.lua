@@ -1,5 +1,4 @@
 --Here: Utility functions called by other files. Examples include distance and position calculations, string processing.
-local util = require("util")
 local Cursor = require("scripts.cursor")
 
 local Consts = require("scripts.consts")
@@ -46,47 +45,6 @@ local HALF_DIAGONAL_MAP = {
 
 function mod.center_of_tile(pos)
    return { x = math.floor(pos.x) + 0.5, y = math.floor(pos.y) + 0.5 }
-end
-
-function mod.add_position(p1, p2)
-   return { x = p1.x + p2.x, y = p1.y + p2.y }
-end
-
-function mod.sub_position(p1, p2)
-   return { x = p1.x - p2.x, y = p1.y - p2.y }
-end
-
-function mod.mult_position(p, m)
-   return { x = p.x * m, y = p.y * m }
-end
-
--- This function is legacy. Do not use.  It cannot account for 16 directions and
--- does not move by 1 on the diagonals. That is, it is *not* working in unit
--- vectors.  Now that Factorio 2.0 is making us work with 16 directions, and
--- given that space age does actually use 16 directions as well as new rails,
--- that's not good enough.
-function mod.offset_position_legacy(oldpos, direction, distance)
-   local offset = DIRECTION_OFFSETS[direction]
-   if offset then return { x = oldpos.x + offset.x * distance, y = oldpos.y + offset.y * distance } end
-   return oldpos
-end
-
---Offsets a position in a cardinal direction by a given distance
-function mod.offset_position_cardinal(oldpos, direction, distance)
-   local offset = DIRECTION_OFFSETS[direction]
-   if
-      offset
-      and (
-         direction == defines.direction.north
-         or direction == defines.direction.south
-         or direction == defines.direction.east
-         or direction == defines.direction.west
-      )
-   then
-      return { x = oldpos.x + offset.x * distance, y = oldpos.y + offset.y * distance }
-   else
-      error("Unsupported direction for offset request: " .. tostring(direction))
-   end
 end
 
 --Gives the neighboring tile for each direction. Half diagonals are rounded to full diagonals.
@@ -139,12 +97,6 @@ function mod.distance_speech_friendly(pos1, pos2)
 
    local rounded = math.ceil(dist * mul) / mul
    return rounded
-end
-
-function mod.squared_distance(pos1, pos2)
-   local offset = { x = pos1.x - pos2.x, y = pos1.y - pos2.y }
-   local result = offset.x * offset.x + offset.y * offset.y
-   return result
 end
 
 --[[
@@ -230,12 +182,6 @@ function mod.direction_of_vector(vector)
    local dir = math.floor(mapped / 2)
    assert(dir < 16)
    return dir --[[@as defines.direction]]
-end
-
-function mod.get_direction_precise(pos_target, pos_origin)
-   local diff_x = pos_target.x - pos_origin.x
-   local diff_y = pos_target.y - pos_origin.y
-   return mod.direction_of_vector({ x = diff_x, y = diff_y })
 end
 
 --Checks whether a cardinal or diagonal direction is precisely aligned. All check positions are floored to their northwest corners.
@@ -332,32 +278,6 @@ function mod.get_heading_info(ent)
    return mod.direction_lookup(heading_value)
 end
 
---Returns the length and width of the entity version of an item.
-function mod.get_tile_dimensions(item, dir)
-   if item.place_result ~= nil then
-      local dimensions = item.place_result.selection_box
-      local x = math.ceil(dimensions.right_bottom.x - dimensions.left_top.x)
-      local y = math.ceil(dimensions.right_bottom.y - dimensions.left_top.y)
-      if dir == defines.direction.north or dir == defines.direction.south then
-         return { x = x, y = y }
-      else
-         return { x = y, y = x }
-      end
-   end
-   return { x = 0, y = 0 }
-end
-
---Small utility function for getting an entity's footprint area using just its name.
-function mod.get_ent_area_from_name(ent_name, pindex)
-   -- local ents = game.get_player(pindex).surface.find_entities_filtered{name = ent_name, limit = 1}
-   -- if #ents == 0 then
-   -- return -1
-   -- else
-   -- return ents[1].tile_height * ents[1].tile_width
-   -- end
-   return prototypes.entity[ent_name].tile_width * prototypes.entity[ent_name].tile_height
-end
-
 --Returns the map position of the northwest corner of an entity.
 --NOTE: If the calculation result gives a tile that does not touch the ent, then the ent's own position is returned instead.
 --TODO fix the calculation (several attempts have failed so far because fixing it for one group of ents breaks it for others).
@@ -451,96 +371,12 @@ function mod.get_top_left_and_bottom_right(pos_1, pos_2)
    return top_left, bottom_right
 end
 
-function mod.table_concat(T1, T2)
-   if T2 == nil then return end
-   if T1 == nil then T1 = {} end
-   for i, v in pairs(T2) do
-      table.insert(T1, v)
-   end
-end
-
---Converts a dictionary into an iterable array.
-function mod.get_iterable_array(dict)
-   local result = {}
-   for i, v in pairs(dict) do
-      table.insert(result, v)
-   end
-   return result
-end
-
 --Reads the localised result for the distance and direction from one point to the other. Also mentions if they are precisely aligned. Distances are rounded.
 function mod.dir_dist_locale(pos1, pos2)
    local dir_dist = mod.dir_dist(pos1, pos2)
    local is_aligned = mod.is_direction_aligned(pos1, pos2)
    local locale_key = is_aligned and "fa.dir-dist-aligned" or "fa.dir-dist"
    return { locale_key, mod.direction_lookup(dir_dist[1]), math.floor(dir_dist[2] + 0.5) }
-end
-
-function mod.ent_name_locale(ent)
-   if ent.name == "water" then
-      print("todo: water isn't an entity")
-      return { "gui-map-generator.water" }
-   end
-   if ent.name == "forest" then
-      print("todo: forest isn't an entity")
-      return { "fa.forest" }
-   end
-   ---@type LuaEntityPrototype?
-   local entity_prototype = prototypes.entity[ent.name]
-   ---@type LuaResourceCategoryPrototype?
-   local resource_prototype = prototypes.resource_category[ent.name]
-   local name = nil
-   if ent.localised_name == nil and entity_prototype == nil and resource_prototype == nil then
-      print("todo: " .. ent.name .. " is not an entity")
-      name = ent.name .. " (localising error)"
-   elseif ent.localised_name then
-      name = ent.localised_name
-   elseif entity_prototype then
-      name = entity_prototype.localised_name
-   elseif resource_prototype then
-      name = resource_prototype.localised_name
-   end
-   return name
-end
-
---Returns a string to say the quantity of an item in terms of stacks, if there is at least one stack
-function mod.express_in_stacks(count, stack_size, precise)
-   local result = ""
-   local new_count = "unknown amount of"
-   local units = " units "
-   if count == nil then
-      count = 0
-   elseif count == 0 then
-      units = " units "
-      new_count = "0"
-   elseif count == 1 then
-      units = " unit "
-      new_count = "1"
-   elseif count < stack_size then
-      units = " units "
-      new_count = tostring(count)
-   elseif count == stack_size then
-      units = " stack "
-      new_count = "1"
-   elseif count > stack_size then
-      units = " stacks "
-      new_count = tostring(math.floor(count / stack_size))
-   end
-   result = new_count .. units
-   if precise and count > stack_size and count % stack_size > 0 then
-      result = result .. " and " .. count % stack_size .. " units "
-   end
-   if count > 10000 then result = "infinite" end
-   return result
-end
-
-function mod.sort_ents_by_distance_from_pos(pos, ents)
-   table.sort(ents, function(k1, k2)
-      if not k1 or not k1.valid then return true end
-      if not k2 or not k2.valid then return false end
-      return util.distance(pos, k1.position) < util.distance(pos, k2.position)
-   end)
-   return ents
 end
 
 -- Concatenate a bunch of stuff together, efficiently, and return this as a
@@ -589,11 +425,6 @@ function mod.localise_cat_table(tab, sep)
    end
 
    return will_cat
-end
-
---Returns the name for the item related to the entity name being checked
-function mod.get_item_name_for_ent(name)
-   return name
 end
 
 -- Format a  number to e.g. "1.3m"
@@ -700,89 +531,6 @@ function mod.format_power(value, unit)
    end
 end
 
--- Builds a list with proper separators
----@param items table Array of LocalisedString or string items
----@param separator? LocalisedString Optional separator (defaults to comma-space)
----@param last_separator? LocalisedString Optional last separator (defaults to "and")
----@return LocalisedString
-function mod.build_list(items, separator, last_separator)
-   if #items == 0 then
-      return ""
-   elseif #items == 1 then
-      return items[1]
-   end
-
-   separator = separator or { "", ", " }
-   last_separator = last_separator or { "", " ", { "fa.list-and" }, " " }
-
-   local result = { "", items[1] }
-   for i = 2, #items - 1 do
-      table.insert(result, separator)
-      table.insert(result, items[i])
-   end
-   table.insert(result, last_separator)
-   table.insert(result, items[#items])
-
-   return result
-end
-
--- Formats item count (e.g., "iron-plate x 100")
----@param item_name LocalisedString Item localized name
----@param count number Item count
----@return LocalisedString
-function mod.format_item_count(item_name, count)
-   return { "fa.item-count", item_name, tostring(count) }
-end
-
--- Formats a slot state (empty, contains item, filtered, etc.)
----@param item_name? LocalisedString Item name if slot contains item
----@param count? number Item count if applicable
----@param is_filtered? boolean Whether slot is filtered
----@param filter_name? LocalisedString Filter name if filtered
----@return LocalisedString
-function mod.format_slot_state(item_name, count, is_filtered, filter_name)
-   if item_name then
-      if is_filtered then
-         return { "", { "fa.slot-filtered" }, " ", mod.format_item_count(item_name, count or 1) }
-      else
-         return mod.format_item_count(item_name, count or 1)
-      end
-   elseif is_filtered and filter_name then
-      return { "fa.slot-empty-filtered", filter_name }
-   else
-      return { "fa.slot-empty" }
-   end
-end
-
--- Formats a position to a localized string (e.g., "at 10, 20")
----@param x number X coordinate
----@param y number Y coordinate
----@return LocalisedString
-function mod.format_position(x, y)
-   return { "fa.position-at", tostring(math.floor(x)), tostring(math.floor(y)) }
-end
-
--- Formats a percentage value
----@param value number Value between 0 and 100
----@param suffix? string Optional suffix key (e.g., "complete", "full")
----@return LocalisedString
-function mod.format_percentage(value, suffix)
-   if suffix then
-      return { "fa.percentage-with-suffix", tostring(math.floor(value)), { "fa.percentage-suffix-" .. suffix } }
-   else
-      return { "fa.percentage", tostring(math.floor(value)) }
-   end
-end
-
--- Formats a state/status string
----@param state_key string The state key to look up
----@param prefix? string Optional prefix for the locale key (defaults to "state")
----@return LocalisedString
-function mod.format_state(state_key, prefix)
-   prefix = prefix or "state"
-   return { "fa." .. prefix .. "-" .. state_key }
-end
-
 -- Wave 5 formatting helpers
 -- Formats a count with item name (no pluralization needed)
 ---@param count number The count to format
@@ -790,50 +538,6 @@ end
 ---@return LocalisedString
 function mod.format_count(count, item_name)
    return { "fa.count-of-items", tostring(count), item_name }
-end
-
--- Formats a distance value
----@param distance number Distance in tiles
----@param include_unit? boolean Whether to include "tiles" unit (default true)
----@return LocalisedString
-function mod.format_distance(distance, include_unit)
-   include_unit = include_unit == nil and true or include_unit
-   if include_unit then
-      return { "fa.distance-tiles", string.format("%.1f", distance) }
-   else
-      return tostring(math.floor(distance))
-   end
-end
-
--- Formats time from ticks to human-readable format
----@param ticks number Game ticks
----@return LocalisedString
-function mod.format_time(ticks)
-   local seconds = ticks / 60
-   local minutes = seconds / 60
-   local hours = minutes / 60
-
-   if hours >= 1 then
-      return { "fa.time-hours", string.format("%.1f", hours) }
-   elseif minutes >= 1 then
-      return { "fa.time-minutes", string.format("%.1f", minutes) }
-   else
-      return { "fa.time-seconds", string.format("%.1f", seconds) }
-   end
-end
-
--- Formats coordinates in a standard way
----@param x number X coordinate
----@param y number Y coordinate
----@param include_label? boolean Whether to include "coordinates" label (default true)
----@return LocalisedString
-function mod.format_coordinates(x, y, include_label)
-   include_label = include_label == nil and true or include_label
-   if include_label then
-      return { "fa.coordinates-labeled", tostring(math.floor(x)), tostring(math.floor(y)) }
-   else
-      return { "fa.coordinates", tostring(math.floor(x)), tostring(math.floor(y)) }
-   end
 end
 
 return mod

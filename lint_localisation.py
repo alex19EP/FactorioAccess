@@ -163,9 +163,9 @@ def extract_locale_references(lua_files):
     # Pattern matches quoted strings containing fa. followed by word characters and hyphens
     pattern = re.compile(r'"(fa\.[\w-]+)"')
 
-    # Pattern for string.format("fa.prefix-%s", ...) - extracts "fa.prefix-" as a prefix
-    # Matches: string.format("fa.something-%s" where something is word chars and hyphens
-    string_format_pattern = re.compile(r'string\.format\s*\(\s*"(fa\.[\w-]+-)%s"')
+    # Pattern for string.format("fa.prefix-%s", ...) or ("fa.campaign-%02d-", ...): the literal
+    # text before the first format code is a prefix
+    string_format_pattern = re.compile(r'string\.format\s*\(\s*"(fa\.[\w-]+-)%')
 
     exact_keys = defaultdict(list)  # key -> list of (file, line_num)
     prefix_patterns = defaultdict(list)  # prefix -> list of (file, line_num)

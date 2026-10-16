@@ -2,12 +2,10 @@
 --Does not include event handlers, guns and equipment maanagement
 
 local util = require("util")
-local FaUtils = require("scripts.fa-utils")
 local Localising = require("scripts.localising")
 local PlayerWeapon = require("scripts.combat.player-weapon")
 local SoundModel = require("scripts.sound-model")
 local Speech = require("scripts.speech")
-local MessageBuilder = Speech.MessageBuilder
 local StorageManager = require("scripts.storage-manager")
 local AimAssist = require("scripts.combat.aim-assist")
 
@@ -83,138 +81,6 @@ function mod.toggle_combat_mode(pindex)
    else
       enter_combat_mode(pindex)
    end
-end
-
---One-click repair pack usage.
-function mod.repair_pack_used(ent, pindex)
-   local p = game.get_player(pindex)
-   local stack = p.cursor_stack
-   --Check if entity can be repaired
-   if
-      not ent
-      or not ent.valid
-      or not ent.is_entity_with_health
-      or ent.type == "resource"
-      or ent.force.is_enemy(p.force)
-      or ent.name == "character"
-   then
-      return
-   end
-   --Check if entity needs repair
-   if ent.get_health_ratio() >= 1 then
-      Speech.speak(pindex, { "fa.combat-entity-not-damaged", Localising.get_localised_name_with_fallback(ent) })
-      return
-   end
-   --Repair the entity
-   p.play_sound({ path = "utility/default_manual_repair" })
-   local health_diff = ent.max_health - ent.health
-   local dura = stack.durability or 0
-   if health_diff < 10 then --free repair for tiny damages
-      ent.health = ent.max_health
-      Speech.speak(pindex, { "fa.combat-fully-repaired-entity", Localising.get_localised_name_with_fallback(ent) })
-   elseif health_diff < dura then
-      ent.health = ent.max_health
-      stack.drain_durability(health_diff)
-      Speech.speak(pindex, { "fa.combat-fully-repaired-entity", Localising.get_localised_name_with_fallback(ent) })
-   else --if health_diff >= dura then
-      stack.drain_durability(dura)
-      ent.health = ent.health + dura
-      local msg = MessageBuilder.new()
-      msg:fragment({ "fa.combat-partially-repaired" })
-      msg:fragment(Localising.get_localised_name_with_fallback(ent))
-      msg:fragment({ "fa.combat-consumed-repair-pack" })
-      Speech.speak(pindex, msg:build())
-      --Note: This automatically subtracts correctly and decerements the pack in hand.
-   end
-end
-
---Tries to repair all relevant entities within a certain distance from the player
-function mod.repair_area(radius_in, pindex)
-   local p = game.get_player(pindex)
-   local stack = p.cursor_stack
-   local repaired_count = 0
-   local packs_used = 0
-   local radius = math.min(radius_in, 25)
-   if stack.count < 2 then
-      --If you are low on repair packs, stop
-      Speech.speak(pindex, { "fa.combat-need-repair-packs" })
-      return
-   end
-   local ents = p.surface.find_entities_filtered({ position = p.position, radius = radius })
-   for i, ent in ipairs(ents) do
-      --Repair the entity found
-      if
-         ent
-         and ent.valid
-         and ent.is_entity_with_health
-         and ent.get_health_ratio() < 1
-         and ent.type ~= "resource"
-         and not ent.force.is_enemy(p.force)
-         and ent.name ~= "character"
-      then
-         p.play_sound({ path = "utility/default_manual_repair" })
-         local health_diff = ent.max_health - ent.health
-         local dura = stack.durability or 0
-         if health_diff < 10 then --free repair for tiny damages
-            ent.health = ent.max_health
-            repaired_count = repaired_count + 1
-         elseif health_diff < dura then
-            ent.health = ent.max_health
-            stack.drain_durability(health_diff)
-            repaired_count = repaired_count + 1
-         elseif stack.count < 2 then
-            --If you are low on repair packs, stop
-            Speech.speak(pindex, {
-               "fa.combat-repaired-stopped-low-packs",
-               tostring(repaired_count),
-               tostring(packs_used),
-            })
-            return
-         else
-            --Finish the current repair pack
-            stack.drain_durability(dura)
-            packs_used = packs_used + 1
-            ent.health = ent.health + dura
-
-            --Repeat unhtil fully repaired or out of packs
-            while ent.get_health_ratio() < 1 do
-               health_diff = ent.max_health - ent.health
-               dura = stack.durability or 0
-               if health_diff < 10 then --free repair for tiny damages
-                  ent.health = ent.max_health
-                  repaired_count = repaired_count + 1
-               elseif health_diff < dura then
-                  ent.health = ent.max_health
-                  stack.drain_durability(health_diff)
-                  repaired_count = repaired_count + 1
-               elseif stack.count < 2 then
-                  --If you are low on repair packs, stop
-                  Speech.speak(pindex, {
-                     "fa.combat-repaired-stopped-low-packs",
-                     tostring(repaired_count),
-                     tostring(packs_used),
-                  })
-                  return
-               else
-                  --Finish the current repair pack
-                  stack.drain_durability(dura)
-                  packs_used = packs_used + 1
-                  ent.health = ent.health + dura
-               end
-            end
-         end
-      end
-   end
-   if repaired_count == 0 then
-      Speech.speak(pindex, { "fa.combat-nothing-to-repair", radius })
-      return
-   end
-   Speech.speak(pindex, {
-      "fa.combat-repaired-all",
-      tostring(repaired_count),
-      tostring(radius),
-      tostring(packs_used),
-   })
 end
 
 -- Minimum ticks between warnings

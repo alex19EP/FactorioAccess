@@ -312,7 +312,6 @@ function mod._run_next_test()
       local init_tick = game.tick + 1
       log_info("TestFramework", "Scheduling init function for tick " .. init_tick)
       scheduled_actions[init_tick] = scheduled_actions[init_tick] or {}
-      local ctx = current_test.context
       table.insert(scheduled_actions[init_tick], function()
          log_info("TestFramework", "Running init function")
          local init_success, init_err = pcall(current_test.context.init_func)
@@ -484,13 +483,6 @@ for _, file in ipairs(test_files) do
       -- Can't log yet since Logger might not be initialized
       error("TestFramework: Failed to load test file " .. file .. ": " .. tostring(module))
    end
-end
-
---- Initialize test framework (called from control.lua)
-function mod.load_tests()
-   -- Just log the summary since tests are already loaded
-   local test_suites = TestRegistry.get_test_suites()
-   log_info("TestFramework", "Test loading complete. " .. #test_suites .. " suites registered.")
 end
 
 function mod.on_init()

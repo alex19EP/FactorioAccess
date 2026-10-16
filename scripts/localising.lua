@@ -1,6 +1,4 @@
 --Here: localisation functions
-local Speech = require("scripts.speech")
-
 local mod = {}
 
 local function wrapped_pcall(f)

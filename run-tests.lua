@@ -7,14 +7,6 @@
 
 local lu = require("luaunit")
 
-local function load_test_suite(suite_name, test_specs)
-   local tests = {}
-   for _, spec in ipairs(test_specs) do
-      table.insert(tests, { spec[1], spec[2] })
-   end
-   return tests
-end
-
 local syntrax_tests = {
    { "span", require("syntrax.tests.span") },
    { "lexer", require("syntrax.tests.lexer") },

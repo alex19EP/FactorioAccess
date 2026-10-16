@@ -22,8 +22,6 @@ local VANILLA_MODE_WHITELIST = {
 
    -- State tracking (silent)
    [defines.events.on_object_destroyed] = true,
-   [defines.events.on_player_display_resolution_changed] = true,
-   [defines.events.on_player_display_scale_changed] = true,
    [defines.events.on_player_cursor_stack_changed] = true,
    [defines.events.on_player_main_inventory_changed] = true,
 
@@ -85,7 +83,7 @@ local mocked_events = {}
 
 ---Register a handler for an event
 ---@param event_id defines.events|string|(defines.events|string)[] The event ID from defines.events, custom input name, or array of event IDs
----@param handler fun(event: any, pindex?: integer): table? The function to call; return nil to continue, or EventManager.FINISHED to stop when the event fires
+---@param handler fun(event: any, pindex: integer): table? The function to call; return nil to continue, or EventManager.FINISHED to stop when the event fires. pindex is the event's player, nil for an event without one, whose handlers do not take it
 ---@param priority? "test"|"ui"|"world" Optional priority (defaults to WORLD)
 function mod.on_event(event_id, handler, priority)
    priority = priority or mod.EVENT_KIND.WORLD
@@ -156,15 +154,6 @@ function mod.on_nth_tick(tick_interval, handler)
    table.insert(on_nth_tick_handlers[tick_interval], handler)
 end
 
----Register a handler for a custom input
----@param input_name string The custom input name (e.g. "fa-w")
----@param handler fun(event: EventData, pindex?: integer): table? The function to call; return nil to continue, or EventManager.FINISHED to stop
----@param priority? "test"|"ui"|"world" Optional priority (defaults to WORLD)
-function mod.on_custom_input(input_name, handler, priority)
-   -- Custom inputs are just regular events
-   mod.on_event(input_name, handler, priority)
-end
-
 ---Register a function to see every custom input before its handlers do, such as to read the
 ---cursor_direction the game reports with each.
 ---@param observer fun(event: EventData.CustomInputEvent, pindex: integer)
@@ -181,7 +170,7 @@ end
 
 ---Register a handler (alias for on_event)
 ---@param event_id_or_input defines.events|string The event ID or custom input name
----@param handler fun(event: EventData, pindex?: integer): table? The function to call; return nil to continue, or EventManager.FINISHED to stop
+---@param handler fun(event: EventData, pindex: integer): table? The function to call; return nil to continue, or EventManager.FINISHED to stop
 ---@param priority? "test"|"ui"|"world" Optional priority (defaults to WORLD)
 function mod.register(event_id_or_input, handler, priority)
    mod.on_event(event_id_or_input, handler, priority)
@@ -313,17 +302,6 @@ function mod.mock_event(event_id, event_data)
 
    -- Dispatch immediately
    mod._dispatch_event(event_id, event_data)
-end
-
----Clear all handlers (useful for testing)
-function mod.clear_all_handlers()
-   handlers = {}
-   on_init_handlers = {}
-   on_load_handlers = {}
-   on_configuration_changed_handlers = {}
-   on_nth_tick_handlers = {}
-   custom_input_observers = {}
-   player_event_observers = {}
 end
 
 ---Get the number of handlers for an event (useful for testing)

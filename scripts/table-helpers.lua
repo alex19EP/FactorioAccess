@@ -7,17 +7,6 @@ everywhere efficienhtly; this file does that.
 
 local mod = {}
 
--- Same as table.insert(x), except taking multiple arguments and pushing them to
--- the back left to right. Behavior is incredibly undefined is nil is passed
--- (LuaLS helps guard against it)
---
----@param destination any[]
----@param ... any
-function mod.multipush(destination, ...)
-   local packed = table.pack(...)
-   mod.concat_arrays(destination, packed)
-end
-
 -- Merges two arrays.  The second array is pushed into the first.  That is, it
 -- is *modified* in place.
 --
@@ -29,27 +18,6 @@ function mod.concat_arrays(destination, array)
 
    for i = 1, #array do
       tins(destination, array[i])
-   end
-end
-
--- Takes an array { a, b, c } and writes to to a set { a = true, b = true, c =
--- true }.
----@param set table<any, true>
----@param array any[]
----@return table<any, true> A copy of set.
-function mod.array_to_set(set, array)
-   for i = 1, #array do
-      set[array[i]] = true
-   end
-   return set
-end
-
--- Merge the second mapping into the first (e.g. table of non-array keys)
----@param dest table<any, any>
----@param src table<any, any>
-function mod.merge_mappings(dest, src)
-   for k, v in pairs(src) do
-      dest[k] = v
    end
 end
 
@@ -84,70 +52,6 @@ function mod.defaulting_table(initial)
    assert(type(r) == "table")
    setmetatable(r, empty_table_defaulter)
    return r
-end
-
---[[
-Return a metatable which will, when an index is not found, iterate over all of
-the tables specified, left to right, before giving up.
-
-There is a particularly useful trick which allows us to provide options to
-functions which aren't safe for storage, usually callbacks.  To do it, we make
-the outermost table storage-safe and store that.  Then, we hide the
-non-storage-safe things away in tables which are consulted by the metatable,
-since that never "pulls values up".  This comes with a negligible performance
-hit, but it's usually only a couple levels and for a function, which means in
-context that's not too bad (plus, anything truly performance sensitive will
-cache in a local anyway).
-
-Also, this is simpler Lua inheritance: list the most derived class first.
-
-At least one table must be specified.
-]]
-function mod.nested_indexer(...)
-   local args = table.pack(...)
-   assert(#args > 0, "At least one table must be specified")
-   ---@type table<any, any>
-   local cache = {}
-
-   return {
-      __index = function(tab, key)
-         local c = cache[key]
-         if c then return c end
-
-         for i = 1, #args do
-            local attempt = args[i][key]
-            if attempt then
-               cache[key] = attempt
-               return attempt
-            end
-         end
-
-         return nil
-      end,
-   }
-end
-
--- Find the index of a given element in a list. Return nil for not found.
-function mod.find_index_of(array, element)
-   for i = 1, #array do
-      if array[i] == element then return i end
-   end
-
-   -- Not found.
-   return nil
-end
-
--- Convert a key-value table to an array of 2-tuples (k, v) then sort that by
--- k.
-function mod.set_to_sorted_array(set)
-   local array = {}
-   for k, v in pairs(set) do
-      table.insert(array, { k, v })
-   end
-   table.sort(array, function(a, b)
-      return a[1] < b[1]
-   end)
-   return array
 end
 
 -- Return a copy of table, with func called on all values.
@@ -192,19 +96,6 @@ function mod.rollup2(input, func1, func2, func3)
    return counts
 end
 
--- Given a two-level nested table, count the keys in both. Useful on e.g.
--- prototype->quality->count.  Is *not* a sum.
----@param table table<any, table<any, any>>
-function mod.length2(table)
-   local res = 0
-
-   for _, v in pairs(table) do
-      res = res + table_size(v)
-   end
-
-   return res
-end
-
 --[[
 When doing announcements we usually need to go from NQC to sorted data in
 descending order. This does that, in a form that can be directly passed to
@@ -227,19 +118,10 @@ function mod.nqc_to_sorted_descending(tab)
    return ret
 end
 
----@param tab table
----@return table
-function mod.shallow_copy(tab)
-   local out = {}
-   for k, v in pairs(tab) do
-      out[k] = v
-   end
-   return out
-end
-
 --[[
-Returns a table with a metatable that prevents all reads and writes. This is useful for catching accidental usage of
-deprecated global variables. Any attempt to read or write will throw an error.
+Returns a table with a metatable that prevents all reads, writes and pairs() loops. This is useful for catching
+accidental usage of deprecated global variables. Any attempt throws an error: a loop over the empty table would
+otherwise run nothing, silently.
 ]]
 ---@return table
 function mod.deny_access_table()
@@ -254,6 +136,9 @@ function mod.deny_access_table()
          error(
             "Attempted to write to denied table at key: " .. tostring(k) .. "\nUse storage.players instead of players"
          )
+      end,
+      __pairs = function()
+         error("Attempted to iterate a denied table\nUse storage.players or game.connected_players instead of players")
       end,
    }
    setmetatable(denied, mt)

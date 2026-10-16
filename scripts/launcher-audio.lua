@@ -193,12 +193,6 @@ function PatchBuilder:id(id)
    return self
 end
 
----Get the sound ID
----@return string
-function PatchBuilder:get_id()
-   return self._id
-end
-
 ---Set source to an encoded audio file
 ---@param filename string
 ---@return fa.LauncherAudio.PatchBuilder

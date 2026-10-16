@@ -9,11 +9,7 @@ file.  Not just for this mod, for all mods.  This already had to be rewritten
 once in part due to lost knowledge.
 ]]
 
-local util = require("util")
-
-local Consts = require("scripts.consts")
 local FaUtils = require("scripts.fa-utils")
-local F = require("scripts.field-ref")
 local Geometry = require("scripts.geometry")
 local localising = require("scripts.localising")
 local Speech = require("scripts.speech")
@@ -21,12 +17,6 @@ local MessageBuilder = Speech.MessageBuilder
 local TH = require("scripts.table-helpers")
 
 local mod = {}
-
--- Count the number of non-nil arguments, up to 3.  Useful because we can use it
--- to classify if a belt has one parent: count3(back, left, right) == 1.
-local function count3(a, b, c)
-   return (a and 1 or 0) + (b and 1 or 0) + (c and 1 or 0)
-end
 
 -- get_transport_line wants a defines.transport_line; the line indices we use are
 -- exactly the integers that enum is defined as. This carries the type without
@@ -193,22 +183,6 @@ function Node:_assert_valid()
    assert(self:valid())
 end
 
--- Is this a connectable with no children/outputs?
----@return boolean
-function Node:is_belt_end()
-   self:_assert_valid()
-
-   return not next(self.entity.belt_neighbours.outputs)
-end
-
--- Is this a connectable with no parents?
----@return boolean
-function Node:is_belt_start()
-   self:_assert_valid()
-
-   return not next(self.entity.belt_neighbours.inputs)
-end
-
 ---@enum fa.TransportBelts.CornerKind
 mod.CORNER_KINDS = {
    LEFT = "left",
@@ -228,58 +202,6 @@ rules.
 ---@field merge boolean
 ---@field corner fa.TransportBelts.CornerKind?
 ---@field is_pouring boolean
-
--- WARNING: this is very expensive. Fine to call a few times per tick but not in
--- tight loops.  Some belt shape properties require materializing both parents
--- and children and doing algos on them.
----@return fa.TransportBelts.ShapeInfo
-function Node:get_shape_info()
-   self:_assert_valid()
-   local e = self.entity
-
-   ---@type fa.TransportBelts.ShapeInfo
-   local ret = {
-      has_input = false,
-      has_output = false,
-      is_pouring = false,
-      corner = nil,
-      left_sideload = nil,
-      right_sideload = nil,
-      merge = false,
-   }
-
-   local behind, left, right = get_parents(e)
-   ret.left_sideload = left
-   ret.right_sideload = right
-
-   ret.has_input = count3(behind, left, right) > 0
-   local children = get_children(e)
-   ret.has_output = #children > 0
-
-   -- Work out pouring. A belt "pours" when its output direction doesn't align
-   -- with the child's input (perpendicular connection to the side). Check by
-   -- comparing output direction to the 180-degree rotation of the child's input.
-   if (e.type == "transport-belt" or e.type == "underground-belt") and ret.has_output then
-      assert(#children == 1)
-
-      local child = children[1]
-      local child_input_dir = get_input_direction(child)
-      ret.is_pouring = e.direction ~= child_input_dir
-   end
-
-   -- Translate corners to the enum.
-   if e.type == "transport-belt" then
-      if e.belt_shape == "left" then
-         ret.corner = mod.CORNER_KINDS.LEFT
-      elseif e.belt_shape == "right" then
-         ret.corner = mod.CORNER_KINDS.RIGHT
-      end
-   end
-
-   ret.merge = e.type == "transport-belt" and ret.left_sideload ~= nil and ret.right_sideload ~= nil and not behind
-
-   return ret
-end
 
 --[[
 OK fun time.  The game doesn't document this well but the linear length of a
@@ -387,50 +309,6 @@ function Node:get_all_contents()
    error(string.format("Should be unreachable as this should be a belt connectable, but it is a %s", t))
 end
 
--- If this node has exactly one parent, return that entity.
---
--- Single parents are special.  No matter what the current item is, a single
--- parent means that the current item must carry what the parent carries.
-function Node:get_single_parent()
-   self:_assert_valid()
-
-   local b, l, r = get_parents(self.entity)
-   local count = count3(b, l, r)
-   if count == 1 then return b or l or r end
-   return nil
-end
-
--- Is the given transport line full?
----@param line defines.transport_line
-function Node:is_line_full(line)
-   self:_assert_valid()
-   local line = self.entity.get_transport_line(line --[[@as defines.transport_line]])
-   local expected = line.line_length * 4
-   return #line == expected
-end
-
----@return boolean
-function Node:is_left_full()
-   return self:is_line_full(defines.transport_line.left_line)
-end
-
----@return boolean
-function Node:is_right_full()
-   return self:is_line_full(defines.transport_line.right_line)
-end
-
--- Is every line in this connectable entity full?
----@return boolean
-function Node:is_all_full()
-   for i = 1, #self.entity.get_max_transport_line_index() do
-      local line = self.entity.get_transport_line(i --[[@as defines.transport_line]])
-      local expected = line.line_length * 4
-      if expected ~= #line then return false end
-   end
-
-   return true
-end
-
 ---@class fa.TransportBelts.Heuristic
 ---@field distance number Negative for behind, 0 for "here", positive ahead.
 ---@field results table<string, table<string, number>> item->quality->count
@@ -450,7 +328,7 @@ function Node:walk_lane_upstream(callback)
    seen[e.unit_number] = true
 
    while true do
-      local b, l, r = get_parents(e)
+      local b = get_parents(e)
       -- Only follow the "behind" parent, ignoring sideloads.
       -- Stop at mergers (no behind parent) or dead ends.
       if not b then return end
@@ -504,65 +382,6 @@ function Node:walk_single_child(callback)
       if not callback(e, depth) then return end
       depth = depth + 1
    end
-end
-
--- Run the heuristic to determine what a belt might be carrying, and return a
---prototype->quality->count table.  See devdocs/belts.md
----@param line_index defines.transport_line
----@param depth_limit number
----@return fa.TransportBelts.Heuristic
-function Node:carries_heuristic(line_index, depth_limit)
-   -- To start, we will go upstream until we find a lane with some contents or hit max depth.
-   local contents
-   local distance = 0
-
-   ---@param cur_parent LuaEntity
-   ---@param cur_depth integer
-   ---@param negate boolean
-   local function handler(cur_parent, cur_depth, negate)
-      if cur_depth > depth_limit then return false end
-
-      local line, empty
-
-      -- skip splitters, which have very complex internal contents.
-      if cur_parent.type == "splitter" then return true end
-
-      line = cur_parent.get_transport_line(line_index)
-      empty = #line == 0
-      if not empty then
-         contents = line.get_detailed_contents()
-         distance = negate and -cur_depth or cur_depth
-         return false
-      end
-
-      return true
-   end
-
-   handler(self.entity, 0, false)
-
-   if not contents then self:walk_lane_upstream(function(e, d)
-      return handler(e, d, true)
-   end) end
-
-   if not contents then
-      -- Now do the same thing, but downstream.  As with upstream, stop if we
-      -- find more than one child.
-      self:walk_single_child(function(e, d)
-         return handler(e, d, false)
-      end)
-   end
-
-   ---@type fa.TransportBelts.Heuristic
-   local result = {
-      distance = distance,
-      results = {},
-   }
-
-   if contents then
-      result.results = TH.rollup2(contents, F.stack.name().get, F.stack.quality.name().get, F.stack.count().get)
-   end
-
-   return result
 end
 
 ---@class fa.TransportBelts.LaneLengths

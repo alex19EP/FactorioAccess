@@ -768,46 +768,6 @@ function mod.get_item_stack_info(message, stack, options)
    mod.get_item_info_from_prototype(message, stack.prototype, stack.quality, options)
 end
 
----@alias fa.ItemInfo.Product ItemProduct | FluidProduct
-
----Get detailed information about a recipe product (item or fluid)
----For item products, provides full building/equipment info
----For fluid products, just announces the fluid name
----@param message fa.MessageBuilder
----@param product fa.ItemInfo.Product
----@param quality LuaQualityPrototype? Quality level (for item products)
----@param options fa.ItemInfo.GetItemInfoFromPrototypeOptions?
-function mod.get_product_info(message, product, quality, options)
-   options = options or { verbosity = mod.VERBOSITY.VERBOSE }
-   quality = quality or prototypes.quality["normal"]
-
-   if product.type == "item" then
-      mod.get_item_info_from_prototype(message, prototypes.item[product.name], quality, options)
-   else
-      -- For fluids, just announce the fluid name
-      message:fragment(Localising.get_localised_name_with_fallback(prototypes.fluid[product.name]))
-   end
-end
-
----Get info for all products of a recipe
----@param message fa.MessageBuilder
----@param recipe LuaRecipe | LuaRecipePrototype
----@param quality LuaQualityPrototype?
----@param options fa.ItemInfo.GetItemInfoFromPrototypeOptions?
-function mod.get_recipe_products_info(message, recipe, quality, options)
-   options = options or { verbosity = mod.VERBOSITY.VERBOSE }
-
-   local products = recipe.products
-   if not products or #products == 0 then
-      message:fragment({ "fa.item-info-no-products" })
-      return
-   end
-
-   for _, product in ipairs(products) do
-      mod.get_product_info(message, product, quality, options)
-   end
-end
-
 ---Read item info for item in hand (global fa-y handler)
 ---@param pindex integer
 function mod.read_item_in_hand(pindex)

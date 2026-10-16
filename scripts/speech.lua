@@ -145,18 +145,6 @@ function MessageBuilder:list_item(fragment)
    return self
 end
 
--- Just like list_item, but will force a comma even if this is the first item in a list.  This is used e.g. in grids,
--- which should always be "label, dims".
----@param fragment LocalisedString? If present, pushed after the separator.
----@return fa.MessageBuilder
-function MessageBuilder:list_item_forced_comma(fragment)
-   self:_check_not_built()
-   self:list_item()
-   self.is_first_list_item = false
-   if fragment then self:fragment(fragment) end
-   return self
-end
-
 -- It is an error to keep using this builder after building.
 ---@return LocalisedString? Nil if nothing was added.
 function MessageBuilder:build_or_nil()
@@ -257,23 +245,6 @@ function mod.stop_capture()
    local messages = capture_state.messages
    capture_state.messages = {}
    return messages
-end
-
----Get captured messages without stopping capture
----@return table Array of {message: LocalisedString, pindex: integer}
-function mod.get_captured_messages()
-   return capture_state.messages
-end
-
----Clear captured messages without stopping capture
-function mod.clear_captured_messages()
-   capture_state.messages = {}
-end
-
----Check if any messages were captured
----@return boolean
-function mod.has_captured_messages()
-   return #capture_state.messages > 0
 end
 
 return mod

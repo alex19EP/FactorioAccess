@@ -49,18 +49,9 @@ local sonifier_storage = StorageManager.declare_storage_module("grid_sonifier", 
    ephemeral_state_version = 1,
 })
 
----Register a backend for a player
----@param pindex integer
----@param name string
----@param backend fa.GridSonifier.Backend
-function mod.register_backend(pindex, name, backend)
-   local state = sonifier_storage[pindex]
-   state.backends[name] = backend
-end
-
 ---@class fa.GridSonifier.BackendRegistration
 ---@field factory fun(): fa.GridSonifier.Backend
----@field entity_types table<string, true>
+---@field entity_types table<string, true?>
 
 ---Registered backend factories (name -> registration)
 ---@type table<string, fa.GridSonifier.BackendRegistration>
@@ -77,7 +68,7 @@ local entity_types_array = {}
 ---Register a backend factory that will be used for all players
 ---@param name string
 ---@param factory fun(): fa.GridSonifier.Backend
----@param entity_types table<string, true>
+---@param entity_types table<string, true?>
 function mod.register_backend_factory(name, factory, entity_types)
    backend_registrations[name] = {
       factory = factory,

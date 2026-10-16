@@ -27,12 +27,6 @@ local kk_storage = StorageManager.declare_storage_module("kruise_kontrol", {
    spoken = {},
 })
 
-function mod.is_active(pindex)
-   if not remote.interfaces[interface_name] then return false end
-   local character = game.get_player(pindex).character
-   return character ~= nil and not remote.call(interface_name, "is_idle", character)
-end
-
 ---Has Kruise Kontrol walk the character to a position. Its own control picks a job from what is
 ---there, mining ore, trees and rocks; without a target it walks, as it does to an empty tile.
 ---@param pindex integer

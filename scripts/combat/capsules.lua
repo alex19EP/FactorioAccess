@@ -255,11 +255,4 @@ function mod.use_capsule_in_direction(pindex, direction, force_fire)
    return true
 end
 
----Use the held capsule without a direction (left bracket in combat mode)
----@param pindex integer
----@return boolean handled
-function mod.use_capsule_undirected(pindex)
-   return mod.use_on_player(pindex)
-end
-
 return mod

@@ -92,14 +92,6 @@ data:extend({
 
    {
       type = "sound",
-      name = "cursor-moved-while-selecting",
-      filename = "__core__/sound/upgrade-select-start.ogg",
-      category = "gui-effect",
-      preload = true,
-   },
-
-   {
-      type = "sound",
       name = "Close-Inventory-Sound",
       category = "gui-effect",
       filename = "__core__/sound/gui-green-confirm.ogg",
@@ -140,15 +132,6 @@ data:extend({
       category = "alert",
       filename = "__FactorioAccess__/audio/player-aim-locked-zapsplat_multimedia_game_beep_high_pitched_generic_002_25862.wav",
       volume = 0.5,
-      preload = true,
-   },
-
-   {
-      type = "sound",
-      name = "player-bump-alert",
-      category = "alert",
-      filename = "__FactorioAccess__/audio/player-bump-alert-zapsplat-trimmed_multimedia_game_sound_synth_digital_tone_beep_001_38533.wav",
-      volume = 0.75,
       preload = true,
    },
 
@@ -208,15 +191,6 @@ data:extend({
 
    {
       type = "sound",
-      name = "player-damaged-shield",
-      category = "alert",
-      filename = "__FactorioAccess__/audio/player-damaged-shield-zapsplat_multimedia_game_sound_sci_fi_futuristic_beep_action_tone_001_64989.wav",
-      volume = 0.75,
-      preload = true,
-   },
-
-   {
-      type = "sound",
       name = "player-turned",
       category = "gui-effect",
       filename = "__FactorioAccess__/audio/player-turned-1face_dir.ogg",
@@ -233,93 +207,12 @@ data:extend({
       preload = true,
    },
 
-   {
-      type = "sound",
-      name = "scanner-pulse",
-      category = "game-effect",
-      filename = "__FactorioAccess__/audio/scanner-pulse-zapsplat_science_fiction_computer_alarm_single_medium_ring_beep_fast_001_84293.wav",
-      volume = 0.2,
-      preload = true,
-   },
-
    -- The scanner on a pin the game points an arrow at from the edge of the screen (always visible)
    {
       type = "sound",
       name = "scanner-pin-arrow",
       category = "game-effect",
       filename = "__FactorioAccess__/audio/pin-arrow.wav",
-      volume = 1,
-      preload = true,
-   },
-
-   {
-      type = "sound",
-      name = "train-alert-high",
-      category = "alert",
-      filename = "__FactorioAccess__/audio/train-alert-high-zapsplat-trimmed_science_fiction_alarm_warning_buzz_harsh_large_reverb_60111.wav",
-      volume = 0.3,
-      preload = true,
-   },
-
-   {
-      type = "sound",
-      name = "train-alert-low",
-      category = "alert",
-      filename = "__FactorioAccess__/audio/train-alert-low-zapsplat_multimedia_beep_digital_high_tech_electronic_001_87483.wav",
-      volume = 0.3,
-      preload = true,
-   },
-
-   {
-      type = "sound",
-      name = "train-clack",
-      category = "walking",
-      filename = "__FactorioAccess__/audio/train-clack-zapsplat-cut-transport_steam_train_arrive_at_station_with_tannoy_announcement.wav",
-      volume = 1,
-      preload = true,
-   },
-
-   {
-      type = "sound",
-      name = "train-honk-short",
-      category = "game-effect",
-      filename = "__FactorioAccess__/audio/train-honk-short-2x-GotLag.ogg",
-      volume = 1,
-      preload = true,
-   },
-
-   {
-      type = "sound",
-      name = "train-honk-long",
-      category = "game-effect",
-      filename = "__FactorioAccess__/audio/train-honk-long-pixabay-modified-diesel-horn-02-98042.wav",
-      volume = 1,
-      preload = true,
-   },
-
-   {
-      type = "sound",
-      name = "train-honk-low-long",
-      category = "game-effect",
-      filename = "__FactorioAccess__/audio/train-honk-long-pixabay-modified-lower-diesel-horn-02-98042.wav",
-      volume = 1,
-      preload = true,
-   },
-
-   {
-      type = "sound",
-      name = "car-honk",
-      category = "game-effect",
-      filename = "__FactorioAccess__/audio/car-horn-zapsplat_transport_car_horn_single_beep_external_toyota_corolla_002_18246.wav",
-      volume = 1,
-      preload = true,
-   },
-
-   {
-      type = "sound",
-      name = "tank-honk",
-      category = "game-effect",
-      filename = "__FactorioAccess__/audio/tank-horn-zapsplat-Blastwave_FX_FireTruckHornHonk_SFXB.458.wav",
       volume = 1,
       preload = true,
    },

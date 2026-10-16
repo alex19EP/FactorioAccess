@@ -4,17 +4,12 @@ Logging.init()
 -- Set logging level
 --Logging.set_level("DEBUG")
 
--- Create logger for control.lua
-local logger = Logging.Logger("control")
-
 local util = require("util")
 
-local AudioCues = require("scripts.audio-cues")
 local BuildingTools = require("scripts.building-tools")
 local BuildDimensions = require("scripts.build-dimensions")
 local BumpDetection = require("scripts.bump-detection")
 local Combat = require("scripts.combat")
-local Consts = require("scripts.consts")
 local SettingDecls = require("scripts.settings-decls")
 local SETTING_NAMES = SettingDecls.SETTING_NAMES
 local Cursor = require("scripts.cursor")
@@ -26,7 +21,6 @@ require("scripts.fa-commands") -- registers FA's console commands
 local FaUtils = require("scripts.fa-utils")
 local Hand = require("scripts.hand")
 local F = require("scripts.field-ref")
-local Filters = require("scripts.filters")
 local GameNotices = require("scripts.game-notices")
 local ItemInfo = require("scripts.item-info")
 local KruiseKontrol = require("scripts.kruise-kontrol-wrapper")
@@ -65,14 +59,9 @@ local Walking = require("scripts.walking")
 local WorkerRobots = require("scripts.worker-robots")
 local sounds = require("scripts.ui.sounds")
 
----@meta scripts.shared-types
-
 -- Register grid sonifier backends
 GridSonifier.register_backend_factory("crafting", CraftingBackend.new, CraftingBackend.ENTITY_TYPES)
 
-entity_types = {}
-production_types = {}
-building_types = {}
 local dirs = defines.direction
 
 ---Check if in combat mode and speak feedback if so
@@ -92,10 +81,6 @@ players = TH.deny_access_table()
 --Reads the item in hand, its facing direction if applicable, its count, and its total count including units in the main inventory.
 ---@param pindex integer
 local function read_hand(pindex)
-   if storage.players[pindex].skip_read_hand == true then
-      storage.players[pindex].skip_read_hand = false
-      return
-   end
    -- Entering or leaving remote view changes the hand, and the view's announcement says it
    local hand = Hand.describe(pindex)
    if Zoom.hand_for_view(pindex, hand) then return end
@@ -175,9 +160,6 @@ function on_tick(event)
    BattleNotice.on_tick()
    ForceGhostEnabler.on_tick()
 
-   -- Check alerts via AudioCues
-   AudioCues.check_cues(event.tick, players)
-
    -- Check bump detection every tick for all players
    for _, player in pairs(game.players) do
       if not player.connected then goto continue end
@@ -195,21 +177,8 @@ function on_tick(event)
    end
 
    if event.tick % 15 == 0 then
-      for pindex, player in pairs(players) do
-         -- Other periodic checks can go here
-      end
       KruiseKontrol.read_remarks()
       GameNotices.on_tick()
-   elseif event.tick % 450 == 14 then
-      --Run regular reminders every 7.5 seconds
-      for pindex, player in pairs(players) do
-         if game.get_player(pindex).ticks_to_respawn ~= nil then
-            Speech.speak(
-               pindex,
-               { "fa.respawn-countdown", tostring(math.floor(game.get_player(pindex).ticks_to_respawn / 60)) }
-            )
-         end
-      end
    end
 end
 
@@ -232,11 +201,9 @@ EventManager.on_event(
       MovementHistory.reset_and_increment_generation(pindex)
       game.get_player(pindex).clear_cursor()
       if game.get_player(pindex).driving then
-         storage.players[pindex].last_vehicle = game.get_player(pindex).vehicle
-         Speech.speak(
-            pindex,
-            { "fa.vehicle-entered", Localising.get_localised_name_with_fallback(game.get_player(pindex).vehicle) }
-         )
+         local vehicle = assert(game.get_player(pindex).vehicle)
+         storage.players[pindex].last_vehicle = vehicle
+         Speech.speak(pindex, { "fa.vehicle-entered", Localising.get_localised_name_with_fallback(vehicle) })
       elseif storage.players[pindex].last_vehicle ~= nil then
          Speech.speak(
             pindex,
@@ -275,108 +242,8 @@ EventManager.on_event(
          time_to_live = 10,
          draw_on_ground = true,
       })
-      storage.players[pindex].last_pickup_tick = event.tick
-      storage.players[pindex].last_item_picked_up = event.item_stack.name
    end
 )
-
-function swap_weapon_forward(pindex, write_to_character)
-   local p = game.get_player(pindex)
-   if p.character == nil then
-      return 0 --This is an intentionally selected error code
-   end
-   local gun_index = p.character.selected_gun_index
-   if gun_index == nil then
-      return 0 --This is an intentionally selected error code
-   end
-   local guns_inv = p.character.get_inventory(defines.inventory.character_guns)
-   local ammo_inv = game.get_player(pindex).character.get_inventory(defines.inventory.character_ammo)
-
-   --Simple index increment (not needed)
-   gun_index = gun_index + 1
-   if gun_index > 3 then gun_index = 1 end
-   --game.print("start " .. gun_index)--
-   assert(ammo_inv)
-
-   --Increment again if the new index has no guns or no ammo
-   local ammo_stack = ammo_inv[gun_index]
-   local gun_stack = guns_inv[gun_index]
-   local tries = 0
-   while
-      tries < 4
-      and (
-         ammo_stack == nil
-         or not ammo_stack.valid_for_read
-         or not ammo_stack.valid
-         or gun_stack == nil
-         or not gun_stack.valid_for_read
-         or not gun_stack.valid
-      )
-   do
-      gun_index = gun_index + 1
-      if gun_index > 3 then gun_index = 1 end
-      ammo_stack = ammo_inv[gun_index]
-      gun_stack = guns_inv[gun_index]
-      tries = tries + 1
-   end
-
-   if tries > 3 then
-      --game.print("error " .. gun_index)--
-      return -1
-   end
-
-   if write_to_character then p.character.selected_gun_index = gun_index end
-   --game.print("end " .. gun_index)--
-   return gun_index
-end
-
-function swap_weapon_backward(pindex, write_to_character)
-   local p = game.get_player(pindex)
-   if p.character == nil then
-      return 0 --This is an intentionally selected error code
-   end
-   local gun_index = p.character.selected_gun_index
-   if gun_index == nil then
-      return 0 --This is an intentionally selected error code
-   end
-   local guns_inv = p.get_inventory(defines.inventory.character_guns)
-   local ammo_inv = game.get_player(pindex).get_inventory(defines.inventory.character_ammo)
-
-   --Simple index increment (not needed)
-   gun_index = gun_index - 1
-   if gun_index < 1 then gun_index = 3 end
-
-   --Increment again if the new index has no guns or no ammo
-   local ammo_stack = ammo_inv[gun_index]
-   local gun_stack = guns_inv[gun_index]
-   local tries = 0
-   while
-      tries < 4
-      and (
-         ammo_stack == nil
-         or not ammo_stack.valid_for_read
-         or not ammo_stack.valid
-         or gun_stack == nil
-         or not gun_stack.valid_for_read
-         or not gun_stack.valid
-      )
-   do
-      gun_index = gun_index - 1
-      if gun_index < 1 then gun_index = 3 end
-      ammo_stack = ammo_inv[gun_index]
-      gun_stack = guns_inv[gun_index]
-      tries = tries + 1
-   end
-
-   if tries > 3 then return -1 end
-
-   if write_to_character then p.character.selected_gun_index = gun_index end
-   return gun_index
-end
-
---[[Manages inventory transfers that are bigger than one stack.
-* Has checks and speech output!
-]]
 
 --When the item in hand changes
 EventManager.on_event(
@@ -405,69 +272,22 @@ EventManager.on_event(
 
 function ensure_storage_structures_are_up_to_date()
    ScannerLegacy.drop_old_state()
-   storage.forces = storage.forces or {}
    storage.players = storage.players or {}
-   for pindex, player in pairs(game.players) do
+   for _, player in pairs(game.players) do
       PlayerInit.initialize(player)
    end
-
-   storage.entity_types = {}
-   entity_types = storage.entity_types
-
-   local types = {}
-
-   for _, ent in pairs(prototypes.entity) do
-      if
-         types[ent.type] == nil
-         and ent.weight == nil
-         and (
-            ent.burner_prototype ~= nil
-            or ent.electric_energy_source_prototype ~= nil
-            or ent.automated_ammo_count ~= nil
-         )
-      then
-         types[ent.type] = true
-      end
-   end
-
-   for i, type in pairs(types) do
-      table.insert(entity_types, i)
-   end
-   table.insert(entity_types, "container")
-
-   storage.production_types = {}
-   production_types = storage.production_types
-
-   -- TODO: reimplement production types. Seems only to be the warnings menu
-   -- using it.
-
-   storage.building_types = {}
-   building_types = storage.building_types
-
-   local ents = prototypes.entity
-   local types = {}
-   for i, ent in pairs(ents) do
-      if ent.is_building then types[ent.type] = true end
-   end
-   types["transport-belt"] = nil
-   for i, type in pairs(types) do
-      table.insert(building_types, i)
-   end
-   table.insert(building_types, "character")
+   -- Tables older saves kept
+   storage.forces = nil
+   storage.entity_types = nil
+   storage.production_types = nil
+   storage.building_types = nil
 end
-
-EventManager.on_load(function()
-   entity_types = storage.entity_types
-   production_types = storage.production_types
-   building_types = storage.building_types
-end)
 
 EventManager.on_configuration_changed(ensure_storage_structures_are_up_to_date)
 
 EventManager.on_init(function()
    ensure_storage_structures_are_up_to_date()
    TestFramework.on_init()
-   AudioCues.on_init()
 end)
 
 EventManager.on_event(
@@ -496,57 +316,6 @@ EventManager.on_event(
    end
 )
 
---If a filter inserter is selected, the item in hand is set as its output filter item.
-function set_inserter_filter_by_hand(pindex, ent)
-   local stack = game.get_player(pindex).cursor_stack
-   if ent.filter_slot_count == 0 then return "This inserter has no filters to set" end
-   if stack == nil or stack.valid_for_read == false then
-      --Delete last filter
-      for i = ent.filter_slot_count, 1, -1 do
-         local filt = Filters.get_filter_prototype(ent, i)
-         if filt ~= nil then
-            Filters.set_filter(ent, i, nil)
-            return "Last filter cleared"
-         end
-      end
-      return "All filters cleared"
-   else
-      --Add item in hand as next filter
-      for i = 1, ent.filter_slot_count, 1 do
-         local filt = Filters.get_filter_prototype(ent, i)
-         if filt == nil then
-            Filters.set_filter(ent, i, stack.name)
-            if Filters.get_filter_prototype(ent, i) == stack.name then
-               return "Added filter"
-            else
-               return "Filter setting failed"
-            end
-         end
-      end
-      return "All filters full"
-   end
-end
-
-EventManager.on_event(
-   defines.events.on_player_display_resolution_changed,
-   ---@param event EventData.on_player_display_resolution_changed
-   ---@param pindex integer
-   function(event, pindex)
-      local new_res = game.get_player(pindex).display_resolution
-      if players and storage.players[pindex] then storage.players[pindex].display_resolution = new_res end
-   end
-)
-
-EventManager.on_event(
-   defines.events.on_player_display_scale_changed,
-   ---@param event EventData.on_player_display_scale_changed
-   ---@param pindex integer
-   function(event, pindex)
-      local new_sc = game.get_player(pindex).display_scale
-      if players and storage.players[pindex] then storage.players[pindex].display_resolution = new_sc end
-   end
-)
-
 EventManager.on_event(
    defines.events.on_player_respawned,
    ---@param event EventData.on_player_respawned
@@ -556,44 +325,6 @@ EventManager.on_event(
       MovementHistory.reset_and_increment_generation(pindex)
    end
 )
-
---If the player has unexpected lateral movement while smooth running in a cardinal direction, like from bumping into an entity or being at the edge of water, play a sound.
-
-function all_ents_are_walkable(pos)
-   local ents = game.surfaces[1].find_entities_filtered({
-      position = FaUtils.center_of_tile(pos),
-      radius = 0.4,
-      invert = true,
-      type = Consts.ENT_TYPES_YOU_CAN_WALK_OVER,
-   })
-   for i, ent in ipairs(ents) do
-      return false
-   end
-   return true
-end
-
-function general_mod_menu_up(pindex, menu, lower_limit_in) --todo*** use
-   local lower_limit = lower_limit_in or 0
-   menu.index = menu.index - 1
-   if menu.index < lower_limit then
-      menu.index = lower_limit
-      sounds.play_ui_edge(pindex)
-   else
-      --Play sound
-      sounds.play_menu_move(pindex)
-   end
-end
-
-function general_mod_menu_down(pindex, menu, upper_limit)
-   menu.index = menu.index + 1
-   if menu.index > upper_limit then
-      menu.index = upper_limit
-      sounds.play_ui_edge(pindex)
-   else
-      --Play sound
-      sounds.play_menu_move(pindex)
-   end
-end
 
 EventManager.on_event(defines.events.on_player_selected_area, SpidertronRemote.on_selected_area)
 EventManager.on_event(defines.events.on_player_alt_selected_area, SpidertronRemote.on_selected_area)
@@ -708,17 +439,10 @@ local function cursor_skip(pindex, event)
    if next_of_kind then play_next_of_kind(pindex) end
 
    local p = game.get_player(pindex)
-   local cursor_pos = Cursor.tile(pindex)
    if step == "skipped" then
       -- A skip of more than a tile, or one that found no change, rolls; one of a tile is a step
       if tiles == 1 then return end
-      if storage.players[pindex].remote_view then
-         sounds.play_sound_at_position({ path = "inventory-wrap-around", volume_modifier = 1 }, cursor_pos)
-      else
-         p.play_sound({ path = "inventory-wrap-around", position = p.position, volume_modifier = 1 })
-      end
-   elseif storage.players[pindex].remote_view then
-      sounds.play_building_placement(p.index, cursor_pos)
+      p.play_sound({ path = "inventory-wrap-around", position = p.position, volume_modifier = 1 })
    else
       p.play_sound({ path = "Close-Inventory-Sound", position = p.position, volume_modifier = 1 })
    end
@@ -833,9 +557,6 @@ EventManager.on_event(
 --Todo: split this function by menu.
 local function read_coords(pindex, start_phrase)
    start_phrase = start_phrase or ""
-   local result = start_phrase
-   local ent = storage.players[pindex].building.ent
-   local offset = 0
 
    local position = Cursor.tile(pindex)
    local marked_pos = { x = position.x, y = position.y }
@@ -879,11 +600,12 @@ local function read_coords(pindex, start_phrase)
          })
       end
 
+      local vehicle_pos = vehicle.position --[[@as MapPosition.struct]]
       message:fragment({
          "fa.vehicle-position-in",
          Localising.get_localised_name_with_fallback(vehicle),
-         tostring(math.floor(vehicle.position.x)),
-         tostring(math.floor(vehicle.position.y)),
+         tostring(math.floor(vehicle_pos.x)),
+         tostring(math.floor(vehicle_pos.y)),
       })
 
       Speech.speak(pindex, message:build())
@@ -989,7 +711,7 @@ local function kb_read_cursor_distance_vector(event)
    local pindex = event.player_index
    local p = game.get_player(pindex)
    local c_pos = Cursor.tile(pindex)
-   local p_pos = p.position
+   local p_pos = p.position --[[@as MapPosition.struct]]
    local diff_x = math.floor(c_pos.x) - math.floor(p_pos.x)
    local diff_y = math.floor(c_pos.y) - math.floor(p_pos.y)
 
@@ -1033,7 +755,7 @@ EventManager.on_event(
 
 local function kb_read_character_coords(event)
    local pindex = event.player_index
-   local pos = game.get_player(pindex).position
+   local pos = game.get_player(pindex).position --[[@as MapPosition.struct]]
    local result = "Character at " .. math.floor(pos.x) .. ", " .. math.floor(pos.y)
    --Floored, then with extra precision; spoken by the native console reader
    game.get_player(pindex).print(
@@ -1057,30 +779,6 @@ local function kb_jump_to_player(event)
    -- The character, wherever remote view's camera is
    Cursor.jump(pindex, game.get_player(pindex).physical_position)
    read_coords(pindex, "Cursor returned ")
-end
-
----@param event EventData.CustomInputEvent
-local function kb_read_driving_structure_ahead(event)
-   local pindex = event.player_index
-   local p = game.get_player(pindex)
-   local ent = storage.players[pindex].last_driving_alert_ent
-   if ent and ent.valid then
-      local dir = FaUtils.get_heading_value(p.vehicle)
-      local dir_ent = FaUtils.get_direction_biased(ent.position, p.vehicle.position)
-      if p.vehicle.speed >= 0 and (dir_ent == dir or math.abs(dir_ent - dir) == 1 or math.abs(dir_ent - dir) == 15) then
-         local dist = math.floor(util.distance(p.vehicle.position, ent.position))
-         Speech.speak(
-            pindex,
-            { "fa.driving-structure-ahead", Localising.get_localised_name_with_fallback(ent), tostring(dist) }
-         )
-      elseif p.vehicle.speed <= 0 and dir_ent == FaUtils.rotate_180(dir) then
-         local dist = math.floor(util.distance(p.vehicle.position, ent.position))
-         Speech.speak(
-            pindex,
-            { "fa.driving-structure-behind", Localising.get_localised_name_with_fallback(ent), tostring(dist) }
-         )
-      end
-   end
 end
 
 EventManager.on_event(
@@ -1180,7 +878,7 @@ EventManager.on_event(
       if ent and ent.type == "inserter" then
          -- TODO: Move to capability-based UI
          -- Temporarily inline the functionality
-         ent.inserter_stack_size_override = ent.inserter_stack_size_override + 1
+         ent.inserter_stack_size_override = (ent.inserter_stack_size_override + 1) --[[@as integer]]
          local result = ent.inserter_stack_size_override .. " set for hand stack size"
          Speech.speak(pindex, result)
       else
@@ -1217,7 +915,7 @@ EventManager.on_event(
          -- Temporarily inline the functionality
          local result = ""
          if ent.inserter_stack_size_override > 1 then
-            ent.inserter_stack_size_override = ent.inserter_stack_size_override - 1
+            ent.inserter_stack_size_override = (ent.inserter_stack_size_override - 1) --[[@as integer]]
             result = ent.inserter_stack_size_override .. " set for hand stack size"
          else
             ent.inserter_stack_size_override = 0
@@ -1316,7 +1014,6 @@ local function kb_read_item_pickup_state(event)
    local pindex = event.player_index
    local p = game.get_player(pindex)
    local result = ""
-   local check_last_pickup = false
    local nearby_belts =
       p.surface.find_entities_filtered({ position = p.position, radius = 1.25, type = "transport-belt" })
    local nearby_ground_items =
@@ -1354,7 +1051,6 @@ local function kb_read_item_pickup_state(event)
       local right = TH.nqc_to_sorted_descending(
          TH.rollup2(ent.get_transport_line(tl(2)).get_contents(), F.name().get, F.quality().get, F.count().get)
       )
-      local all = {}
       TH.concat_arrays(left, right)
       -- Rename it, for clarity.
       local all = left
@@ -1362,9 +1058,9 @@ local function kb_read_item_pickup_state(event)
          return a.count > b.count
       end)
 
-      if all[1] then result = result .. all[1].name end
-      if all[2] then result = result .. " " .. string.format("and %s", all[2].name) end
-      if all[3] then result = result .. " and others" end
+      if #all >= 1 then result = result .. all[1].name end
+      if #all >= 2 then result = result .. " " .. string.format("and %s", all[2].name) end
+      if #all >= 3 then result = result .. " and others" end
 
       result = result .. " from nearby belts"
       --Check if there are ground items within n tiles

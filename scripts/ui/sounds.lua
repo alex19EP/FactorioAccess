@@ -79,11 +79,6 @@ function mod.play_menu_wrap(pindex)
    play_sound_internal(pindex, { path = "inventory-wrap-around" })
 end
 
--- Reached the edge of the menu, the end or beginning of a slider, etc.
-function mod.play_ui_edge(pindex)
-   play_sound_internal(pindex, { path = "inventory-edge" })
-end
-
 -- Inventory sounds
 function mod.play_close_inventory(pindex)
    play_sound_internal(pindex, { path = "Close-Inventory-Sound", volume_modifier = 0.75 })
@@ -96,10 +91,6 @@ end
 
 function mod.play_player_turn(pindex)
    play_sound_internal(pindex, { path = "player-turned" })
-end
-
-function mod.play_player_bump_alert(pindex)
-   play_sound_internal(pindex, { path = "player-bump-alert" })
 end
 
 function mod.play_player_bump_stuck(pindex)
@@ -119,54 +110,12 @@ function mod.play_player_damaged_character(pindex)
    play_sound_internal(pindex, { path = "player-damaged-character" })
 end
 
-function mod.play_player_damaged_shield(pindex)
-   play_sound_internal(pindex, { path = "player-damaged-shield" })
-end
-
 function mod.play_aim_locked(pindex)
    play_sound_internal(pindex, { path = "player-aim-locked" })
 end
 
--- Vehicle sounds
-function mod.play_car_horn(pindex)
-   play_sound_internal(pindex, { path = "car-horn" })
-end
-
-function mod.play_tank_horn(pindex)
-   play_sound_internal(pindex, { path = "tank-horn" })
-end
-
--- Train sounds
-function mod.play_train_alert_high(pindex)
-   play_sound_internal(pindex, { path = "train-alert-high" })
-end
-
-function mod.play_train_alert_low(pindex)
-   play_sound_internal(pindex, { path = "train-alert-low" })
-end
-
-function mod.play_train_clack(pindex)
-   play_sound_internal(pindex, { path = "train-clack" })
-end
-
-function mod.play_train_honk_long(pindex)
-   play_sound_internal(pindex, { path = "train-honk-long" })
-end
-
-function mod.play_train_honk_short(pindex)
-   play_sound_internal(pindex, { path = "train-honk-short-2x" })
-end
-
-function mod.play_train_honk_low_long(pindex)
-   play_sound_internal(pindex, { path = "train-honk-low-long" })
-end
-
 -- Utility sounds
 function mod.play_cannot_build(pindex)
-   play_sound_internal(pindex, { path = "utility/cannot_build" })
-end
-
-function mod.play_ui_error(pindex)
    play_sound_internal(pindex, { path = "utility/cannot_build" })
 end
 
@@ -178,74 +127,14 @@ function mod.play_picked_up_item(pindex)
    play_sound_internal(pindex, { path = "utility/picked_up_item", volume_modifier = 1 })
 end
 
--- Mining/entity sounds
-function mod.play_entity_mined(pindex, entity_type)
-   -- Default to stone-furnace sound if no specific type given
-   local sound_path = entity_type and ("entity-mined/" .. entity_type) or "entity-mined/stone-furnace"
-   play_sound_internal(pindex, { path = sound_path })
-end
-
--- Selection sounds
-function mod.play_cursor_moved_while_selecting(pindex)
-   play_sound_internal(pindex, { path = "cursor-moved-while-selecting" })
-end
-
--- Wire connection sounds
-function mod.play_wire_disconnect(pindex)
-   play_sound_internal(pindex, { path = "utility/wire_disconnect" })
-end
-
--- Walking sounds
-function mod.play_metal_walking(pindex)
-   play_sound_internal(pindex, { path = "utility/metal_walking_sound", volume_modifier = 1 })
-end
-
-function mod.play_tile_walking(pindex, tile_name)
-   if tile_name then
-      play_sound_internal(pindex, { path = "tile-walking/" .. tile_name, volume_modifier = 1 })
-   else
-      play_sound_internal(pindex, { path = "player-walk", volume_modifier = 1 })
-   end
-end
-
 -- The cursor stepped onto the next machine of a row alike
 function mod.play_next_machine(pindex)
    play_sound_internal(pindex, { path = "next-machine" })
 end
 
--- Building sounds
-function mod.play_building_placement(pindex, position)
-   -- Special handling for positioned sounds
-   local player = game.get_player(pindex)
-   if position then
-      player.play_sound({ path = "Close-Inventory-Sound", position = position, volume_modifier = 0.75 })
-   else
-      play_sound_internal(pindex, { path = "Close-Inventory-Sound", volume_modifier = 0.75 })
-   end
-end
-
 -- Generic play_sound wrapper for custom sounds
 function mod.play_sound(pindex, sound_spec)
    play_sound_internal(pindex, sound_spec)
-end
-
--- Play sound at position (not player-specific)
----@param sound_spec PlaySoundSpecification
----@param position MapPosition
-function mod.play_sound_at_position(sound_spec, position)
-   if test_mode then
-      table.insert(sound_history, {
-         pindex = nil,
-         sound = sound_spec,
-         position = position,
-         tick = game and game.tick or 0,
-      })
-      logger:debug("Sound played at position: " .. serpent.line(sound_spec))
-   else
-      local spec = table.deepcopy(sound_spec)
-      spec.position = position
-      game.play_sound(spec)
-   end
 end
 
 return mod

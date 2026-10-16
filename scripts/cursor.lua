@@ -104,18 +104,6 @@ function mod.read(pindex, prefix)
    if native then native.cursor_read(pindex, tile.x, tile.y, prefix) end
 end
 
----The cursor's tile at any time, for sounds and speech only: only this client knows it, so never
----change the game by it. Nil without the DLL.
----@param pindex integer
----@return fa.Tile?
-function mod.speech_tile(pindex)
-   if tiles[pindex] then return mod.tile(pindex) end
-   if not native then return nil end
-   local x, y = native.cursor_position(pindex)
-   if not x or not y then return nil end
-   return { x = x, y = y }
-end
-
 ---Tells the DLL, every tick, what the movement and skip keys do now.
 ---@param pindex integer
 ---@param vanilla boolean The mouse is the cursor

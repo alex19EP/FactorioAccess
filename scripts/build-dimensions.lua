@@ -86,7 +86,7 @@ end
 
 ---Get the build dimensions of a stack, accounting for rotation. Blueprints keep their rotation where
 ---Lua cannot read it, so their dimensions are unrotated.
----@param stack LuaItemStack The item stack to measure
+---@param stack LuaItemStack? The item stack to measure
 ---@param direction defines.direction? The direction the item is built in; blueprints ignore it
 ---@return integer|nil width The width in tiles
 ---@return integer|nil height The height in tiles
