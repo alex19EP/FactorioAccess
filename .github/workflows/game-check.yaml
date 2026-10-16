@@ -1,0 +1,149 @@
+name: Game check
+
+# Checks the mod against the newest Factorio release: the DLL's symbols against that release's own
+# factorio.exe and factorio.pdb, and the in-game tests on its headless server.
+#
+# Wube offers no webhook for a release, so an hourly poll of the releases API stands in for one and
+# checks each new version once. The nightly run checks the newest version again whatever happened
+# before, so a change of ours that breaks against it shows within a day. GitHub mails a failed
+# scheduled run to whoever last changed the schedule below.
+on:
+  schedule:
+    - cron: '23 * * * *'
+    - cron: '41 2 * * *'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Factorio version to check, such as 2.1.22 (empty for the newest experimental)
+        required: false
+
+concurrency:
+  group: game-check
+  cancel-in-progress: false
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.latest.outputs.version }}
+      check: ${{ steps.decide.outputs.check }}
+    steps:
+      - name: Checkout the pinned version
+        uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github/factorio-version
+          sparse-checkout-cone-mode: false
+
+      - name: Newest version
+        id: latest
+        env:
+          REQUESTED: ${{ inputs.version }}
+        run: |
+          version="$REQUESTED"
+          if [ -z "$version" ]; then
+            version=$(curl -fsS --retry 3 https://factorio.com/api/latest-releases | jq -r .experimental.expansion)
+          fi
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Not a Factorio version: $version"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          pinned=$(cat .github/factorio-version)
+          echo "Factorio $version; CI tests on $pinned (.github/factorio-version)" >> "$GITHUB_STEP_SUMMARY"
+
+      # An entry in the Actions cache, holding nothing, marks a version as checked.
+      - name: Checked before
+        id: marker
+        uses: actions/cache/restore@v6
+        with:
+          path: .game-checked
+          key: game-checked-${{ steps.latest.outputs.version }}
+          lookup-only: true
+
+      - name: Decide
+        id: decide
+        env:
+          HOURLY: ${{ github.event_name == 'schedule' && github.event.schedule == '23 * * * *' }}
+          CHECKED: ${{ steps.marker.outputs.cache-hit == 'true' }}
+        run: |
+          if [ "$HOURLY" = true ] && [ "$CHECKED" = true ]; then
+            echo "check=false" >> "$GITHUB_OUTPUT"
+            echo "Checked before; the nightly run checks it again" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "check=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Marked before the check runs, so a failing version is not checked and mailed every hour.
+      - name: Marker
+        if: steps.marker.outputs.cache-hit != 'true'
+        run: mkdir -p .game-checked && touch .game-checked/marker
+
+      - name: Mark as checked
+        if: steps.marker.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: .game-checked
+          key: game-checked-${{ steps.latest.outputs.version }}
+
+  symbols:
+    needs: detect
+    if: needs.detect.outputs.check == 'true'
+    runs-on: windows-2025-vs2026
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          submodules: true
+
+      - name: MSVC environment
+        uses: ./.github/actions/msvc
+
+      - name: Build the symbol checker
+        shell: pwsh
+        run: |
+          cmake -S native --preset default
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          cmake --build native/build --config RelWithDebInfo --target fa_symbols_check
+
+      # Only the Windows zip ships factorio.pdb. Its download needs a factorio.com account that owns
+      # Space Age. The game is never cached or uploaded: it is not ours to share, and the caches of a
+      # public repository are readable from pull requests.
+      - name: Download Factorio
+        shell: pwsh
+        env:
+          VERSION: ${{ needs.detect.outputs.version }}
+          FACTORIO_USERNAME: ${{ secrets.FACTORIO_USERNAME }}
+          FACTORIO_TOKEN: ${{ secrets.FACTORIO_TOKEN }}
+        run: |
+          if (-not $env:FACTORIO_USERNAME -or -not $env:FACTORIO_TOKEN) {
+             throw 'Set the FACTORIO_USERNAME and FACTORIO_TOKEN repository secrets (the token is on the factorio.com profile page)'
+          }
+          $zip = "$env:RUNNER_TEMP\factorio.zip"
+          curl.exe -fsSL --retry 3 -o $zip --get `
+             --data-urlencode "username=$env:FACTORIO_USERNAME" --data-urlencode "token=$env:FACTORIO_TOKEN" `
+             "https://www.factorio.com/get-download/$env:VERSION/expansion/win64-manual"
+          if ($LASTEXITCODE) { throw "The download failed with curl exit code $LASTEXITCODE" }
+          7z e $zip "-o$env:RUNNER_TEMP\factorio" factorio.exe factorio.pdb -r -y | Out-Null
+          if ($LASTEXITCODE) { throw "7z failed with $LASTEXITCODE" }
+          foreach ($file in 'factorio.exe', 'factorio.pdb') {
+             if (-not (Test-Path "$env:RUNNER_TEMP\factorio\$file")) { throw "The zip has no $file" }
+          }
+
+      - name: Symbol check
+        shell: pwsh
+        run: |
+          native/build/RelWithDebInfo/fa_symbols_check.exe "$env:RUNNER_TEMP\factorio\factorio.exe"
+          exit $LASTEXITCODE
+
+  mod-tests:
+    needs: detect
+    if: needs.detect.outputs.check == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Mod tests
+        uses: ./.github/actions/mod-tests
+        with:
+          version: ${{ needs.detect.outputs.version }}

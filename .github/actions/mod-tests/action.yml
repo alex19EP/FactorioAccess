@@ -1,0 +1,52 @@
+name: Mod tests
+description: >
+  Runs the mod's in-game test suite (launch_factorio.py --run-tests) and its Lua unit tests on the
+  free Linux headless server. The DLL is Windows only, so the suite runs without it, as it does for
+  the players in multiplayer who have none.
+
+inputs:
+  version:
+    description: The Factorio version to test on, such as 2.1.22
+    required: true
+
+runs:
+  using: composite
+  steps:
+    # The headless server is a public download, so caching it shares nothing that is not public.
+    - name: Cache the headless server
+      uses: actions/cache@v6
+      with:
+        path: ${{ runner.temp }}/factorio-headless.tar.xz
+        key: factorio-headless-${{ inputs.version }}
+
+    - name: Install the headless server and Lua 5.2
+      shell: bash
+      env:
+        VERSION: ${{ inputs.version }}
+      run: |
+        archive="$RUNNER_TEMP/factorio-headless.tar.xz"
+        if [ ! -f "$archive" ]; then
+          curl -fsSL --retry 3 -o "$archive" "https://factorio.com/get-download/$VERSION/headless/linux64"
+        fi
+        tar -xJf "$archive" -C "$RUNNER_TEMP"
+        game="$RUNNER_TEMP/factorio"
+        # The archive keeps its write data beside the game, as a zip install on Windows does.
+        mkdir -p "$game/mods" "$game/saves"
+        ln -s "$GITHUB_WORKSPACE" "$game/mods/FactorioAccess"
+        cp lab_tiles.zip "$game/saves/"
+        sudo apt-get update -qq
+        sudo apt-get install -y -qq --no-install-recommends lua5.2
+
+    - name: Run the tests
+      shell: bash
+      run: python3 launch_factorio.py --factorio-path "$RUNNER_TEMP/factorio/bin/x64/factorio" --run-tests --timeout 600
+
+    - name: Upload the logs
+      if: failure()
+      uses: actions/upload-artifact@v7
+      with:
+        name: mod-test-logs-${{ inputs.version }}
+        path: |
+          ${{ runner.temp }}/factorio/factorio-current.log
+          ${{ runner.temp }}/factorio/script-output/
+        if-no-files-found: ignore

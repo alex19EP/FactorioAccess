@@ -81,6 +81,26 @@ launch is muted. A game started straight from a Claude Code shell (the DRM-free 
 overrides both. `just unmute` and `just mute` switch a running game, and a reloaded core keeps the
 choice.
 
+## CI
+
+`.github/workflows/ci.yaml` runs on every push and pull request. It checks the formatting, runs
+the updater tests on Windows, and runs `launch_factorio.py --run-tests` (the in-game suite and the
+Lua unit tests) on the free Linux headless server. That server has no DLL, so the suite runs as it
+does for a multiplayer peer without one. The version comes from `.github/factorio-version`; raise
+it after a game update, once the game check below passes on the new version.
+
+`.github/workflows/game-check.yaml` polls Factorio's releases API every hour, since Wube offers no
+webhook, and checks each new experimental release once. It also runs every night against the
+newest release, and from the Actions tab for any version. A check runs two jobs:
+
+- `symbols` builds `fa_symbols_check` and runs it against the release's `factorio.exe` and
+  `factorio.pdb`, from the Windows zip. That download needs a factorio.com account that owns Space
+  Age, given as the repository secrets `FACTORIO_USERNAME` and `FACTORIO_TOKEN` (the token is on the
+  factorio.com profile page). The game is never cached or uploaded.
+- `mod-tests` runs the same suite as `ci.yaml` on the release's headless server.
+
+GitHub mails a failed scheduled run to whoever last changed the workflow's schedule.
+
 ## Main recipes
 
 | Recipe | What it does |

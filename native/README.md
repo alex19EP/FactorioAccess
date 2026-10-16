@@ -98,6 +98,9 @@ with fmtk, and moves the `dev` tag and its pre-release to the pushed commit. The
 with `FA_BUILD_ID=dev.<commit>`, so its version reads, for example, `0.1.0+dev.fc39a54`. The
 symbol check needs a `factorio.exe` and does not run there: run it locally before pushing.
 
+`.github/workflows/game-check.yaml` runs the symbol check against each new Factorio release, and
+every night against the newest one (see `devdocs/dev-setup.md`, "CI").
+
 ## Building
 
 You need Visual Studio 2026 (or its Build Tools) with the C++ workload, CMake 3.28 or newer, and

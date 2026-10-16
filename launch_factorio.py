@@ -27,7 +27,7 @@ import glob
 
 # Constants
 DEFAULT_TIMEOUT = 300
-LUA_EXE = "lua52.exe"
+LUA_EXE = "lua52.exe" if os.name == "nt" else "lua5.2"
 
 # The Lua lint and language server live in .tools/ (gitignored), installed by --setup-tools: pinned EmmyLua
 # releases, and the Factorio API library fmtk generates from the game's own doc-html JSON. .emmyrc.json at the
@@ -1180,8 +1180,11 @@ def main():
             else:
                 print(f"\nLua tests failed with exit code {lua_exit_code}")
 
-            # Return failure if either test suite failed
-            if test_summary and test_summary["failed"] > 0:
+            # Return failure if either test suite failed, or the in-game suite never ran
+            if not test_summary or test_summary["total"] == 0:
+                print("[ERROR] No in-game test results")
+                return 1
+            elif test_summary["failed"] > 0:
                 return 1
             elif lua_exit_code != 0:
                 return lua_exit_code

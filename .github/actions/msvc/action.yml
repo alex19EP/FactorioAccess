@@ -1,0 +1,22 @@
+name: MSVC environment
+description: >
+  Passes what vcvars64.bat adds or changes on to every later step of the job, so Ninja finds cl,
+  link and the Windows SDK.
+
+runs:
+  using: composite
+  steps:
+    - name: vcvars64
+      shell: pwsh
+      run: |
+        $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+        $vs = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+        if (-not $vs) { throw 'No Visual Studio with the x64 C++ tools' }
+        $lines = & $env:ComSpec /d /c "`"$vs\VC\Auxiliary\Build\vcvars64.bat`" >nul && set"
+        if ($LASTEXITCODE) { throw "vcvars64.bat failed with $LASTEXITCODE" }
+        foreach ($line in $lines) {
+           # A name, so that the inner lines of a multi-line value are left out
+           if ($line -match '^([A-Za-z_][A-Za-z0-9_]*)=(.*)$' -and [Environment]::GetEnvironmentVariable($Matches[1]) -ne $Matches[2]) {
+              "$($Matches[1])=$($Matches[2])" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+           }
+        }
