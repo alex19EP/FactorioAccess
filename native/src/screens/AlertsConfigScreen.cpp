@@ -105,8 +105,8 @@ void AddAlerts(graph::GraphBuilder& builder, const Widget* table)
                     return when.empty() ? LabelText(name) : LabelText(name) + ", " + when;
                 }));
         if (Shows(muted))
-            builder.AddItem(graph::ControlId::Referenced(muted, key + "/muted"),
-                CheckBoxNode(muted, name, mutedHeading, true));
+            builder.AddItem(
+                graph::ControlId::Referenced(muted, key + "/muted"), CheckBoxNode(muted, name, mutedHeading, true));
         if (Shows(disabled))
             builder.AddItem(graph::ControlId::Referenced(disabled, key + "/disabled"),
                 CheckBoxNode(disabled, name, disabledHeading, false));
@@ -132,7 +132,8 @@ void AddSortButtons(graph::GraphBuilder& builder, const Widget* table)
                 return std::string();
             return std::string(Order(column, ordering->ascending));
         };
-        graph::NodeVtable node = ControlNode(sort, [caption]() { return std::string(vocab::kSortBy(LabelText(caption))); });
+        graph::NodeVtable node =
+            ControlNode(sort, [caption]() { return std::string(vocab::kSortBy(LabelText(caption))); });
         for (graph::NodeAnnouncement& part : node.Announcements)
             if (part.Kind == graph::AnnouncementKinds::Value)
                 part.Text = order;
