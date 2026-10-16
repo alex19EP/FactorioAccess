@@ -47,4 +47,6 @@ Unfortunately walking and driving to explore are not fun experiences if you are 
 
 Do not confuse accessibility radars with normal radars.  Normal radars have a much smaller range.  The primary difference is that an accessibility radar charts a huge range of the map for the first time but does not refresh where things are rapidly, so for sighted players it's not enough to let them see enemy movement.
 
+While the map is open, the first category after "all" is alerts: the alerts the game shows on the map, such as a building being damaged or a turret out of ammunition, on the surface you are on. The game draws them on the map only, so the scanner lists them only there. Each kind of alert is a subcategory, named as the side menu's alerts configuration names it, and each alert an instance, read as the thing it is about. An alert that ended, as its icon leaves the map, is passed over, and one of a kind you disabled in the alerts configuration is never listed, as the game does not show it.
+
 Finally, the scanner always remembers what you were last on, so `home` also serves as a bookmark: it moves your cursor back to that entry.

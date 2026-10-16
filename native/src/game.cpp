@@ -1114,6 +1114,30 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.alertsOverviewCategory, "AlertsOverview", "category");
    offset(layout.alertsOverviewList, "AlertsOverview", "alertGroupsList");
    offset(layout.alertsOverviewPins, "AlertsOverview", "pinButtonFlow");
+   offset(layout.playerAlertCenter, "Player", "alertCenter");
+   offset(layout.alertCenterData, "AlertCenter", "alertsData");
+   offset(layout.alertCenterCustom, "AlertCenter", "customAlerts");
+   size(layout.alertsDataSize, "AlertCenter::AlertsData");
+   offset(layout.alertsDataAlerts, "AlertCenter::AlertsData", "alerts");
+   {
+      constexpr const char* kAlertsNode =
+         "std::_Tree_node<std::pair<SurfaceIndex const ,std::vector<Alert,std::allocator<Alert> > >,void *>";
+      constexpr const char* kCustomAlertsNode = "std::_Tree_node<std::pair<SurfaceIndex const ,"
+                                                "std::vector<CustomAlert,std::allocator<CustomAlert> > >,void *>";
+      offset(layout.alertsNodeKey, kAlertsNode, "_Myval.first");
+      offset(layout.alertsNodeValue, kAlertsNode, "_Myval.second");
+      offset(layout.customAlertsNodeKey, kCustomAlertsNode, "_Myval.first");
+      offset(layout.customAlertsNodeValue, kCustomAlertsNode, "_Myval.second");
+   }
+   size(layout.alertSize, "Alert");
+   offset(layout.alertTarget, "Alert", "target");
+   offset(layout.alertEntity, "Alert", "entityID");
+   offset(layout.alertPosition, "Alert", "position");
+   size(layout.customAlertSize, "CustomAlert");
+   offset(layout.customAlertBase, "CustomAlert", "Alert");
+   offset(layout.customAlertOnMap, "CustomAlert", "showOnMap");
+   enumerator(layout.alertTypeCustom, "AlertType::Enum", "CUSTOM");
+   address(layout.alertTypeStr, "?str@AlertType@@QEBAPEBDXZ");
    offset(layout.alertsConfigTable, "AlertsConfigGui", "mainTable");
    offset(layout.gameViewChartSearch, "GameView", "chartSearchResultGui");
    offset(layout.chartSearchList, "ChartSearchResultGui", "listbox");

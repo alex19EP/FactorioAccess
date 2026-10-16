@@ -49,6 +49,7 @@ local test_files = {
    "game-notices-test", -- Test the goal window reader
    "pump-spots-test", -- Test the scanner's offshore pump build spots
    "pins-tags-scanner-test", -- Test the scanner's pins and map tags
+   "scanner-alerts-test", -- Test the scanner's alerts
    "view-limit-test", -- Test the cursor kept on the screen in the character view
    "god-mode-test", -- Test FA without a character, as in the sandbox
    "train-map-targets-test", -- Test what a click on the map would add to a train's schedule

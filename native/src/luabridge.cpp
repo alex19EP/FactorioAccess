@@ -677,13 +677,13 @@ int scannerTick(lua_State* L) {
 }
 
 // fa_native.scanner_entry(pindex, x, y): what the scanner key whose event carried cursor_position
-// x, y moved onto, as {category, edge, empty, index, count, kind, extra, prototype, text, trees,
-// width, height, x, y, origin_x, origin_y} (see scanner::Entry), or nil. For speech only: other clients
-// have no scanner.
+// x, y moved onto, as {category, edge, empty, index, count, kind, alert, targeted, extra, prototype,
+// text, trees, width, height, x, y, origin_x, origin_y} (see scanner::Entry), or nil. For speech only:
+// other clients have no scanner.
 int scannerEntry(lua_State* L) {
    const auto entry = scanner::entryAt(static_cast<int>(checkInteger(L, 1)), checkNumber(L, 2), checkNumber(L, 3));
    if (!entry) return 0;
-   createTable(L, 0, 15);
+   createTable(L, 0, 18);
    pushString(L, entry->category);
    setField(L, -2, "category");
    pushBoolean(L, entry->edge);
@@ -697,6 +697,10 @@ int scannerEntry(lua_State* L) {
       setField(L, -2, "count");
       pushString(L, entry->kind);
       setField(L, -2, "kind");
+      pushString(L, entry->alert);
+      setField(L, -2, "alert");
+      pushBoolean(L, entry->targeted);
+      setField(L, -2, "targeted");
       pushNumber(L, entry->extra);
       setField(L, -2, "extra");
       pushNumber(L, entry->generation);

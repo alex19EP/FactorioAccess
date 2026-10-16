@@ -76,8 +76,10 @@ struct Entry {
    uint32_t index = 0;         // one-based place in its subcategory
    uint32_t count = 0;         // entries in the subcategory
    // "entity", "forest" (several trees), "patch" (a resource patch), "tiles" (a body of water-like
-   // or ice tiles), "chunk" (an asteroid chunk) or "extra".
+   // or ice tiles), "chunk" (an asteroid chunk), "extra" or "alert".
    std::string kind;
+   std::string alert;          // an alert: its type, as defines.alert_type names it
+   bool targeted = false;      // an alert: about an entity that is there (its prototype's)
    uint32_t extra = 0;         // an extra: its one-based place in Refresh::extras
    uint32_t generation = 0;    // an extra: its Refresh::generation
    // An entity's, patch's or asteroid chunk's prototype name; a body's tile, the one most of it is

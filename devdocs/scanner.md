@@ -59,7 +59,16 @@ not at all. The force's own are listed wherever they are, as the map draws them 
 While the full map is open (`Player::renderMode` chart, remote view zoomed out past 200 tiles), the
 list holds only what the map names rather than drawing as a pixel of a building's colour (`kMapTypes`,
 `Rule::onMap`): vehicles and trains, stations, players, enemies, display panels shown on the map,
-resource patches, forests, water, ice, pins and tags. These are what the map's own pointing selects
+resource patches, forests, water, ice, pins and tags, and alerts, which only the map draws.
+
+The map's list also holds the player's alerts on the surface, each type (`AlertType::str`) a
+subcategory of Alerts: what `ChartRenderer::drawAlerts` draws, read from `Player::alertCenter` as
+`AlertCenter::getAllUniqueAlerts` reads it (each type's alerts, then the custom ones shown on the
+map), except that an entity with alerts of several types is listed under each. An alert about an
+entity is linked to it. An alert lasts its type's TTL unless the game raises it again, and disabling
+a type erases its alerts, so each move checks the game still holds the alert and passes over one it
+dropped, as its icon leaves the map. Lua says it by the alerts configuration's name of its type
+(`alerts-config-gui.name-<type>`), or a custom one by its message, then its entity. These are what the map's own pointing selects
 (`Chart::getSelection`) or labels. Prototypes flagged `not-on-map` are left out, single trees and
 wells are not listed apart from their forest or field, and build spots are left out, as nothing but
 blueprints and rails is built on the map.

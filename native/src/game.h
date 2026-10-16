@@ -1565,6 +1565,31 @@ struct Layout {
    // AlertsOverview::pinButtonFlow, agui::VerticalFlow: beside each row of the list, its pin button
    // (an IconButton, InputAction PinAlertGroup), or for a surface's heading a blank TextButton.
    uint32_t alertsOverviewPins = 0;
+   // The player's alerts (Player::alertCenter, an AlertCenter), what the map draws
+   // (ChartRenderer::drawAlerts through AlertCenter::getAllUniqueAlerts). alertsData is an array
+   // of AlertsData by AlertType value, followed by customAlerts; each holds a std::map from the game's
+   // SurfaceIndex to a std::vector of alerts. An alert expires by its type's TTL unless raised again,
+   // and disabling a type erases its alerts. A custom alert shows on the map only with showOnMap.
+   uint32_t playerAlertCenter = 0;   // Player::alertCenter
+   uint32_t alertCenterData = 0;     // AlertCenter::alertsData, std::array<AlertsData, alertTypeCount>
+   uint32_t alertCenterCustom = 0;   // AlertCenter::customAlerts, std::map<SurfaceIndex, vector<CustomAlert>>
+   uint32_t alertsDataSize = 0;      // sizeof(AlertCenter::AlertsData)
+   uint32_t alertsDataAlerts = 0;    // AlertsData::alerts, std::map<SurfaceIndex, std::vector<Alert>>
+   uint32_t alertsNodeKey = 0;       // that map's node: SurfaceIndex
+   uint32_t alertsNodeValue = 0;     // that map's node: std::vector<Alert>
+   uint32_t customAlertsNodeKey = 0; // customAlerts' node: SurfaceIndex
+   uint32_t customAlertsNodeValue = 0; // customAlerts' node: std::vector<CustomAlert>
+   uint32_t alertSize = 0;           // sizeof(Alert)
+   uint32_t alertTarget = 0;         // Alert::target, Targeter<Entity>: null for a destroyed entity's
+   uint32_t alertEntity = 0;         // Alert::entityID, ID<EntityPrototype>: what the target is or was
+   uint32_t alertPosition = 0;       // Alert::position, MapPosition
+   uint32_t customAlertSize = 0;     // sizeof(CustomAlert)
+   uint32_t customAlertBase = 0;     // CustomAlert's Alert
+   uint32_t customAlertOnMap = 0;    // CustomAlert::showOnMap, bool
+   uint32_t alertTypeCustom = 0;     // AlertType::CUSTOM, the custom alerts' type
+   // const char* AlertType::str() const: the type's name, as defines.alert_type and the game's locale
+   // (alerts-config-gui.name-<name>) name it.
+   uintptr_t alertTypeStr = 0;
    // The alerts configuration window (AlertsConfigGui, the side menu's Alerts button):
    // AlertsConfigGui::mainTable, an agui::TableWithSelection of 5 columns. Its header row is a
    // HorizontalFlow per column (a sort TextButton, then the column's Label: icon, name, muted,

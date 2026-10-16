@@ -31,6 +31,19 @@ local function entities_at(surface, position)
    return surface.find_entities_filtered({ position = position, radius = 1 / 512 })
 end
 
+-- The entity of prototype `name` standing at `position`, else the first one there.
+---@param surface LuaSurface
+---@param position MapPosition
+---@param name string
+---@return LuaEntity?
+local function entity_at(surface, position, name)
+   local candidates = entities_at(surface, position)
+   for _, candidate in ipairs(candidates) do
+      if candidate.name == name then return candidate end
+   end
+   return candidates[1]
+end
+
 ---@param pindex integer
 local function play_edge(pindex)
    game.get_player(pindex).play_sound({ path = "inventory-edge" })
@@ -86,15 +99,11 @@ local function announce(pindex, event, target)
    elseif entry.kind == "extra" then
       readout = Extras.readout(pindex, entry.generation, entry.extra)
       if not readout then return end
+   elseif entry.kind == "alert" then
+      local entity = entry.targeted and entity_at(player.surface, position, entry.prototype) or nil
+      readout = Readout.alert(player, entry.alert, entity, entry.prototype ~= "" and entry.prototype or nil, position)
    else
-      local candidates = entities_at(player.surface, position)
-      local entity = candidates[1]
-      for _, candidate in ipairs(candidates) do
-         if candidate.name == entry.prototype then
-            entity = candidate
-            break
-         end
-      end
+      local entity = entity_at(player.surface, position, entry.prototype)
       readout = entity and Readout.of(entity)
          or { words = Localising.get_localised_name_with_fallback(prototypes.entity[entry.prototype]) }
    end

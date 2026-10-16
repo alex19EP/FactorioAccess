@@ -92,6 +92,7 @@ Position tileCentre(int32_t x, int32_t y) { return {x * 256 + 128, y * 256 + 128
 // CATEGORIES, which name them in the mod's locale (fa.scanner-category-<key>).
 enum Cat : uint8_t {
    All,
+   Alerts,
    BuildSpots,
    Pins,
    Tags,
@@ -113,13 +114,10 @@ enum Cat : uint8_t {
    kCategoryCount,
 };
 constexpr std::array<std::string_view, kCategoryCount> kCategoryKeys{
-   "all",         "build_spots", "pins",
-   "tags",        "resources",   "enemies",
-   "remnants",    "production",  "logistics_and_power",
-   "containers",  "military",    "vehicles",
-   "spidertrons", "trains",      "ghosts",
-   "players",     "corpses",     "other",
-   "terrain",
+   "all",        "alerts",   "build_spots", "pins",        "tags",
+   "resources",  "enemies",  "remnants",    "production",  "logistics_and_power",
+   "containers", "military", "vehicles",    "spidertrons", "trains",
+   "ghosts",     "players",  "corpses",     "other",       "terrain",
 };
 static_assert(!kCategoryKeys.back().empty(), "a category has no key");
 
@@ -436,6 +434,62 @@ std::string_view prototypeName(const std::byte* prototype) {
 
 std::string_view prototypeType(const std::byte* prototype) {
    return virtualAt<const char* (*)(const void*)>(prototype, layout.prototypeGetType)(prototype);
+}
+
+// An alert type's name, as defines.alert_type and the game's locale name it.
+std::string_view alertTypeName(uint8_t type) {
+   return reinterpret_cast<const char* (*)(const uint8_t*)>(layout.alertTypeStr)(&type);
+}
+
+// The node of an MSVC std::map: left, parent, right, colour, end marker, then the value.
+struct TreeNode {
+   const TreeNode* left;
+   const TreeNode* parent;
+   const TreeNode* right;
+   char colour;
+   char isNil;
+};
+
+// The vector a std::map<SurfaceIndex, std::vector<T>> at `tree` holds for `surfaceIndex`, as its
+// first and last element, or empty.
+std::pair<const std::byte*, const std::byte*> alertsOn(const std::byte* tree, uint32_t surfaceIndex, uint32_t key,
+                                                       uint32_t value) {
+   const TreeNode* head = at<const TreeNode*>(tree, 0);
+   for (const TreeNode* node = head->parent; !node->isNil;) {
+      const uint32_t index = at<uint32_t>(node, key);
+      if (index == surfaceIndex) {
+         const auto alerts = at<MsvcVector<const std::byte>>(node, value);
+         return {alerts.first, alerts.last};
+      }
+      node = surfaceIndex < index ? node->left : node->right;
+   }
+   return {};
+}
+
+// Calls visit(type, alert) for every alert `player` has on the surface (the game's SurfaceIndex)
+// that the map draws (AlertCenter::getAllUniqueAlerts): each type's, then the custom ones shown on
+// the map.
+template <class Visit>
+void forEachAlert(const std::byte* player, uint32_t surfaceIndex, Visit visit) {
+   const std::byte* center = player + layout.playerAlertCenter;
+   const uint32_t types = (layout.alertCenterCustom - layout.alertCenterData) / layout.alertsDataSize;
+   for (uint32_t type = 0; type < types; ++type) {
+      const std::byte* data = center + layout.alertCenterData + type * layout.alertsDataSize;
+      const auto [first, last] =
+         alertsOn(data + layout.alertsDataAlerts, surfaceIndex, layout.alertsNodeKey, layout.alertsNodeValue);
+      for (const std::byte* alert = first; alert < last; alert += layout.alertSize)
+         visit(static_cast<uint8_t>(type), alert);
+   }
+   const auto [first, last] = alertsOn(center + layout.alertCenterCustom, surfaceIndex, layout.customAlertsNodeKey,
+                                       layout.customAlertsNodeValue);
+   for (const std::byte* custom = first; custom < last; custom += layout.customAlertSize)
+      if (at<bool>(custom, layout.customAlertOnMap))
+         visit(static_cast<uint8_t>(layout.alertTypeCustom), custom + layout.customAlertBase);
+}
+
+// The entity an alert is about, or null once it is gone (a destroyed entity's alert).
+std::byte* alertTarget(const std::byte* alert) {
+   return at<std::byte*>(alert, layout.alertTarget + layout.gameTargeterTarget);
 }
 
 // The game's TargeterBase: a weak reference to an entity, which the game nulls when the entity goes.
@@ -801,6 +855,7 @@ enum class Kind : uint8_t {
    Tiles,  // a body of water-like or ice tiles of one TileKind, by its tile nearest the origin
    Chunk,  // an asteroid chunk floating past a platform, linked as an entity is
    Extra,  // one the mod listed itself, by its place in Refresh::extras (Item::first)
+   Alert,  // one of the player's alerts on the map, its entity linked when it has one (count 1)
 };
 
 constexpr std::string_view kindName(Kind kind) {
@@ -811,6 +866,7 @@ constexpr std::string_view kindName(Kind kind) {
    case Kind::Tiles: return "tiles";
    case Kind::Chunk: return "chunk";
    case Kind::Extra: return "extra";
+   case Kind::Alert: return "alert";
    }
    return {};
 }
@@ -832,6 +888,7 @@ struct Item {
    uint32_t count = 0;  // links of an entity; trees of a forest, resources of a patch
    TileBox box;         // bodies, forests and patches
    prototypes::TileKind tiles = prototypes::TileKind::Land; // a body's
+   uint8_t alert = 0;                                       // an alert's AlertType
 };
 
 struct Subcategory {
@@ -1627,6 +1684,23 @@ bool validate(const World& world, uint32_t index) {
    case Kind::Extra:
       // Only the mod can tell whether its pin or tag is still there; it says so when it says it.
       return true;
+   case Kind::Alert: {
+      // Gone as the game drops it, as its icon leaves the map: it timed out, or its type was disabled.
+      const std::byte* target = nullptr;
+      if (item.count) {
+         target = g_list.links.entity(item.first);
+         if (!target) return false;
+         item.position = at<Position>(target, layout.entityPosition);
+      }
+      const std::byte* player = at<const std::byte*>(currentGame(), layout.gameLocalPlayer);
+      bool raised = false;
+      forEachAlert(player, at<uint32_t>(world.surface, layout.surfaceIndex), [&](uint8_t type, const std::byte* alert) {
+         if (type != item.alert || raised) return;
+         const std::byte* about = alertTarget(alert);
+         raised = target ? about == target : !about && at<Position>(alert, layout.alertPosition) == item.position;
+      });
+      return raised;
+   }
    }
    return false;
 }
@@ -1756,6 +1830,11 @@ void describe(const World& world, const Item& item, Entry& entry) {
    case Kind::Extra:
       entry.extra = item.first + 1;
       entry.generation = g_list.generation;
+      break;
+   case Kind::Alert:
+      if (item.prototype) entry.prototype = std::string(prototypeName(item.prototype));
+      entry.alert = std::string(alertTypeName(item.alert));
+      entry.targeted = item.count != 0;
       break;
    }
 }
@@ -2076,6 +2155,7 @@ struct Job {
    }
    std::vector<Item> extras;    // the mod's, where they are listed
    std::vector<Item> chunks;    // asteroid chunks, linked as the list starts
+   std::vector<Item> alerts;    // the player's alerts on the map, linked as the list starts
    std::vector<Position> order; // the chunks' positions, nearest first
    size_t next = 0;             // the first in `order` not walked
    std::deque<Walk> walks;
@@ -2135,6 +2215,32 @@ std::unique_ptr<Job> startJob(const Refresh& request, Position origin, std::opti
       Item item{Kind::Extra, *category, nullptr, position, extra.key};
       item.first = static_cast<uint32_t>(i);
       job->extras.push_back(std::move(item));
+   }
+
+   // The player's alerts, each type a subcategory, where the map draws them, which the world does not
+   // (ChartRenderer::drawAlerts). One about an entity is linked now and followed as it moves.
+   if (map) {
+      const auto& entityPrototypes = *reinterpret_cast<const MsvcVector<const std::byte*>*>(layout.entityPrototypes);
+      const size_t entityCount = static_cast<size_t>(entityPrototypes.last - entityPrototypes.first);
+      forEachAlert(localPlayer(game, request.playerIndex), place->surfaceIndex,
+                   [&](uint8_t type, const std::byte* alert) {
+                      std::byte* target = alertTarget(alert);
+                      const Position position = target ? at<Position>(target, layout.entityPosition)
+                                                       : at<Position>(alert, layout.alertPosition);
+                      if (!scan.wanted(position)) return;
+                      // What the entity is, or was for a destroyed one's
+                      const uint16_t id = at<uint16_t>(alert, layout.alertEntity);
+                      const std::byte* prototype = target ? at<const std::byte*>(target, layout.entityPrototypeOf)
+                                                   : id && id < entityCount ? entityPrototypes.first[id]
+                                                                            : nullptr;
+                      Item item{Kind::Alert, Alerts, prototype, position, std::format("alert/{}", alertTypeName(type))};
+                      item.alert = type;
+                      if (target) {
+                         item.first = job->links.add(target);
+                         item.count = 1;
+                      }
+                      job->alerts.push_back(std::move(item));
+                   });
    }
 
    // The asteroid chunks floating past a platform are resources, each kind a subcategory. The map
@@ -2222,6 +2328,7 @@ List assemble(Job& job) {
    }
    list.items.insert(list.items.end(), job.extras.begin(), job.extras.end());
    list.items.insert(list.items.end(), job.chunks.begin(), job.chunks.end());
+   list.items.insert(list.items.end(), job.alerts.begin(), job.alerts.end());
    group(list);
    list.tiles = std::move(job.tiles);
    return list;
@@ -2258,6 +2365,10 @@ bool same(const Item& a, const List& fresh, const Item& b) {
       return x >= b.box.left && x <= b.box.right && y >= b.box.top && y <= b.box.bottom;
    }
    case Kind::Extra: return a.key == b.key && a.position == b.position;
+   case Kind::Alert:
+      if (a.alert != b.alert || a.count != b.count) return false;
+      if (!a.count) return a.position == b.position;
+      return g_list.links.entity(a.first) && g_list.links.entity(a.first) == fresh.links.entity(b.first);
    }
    return false;
 }
