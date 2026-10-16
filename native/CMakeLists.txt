@@ -126,6 +126,7 @@ add_library(fa_native SHARED
   src/screens/BlueprintLists.cpp
   src/screens/AchievementCards.cpp
   src/screens/AchievementsScreen.cpp
+  src/screens/AlertsConfigScreen.cpp
   src/screens/TipsAndTricksScreen.cpp
   src/screens/TrackedAchievementsScreen.cpp
   src/screens/ModWindowsScreen.cpp

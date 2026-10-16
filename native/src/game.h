@@ -1565,6 +1565,13 @@ struct Layout {
    // AlertsOverview::pinButtonFlow, agui::VerticalFlow: beside each row of the list, its pin button
    // (an IconButton, InputAction PinAlertGroup), or for a surface's heading a blank TextButton.
    uint32_t alertsOverviewPins = 0;
+   // The alerts configuration window (AlertsConfigGui, the side menu's Alerts button):
+   // AlertsConfigGui::mainTable, an agui::TableWithSelection of 5 columns. Its header row is a
+   // HorizontalFlow per column (a sort TextButton, then the column's Label: icon, name, muted,
+   // disabled, latest); then each AlertRecord's own widgets, one row per alert type: iconLabel,
+   // nameLabel, mutedCheckbox, disabledCheckbox, latestTimeLabel. The checkboxes have no caption.
+   // The muted one is greyed out unless the type has a sound (entity destroyed, expansion base).
+   uint32_t alertsConfigTable = 0;
    // The map search's results in remote view (GameView::chartSearchResultGui, a Window at the right):
    // what the search box in remote view's title bar found, filled as the player types. Like the
    // alerts window, a ListBox of rows and a flow of their pin buttons.

@@ -1114,6 +1114,7 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.alertsOverviewCategory, "AlertsOverview", "category");
    offset(layout.alertsOverviewList, "AlertsOverview", "alertGroupsList");
    offset(layout.alertsOverviewPins, "AlertsOverview", "pinButtonFlow");
+   offset(layout.alertsConfigTable, "AlertsConfigGui", "mainTable");
    offset(layout.gameViewChartSearch, "GameView", "chartSearchResultGui");
    offset(layout.chartSearchList, "ChartSearchResultGui", "listbox");
    offset(layout.chartSearchPins, "ChartSearchResultGui", "pinButtonFlow");

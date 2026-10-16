@@ -54,6 +54,10 @@ Some controls take a value:
 - A slider in a list is adjusted after `enter`: the arrows then change its value, and `enter` or `escape` stops.
 - A control with a submenu opens it with `]` and closes it with `]` again.
 
+## Alerts configuration
+
+The side menu's Alerts button opens the game's alerts configuration: a line per kind of alert, its name and when it last happened, such as "Train out of fuel, 5 min ago" or "never". Right of the name are its Muted and Disabled checkboxes; `up` and `down` stay in a column and name each alert, and `enter` ticks one. Only the alerts that play a sound can be muted; the others' Muted checkbox says "no sound". `tab` reaches the sort buttons, which sort the list by a column and say its order.
+
 ## Pins
 
 The game's pins panel lists the places, buildings, resource patches, tags, players and alerts you pinned. Pin them with the pin button beside a map search result or a group in the alerts window. While you have a pin, `ctrl + tab` reaches the panel, a line per pin named as the game names it: its label, or else what it points at, such as "Iron ore 273k" or "{10, -5}" for a place.

@@ -83,6 +83,14 @@ inline constexpr Word kSortedAToZ{"fa.native-sorted-a-to-z"};
 inline constexpr Word kSortedZToA{"fa.native-sorted-z-to-a"};
 inline constexpr Word kEnabledFirst{"fa.native-enabled-first"};
 inline constexpr Word kDisabledFirst{"fa.native-disabled-first"};
+inline constexpr Word kMutedFirst{"fa.native-muted-first"};
+inline constexpr Word kUnmutedFirst{"fa.native-unmuted-first"};
+inline constexpr Word kNewestFirst{"fa.native-newest-first"};
+inline constexpr Word kOldestFirst{"fa.native-oldest-first"};
+inline constexpr Word kGameOrder{"fa.native-game-order"};
+inline constexpr Word kReverseOrder{"fa.native-reverse-order"};
+// Why the alerts configuration greys out an alert's mute checkbox: the alert plays no sound.
+inline constexpr Word kNoSound{"fa.native-no-sound"};
 inline constexpr Word kContinue{"fa.native-continue"};
 inline constexpr Word kClose{"fa.native-close"};
 inline constexpr Word kConfirm{"fa.native-confirm"};
