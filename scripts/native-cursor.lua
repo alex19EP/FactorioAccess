@@ -48,6 +48,10 @@ local mod = {}
 ---@field mirrored boolean An entity that flips by mirroring: whether it is mirrored
 ---@field flip_horizontal boolean A blueprint: flipped east to west on the map
 ---@field flip_vertical boolean A blueprint: flipped north to south on the map
+---@field output_x number? A drill that drops items: where, in tiles east of the centre, as built
+---@field output_y number? And in tiles south of the centre
+---@field output_into string? What takes the items where the hand is drawn, by name; nil for the ground
+---@field output_lane defines.direction? On a belt, the compass side of the lane the items go on
 
 ---@class fa.NativeDragBuild
 ---@field turn_pending boolean A belt drag turns at the cursor's next step off its line

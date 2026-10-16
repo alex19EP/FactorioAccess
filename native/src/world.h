@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <optional>
+#include <string>
 
 // The game world under the FA cursor. The mod reports where its cursor is, and the game's own
 // cursor position follows it: hover selection, building, mining, opening entities and every
@@ -54,6 +55,15 @@ struct HeldBuild {
    bool mirrored = false;      // an entity that flips by mirroring: whether it is mirrored
    bool flipHorizontal = false; // a blueprint: flipped east to west, as it lies on the map
    bool flipVertical = false;   // a blueprint: flipped north to south, as it lies on the map
+   // A mining drill facing a cardinal direction: where it drops what it mines, in tiles from the
+   // centre of its footprint, mirrored and turned as built; and, where it would be built now, what
+   // takes the items (outputInto, empty for the ground) and on a belt the compass side of the lane,
+   // a 16-way direction, or -1.
+   bool output = false;
+   double outputX = 0;
+   double outputY = 0;
+   std::string outputInto;
+   int outputLane = -1;
 };
 // Nothing when `playerIndex` is not this client's player or the hand holds no entity on the grid
 // or blueprint: tiles, the rail planner and anything else.

@@ -322,12 +322,14 @@ int buildDirection(lua_State* L) {
 }
 
 // The entity or blueprint in hand as this client builds it (see world::HeldBuild), as a table
-// {blueprint, direction, width, height, flippable, mirrored, flip_horizontal, flip_vertical}, or
-// nil. Only this client knows it, so the mod may speak it but must not change the game by it.
+// {blueprint, direction, width, height, flippable, mirrored, flip_horizontal, flip_vertical}, with
+// for a drill that drops items {output_x, output_y} and, when something takes them,
+// {output_into, output_lane}; or nil. Only this client knows it, so the mod may speak it but must
+// not change the game by it.
 int heldBuild(lua_State* L) {
    const auto held = world::heldBuild(static_cast<int>(checkInteger(L, 1)));
    if (!held) return 0;
-   createTable(L, 0, 8);
+   createTable(L, 0, 12);
    const auto field = [&](const char* name, auto value) {
       if constexpr (std::is_same_v<decltype(value), bool>)
          pushBoolean(L, value);
@@ -343,6 +345,17 @@ int heldBuild(lua_State* L) {
    field("mirrored", held->mirrored);
    field("flip_horizontal", held->flipHorizontal);
    field("flip_vertical", held->flipVertical);
+   if (held->output) {
+      pushNumber(L, held->outputX);
+      setField(L, -2, "output_x");
+      pushNumber(L, held->outputY);
+      setField(L, -2, "output_y");
+   }
+   if (!held->outputInto.empty()) {
+      pushString(L, held->outputInto);
+      setField(L, -2, "output_into");
+   }
+   if (held->outputLane >= 0) field("output_lane", held->outputLane);
    return 1;
 }
 

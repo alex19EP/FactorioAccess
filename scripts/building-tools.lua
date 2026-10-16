@@ -32,6 +32,7 @@ end
 ---@field kind "pipe"|"underground"|"heat"
 ---@field side defines.direction The side of the footprint it leaves from
 ---@field tile integer Counted from the west along north and south sides, from the north along east and west
+---@field flow FluidFlowDirection? A pipe's: which way fluid may pass; nil for heat
 
 ---Turns an offset from the centre and a direction a quarter clockwise `turns` times.
 ---@return number, number, defines.direction
@@ -56,13 +57,63 @@ end
 ---@param x number Offset of the connecting tile from the centre, as held but before mirroring
 ---@param y number
 ---@param direction defines.direction
-local function add_connection(connections, held, kind, x, y, direction)
+---@param flow FluidFlowDirection?
+local function add_connection(connections, held, kind, x, y, direction, flow)
    if held.mirrored then
       x, y, direction = mirror(x, y, direction, held.direction)
    end
    local along = (direction == dirs.north or direction == dirs.south) and x + held.width / 2 or y + held.height / 2
-   table.insert(connections, { kind = kind, side = direction, tile = math.floor(along) + 1 })
+   table.insert(connections, { kind = kind, side = direction, tile = math.floor(along) + 1, flow = flow })
 end
+
+---The side of the footprint a point outside it lies beyond, and the tile along that side it faces,
+---as a connection's: counted from the west along north and south sides, from the north along east
+---and west.
+---@param held fa.NativeHeldBuild
+---@param x number Tiles east of the centre
+---@param y number Tiles south of the centre
+---@return defines.direction, integer
+local function side_of(held, x, y)
+   if math.abs(y) > held.height / 2 then
+      return y < 0 and dirs.north or dirs.south, math.floor(x + held.width / 2) + 1
+   end
+   return x < 0 and dirs.west or dirs.east, math.floor(y + held.height / 2) + 1
+end
+
+---A side of the footprint, with the tile along it where the side is longer than one.
+---@param held fa.NativeHeldBuild
+---@param side defines.direction
+---@param tile integer
+---@return LocalisedString
+local function side_words(held, side, tile)
+   local side_length = (side == dirs.north or side == dirs.south) and held.width or held.height
+   if side_length > 1 then return { "fa.held-build-connection", FaUtils.direction_lookup(side), tile } end
+   return FaUtils.direction_lookup(side)
+end
+
+---Where the drill in hand drops what it mines, as the game's arrow shows it on the preview, and
+---what takes the items there: on a belt, the lane they go on.
+---@param message fa.MessageBuilder
+---@param held fa.NativeHeldBuild
+local function add_output(message, held)
+   if not held.output_x then return end
+   local side, tile = side_of(held, held.output_x, assert(held.output_y))
+   message:list_item({ "fa.held-build-output", side_words(held, side, tile) })
+   if held.output_lane then
+      message:fragment({
+         "fa.held-build-output-into-lane",
+         assert(held.output_into),
+         FaUtils.direction_lookup(held.output_lane),
+      })
+   elseif held.output_into then
+      message:fragment({ "fa.held-build-output-into", held.output_into })
+   end
+end
+
+local FLOW_WORDS = {
+   input = { "fa.held-build-connection-in" },
+   output = { "fa.held-build-connection-out" },
+}
 
 ---Where the pipe and heat connections of the entity in hand leave its footprint, built as held.
 ---@param prototype LuaEntityPrototype
@@ -80,7 +131,7 @@ local function held_connections(prototype, held)
             -- positions holds the connecting tile for each of the four directions the entity faces
             local position = connection.positions[turns + 1] --[[@as MapPosition.struct]]
             local _, _, direction = turn_clockwise(0, 0, connection.direction, turns)
-            add_connection(connections, held, kind, position.x, position.y, direction)
+            add_connection(connections, held, kind, position.x, position.y, direction, connection.flow_direction)
          end
       end
    end
@@ -103,7 +154,8 @@ local CONNECTION_KINDS = {
 }
 
 ---Reads the entity or blueprint in hand as the game builds it: direction, size, mirroring or flips,
----and for an entity where its pipe and heat connections leave the footprint.
+---and for an entity where a drill drops its output and where its pipe and heat connections leave
+---the footprint, with which way a one-way pipe connection lets fluid pass.
 ---@param pindex integer
 ---@param item LuaItemPrototype? The item in hand or its ghost; nil for a blueprint from the library
 function mod.read_held_build(pindex, item)
@@ -117,6 +169,7 @@ function mod.read_held_build(pindex, item)
       if held.flip_vertical then message:list_item({ "fa.held-build-flipped-vertical" }) end
    else
       if held.mirrored then message:list_item({ "fa.held-build-mirrored" }) end
+      add_output(message, held)
       local connections = held_connections(assert(assert(item).place_result), held)
       for _, kind in ipairs(CONNECTION_KINDS) do
          local first = true
@@ -125,17 +178,9 @@ function mod.read_held_build(pindex, item)
                message:list_item()
                if first then message:fragment(kind.label) end
                first = false
-               local side_length = (connection.side == dirs.north or connection.side == dirs.south) and held.width
-                  or held.height
-               if side_length > 1 then
-                  message:fragment({
-                     "fa.held-build-connection",
-                     FaUtils.direction_lookup(connection.side),
-                     connection.tile,
-                  })
-               else
-                  message:fragment(FaUtils.direction_lookup(connection.side))
-               end
+               local flow = connection.flow and FLOW_WORDS[connection.flow]
+               if flow then message:fragment(flow) end
+               message:fragment(side_words(held, connection.side, connection.tile))
             end
          end
       end

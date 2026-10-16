@@ -1614,6 +1614,7 @@ bool resolve(pdb::SymbolTable& symbols) {
       offset(layout.loaderFilterCount, "LoaderPrototype", "itemFilterCount");
       offset(layout.drillFilters, "MiningDrill", "filter.filters");
       offset(layout.drillFilterCount, "MiningDrillPrototype", "filterCount");
+      offset(layout.drillDropVector, "MiningDrillPrototype", "vectorToPlaceResult");
       offset(layout.containerLogisticPoint, "LogisticContainer", "logisticPoint");
       offset(layout.containerMode, "LogisticContainerPrototype", "logisticMode.value");
       enumerator(layout.containerModeStorage, "LogisticMode::Enum", "Storage");

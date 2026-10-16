@@ -2293,6 +2293,9 @@ struct Layout {
    uint32_t loaderFilterCount = 0;         // LoaderPrototype::itemFilterCount, uint8
    uint32_t drillFilters = 0;
    uint32_t drillFilterCount = 0;          // MiningDrillPrototype::filterCount, uint8
+   // MiningDrillPrototype::vectorToPlaceResult, a Vector of two doubles in tiles: where the drill
+   // drops what it mines, facing north and unmirrored; {0, 0} for none (a pumpjack).
+   uint32_t drillDropVector = 0;
    uint32_t containerLogisticPoint = 0;
    uint32_t containerMode = 0;             // LogisticContainerPrototype::logisticMode.value, uint8
    uint32_t containerModeStorage = 0;      // LogisticMode::Enum::Storage

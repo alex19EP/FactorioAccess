@@ -401,6 +401,8 @@ inline constexpr Word kOreLook[8] = {{"fa.native-ore-look-1"}, {"fa.native-ore-l
 // What a drill mines ("mining Iron ore, Coal") and puts its output into.
 inline constexpr Word kDrillMining{"fa.ent-info-mining-drill-mining"};
 inline constexpr Word kDrillOutputsTo{"fa.ent-info-mining-drill-outputs-to"};
+// On a belt, with the compass side of the lane ("outputs to Transport belt on North lane").
+inline constexpr Word kDrillOutputsToLane{"fa.ent-info-mining-drill-outputs-to-lane"};
 inline constexpr Word kMarkedForUpgrade{"fa.ent-info-marked-for-upgrading"};
 // A wall a gate can be controlled through.
 inline constexpr Word kGateCircuit{"fa.ent-info-gate-circuit-network-connection"};

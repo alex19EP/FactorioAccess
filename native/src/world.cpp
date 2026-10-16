@@ -1,5 +1,6 @@
 #include "world.h"
 
+#include "agui.h"
 #include "cursor.h"
 #include "facts.h"
 #include "footprint.h"
@@ -905,6 +906,37 @@ bool detourBuildFromCursor(void* player, const void* position, uint8_t ghostMode
    return g_buildFromCursorOriginal(player, position, ghostMode, drag);
 }
 
+// The drill in hand's output (HeldBuild::output): its prototype's drop vector, mirrored and turned
+// as MiningDrill::getDropTargetPosition does, and what takes the items where the hand is drawn.
+void addDrillOutput(HeldBuild& held, const std::byte* prototype, const std::byte* player, const std::byte* view) {
+   double x = at<double>(prototype, layout.drillDropVector);
+   double y = at<double>(prototype, layout.drillDropVector + uint32_t{sizeof(double)});
+   if (x == 0 && y == 0) return;
+   if (held.mirrored) x = -x;
+   for (int turn = 0; turn < held.direction / 4; ++turn) {
+      const double turned = -y;
+      y = x;
+      x = turned;
+   }
+   held.output = true;
+   held.outputX = x;
+   held.outputY = y;
+
+   // Where BuildingRenderer::prepareBuildingInGame draws the hand (detourPrepareBuilding).
+   alignas(8) std::byte input[game::kSimpleBuildInputCapacity];
+   buildInputAt(player, input, nullptr, pinned(currentGame()));
+   Position centre;
+   if (!anchoredPosition(player, input, centre)) return;
+   const void* surface = reinterpret_cast<const void* (*)(const void*)>(layout.gameViewSurface)(view);
+   // The drop point as the game computes it: the vector in fixed point, truncated.
+   const std::optional<facts::DropInto> into =
+      facts::dropInto(surface, centre.x + static_cast<int32_t>(x * game::kMapPositionScale),
+                      centre.y + static_cast<int32_t>(y * game::kMapPositionScale), held.mirrored);
+   if (!into) return;
+   held.outputInto = into->name;
+   if (into->lane) held.outputLane = *into->lane;
+}
+
 } // namespace
 
 void setCursor(int playerIndex, double x, double y) {
@@ -1010,6 +1042,8 @@ std::optional<HeldBuild> heldBuild(int playerIndex) {
       const auto flipping = at<uint8_t>(prototype, layout.entityFlipping);
       held.flippable = flipping != game::kEntityFlippingNotAvailable;
       held.mirrored = flipping == game::kEntityFlippingMirroring && at<bool>(view, layout.gameViewEntityMirrored);
+      if (held.direction % 4 == 0 && agui::objectAsBase(prototype, ".?AVMiningDrillPrototype@@"))
+         addDrillOutput(held, prototype, player, view);
       return held;
    }
 

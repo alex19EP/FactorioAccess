@@ -101,6 +101,17 @@ struct UndergroundEnd {
 };
 std::optional<UndergroundEnd> undergroundEnd(const void* entity, uint8_t direction, const Design* design = nullptr);
 
+// What a building dropping items at `x`, `y` (a map position in fixed point) on `surface` drops
+// into, as the hover of an inserter or a drill finds it: the first entity on that tile the game
+// takes for a drop target, by name, and on anything with belt lanes the compass side (a 16-way
+// direction) of the lane the items go on, which the dropper's mirroring `mirrored` picks when the
+// point is on the belt's centre line. Nothing for the ground. Where the game translates.
+struct DropInto {
+   std::string name;
+   std::optional<uint8_t> lane;
+};
+std::optional<DropInto> dropInto(const void* surface, int32_t x, int32_t y, bool mirrored);
+
 // What a mining drill mines from: the prototypes of the resources in its mining area
 // (MiningDrill::resourcesToMine), each once, by internal name. The tile reader says them, and the
 // scanner groups drills by them.

@@ -47,6 +47,8 @@ With something buildable in hand, `[` places it. You hold a building by its nort
 
 `r` and `shift + r` rotate the building in hand, and `h` and `v` flip it; the mod says the new direction. On a placed building they rotate or flip it.
 
+With a building in hand, the mod then says how it would be built: its size, whether it is flipped, and where its pipe and heat connections leave it, such as "pipes South 2", the middle tile of the south side. A pipe connection that lets fluid only one way says so: "pipes out North". A mining drill says where its output comes out and what takes it there, such as "output West 2 to Transport belt on North lane". When a drill drops onto a belt running straight away from it or toward it, flipping the drill moves its output to the other lane.
+
 With a building or blueprint in hand, `i` detaches the cursor: the build stays where it is while you move the cursor to look around it. `ctrl` with `w`, `a`, `s` or `d` then moves the build one tile, and `[` builds it where it is. `i` again brings the cursor back to it.
 
 See [blueprints and planners](blueprints-and-planners.md) for blueprints.

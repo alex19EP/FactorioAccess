@@ -1059,12 +1059,19 @@ Box selectionBoxOf(const std::byte* entity) {
    return at<Box>(out, 0);
 }
 
-// Whether the tile is the drill's own tile its output comes out of, the one nearest where it drops
-// (ResourceMining.get_solid_output_coords). A pumpjack drops at its own position: it has none.
-bool isDrillOutput(const std::byte* drill, Position tile) {
+// Where a drill drops what it mines (Entity::getDropTargetPosition): its prototype's drop vector,
+// mirrored and turned as the drill is built.
+Position drillDropPosition(const std::byte* drill) {
    using DropPosition = const Position* (*)(const void* entity, Position* out);
    Position drop{};
    virtualAt<DropPosition>(drill, layout.entityDropPosition)(drill, &drop);
+   return drop;
+}
+
+// Whether the tile is the drill's own tile its output comes out of, the one nearest where it drops
+// (ResourceMining.get_solid_output_coords). A pumpjack drops at its own position: it has none.
+bool isDrillOutput(const std::byte* drill, Position tile) {
+   const Position drop = drillDropPosition(drill);
    const Position position = at<Position>(drill, layout.entityPosition);
    if (drop.x == position.x && drop.y == position.y) return false;
    const Box box = selectionBoxOf(drill);
@@ -1232,11 +1239,12 @@ const std::byte* reachedAt(const std::byte* entity, double dx, double dy, const 
 
 const std::byte* unlinkedReach(const std::byte* inserter, double dx, double dy, bool pickup);
 
-// The compass side of the lane an inserter reaching `dx`, `dy` tiles drops onto, when it drops
-// onto anything with belt lanes (a belt, an underground belt, a splitter, a loader): the lane the
-// game's hover marks, picked by the game as Inserter::dropHeldItem picks it. On a splitter it is a
-// lane of the half the inserter reaches.
-std::optional<uint8_t> dropLane(const std::byte* inserter, const std::byte* target, double dx, double dy) {
+// The compass side of the lane what drops items at `drop` onto `target` puts them on, when the
+// target has belt lanes (a belt, an underground belt, a splitter, a loader): picked by the game as
+// Inserter::dropHeldItem and MiningDrill::clearStorageBuffer pick it, from the drop point and the
+// dropper's mirroring, which breaks the tie of a drop point on the belt's centre line. On a
+// splitter it is a lane of the half the drop point is on.
+std::optional<uint8_t> laneAt(const std::byte* target, Position drop, bool mirrored) {
    if (!agui::objectAsBase(target, ".?AVTransportBeltConnectable@@")) return std::nullopt;
    const Belt belt{target};
    // ItemInsertionSpecification: the line chosen, then where on it.
@@ -1244,19 +1252,29 @@ std::optional<uint8_t> dropLane(const std::byte* inserter, const std::byte* targ
       const std::byte* line;
       int32_t position;
    };
-   uint8_t mirrored = 0;
-   virtualAt<void* (*)(const void*, uint8_t*)>(inserter, layout.entityIsMirrored)(inserter, &mirrored);
-   // dropHeldItem's drop point: the vector in fixed point, truncated.
-   const Position position = at<Position>(inserter, layout.entityPosition);
-   const Position drop{position.x + static_cast<int32_t>(dx * kScale), position.y + static_cast<int32_t>(dy * kScale)};
    Insertion insertion{};
    virtualAt<Insertion* (*)(const void*, Insertion*, const Position*, uint8_t)>(
-      target, layout.beltInsertionSpecification)(target, &insertion, &drop, mirrored);
+      target, layout.beltInsertionSpecification)(target, &insertion, &drop, mirrored ? 1 : 0);
    const bool splitter = belt.type() == "splitter";
    const auto chose = [&](uint32_t line) { return insertion.line == target + line; };
    if (chose(layout.beltLeftLine) || (splitter && chose(layout.splitterSecondaryLeftLine))) return laneSide(belt, 1);
    if (chose(layout.beltRightLine) || (splitter && chose(layout.splitterSecondaryRightLine))) return laneSide(belt, 2);
    return std::nullopt;
+}
+
+bool isMirrored(const std::byte* entity) {
+   uint8_t mirrored = 0;
+   virtualAt<void* (*)(const void*, uint8_t*)>(entity, layout.entityIsMirrored)(entity, &mirrored);
+   return mirrored != 0;
+}
+
+// The lane an inserter reaching `dx`, `dy` tiles drops onto (laneAt): the lane the game's hover
+// marks.
+std::optional<uint8_t> dropLane(const std::byte* inserter, const std::byte* target, double dx, double dy) {
+   // dropHeldItem's drop point: the vector in fixed point, truncated.
+   const Position position = at<Position>(inserter, layout.entityPosition);
+   const Position drop{position.x + static_cast<int32_t>(dx * kScale), position.y + static_cast<int32_t>(dy * kScale)};
+   return laneAt(target, drop, isMirrored(inserter));
 }
 
 // What an inserter holds, and where it picks up and drops: the entity there or the ground, how
@@ -1818,21 +1836,26 @@ void eachEntityIn(const std::byte* surface, Position leftTop, Position rightBott
 // as the game's hover highlights it, the first entity on that tile which the game takes for a pickup
 // (or drop) target. The hover also leaves out enemies' entities and moving trains, which an inserter
 // that never ran has no part in.
-const std::byte* unlinkedReach(const std::byte* inserter, double dx, double dy, bool pickup) {
-   const Position position = at<Position>(inserter, layout.entityPosition);
-   const int32_t x = tileOf(position.x + static_cast<int32_t>(std::lround(dx * kScale)));
-   const int32_t y = tileOf(position.y + static_cast<int32_t>(std::lround(dy * kScale)));
+const std::byte* reachOnTile(const std::byte* surface, const std::byte* self, Position point, bool pickup) {
+   const int32_t x = tileOf(point.x);
+   const int32_t y = tileOf(point.y);
    // The game shrinks the tile's box a little, so that what only touches its edges stays out.
    constexpr int32_t kInset = kScale / 10;
    const uint32_t slot = pickup ? layout.entityValidPickupTarget : layout.entityValidDropTarget;
    const std::byte* found = nullptr;
-   eachEntityIn(at<const std::byte*>(inserter, layout.entitySurface),
-                Position{x * kScale + kInset, y * kScale + kInset},
+   eachEntityIn(surface, Position{x * kScale + kInset, y * kScale + kInset},
                 Position{(x + 1) * kScale - kInset, (y + 1) * kScale - kInset}, [&](const std::byte* candidate) {
-                   if (found || candidate == inserter || agui::objectAsBase(candidate, ".?AVEntityGhost@@")) return;
+                   if (found || candidate == self || agui::objectAsBase(candidate, ".?AVEntityGhost@@")) return;
                    if (virtualAt<bool (*)(const void*)>(candidate, slot)(candidate)) found = candidate;
                 });
    return found;
+}
+
+const std::byte* unlinkedReach(const std::byte* inserter, double dx, double dy, bool pickup) {
+   const Position position = at<Position>(inserter, layout.entityPosition);
+   const Position point{position.x + static_cast<int32_t>(std::lround(dx * kScale)),
+                        position.y + static_cast<int32_t>(std::lround(dy * kScale))};
+   return reachOnTile(at<const std::byte*>(inserter, layout.entitySurface), inserter, point, pickup);
 }
 
 // Whether an entity of the type stands at the position, as LuaSurface::find_entity looks.
@@ -2302,14 +2325,19 @@ std::vector<std::string> factsOf(const std::byte* entity, Position tile, const D
          for (const void* resource : drillResources(entity))
             resources.push_back(localisedName(static_cast<const std::byte*>(resource)));
       if (!resources.empty()) parts.push_back(vocab::kDrillMining(joined(resources, ", ")));
+      const Position drop = drillDropPosition(entity);
       const std::byte* target = live ? dropTargetOf(entity) : nullptr;
-      if (design) {
-         using DropPosition = const Position* (*)(const void* entity, Position* out);
-         Position drop{};
-         virtualAt<DropPosition>(entity, layout.entityDropPosition)(entity, &drop);
-         target = static_cast<const std::byte*>(design->entityAt(drop.x, drop.y));
+      // A drill finds what it drops into when it next has something to drop: till then, what its
+      // arrow points at.
+      if (live && !target)
+         target = reachOnTile(at<const std::byte*>(entity, layout.entitySurface), entity, drop, false);
+      if (design) target = static_cast<const std::byte*>(design->entityAt(drop.x, drop.y));
+      if (target) {
+         if (const std::optional<uint8_t> lane = laneAt(target, drop, isMirrored(entity)))
+            parts.push_back(vocab::kDrillOutputsToLane(targetName(target), directionName(*lane)));
+         else
+            parts.push_back(vocab::kDrillOutputsTo(targetName(target)));
       }
-      if (target) parts.push_back(vocab::kDrillOutputsTo(targetName(target)));
    }
    if (live)
       for (std::string& item : reactorState(entity)) parts.push_back(std::move(item));
@@ -2325,6 +2353,13 @@ std::vector<std::string> factsOf(const std::byte* entity, Position tile, const D
 
 std::vector<std::string> describe(const void* entity, int32_t tileX, int32_t tileY) {
    return factsOf(static_cast<const std::byte*>(entity), Position{tileX, tileY}, nullptr, true);
+}
+
+std::optional<DropInto> dropInto(const void* surface, int32_t x, int32_t y, bool mirrored) {
+   const Position drop{x, y};
+   const std::byte* target = reachOnTile(static_cast<const std::byte*>(surface), nullptr, drop, false);
+   if (!target) return std::nullopt;
+   return DropInto{targetName(target), laneAt(target, drop, mirrored)};
 }
 
 std::vector<std::string> describeDesign(const void* entity, int32_t tileX, int32_t tileY, const Design& design,
