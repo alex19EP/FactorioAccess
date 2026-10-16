@@ -272,3 +272,5 @@ exit $Result
 }
 Write-Host "$($cases - $failures)/$cases updater tests passed."
 if ($failures) { exit 1 }
+# Explicitly, or the exit code a test left in $LASTEXITCODE (the wrapper's 7) fails a CI step
+exit 0
