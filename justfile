@@ -147,10 +147,12 @@ undeploy: _require-steam _require-not-running
 # can be replaced while the game runs.  winmm.dll itself only loads at a start.
 # /fareload (scripts/fa-commands.lua) then runs game.reload_mods: every mod's
 # control stage again, from the mods folder (the main checkout's junction).
-# Locale and data stage changes still need a restart.
+# Locale and data stage changes still need a restart.  The command is typed into
+# the console, which an open menu or window keeps the keys from, so the recipe
+# waits for the game log's new checksum of the mod's control.lua.
 
 # Build, then load the new fa_native.dll and the mod's Lua into the running game
-reload: build _require-steam
+reload: build _require-steam _require-user-dir
     @$ErrorActionPreference = 'Stop'; \
      $bin = '{{STEAM_DIR}}\bin\x64'; \
      if (-not (Get-Process factorio -ErrorAction SilentlyContinue)) { Write-Error '[just] Factorio is not running; `just run` starts it'; exit 1 }; \
@@ -169,9 +171,17 @@ reload: build _require-steam
          }; \
          Write-Host '[just] fa_native.dll reloaded' \
      }; \
+     $gameLog = '{{USER_DIR}}\factorio-current.log'; \
+     $loads = { @(Select-String -Path $gameLog -SimpleMatch 'Checksum for script __FactorioAccess__/control.lua').Count }; \
+     $before = & $loads; \
      $port = if ($env:FA_DEV_PORT) { $env:FA_DEV_PORT } else { '8773' }; \
      curl.exe -s --data 'grave text=/fareload enter' "http://localhost:$port/key" | Out-Null; \
-     Write-Host '[just] /fareload sent: the mods reload their Lua'
+     $deadline = (Get-Date).AddSeconds(15); \
+     while ((& $loads) -eq $before) { \
+         if ((Get-Date) -gt $deadline) { Write-Error '[just] /fareload did not reload the mods: close any menu or window and run it again, or type /fareload in the console (single player only)'; exit 1 }; \
+         Start-Sleep -Milliseconds 250 \
+     }; \
+     Write-Host '[just] the mods reloaded their Lua'
 
 # A junction rather than a copy, so edits in this repo go live on the next game
 # start without recopying anything.  Needs no elevation.
