@@ -9,14 +9,23 @@ local MessageBuilder = Speech.MessageBuilder
 
 local mod = {}
 
----Check if the item in cursor can be rotated (has rotation support)
----@param stack LuaItemStack?
----@return boolean can_rotate True if the stack can be rotated
-function mod.can_rotate_item(stack)
-   if not stack or not stack.valid_for_read or not stack.valid then return false end
+---The item in hand, or the item whose ghost remote view puts in hand instead. Nil for an empty hand
+---and for a blueprint or book from the library.
+---@param player LuaPlayer
+---@return LuaItemPrototype?
+local function held_item(player)
+   local stack = player.cursor_stack
+   if stack and stack.valid_for_read then return stack.prototype end
+   local ghost = player.cursor_ghost
+   return ghost and ghost.name --[[@as LuaItemPrototype]]
+end
 
-   local rotation_count = BuildDimensions.get_rotation_count(stack)
-   return rotation_count ~= nil
+---Whether the player holds a blueprint or book from the library.
+---@param player LuaPlayer
+---@return boolean
+local function holds_library_blueprint(player)
+   local record = player.cursor_record
+   return record ~= nil and (record.type == "blueprint" or record.type == "blueprint-book")
 end
 
 ---@class fa.BuildingTools.HeldConnection
@@ -96,8 +105,8 @@ local CONNECTION_KINDS = {
 ---Reads the entity or blueprint in hand as the game builds it: direction, size, mirroring or flips,
 ---and for an entity where its pipe and heat connections leave the footprint.
 ---@param pindex integer
----@param stack LuaItemStack
-function mod.read_held_build(pindex, stack)
+---@param item LuaItemPrototype? The item in hand or its ghost; nil for a blueprint from the library
+function mod.read_held_build(pindex, item)
    local held = NativeCursor.held_build(pindex)
    if not held then return end
    local message = MessageBuilder.new()
@@ -108,7 +117,7 @@ function mod.read_held_build(pindex, stack)
       if held.flip_vertical then message:list_item({ "fa.held-build-flipped-vertical" }) end
    else
       if held.mirrored then message:list_item({ "fa.held-build-mirrored" }) end
-      local connections = held_connections(assert(stack.prototype.place_result), held)
+      local connections = held_connections(assert(assert(item).place_result), held)
       for _, kind in ipairs(CONNECTION_KINDS) do
          local first = true
          for _, connection in ipairs(connections) do
@@ -138,10 +147,8 @@ end
 ---@param player LuaPlayer
 ---@return boolean
 local function holds_rail_planner(player)
-   local stack = player.cursor_stack
-   if stack and stack.valid_for_read then return stack.type == "rail-planner" end
-   local ghost = player.cursor_ghost
-   return ghost ~= nil and (ghost.name --[[@as LuaItemPrototype]]).type == "rail-planner"
+   local item = held_item(player)
+   return item ~= nil and item.type == "rail-planner"
 end
 
 ---Reads what rotate did to the rail planner. Not planning, it turns the straight rail a click
@@ -164,32 +171,24 @@ end
 --Reads the item in hand as the game turned it
 function mod.rotate_item_in_hand(event)
    local pindex = event.player_index
-   local p = game.get_player(pindex)
+   local p = assert(game.get_player(pindex))
    if not check_for_player(pindex) then return end
 
-   if holds_rail_planner(assert(p)) then
+   if holds_rail_planner(p) then
       read_rail_turn(pindex)
       return
    end
 
-   -- Rotating the hand needs a hand
-   local stack = assert(p.cursor_stack)
-
-   -- Check if item in hand can rotate
-   if mod.can_rotate_item(stack) then
+   local item = held_item(p)
+   if (item and BuildDimensions.get_rotation_count(item)) or holds_library_blueprint(p) then
       local drag = NativeCursor.drag_build(pindex)
       if drag and drag.turn_pending then
          Speech.speak(pindex, { "fa.drag-turn-pending" })
       else
-         mod.read_held_build(pindex, stack)
+         mod.read_held_build(pindex, item)
       end
-      return
-   elseif stack and stack.valid_for_read and stack.valid and stack.prototype.place_result then
-      Speech.speak(
-         pindex,
-         { "fa.building-no-rotate-support", Localising.get_localised_name_with_fallback(stack.prototype) }
-      )
-      return
+   elseif item and item.place_result then
+      Speech.speak(pindex, { "fa.building-no-rotate-support", Localising.get_localised_name_with_fallback(item) })
    end
 
    -- Nothing in hand - entity rotation will be handled by on_player_rotated_entity event
@@ -218,13 +217,13 @@ end
 --on_player_flipped_entity event reads the entity flipped on the map.
 function mod.flip_item_in_hand(event)
    local pindex = event.player_index
-   local p = game.get_player(pindex)
+   local p = assert(game.get_player(pindex))
    if not check_for_player(pindex) then return end
 
-   local stack = p.cursor_stack
-   if not (stack and stack.valid_for_read) then return end
+   local item = held_item(p)
+   if not (item or holds_library_blueprint(p)) then return end
    local held = NativeCursor.held_build(pindex)
-   if held and (held.blueprint or held.flippable) then mod.read_held_build(pindex, stack) end
+   if held and (held.blueprint or held.flippable) then mod.read_held_build(pindex, item) end
 end
 
 --Reads the result of flipping an entity on the map (called from on_player_flipped_entity event)

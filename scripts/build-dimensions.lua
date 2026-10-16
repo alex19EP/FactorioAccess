@@ -132,21 +132,16 @@ function mod.get_stack_build_dimensions(stack, direction)
    return width, height
 end
 
----Get the rotation count for a stack
----@param stack LuaItemStack The item stack to check
+---Get the rotation count for an item in hand
+---@param item LuaItemPrototype The item to check
 ---@return integer|nil rotation_count nil (no rotation), 2 (180° only), 4 (cardinal), or 8 (all 8 directions)
-function mod.get_rotation_count(stack)
-   if not stack or not stack.valid_for_read then return nil end
-
-   -- Blueprint books always support 4-way rotation
-   if stack.is_blueprint_book then return 4 end
-
-   -- Blueprints always support 4-way rotation
-   if stack.is_blueprint then return 4 end
+function mod.get_rotation_count(item)
+   -- Blueprints and books always support 4-way rotation
+   if item.type == "blueprint" or item.type == "blueprint-book" then return 4 end
 
    -- Regular entities
-   if stack.prototype.place_result then
-      local placed = stack.prototype.place_result
+   if item.place_result then
+      local placed = item.place_result
 
       -- Rolling stock (locomotives, wagons) only rotate 180 degrees
       if
