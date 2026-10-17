@@ -52,6 +52,12 @@ inline constexpr const char* kProblemStatuses[] = {
    "NoAmmo",
    "NoMinableResources",
    "MissingRequiredFluid",
+   "NoRecipe",
+   "RecipeIsParameter",
+   "InputFluidTooCold",
+   "InputFluidTooHot",
+   "LowInputFluid",
+   "LowTemperature",
    "NoIngredients",
    "NoInputFluid",
    "ItemIngredientShortage",
@@ -562,6 +568,19 @@ struct Layout {
    // by default compared with Equals; otherwise the quality's icon, after Comparison::str() unless
    // Equals, or UtilitySprites::anyQuality without a quality.
    uintptr_t drawInfoIcon = 0;
+   // Status lights (an electric drill's LEDs, Bottleneck Lite's dots): void
+   // WorkingVisualisationDrawState::draw(DrawQueue&, WorkingVisualisation const&, Surface const&,
+   // Color const* tint, float intensity, Vector const&, DrawingFlags) draws each working
+   // visualisation of crafting machines, mining drills and thrusters. One whose
+   // WorkingVisualisation::applyTint (ApplyVisualisationTint, a byte) is Status gets its prototype's
+   // status tint for the entity's WorkingVisualisationEntityStatus, and is not drawn at None.
+   uintptr_t workingVisualisationDraw = 0;
+   uint32_t workingVisualisationApplyTint = 0;
+   uint32_t applyTintStatus = 0;
+   // static WorkingVisualisationEntityStatus WorkingVisualisations::getEntityStatus(EntityStatus):
+   // the status a status light shows (a byte); the EntityStatus goes by pointer to a copy.
+   uintptr_t workingVisualisationEntityStatus = 0;
+   uint32_t lightStatusWorking = 0;        // WorkingVisualisationEntityStatus::Working
    uint32_t qualityDrawByDefault = 0;      // QualityPrototype::drawSpriteByDefault, bool
    uintptr_t comparisonStr = 0;            // char const* Comparison::str() const
    // void LuaHelper::initLuaState(lua_State*): sets up the globals of every Lua state the game

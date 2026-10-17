@@ -362,6 +362,14 @@ bool resolve(pdb::SymbolTable& symbols) {
    address(layout.drawInfoIcon,
            "?drawInfoIcon@DrawQueue@@QEAAXPEBVSprite@@VQualityCondition@@AEBVMapPosition@@NVDrawingFlags@@"
            "W4Enum@RenderLayer@@AEBVVector@@CVColor@@@Z");
+   address(layout.workingVisualisationDraw,
+           "?draw@WorkingVisualisationDrawState@@QEAAXAEAVDrawQueue@@AEBVWorkingVisualisation@@AEBVSurface@@"
+           "PEBVColor@@MAEBVVector@@VDrawingFlags@@@Z");
+   offset(layout.workingVisualisationApplyTint, "WorkingVisualisation", "applyTint");
+   enumerator(layout.applyTintStatus, "ApplyVisualisationTint", "Status");
+   address(layout.workingVisualisationEntityStatus,
+           "?getEntityStatus@WorkingVisualisations@@SA?AW4WorkingVisualisationEntityStatus@@VEntityStatus@@@Z");
+   enumerator(layout.lightStatusWorking, "WorkingVisualisationEntityStatus", "Working");
    offset(layout.qualityDrawByDefault, "QualityPrototype", "drawSpriteByDefault");
    address(layout.comparisonStr, "?str@Comparison@@QEBAPEBDXZ");
    offset(layout.logisticNetworkId, "LogisticNetwork", "networkID");

@@ -161,6 +161,25 @@ void detourDrawInfoIcon(void* drawQueue, const void* sprite, uint16_t quality, c
    g_drawInfoIconOriginal(drawQueue, sprite, quality, position, scale, flags, layer, shift, order, color);
 }
 
+struct Color {
+   float r, g, b, a;
+};
+
+using DrawVisualisationFunction = void (*)(void* state, void* drawQueue, const void* visualisation, const void* surface,
+                                           const Color* tint, float intensity, const void* shift, uint32_t flags);
+DrawVisualisationFunction g_drawVisualisationOriginal = nullptr;
+
+void detourDrawVisualisation(void* state, void* drawQueue, const void* visualisation, const void* surface,
+                             const Color* tint, float intensity, const void* shift, uint32_t flags) {
+   // A clear tint hides the light in that status: Bottleneck Lite's way to hide an indicator, the
+   // electric drill's without power.
+   if (Drawn* drawn = t_drawn;
+       drawn && tint && at<uint8_t>(visualisation, layout.workingVisualisationApplyTint) == layout.applyTintStatus &&
+       (tint->r > 0 || tint->g > 0 || tint->b > 0 || tint->a > 0))
+      drawn->statusLight = true;
+   g_drawVisualisationOriginal(state, drawQueue, visualisation, surface, tint, intensity, shift, flags);
+}
+
 // The queue entities are drawn into to read them. Nothing renders it; it is cleared after each read.
 // One for each thread that reads: the tile reader in the Gui's logic, the build preview where the
 // game draws it.
@@ -235,5 +254,7 @@ void* drawAlertDetour() { return reinterpret_cast<void*>(&detourDrawAlert); }
 void** drawAlertOriginal() { return reinterpret_cast<void**>(&g_drawAlertOriginal); }
 void* drawInfoIconDetour() { return reinterpret_cast<void*>(&detourDrawInfoIcon); }
 void** drawInfoIconOriginal() { return reinterpret_cast<void**>(&g_drawInfoIconOriginal); }
+void* drawVisualisationDetour() { return reinterpret_cast<void*>(&detourDrawVisualisation); }
+void** drawVisualisationOriginal() { return reinterpret_cast<void**>(&g_drawVisualisationOriginal); }
 
 } // namespace fa::entityicons

@@ -72,6 +72,8 @@
      "RailPlanFinder::getBestSolution")                                                                                \
    X(entityDrawAlert, entityicons::drawAlertDetour(), entityicons::drawAlertOriginal(), "Entity::drawAlert")           \
    X(drawInfoIcon, entityicons::drawInfoIconDetour(), entityicons::drawInfoIconOriginal(), "DrawQueue::drawInfoIcon")  \
+   X(workingVisualisationDraw, entityicons::drawVisualisationDetour(), entityicons::drawVisualisationOriginal(),       \
+     "WorkingVisualisationDrawState::draw")                                                                            \
    X(initLuaState, luabridge::initLuaStateDetour(), luabridge::initLuaStateOriginal(), "LuaHelper::initLuaState")      \
    X(versionForDisplay, disclosure::versionDetour(), disclosure::versionOriginal(),                                    \
      "ApplicationVersion::strDetailedNoBuildMode")                                                                     \

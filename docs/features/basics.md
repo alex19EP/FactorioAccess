@@ -35,7 +35,9 @@ Your character is also what picks things up. Stand on or beside a belt and hold 
 
 ### Alt mode and status icons
 
-The cursor reads the icons the game draws on an entity. Status icons such as no power, no fuel or no ammo are read whenever the game shows them. The rest are alt mode icons: a machine's recipe and modules, a chest's contents, filters, the fluid in a pipe, a turret's ammo, a combinator's signals. These are read only while alt mode is on, which the game's own key toggles (`alt` by default). These are the game's own icons, so modded entities read the same way.
+The cursor reads the icons the game draws on an entity. Status icons such as no power, no fuel or no ammo are read whenever the game shows them.
+
+A machine's status, such as "No recipe" or "Target full", is read when it is a problem, and on an entity with a status light, whenever the light shows anything but working. The electric mining drill has status lights, and the Bottleneck Lite mod adds one to every crafting machine and mining drill; turn that mod's indicators off, or make a status's colour fully transparent in its settings, and the cursor stops reading what the light no longer shows. The rest are alt mode icons: a machine's recipe and modules, a chest's contents, filters, the fluid in a pipe, a turret's ammo, a combinator's signals. These are read only while alt mode is on, which the game's own key toggles (`alt` by default). These are the game's own icons, so modded entities read the same way.
 
 The cursor also reads what the game draws on an entity besides icons: an arithmetic, decider or selector combinator's operation on its display ("multiply", "greater than", "select maximum"), always; which way a loader works ("input" or "output"); and a display panel's text. In alt mode, with the interface setting for combinator settings, a combinator's operation comes with its signals: "Iron plate multiply, output Signal B".
 

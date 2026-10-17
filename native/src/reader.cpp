@@ -288,6 +288,8 @@ std::vector<std::string> fixedLabels() {
    return labels;
 }
 
+// Whether the status line is said: a problem, or any status but working where a status light shows
+// it (an electric drill's LEDs, Bottleneck Lite's indicators), as a sighted player sees it lit.
 bool isProblem(const std::byte* entity) {
    std::array<std::byte, 32> status{};
    if (layout.entityStatusSize > status.size()) return false;
@@ -295,7 +297,11 @@ bool isProblem(const std::byte* entity) {
    const auto value = static_cast<uint32_t>(at<uint8_t>(status.data(), 0));
    for (uint32_t problem : layout.problemStatuses)
       if (problem == value) return true;
-   return false;
+   const auto light =
+      reinterpret_cast<uint8_t (*)(const void*)>(layout.workingVisualisationEntityStatus)(status.data());
+   if (light == layout.lightStatusWorking) return false;
+   const std::optional<entityicons::Drawn> drawn = entityicons::read(entity);
+   return drawn && drawn->statusLight;
 }
 
 // The status line's text: the diode the game draws before it ("[img=utility/status_working] ") is
