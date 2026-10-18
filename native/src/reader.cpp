@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <array>
 #include <cstddef>
+#include <cstdlib>
 #include <cstring>
 #include <memory>
 #include <mutex>
@@ -181,17 +182,38 @@ const std::byte* ownCharacter(const std::byte* player) {
    return character ? agui::objectAsBase(character, ".?AVEntity@@") : nullptr;
 }
 
+bool isArrow(const std::byte* entity) {
+   return typeName(at<const std::byte*>(entity, layout.entityPrototypeOf)) == "arrow";
+}
+
 // What the view draws at `position` where the mouse selects nothing there: the cursor reads what a
 // sighted player sees. The mouse never selects a cliff or a building's remnants, nor fire, which has
 // no box, nor anything while a blueprint is in hand. Left out are effects that last a moment, what
-// draws nothing (the invisible helpers mods place), and the player's own character, which the
-// reader says apart.
+// draws nothing (the invisible helpers mods place), and the player's own character and the arrows
+// scenarios point with, which the reader says apart.
 const std::byte* drawnAt(const std::byte* player, const std::byte* surface, Position position) {
    const std::byte* self = ownCharacter(player);
    return topmostAt(surface, position, [&](const std::byte* entity) {
-      return entity != self && !facts::isFleeting(typeName(at<const std::byte*>(entity, layout.entityPrototypeOf))) &&
+      return entity != self && !isArrow(entity) &&
+             !facts::isFleeting(typeName(at<const std::byte*>(entity, layout.entityPrototypeOf))) &&
              entityicons::draws(entity);
    });
+}
+
+// Whether an arrow a scenario points with marks the tile. An arrow has no box: it marks the tiles
+// whose centre is less than a tile from where it stands, the tile itself when it stands at a tile's
+// centre (an entity a tile wide), the four around it when it stands on a corner (the middle of
+// something two tiles wide, as the train stop tutorial's box).
+bool arrowOn(const std::byte* surface, Position tile) {
+   const Position centre{tile.x * kScale + kScale / 2, tile.y * kScale + kScale / 2};
+   for (const void* found :
+        facts::entitiesIn(surface, centre.x - kScale, centre.y - kScale, centre.x + kScale, centre.y + kScale)) {
+      const auto* entity = static_cast<const std::byte*>(found);
+      if (!isArrow(entity)) continue;
+      const Position stands = at<Position>(entity, layout.entityPosition);
+      if (std::abs(stands.x - centre.x) < kScale && std::abs(stands.y - centre.y) < kScale) return true;
+   }
+   return false;
 }
 
 // What the mouse at `position` selects, as the game finds it each frame for the local player, else
@@ -485,6 +507,7 @@ std::string nameOf(const std::byte* entity, const std::byte* description) {
        reinterpret_cast<const MsvcString*>(qualityPrototype + layout.prototypeName)->view() != "normal")
       name += " (" + localisedName(qualityPrototype) + ")";
    const std::byte* prototype = at<const std::byte*>(entity, layout.entityPrototypeOf);
+   if (isArrow(entity)) return vocab::kIndicatedSpot;
    // The game describes nothing the mouse cannot select, such as cliffs; the scanner still lists them
    // as the view shows them, by name.
    if (name.empty()) name = localisedName(prototype);
@@ -667,6 +690,8 @@ std::optional<std::string> readTile(Position tile, std::optional<Position> where
       const Position feet = at<Position>(self, layout.entityPosition);
       if (feet.x >> 8 == tile.x && feet.y >> 8 == tile.y) text = describe(here->player, self, tile) + ", " + text;
    }
+   // First, as what sets the spot a scenario points at apart from the tiles around it.
+   if (arrowOn(here->surface, tile)) text = std::string(vocab::kIndicatedSpot) + ", " + text;
    return text;
 }
 

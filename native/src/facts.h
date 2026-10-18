@@ -81,8 +81,9 @@ Likeness likenessOf(const void* entity);
 bool skipsOver(const void* entity);
 
 // Whether entities of the type are effects the view shows for a moment or hangs on something else:
-// what is shot, blows up, smokes or strikes, stickers, beams, spider legs, the markers and proxies
-// over buildings. Neither the cursor nor the scanner reads them; everything else the view draws, they do.
+// what is shot, blows up, smokes or strikes, stickers, beams, spider legs, the highlights and proxies
+// over buildings. Neither the cursor nor the scanner reads them; everything else the view draws, they do,
+// the arrows scenarios point with among them.
 bool isFleeting(std::string_view type);
 
 // Whether a step from the tile where the mouse selects `left` onto the one where it selects

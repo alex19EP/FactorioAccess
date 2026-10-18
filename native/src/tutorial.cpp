@@ -72,8 +72,8 @@ void* construct(void* self, const void* scriptPath, const void* packagePath, voi
       ~Restore() { *slot = value; }
    } restore{active, tutorial};
    *active = nullptr;
-   return g_original(self, scriptPath, packagePath, deserialiser, targetDeserialiser, migrations, &filtered,
-                     scenario, map);
+   return g_original(self, scriptPath, packagePath, deserialiser, targetDeserialiser, migrations, &filtered, scenario,
+                     map);
 }
 
 } // namespace

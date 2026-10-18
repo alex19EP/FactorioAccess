@@ -2585,7 +2585,6 @@ bool skipsOver(const void* entity) {
 
 bool isFleeting(std::string_view type) {
    static constexpr std::string_view kFleeting[] = {
-      "arrow",
       "artillery-projectile",
       "beam",
       "deconstructible-tile-proxy",
