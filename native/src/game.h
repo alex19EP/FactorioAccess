@@ -586,6 +586,13 @@ struct Layout {
    // void LuaHelper::initLuaState(lua_State*): sets up the globals of every Lua state the game
    // creates (log, localised_print, ...).
    uintptr_t initLuaState = 0;
+   // LuaContext::LuaContext(Path const&, PackagePath const*, MapDeserialiser*, TargetDeserialiser&,
+   // PrototypeMigrationList&, std::vector<Mod*> const&, Scenario*, Map&): makes the level's script,
+   // then one per mod in the list, but none while TutorialManager::activeTutorial is set.
+   uintptr_t luaContextConstructor = 0;
+   uint32_t globalTutorialManager = 0; // GlobalContext::tutorialManager, TutorialManager*
+   uint32_t tutorialManagerActive = 0; // TutorialManager::activeTutorial, TutorialDefinition*
+   uint32_t modName = 0;               // Mod::id.name, std::string
    // Entity* LuaHelper::getParamOrDefault<Entity*>(lua_State*, int index, char const* name, Entity*
    // default): the entity of a LuaEntity argument.
    uintptr_t luaParamEntity = 0;

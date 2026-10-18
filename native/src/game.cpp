@@ -375,6 +375,13 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.logisticNetworkId, "LogisticNetwork", "networkID");
    offset(layout.logisticNetworkName, "LogisticNetwork", "networkName.value");
    address(layout.initLuaState, "?initLuaState@LuaHelper@@YAXPEAUlua_State@@@Z");
+   address(layout.luaContextConstructor,
+           "??0LuaContext@@QEAA@AEBUPath@Filesystem@@PEBVPackagePath@@PEAVMapDeserialiser@@AEAVTargetDeserialiser@@"
+           "AEAVPrototypeMigrationList@@AEBV?$vector@PEAVMod@@V?$allocator@PEAVMod@@@std@@@std@@PEAVScenario@@AEAVMap@@"
+           "@Z");
+   offset(layout.globalTutorialManager, "GlobalContext", "tutorialManager.value");
+   offset(layout.tutorialManagerActive, "TutorialManager", "activeTutorial");
+   offset(layout.modName, "Mod", "id.name");
    address(layout.luaParamEntity,
            "??$getParamOrDefault@PEAVEntity@@@LuaHelper@@YAPEAVEntity@@PEAUlua_State@@HPEBDPEAV1@@Z");
    address(layout.addLocalFlyingText, "?addLocalFlyingText@Map@@QEAAX$$QEAVLocalMapFlyingText@@@Z");

@@ -177,6 +177,7 @@ add_library(fa_native SHARED
   src/luabridge.cpp
   src/hooks.cpp
   src/disclosure.cpp
+  src/tutorial.cpp
   src/flyingtext.cpp
   src/console.cpp
   src/popups.cpp

@@ -227,6 +227,9 @@ function mod.is_test_save()
       return false
    end
 ]]
+   -- Tutorials are built on lab tiles too
+   if script.level.is_tutorial then return false end
+
    local surface = game.surfaces[1]
    if not surface then return false end
 

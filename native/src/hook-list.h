@@ -75,6 +75,8 @@
    X(workingVisualisationDraw, entityicons::drawVisualisationDetour(), entityicons::drawVisualisationOriginal(),       \
      "WorkingVisualisationDrawState::draw")                                                                            \
    X(initLuaState, luabridge::initLuaStateDetour(), luabridge::initLuaStateOriginal(), "LuaHelper::initLuaState")      \
+   X(luaContextConstructor, tutorial::luaContextDetour(), tutorial::luaContextOriginal(),                              \
+     "the LuaContext constructor")                                                                                     \
    X(versionForDisplay, disclosure::versionDetour(), disclosure::versionOriginal(),                                    \
      "ApplicationVersion::strDetailedNoBuildMode")                                                                     \
    X(addLocalFlyingText, flyingtext::mapDetour(), flyingtext::mapOriginal(), "Map::addLocalFlyingText")                \

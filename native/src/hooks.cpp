@@ -17,6 +17,7 @@
 #include "popups.h"
 #include "railplanner.h"
 #include "selection.h"
+#include "tutorial.h"
 #include "ui.h"
 #include "world.h"
 #include "zoom.h"
