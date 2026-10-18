@@ -83,6 +83,8 @@ void tick(const agui::Gui* gui) {
    disclosure::tick();
    screens::WindowScreen::SetGui(gui);
    nav::ScreenManager::Get().Update();
+   // Every agui screen tags its nodes with their widgets.
+   agui::setPointed(static_cast<const agui::Widget*>(nav::ScreenManager::Get().FocusedHostTag()));
    screens::QuickBarScreen::WatchPage();
    reader::tick();
    chart::tick();
@@ -233,8 +235,9 @@ void afterGuiLogic(const agui::Gui* gui) {
    if (g_disabled) return;
    if (!guardedTick(gui)) {
       g_disabled = true;
-      // Keys must go back to the game before anything else can go wrong.
+      // Keys and the pointing controls must go back to the game before anything else can go wrong.
       input::clearClaims();
+      agui::setPointed(nullptr);
       log::error("Access violation in the navigator at {} touching {:#x}; FactorioAccess native UI is off until "
                  "restart",
                  whereIs(g_faultAt), g_faultAddress);

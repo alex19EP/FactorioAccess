@@ -2018,6 +2018,21 @@ bool inTree(const Widget* root, const Widget* widget, int depth = 0) {
 // a Gui's logic.
 thread_local const Widget* t_pressed = nullptr;
 
+// The navigator's focused widget, and whether a control that acts on what the mouse points at
+// runs. The GUI logic sets the first; the control runs while the game handles its key event,
+// on the same thread.
+const Widget* g_pointed = nullptr;
+thread_local bool t_pointing = false;
+
+// The focused widget while a pointing control runs in the application Gui, if it is still there.
+const Widget* pointedNow() {
+   if (!t_pointing || !g_pointed) return nullptr;
+   const Gui* gui = applicationGui();
+   if (!gui || instance() != gui) return nullptr;
+   const Widget* root = baseWidget(gui);
+   return root && inTree(root, g_pointed) ? g_pointed : nullptr;
+}
+
 struct UnderMouse {
    bool overGui;
    const Widget* widget;
@@ -2030,6 +2045,10 @@ UnderMouse* detourUnderMouse(UnderMouse* out) {
       *out = {true, t_pressed};
       return out;
    }
+   if (const Widget* pointed = pointedNow()) {
+      *out = {true, pointed};
+      return out;
+   }
    // The game ignores the world wherever the real mouse rests on a GUI: no hover or map selection,
    // no drag building, selection tools or world controls. While the mod drives the cursor, the
    // mouse is nowhere.
@@ -2040,11 +2059,52 @@ UnderMouse* detourUnderMouse(UnderMouse* out) {
    return g_underMouseOriginal(out);
 }
 
+using GetWidgetUnderMouse = const Widget* (*)(const Gui* gui);
+GetWidgetUnderMouse g_widgetUnderMouseOriginal = nullptr;
+
+const Widget* detourWidgetUnderMouse(const Gui* gui) {
+   if (const Widget* pointed = pointedNow(); pointed && gui == instance()) return pointed;
+   return g_widgetUnderMouseOriginal(gui);
+}
+
+using ProcessControl = bool (*)(void* source);
+ProcessControl g_pipetteOriginal = nullptr;
+ProcessControl g_openFactoriopediaOriginal = nullptr;
+
+struct Pointing {
+   bool saved = std::exchange(t_pointing, true);
+   ~Pointing() { t_pointing = saved; }
+};
+
+bool detourPipette(void* source) {
+   Pointing pointing;
+   return g_pipetteOriginal(source);
+}
+
+bool detourOpenFactoriopedia(void* source) {
+   Pointing pointing;
+   return g_openFactoriopediaOriginal(source);
+}
+
 } // namespace
 
 void* underMouseDetour() { return reinterpret_cast<void*>(&detourUnderMouse); }
 
 void** underMouseOriginal() { return reinterpret_cast<void**>(&g_underMouseOriginal); }
+
+void setPointed(const Widget* widget) { g_pointed = widget; }
+
+void* widgetUnderMouseDetour() { return reinterpret_cast<void*>(&detourWidgetUnderMouse); }
+
+void** widgetUnderMouseOriginal() { return reinterpret_cast<void**>(&g_widgetUnderMouseOriginal); }
+
+void* pipetteDetour() { return reinterpret_cast<void*>(&detourPipette); }
+
+void** pipetteOriginal() { return reinterpret_cast<void**>(&g_pipetteOriginal); }
+
+void* openFactoriopediaDetour() { return reinterpret_cast<void*>(&detourOpenFactoriopedia); }
+
+void** openFactoriopediaOriginal() { return reinterpret_cast<void**>(&g_openFactoriopediaOriginal); }
 
 namespace {
 

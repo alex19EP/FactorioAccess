@@ -44,6 +44,9 @@ public:
     /// The screen the navigator is attached to, or null.
     Screen* Focused() const { return _navigator.AttachedScreen(); }
 
+    /// The navigator's focused node's HostTag while a screen takes the keys (Navigator::FocusedHostTag).
+    const void* FocusedHostTag() { return _navigator.FocusedHostTag(); }
+
     bool IsLive(const Screen* screen) const;
 
 private:

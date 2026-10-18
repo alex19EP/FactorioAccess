@@ -861,6 +861,20 @@ void pressSwitch(const Widget* toggle);
 void* underMouseDetour();
 void** underMouseOriginal();
 
+// The widget the navigator's focus is on while a window takes the keys, else null. The game's
+// controls that act on what the mouse points at (the pipette, open Factoriopedia) take it for
+// the widget under the mouse while they run, as they take a sighted player's hovered slot or
+// recipe. Main thread, from the GUI logic; a widget freed since is never pointed at.
+void setPointed(const Widget* widget);
+// Detours for agui::Gui::getWidgetUnderMouse, PlayerInputSource::processPipette and
+// PlayerInputSource::processOpenFactoriopedia, which point at that widget.
+void* widgetUnderMouseDetour();
+void** widgetUnderMouseOriginal();
+void* pipetteDetour();
+void** pipetteOriginal();
+void* openFactoriopediaDetour();
+void** openFactoriopediaOriginal();
+
 // The DropDown whose list is open as the top modal, or null.
 const Widget* openDropDown(const Gui* gui);
 // A DropDown's own list and the index of its current value.

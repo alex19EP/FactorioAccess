@@ -109,6 +109,16 @@ struct Layout {
    // rather than the game view. A GUI control bound like a world control (craft and build on the
    // left button, craft-5 and mine on the right) is held only while it says so.
    uintptr_t determineWidgetUnderMouse = 0;
+   // Controls that act on what the mouse points at, in a window as on the map. Both run while the
+   // game handles their key event. The pipette works through a window's GUI only while
+   // determineWidgetUnderMouse says the mouse is over one: the open window's own pipette
+   // (GameGui::checkGuiPipette), then the hovered widget (ClientPipetteLogic::processHoveredWidget):
+   // an inventory slot's item or filter, or what a PrototypeProvider widget or its tooltip
+   // creator stands for. Open Factoriopedia asks only Gui::getWidgetUnderMouse, which follows
+   // the real mouse: a PrototypeProvider opens its entry, no widget the world under the cursor.
+   uintptr_t processPipette = 0;           // bool PlayerInputSource::processPipette()
+   uintptr_t processOpenFactoriopedia = 0; // bool PlayerInputSource::processOpenFactoriopedia()
+   uintptr_t guiWidgetUnderMouseGetter = 0; // virtual agui::Widget* agui::Gui::getWidgetUnderMouse()
    // bool PlayerInputSource::processNextDialog(): what the Confirm message control runs, closing
    // the scenario message dialog shown over the game.
    uintptr_t processNextDialog = 0;

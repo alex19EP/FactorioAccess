@@ -63,6 +63,9 @@ bool resolve(pdb::SymbolTable& symbols) {
    enumerator(layout.dragModeSwap, "DragPane::DragMode", "SWAP");
    classSlot(layout.dragPaneChangedOrder, "DragPane", "onWidgetsChangedOrder");
    address(layout.determineWidgetUnderMouse, "?determineWidgetUnderMouse@@YA?AU?$Pair@_NPEAVWidget@agui@@@@XZ");
+   address(layout.processPipette, "?processPipette@PlayerInputSource@@QEAA_NXZ");
+   address(layout.processOpenFactoriopedia, "?processOpenFactoriopedia@PlayerInputSource@@QEAA_NXZ");
+   address(layout.guiWidgetUnderMouseGetter, "?getWidgetUnderMouse@Gui@agui@@UEAAPEAVWidget@2@XZ");
    address(layout.processNextDialog, "?processNextDialog@PlayerInputSource@@QEAA_NXZ");
    address(layout.playerCursorPosition,
            "?getCursorMapPosition@Player@@QEBA?AV?$Optional@VMapPosition@@U?$OptionalEmptyValue@VMapPosition@@@@@@XZ");

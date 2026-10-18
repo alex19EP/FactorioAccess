@@ -26,7 +26,7 @@ FactorioAccess has no menus of its own. It reads the game's own windows, the sam
 - `]` on an item in an inventory slot opens the item, such as a blueprint, a planner or armor.
 - `escape` opens the game menu, with Settings, Controls and Mod settings.
 - The game's other keys open their windows: `ctrl + t` research, `p` production statistics, `l` logistic networks, `o` the trains overview, `b` the blueprint library, `tab` or `m` the map. See [the key reference](keys.md).
-- `alt + [` opens Factoriopedia on what the cursor is on.
+- `alt + [` opens Factoriopedia on what the cursor is on. In a window it opens on the item, recipe or slot you are on, as the mouse would.
 
 ## Moving through a window
 
@@ -46,6 +46,8 @@ Where the game shows a tooltip only on hovering, `y` reads it.
 - `ctrl + [` moves all items of that kind.
 
 In crafting, `[` crafts one, `]` crafts five, and `shift + [` crafts all you can.
+
+`q` pipettes what you are on, as it does with the mouse over it: the items in a slot, or a slot's filter, a recipe's item, a filter button's item or signal, a Factoriopedia entry. With something in hand, `q` empties the hand first.
 
 Some controls take a value:
 

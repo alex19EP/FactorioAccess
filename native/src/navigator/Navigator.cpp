@@ -116,6 +116,14 @@ void Navigator::Update()
     DriveHostCursor();
 }
 
+const void* Navigator::FocusedHostTag()
+{
+    if (!_screen || !_graph || !_claimsActive)
+        return nullptr;
+    graph::GraphNode* node = _graph->CurrentNode();
+    return node ? node->Vtable.HostTag : nullptr;
+}
+
 std::string Navigator::Describe()
 {
     if (!_screen)

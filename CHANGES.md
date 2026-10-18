@@ -3,6 +3,7 @@
 - Factorio 2.1.
 - The launcher is replaced by a native DLL, `winmm.dll` and `fa_native.dll` in the game's `bin/x64`, which the mod requires. It speaks through any screen reader Prism supports.
 - The game's own windows, menus and HUD are read and used from the keyboard: the main menu, the character screen, entity windows, the technology screen, Factoriopedia, the quickbar, the shortcut bar, alerts, the crafting queue and others.
+- In a window, Q pipettes and Alt+left bracket opens Factoriopedia on what you are on (an inventory slot, a recipe, a filter, a Factoriopedia entry), as they do on what the mouse points at, not on the map cursor behind the window.
 - Flying text, console lines and pop-ups are spoken as they appear.
 - The DLL plays the mod's own sounds (radars, health bar, inserters, crafting machines, vehicles), from the mod's audio folder, zipped or not.
 - FA's own menus are gone: the game's windows replace them, and none of FA's Lua menus opens any more. Their keys went with them (Tab, E, Alt+E, the bracket and bar keys inside menus, Shift+/ help, P warnings, Ctrl+L and Ctrl+Shift+L logistics, Ctrl+N circuit navigator, Alt+P prototype lister, Shift+C coordinates, Alt+W world menu).

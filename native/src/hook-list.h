@@ -10,6 +10,11 @@
      "agui::Gui::logic")                                                                                               \
    X(sdlPollEvent, input::pollEventDetour(), input::pollEventOriginal(), "SDL_PollEvent")                              \
    X(determineWidgetUnderMouse, agui::underMouseDetour(), agui::underMouseOriginal(), "determineWidgetUnderMouse")     \
+   X(guiWidgetUnderMouseGetter, agui::widgetUnderMouseDetour(), agui::widgetUnderMouseOriginal(),                      \
+     "agui::Gui::getWidgetUnderMouse")                                                                                 \
+   X(processPipette, agui::pipetteDetour(), agui::pipetteOriginal(), "PlayerInputSource::processPipette")              \
+   X(processOpenFactoriopedia, agui::openFactoriopediaDetour(), agui::openFactoriopediaOriginal(),                     \
+     "PlayerInputSource::processOpenFactoriopedia")                                                                    \
    X(playerCursorPosition, world::playerCursorDetour(), world::playerCursorOriginal(), "Player::getCursorMapPosition") \
    X(sourceCursorPosition, world::sourceCursorDetour(), world::sourceCursorOriginal(),                                 \
      "PlayerInputSource::getCursorMapPosition")                                                                        \

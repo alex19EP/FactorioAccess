@@ -53,6 +53,10 @@ public:
     /// every node in declaration order under its Tab-stop. Rebuilds the render to read it fresh.
     std::string Describe();
 
+    /// The focused node's HostTag while the attached screen takes the keys, else null: what the
+    /// mouse would rest on to point at the focus.
+    const void* FocusedHostTag();
+
 private:
     void HandleKey(const input::KeyEvent& e);
     void HandleArrow(graph::GraphDir dir, bool ctrl);

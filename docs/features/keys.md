@@ -27,7 +27,7 @@ These are the game's defaults, after the keys script:
 | `shift + ]` | Copy entity settings |
 | `e` | Your inventory (the character screen) |
 | `escape` | Close a window; the game menu |
-| `q` | Empty the hand; with an empty hand, pipette what the cursor is on |
+| `q` | Empty the hand; with an empty hand, pipette what the cursor is on, or in a window what you are on |
 | `r`, `shift + r` | Rotate the hand or the selected entity |
 | `h`, `v` | Flip the hand horizontally or vertically |
 | `f` | Pick up items near your character (hold it) |
