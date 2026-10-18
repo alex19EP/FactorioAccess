@@ -779,8 +779,9 @@ EventManager.on_event(
 local function kb_jump_to_player(event)
    local pindex = event.player_index
    -- The character, wherever remote view's camera is
-   Cursor.jump(pindex, game.get_player(pindex).physical_position)
-   read_coords(pindex, "Cursor returned ")
+   local position = game.get_player(pindex).physical_position --[[@as MapPosition.struct]]
+   Cursor.jump(pindex, position)
+   Speech.speak(pindex, { "fa.cursor-returned", math.floor(position.x), math.floor(position.y) })
 end
 
 EventManager.on_event(

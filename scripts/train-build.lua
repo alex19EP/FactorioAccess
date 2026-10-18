@@ -10,6 +10,32 @@ local Speech = require("scripts.speech")
 
 local mod = {}
 
+---The stop the train's front stands at: one beside a rail under the train or the rail straight on
+---past its front, near the front. The game sets LuaTrain.station only once an automatic train stops
+---there.
+---@param train LuaTrain
+---@return LuaEntity?
+local function stop_at_front(train)
+   local front = train.front_end
+   local rails = train.get_rails()
+   local ahead = front.rail.get_connected_rail({
+      rail_direction = front.direction,
+      rail_connection_direction = defines.rail_connection_direction.straight,
+   })
+   if ahead then table.insert(rails, ahead) end
+   local stops = front.rail.surface.find_entities_filtered({
+      type = "train-stop",
+      position = front.location.position,
+      radius = 4,
+   })
+   for _, stop in ipairs(stops) do
+      for _, rail in ipairs(rails) do
+         if stop.connected_rail == rail then return stop end
+      end
+   end
+   return nil
+end
+
 ---@param entity LuaEntity
 ---@return LocalisedString
 local function rolling_stock_words(entity)
@@ -22,7 +48,7 @@ local function rolling_stock_words(entity)
    else
       message:list_item({ "fa.train-build-not-connected" })
    end
-   local station = train.station
+   local station = train.station or stop_at_front(train)
    if station then message:list_item({ "fa.train-build-at-stop", assert(station.backer_name) }) end
    return message:build()
 end

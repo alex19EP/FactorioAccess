@@ -6,6 +6,7 @@
 
 using fa::viewannounce::Announcer;
 using fa::viewannounce::kHeldFrames;
+using fa::viewannounce::kSettleFrames;
 using fa::viewannounce::kViewFrames;
 using fa::viewannounce::Say;
 
@@ -37,7 +38,7 @@ Heard Show(Announcer& announcer, double zoom, int frames)
 Announcer Loaded()
 {
     Announcer announcer;
-    Show(announcer, 1.0, kHeldFrames + 2);
+    Show(announcer, 1.0, kSettleFrames + 2);
     return announcer;
 }
 
@@ -46,9 +47,18 @@ Announcer Loaded()
 TEST(ViewAnnounce_FirstZoomIsOnlyRecorded)
 {
     Announcer announcer;
-    const Heard heard = Show(announcer, 1.0, 20);
+    const Heard heard = Show(announcer, 1.0, kSettleFrames + 20);
     CHECK_EQ(0, heard.Zoom);
     CHECK_EQ(0, heard.View);
+}
+
+TEST(ViewAnnounce_ZoomEasedInAsAMapStartsIsNotSaid)
+{
+    Announcer announcer;
+    for (double zoom = 2.0; zoom > 1.5; zoom -= 0.05)
+        CHECK_EQ(0, Show(announcer, zoom, kHeldFrames + 2).Zoom);
+    CHECK_EQ(0, Show(announcer, 1.5, kSettleFrames + 2).Zoom);
+    CHECK_EQ(1, Show(announcer, 1.0, 20).Zoom);
 }
 
 TEST(ViewAnnounce_ZoomIsSaidOnceItHolds)

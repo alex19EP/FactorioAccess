@@ -2,6 +2,7 @@
 
 #include "ScheduleNodes.hpp"
 #include "game.h"
+#include "navigator/ScreenManager.hpp"
 #include "parts.h"
 #include "speech.h"
 #include "vocab.h"
@@ -19,13 +20,36 @@ using agui::Widget;
 namespace
 {
 
-// The names of the window's schedule's stations, in order.
-std::vector<std::string> StationNames(const std::vector<agui::ScheduleStation>& stations)
+// A wait condition's row as the cursor reads it, without its drag handle and remove button.
+std::string ConditionText(const Widget* condition)
 {
-    std::vector<std::string> names;
-    for (const agui::ScheduleStation& station : stations)
-        names.push_back(LabelText(station.label));
-    return names;
+    return RowText(condition, {agui::scheduleConditionDrag(condition), agui::scheduleConditionRemove(condition)});
+}
+
+// The window's own labels outside its schedule and tabs, as shown: its title, the train's group and
+// its status ("Waiting at stop").
+std::vector<std::pair<const Widget*, std::string>> TrainLabels(const Widget* window)
+{
+    agui::TrainWindowParts parts = agui::trainWindowParts(window);
+    std::vector<std::pair<const Widget*, std::string>> labels;
+    for (const Widget* label : FindAll(window, "agui::Label"))
+    {
+        bool inPart = false;
+        for (const Widget* up = label; up && !inPart; up = agui::parent(up))
+            inPart = up == parts.schedule || up == parts.tabs;
+        if (!inPart && Shows(label))
+            labels.emplace_back(label, LabelText(label));
+    }
+    return labels;
+}
+
+// Where `now` first differs from `before`, a list one longer: the row added.
+std::size_t AddedAt(const std::vector<std::string>& before, const std::vector<std::string>& now)
+{
+    std::size_t added = 0;
+    while (added < before.size() && now[added] == before[added])
+        ++added;
+    return added;
 }
 
 } // namespace
@@ -34,36 +58,67 @@ bool TrainScreen::IsActive()
 {
     const Widget* window = FindWindow().window;
     parts::setAvailable(parts::Part::Map, window != nullptr);
+    if (window)
+    {
+        WatchSchedule(window);
+        WatchStatus(window);
+    }
+    else
+    {
+        _seen.reset();
+        _labels.clear();
+    }
     if (parts::current() == parts::Part::Map)
     {
         if (window)
-        {
-            WatchSchedule(window);
             return false;
-        }
         parts::close();
     }
-    _mapStations.reset();
     return EntityWindowScreen::IsActive();
 }
 
 void TrainScreen::WatchSchedule(const Widget* window)
 {
-    // A stop added from the map (Ctrl+click, Shift+click) shows as a new row in the window beside it,
-    // found by name: the go-to marker moves to it when the train heads there at once.
+    // A new row is found by name: the go-to marker moves to a stop added from the map when the train
+    // heads there at once.
     std::vector<agui::ScheduleStation> stations = agui::scheduleParts(agui::trainWindowParts(window).schedule).stations;
-    std::vector<std::string> names = StationNames(stations);
-    if (_mapStations && names.size() > _mapStations->size())
+    ScheduleSeen now;
+    for (const agui::ScheduleStation& station : stations)
     {
-        std::size_t added = 0;
-        while (added < _mapStations->size() && names[added] == (*_mapStations)[added])
-            ++added;
-        std::string line = names[added];
+        now.stations.push_back(LabelText(station.label));
+        std::vector<std::string>& conditions = now.conditions.emplace_back();
+        for (const Widget* condition : station.conditions)
+            conditions.push_back(ConditionText(condition));
+    }
+    if (_seen && now.stations.size() == _seen->stations.size() + 1)
+    {
+        std::size_t added = AddedAt(_seen->stations, now.stations);
+        std::string line = now.stations[added];
         if (agui::buttonToggled(stations[added].goTo))
             line += ", " + std::string(vocab::kCurrentStop);
         speech::say(line);
     }
-    _mapStations = std::move(names);
+    else if (_seen && now.stations == _seen->stations)
+    {
+        for (std::size_t i = 0; i < now.conditions.size(); ++i)
+            if (now.conditions[i].size() == _seen->conditions[i].size() + 1)
+                speech::say(now.conditions[i][AddedAt(_seen->conditions[i], now.conditions[i])]);
+    }
+    _seen = std::move(now);
+}
+
+void TrainScreen::WatchStatus(const Widget* window)
+{
+    std::vector<std::pair<const Widget*, std::string>> labels = TrainLabels(window);
+    // The cursor on the label hears it change already.
+    const void* focused = nav::ScreenManager::Get().FocusedHostTag();
+    if (labels.size() == _labels.size())
+        for (std::size_t i = 0; i < labels.size(); ++i)
+            if (labels[i].second != _labels[i] && !labels[i].second.empty() && labels[i].first != focused)
+                speech::say(labels[i].second);
+    _labels.clear();
+    for (auto& [label, text] : labels)
+        _labels.push_back(std::move(text));
 }
 
 std::string TrainScreen::LeaveLine() const

@@ -31,11 +31,23 @@ protected:
     void BuildWindow(graph::GraphBuilder& builder, const agui::Widget* window) override;
 
 private:
-    /// On the map, says a station row the schedule gains, as the window beside the map shows it.
+    /// Says a station or wait condition row the schedule gains: one added from the game's lists
+    /// (focus stays on the add button, as the mouse does) or from the map.
     void WatchSchedule(const agui::Widget* window);
 
-    /// The schedule's rows the last frame on the map; none off it.
-    std::optional<std::vector<std::string>> _mapStations;
+    /// The schedule's rows as last seen: each station's name and its wait conditions' text.
+    struct ScheduleSeen
+    {
+        std::vector<std::string> stations;
+        std::vector<std::vector<std::string>> conditions;
+    };
+    /// None while no train window shows.
+    std::optional<ScheduleSeen> _seen;
+
+    /// Says a label of the window that changes while it is open, as the train's status does.
+    void WatchStatus(const agui::Widget* window);
+    /// The window's labels as last seen; empty while no train window shows.
+    std::vector<std::string> _labels;
 };
 
 } // namespace fa::screens

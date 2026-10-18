@@ -87,7 +87,7 @@ void tick(const agui::Gui* gui) {
    agui::setPointed(static_cast<const agui::Widget*>(nav::ScreenManager::Get().FocusedHostTag()));
    screens::QuickBarScreen::WatchPage();
    reader::tick();
-   chart::tick();
+   chart::tick(nav::ScreenManager::Get().Focused() == nullptr);
    dev::pump();
 }
 

@@ -239,6 +239,9 @@ bool g_jumped = false;
 // that view.
 viewannounce::Announcer g_announcer;
 std::string g_hand;
+// The tiles and cell size the zoom was last said with: a zoom that settles in small steps, as the
+// camera does on a new map, says each of them alike, and only once.
+std::optional<std::pair<int64_t, int32_t>> g_zoomSaid;
 // When the view was last drawn. A view entered is said only while frames come, so that without
 // them (a game without graphics) the mod says the hand itself.
 std::chrono::steady_clock::time_point g_lastViewFrame{};
@@ -570,6 +573,9 @@ Position g_lastCentre{};
 // The centre of the character or god view before remote view opened: remote view opened there (the
 // map key) comes to the cursor, opened elsewhere (an alert, a pin, the scanner) brings the cursor.
 Position g_fixedCentre{};
+// Where the cursor was before remote view opened from the character or god view: leaving remote
+// view brings it back there while that is on the screen, as after closing a train's window.
+std::optional<Position> g_cursorBeforeRemote;
 // The turns of the drag under way the player has heard; nothing outside a drag.
 std::optional<int> g_heardDragTurns;
 // Frames to wait after the controller changed, for the view to show the new one.
@@ -702,8 +708,11 @@ void announceView(const View& view, bool speak) {
    const int64_t tiles = std::llround(std::max(view.size.x, view.size.y) * view.tilesPerPixel);
    const int32_t cell = cellSize(view);
    const vocab::Word* word = say == viewannounce::Say::View ? viewWord(view.controller) : nullptr;
+   const std::pair<int64_t, int32_t> said{tiles, cell};
+   const bool repeated = g_zoomSaid == said;
+   g_zoomSaid = said;
    if (!word) {
-      speech::say(vocab::kZoomSet(tiles, cell));
+      if (!repeated) speech::say(vocab::kZoomSet(tiles, cell));
       return;
    }
    std::string text = (*word)(tiles, cell);
@@ -720,7 +729,14 @@ void frame(void* source) {
       anchored = g_anchored;
    }
    const std::optional<View> view = localView();
-   if (view) announceView(*view, known && !vanilla);
+   if (view) {
+      announceView(*view, known && !vanilla);
+   } else {
+      // Off the map (the menus, a map loading): the next map's first zoom is a load's.
+      std::scoped_lock lock(g_mutex);
+      g_announcer = {};
+      g_zoomSaid.reset();
+   }
    if (view) editoractions::frame(view->player);
    if (!view || !known || vanilla) {
       // The mouse is the cursor in vanilla mode, and the build follows it.
@@ -762,8 +778,10 @@ void frame(void* source) {
 
    if (view->controller != g_lastController) {
       if (view->controller == layout.controllerRemote && g_lastController &&
-          (fixedCamera(*g_lastController) || *g_lastController == layout.controllerGod))
+          (fixedCamera(*g_lastController) || *g_lastController == layout.controllerGod)) {
          g_fixedCentre = g_lastCentre;
+         g_cursorBeforeRemote = currentCursor();
+      }
       g_lastController = view->controller;
       g_pans.clear();
       g_followTiles.clear();
@@ -781,8 +799,11 @@ void frame(void* source) {
          g_awaitingRemote = 0;
       } else if (fixedCamera(view->controller) || followsCursor(view->controller)) {
          // Leaving remote view brings the cursor back to the character or god, as the camera comes
-         // back; the map editor opens with the cursor on its camera, which then follows it.
-         place(tileCentre(view->centre));
+         // back, or to where it was before, while the screen holds that; the map editor opens with
+         // the cursor on its camera, which then follows it.
+         const std::optional<Position> before = std::exchange(g_cursorBeforeRemote, std::nullopt);
+         place(before && fixedCamera(view->controller) && screen(*view).holds(*before) ? *before
+                                                                                       : tileCentre(view->centre));
       }
    }
    if (g_settling == 0) {

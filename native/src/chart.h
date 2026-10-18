@@ -10,8 +10,9 @@
 // mod drives the cursor, this client says each new selection after what the mod says of the move.
 namespace fa::chart {
 
-// Every frame, on the main thread.
-void tick();
+// Every frame, on the main thread. Says nothing unless `speak`: a window or a part of the HUD has
+// the keys, as a train's window opening on the map has, and the map's selection is followed silently.
+void tick(bool speak);
 
 // The map's label of the patch a ResourcePatchInfo (`info`) last found, from `resource` in it: a
 // line for each thing mining it gives, with how much is left, else the resource's name. Translates,

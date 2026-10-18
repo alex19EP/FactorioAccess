@@ -38,6 +38,8 @@ describe("Train build", function()
       local lone
       ---@type LuaEntity
       local stop
+      ---@type LuaEntity
+      local at_stop
 
       ctx:init(function()
          local player = assert(game.get_player(1))
@@ -45,7 +47,7 @@ describe("Train build", function()
          surface.request_to_generate_chunks({ x = 0, y = 320 }, 4)
          surface.force_generate_chunk_requests()
          for x = 1, 41, 2 do
-            for _, y in ipairs({ 301, 321 }) do
+            for _, y in ipairs({ 301, 321, 341 }) do
                assert(surface.create_entity({
                   name = "straight-rail",
                   position = { x = x, y = y },
@@ -79,6 +81,20 @@ describe("Train build", function()
             direction = defines.direction.west,
             force = player.force,
          }))
+         local platform = assert(surface.create_entity({
+            name = "train-stop",
+            position = { x = 31, y = 343 },
+            direction = defines.direction.east,
+            force = player.force,
+         }))
+         platform.backer_name = "Platform"
+         -- Its front at the stop, as the game snaps a locomotive built there.
+         at_stop = assert(surface.create_entity({
+            name = "locomotive",
+            position = { x = 28, y = 341 },
+            direction = defines.direction.east,
+            force = player.force,
+         }))
       end)
 
       ctx:at_tick(2, function()
@@ -88,6 +104,10 @@ describe("Train build", function()
          local alone = built(lone)
          ctx:assert(contains(alone, "fa.train-build-not-connected"), "A locomotive on its own joins nothing")
          ctx:assert(contains(alone, "fa.facing-direction"), "The way it heads")
+         ctx:assert(not contains(joined, "fa.train-build-at-stop"), "A train far from the stop is at none")
+         local parked = built(at_stop)
+         ctx:assert(contains(parked, "fa.train-build-at-stop"), "A locomotive built at a stop says it")
+         ctx:assert(contains(parked, "Platform"), "The stop's name")
          local stopped = built(stop)
          ctx:assert(contains(stopped, "fa.train-build-stop"), "A stop says its name and way")
          ctx:assert(contains(stopped, "Test stop"), "The stop's name")

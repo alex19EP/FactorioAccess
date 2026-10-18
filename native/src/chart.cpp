@@ -177,7 +177,7 @@ std::string patchLabel(const void* info, const void* resource) {
    return labelOf(info, static_cast<const std::byte*>(resource));
 }
 
-void tick() {
+void tick(bool speak) {
    const std::optional<world::CursorPosition> cursor = world::cursorPosition();
    const std::byte* source = cursor ? chartSource() : nullptr;
    alignas(8) std::byte selection[game::kChartSelectionCapacity]{};
@@ -196,7 +196,7 @@ void tick() {
    std::string said = describe(sourcePlayer(source), selection);
    if (said.empty() || said == g_said) return;
    g_said = said;
-   speech::say(std::move(said));
+   if (speak) speech::say(std::move(said));
 }
 
 } // namespace fa::chart
