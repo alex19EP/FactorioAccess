@@ -132,6 +132,15 @@ function mod.get_stack_build_dimensions(stack, direction)
    return width, height
 end
 
+---@param placed LuaEntityPrototype
+---@return boolean
+function mod.is_rolling_stock(placed)
+   return placed.type == "locomotive"
+      or placed.type == "cargo-wagon"
+      or placed.type == "fluid-wagon"
+      or placed.type == "artillery-wagon"
+end
+
 ---Get the rotation count for an item in hand
 ---@param item LuaItemPrototype The item to check
 ---@return integer|nil rotation_count nil (no rotation), 2 (180° only), 4 (cardinal), or 8 (all 8 directions)
@@ -144,14 +153,7 @@ function mod.get_rotation_count(item)
       local placed = item.place_result
 
       -- Rolling stock (locomotives, wagons) only rotate 180 degrees
-      if
-         placed.type == "locomotive"
-         or placed.type == "cargo-wagon"
-         or placed.type == "fluid-wagon"
-         or placed.type == "artillery-wagon"
-      then
-         return 2
-      end
+      if mod.is_rolling_stock(placed) then return 2 end
 
       -- Cars and entities that support direction are 4-way
       if placed.supports_direction or placed.type == "car" then return 4 end

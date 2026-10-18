@@ -168,7 +168,8 @@ const std::byte* topmostAt(const std::byte* surface, Position position, Wanted&&
       if (box.left == box.right || box.top == box.bottom) {
          const Position own = at<Position>(entity, layout.entityPosition);
          if (own.x >> 8 != position.x >> 8 || own.y >> 8 != position.y >> 8) continue;
-      } else if (position.x < box.left || position.x >= box.right || position.y < box.top || position.y >= box.bottom) {
+      } else if (position.x < box.left || position.x >= box.right || position.y < box.top || position.y >= box.bottom ||
+                 !facts::selectionBoxHolds(entity, position.x, position.y)) {
          continue;
       }
       if (!best || less(best, entity, context)) best = entity;
@@ -304,6 +305,12 @@ std::vector<std::string> fixedLabels() {
       "description.storage",
       // What mining gives, on every tree and rock (the user, 2026-10-10).
       "description.expected-resources",
+      // Alike on every tile of a train or rail (the user, 2026-10-19).
+      "description.kills",
+      "description.train-kills",
+      "description.train-circuit-network-id",
+      "description.weight",
+      "description-rail.trains-in-block",
    };
    std::vector<std::string> labels;
    for (const char* key : kKeys) labels.push_back(vocab::translate(key, {}));
@@ -835,18 +842,31 @@ std::vector<Stop> stopsIn(int32_t tileX, int32_t tileY) {
 
 Point landingIn(int32_t tileX, int32_t tileY) {
    const Position centre = centreOf(Position{tileX, tileY});
+   const int32_t left = tileX * kScale, top = tileY * kScale;
+   auto standsHere = [&](const std::byte* entity) {
+      const Position position = at<Position>(entity, layout.entityPosition);
+      return position.x >> 8 == tileX && position.y >> 8 == tileY;
+   };
+   auto coversTile = [&](const std::byte* entity) {
+      const facts::SelectionBox box = facts::selectionBox(entity);
+      return box.left <= left && box.top <= top && box.right >= left + kScale && box.bottom >= top + kScale;
+   };
+   std::optional<Point> landing;
    for (const Stop& stop : stopsIn(tileX, tileY)) {
       const auto* entity = static_cast<const std::byte*>(stop.entity);
       if (!entity || facts::skipsOver(entity) ||
           typeName(at<const std::byte*>(entity, layout.entityPrototypeOf)) == "resource")
          continue;
       // Away from the centre, only what lies on this tile: a small box reaches over its edges.
-      const Position position = at<Position>(entity, layout.entityPosition);
       const bool centred = stop.x == centre.x && stop.y == centre.y;
-      if (!centred && (position.x >> 8 != tileX || position.y >> 8 != tileY)) continue;
-      return Point{stop.x, stop.y};
+      if (!centred && !standsHere(entity)) continue;
+      if (landing) return Point{stop.x, stop.y};
+      // The centre may only touch the edge of a bigger box reaching into the tile, as a train's
+      // reaches half a tile past its rail: what stands on the tile is read before it.
+      if (!centred || standsHere(entity) || coversTile(entity)) return Point{stop.x, stop.y};
+      landing = Point{stop.x, stop.y};
    }
-   return Point{centre.x, centre.y};
+   return landing ? *landing : Point{centre.x, centre.y};
 }
 
 } // namespace fa::reader

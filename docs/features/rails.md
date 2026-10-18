@@ -73,14 +73,14 @@ The straight rails only ever face half of the compass because they are bidirecti
 horizontal west.
 
 The mod helps out with curves by abstracting where possible.  It will announce either a direction and a "left/right"
-specifier, or it will announce "x and y turn" if it understands that this is part of a 90-degree turn between cardinal
-directions (for example north and east).
+specifier, or it will announce "x y turn" if it understands that this is part of a 90-degree turn between cardinal
+directions (for example east north turn).
 
 Some examples:
 
 - Right of southeast: curve going southeast to south southeast
 - left of north: curve going from north to north northwest
-- East and south turn bottom: the southernmost part of a east/south 90 degreee turn
+- East south turn, part 1 of 4: the southernmost part of a east/south 90 degreee turn
 
 NOTE: in Factorio 2.0 a 90 degree curve is 4 turns as the shallowest corners  are now only 22.5 degrees.
 
@@ -88,8 +88,8 @@ As you build more of a larger shape, the mod will recognize more of that larger 
 example, until the 4th place of a 90 degree turn is placed, it will describe the three smaller curves separately.  You
 can use this to help guide you as to whether or not you have built what you wanted.
 
-For 90 degree turns off the cardinals we use the interesting fact that all turns have a "height" and assign the 4
-segments a bottom/lower half/upper half/top designation, going from southmost to northmost on the map.
+For 90 degree turns off the cardinals we use the interesting fact that all turns have a "height" and number the 4
+segments part 1 to part 4 of 4, going from southmost to northmost on the map.
 
 Unlike 1.1, there is no requirement that straight pieces be present anywhere.  You can now do circles with only curved
 pieces.  You can do long straight paths with s-bends going back and forth like a snake.  I don't suggest either for a
@@ -97,6 +97,19 @@ variety of reasons but you can, so can the sighted, and it's your game.
 
 Ghosts are supported.  The only thing to note is that tiles containing both ghosts and non-ghosts are potentially overly
 verbose.  We cannot do better here in any reasonable amount of time.
+
+### Building Trains
+
+A locomotive or wagon in hand turns to the rail under it, as the game does: r turns it around, and the game then lays it
+along the rail the nearer way. So instead of the direction in hand, the mod says the way it would head, "facing West",
+each time that changes: when you take it in hand, after r, and on a rail that runs another way.
+
+Once built, rolling stock says the way it heads, whether it joined the train beside it ("connected, train of 2 cars")
+or "not connected", and the stop the train stands at. A train stop says its name and the way trains face when they stop
+at it. Other buildings stay silent, as the game's build sound marks them.
+
+A train is drawn a little above its rail, and the mouse selects it there: the tile reader says a train on the row just
+north of its rail as well, except where something stands on that row, which is read first.
 
 ### Schedules and Stations
 

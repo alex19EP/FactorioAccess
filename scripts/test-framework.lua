@@ -53,6 +53,7 @@ local test_files = {
    "view-limit-test", -- Test the cursor kept on the screen in the character view
    "god-mode-test", -- Test FA without a character, as in the sandbox
    "train-map-targets-test", -- Test what a click on the map would add to a train's schedule
+   "train-build-test", -- Test what building rolling stock or a train stop says
    "fluid-views-test", -- Test the views read with a pipe's window
    "pole-views-test", -- Test the views read with an electric pole's window
    "belt-views-test", -- Test the lane views read with belt, splitter and loader windows

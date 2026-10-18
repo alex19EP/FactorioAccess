@@ -1050,13 +1050,27 @@ struct Box {
    Position rightBottom;
 };
 
-Box selectionBoxOf(const std::byte* entity) {
+// The BoundingBox the mouse selects `entity` in, with its orientation.
+struct GameBox {
+   alignas(8) std::byte bytes[game::kBoundingBoxCapacity]{};
+};
+
+GameBox gameSelectionBox(const std::byte* entity) {
    using SelectionBox = void* (*)(const void* entity, std::byte* out, const void* context);
-   // A BoundingBox, and a SelectionContext the call ignores.
-   alignas(8) std::byte out[game::kBoundingBoxCapacity]{};
+   // A SelectionContext the call ignores.
    alignas(8) std::byte context[64]{};
-   reinterpret_cast<SelectionBox>(layout.entitySelectionBox)(entity, out, context);
-   return at<Box>(out, 0);
+   GameBox box;
+   reinterpret_cast<SelectionBox>(layout.entitySelectionBox)(entity, box.bytes, context);
+   return box;
+}
+
+// The corners around the selection box. A train's box is turned by its orientation, and its own
+// corners are those of the box unturned.
+Box selectionBoxOf(const std::byte* entity) {
+   const GameBox box = gameSelectionBox(entity);
+   GameBox around;
+   reinterpret_cast<void* (*)(const std::byte* box, std::byte* out)>(layout.boundingAabb)(box.bytes, around.bytes);
+   return {at<Position>(around.bytes, layout.boundingLeftTop), at<Position>(around.bytes, layout.boundingRightBottom)};
 }
 
 // Where a drill drops what it mines (Entity::getDropTargetPosition): its prototype's drop vector,
@@ -2101,11 +2115,9 @@ std::string stopPreview(const std::byte* surface, const std::byte* rail, Positio
 }
 
 // What a rail is said as (RailAnnouncer.announce_rail).
-std::string railWords(const std::byte* surface, const std::byte* rail, RailType type, bool ghost, bool first,
-                      Position tile) {
+std::string railWords(const std::byte* surface, const std::byte* rail, RailType type, bool ghost, Position tile) {
    std::vector<std::string> words;
    if (ghost) words.emplace_back(vocab::kRailGhost);
-   if (first) words.emplace_back(vocab::kRailPrefix);
    words.push_back(vocab::translate(("fa.rails-descriptions-" + railKind(rail, type, !ghost)).c_str(), {}));
    std::vector<std::string> items;
    if (!ghost) {
@@ -2207,9 +2219,9 @@ std::string railsOnTile(const std::byte* surface, const std::byte* selected, Pos
    add(selected);
    std::vector<std::string> said;
    for (const TileRail& rail : primaryRails(surface, rails, false))
-      said.push_back(railWords(surface, rail.rail, rail.type, false, said.empty(), tile));
+      said.push_back(railWords(surface, rail.rail, rail.type, false, tile));
    for (const TileRail& rail : primaryRails(surface, ghosts, true))
-      said.push_back(railWords(surface, rail.rail, rail.type, true, said.empty(), tile));
+      said.push_back(railWords(surface, rail.rail, rail.type, true, tile));
    return joined(said, ", ");
 }
 
@@ -2252,6 +2264,19 @@ std::vector<const void*> entitiesIn(const void* surface, int32_t left, int32_t t
 SelectionBox selectionBox(const void* entity) {
    const Box box = selectionBoxOf(static_cast<const std::byte*>(entity));
    return {box.leftTop.x, box.leftTop.y, box.rightBottom.x, box.rightBottom.y};
+}
+
+std::optional<uint8_t> rollingStockHeading(const void* entity) {
+   const auto* stock = static_cast<const std::byte*>(entity);
+   if (!isRollingStock(typeName(prototypeOf(stock)))) return std::nullopt;
+   return headingOf(stock);
+}
+
+bool selectionBoxHolds(const void* entity, int32_t x, int32_t y) {
+   const GameBox box = gameSelectionBox(static_cast<const std::byte*>(entity));
+   const Position point{x, y};
+   return reinterpret_cast<bool (*)(const std::byte* box, const Position* point)>(layout.boundingCollidePoint)(
+      box.bytes, &point);
 }
 
 namespace {

@@ -487,6 +487,14 @@ std::optional<PreviewKey> g_spokenPreview;
 // Whether "out of reach" was said since the preview was last in reach: it is said once on leaving
 // reach, not on every move out there.
 bool g_outOfReachSaid = false;
+// The way the rolling stock in hand last said it heads, of the entity in hand: the preview turns to
+// the rail under it, so the way is said when it changes, not the build direction.
+struct SpokenHeading {
+   uint16_t entity;
+   uint8_t heading;
+   bool operator==(const SpokenHeading&) const = default;
+};
+std::optional<SpokenHeading> g_spokenHeading;
 
 using PrepareBuildingFunction = int (*)(void* renderer, const void* player, const Position* cursor, void* drawQueue);
 PrepareBuildingFunction g_prepareBuildingOriginal = nullptr;
@@ -495,6 +503,7 @@ PrepareBuildingFunction g_prepareBuildingOriginal = nullptr;
 int detourPrepareBuilding(void* renderer, const void* player, const Position* cursor, void* drawQueue) {
    if (t_inScriptBuild || !modDrivesCursor(player)) {
       g_spokenPreview.reset();
+      g_spokenHeading.reset();
       return g_prepareBuildingOriginal(renderer, player, cursor, drawQueue);
    }
    alignas(8) std::byte input[game::kSimpleBuildInputCapacity];
@@ -527,6 +536,7 @@ int detourPrepareBuilding(void* renderer, const void* player, const Position* cu
    } gathering(placement, entity == 0);
    if (entity == 0) {
       g_spokenPreview.reset();
+      g_spokenHeading.reset();
       return g_prepareBuildingOriginal(renderer, player, position, drawQueue);
    }
    struct Scope {
@@ -697,7 +707,9 @@ facts::Design designOfHand() {
               if (found == g_blueprintTiles.end()) return nullptr;
               for (const void* entity : found->second) {
                  const facts::SelectionBox box = facts::selectionBox(entity);
-                 if (x >= box.left && x < box.right && y >= box.top && y < box.bottom) return entity;
+                 if (x >= box.left && x < box.right && y >= box.top && y < box.bottom &&
+                     facts::selectionBoxHolds(entity, x, y))
+                    return entity;
               }
               return nullptr;
            },
@@ -841,6 +853,14 @@ void detourSettingsDraw(const void* settings, void* drawQueue, const void* entit
    const bool drag = localDragging();
    const void* inTheWay = nullptr;
    std::string meaning = previewMeaning(settings, entity, t_preview.key.position, drag, inTheWay);
+   if (const std::optional<uint8_t> heading = facts::rollingStockHeading(entity)) {
+      const SpokenHeading now{t_preview.key.entity, *heading};
+      if (g_spokenHeading != now) {
+         g_spokenHeading = now;
+         std::string facing = vocab::kFacing(vocab::kDirection(*heading));
+         meaning = meaning.empty() ? std::move(facing) : facing + ", " + meaning;
+      }
+   }
    // What the drag's step found changed under the cursor comes first (cursor.h).
    if (drag) {
       std::string news = cursor::takeDragNews(meaning.empty() ? nullptr : inTheWay);

@@ -509,7 +509,6 @@ inline constexpr Word kIconDenied{"fa.ent-icon-denied"};
 // fa.rails-descriptions-* keys), lonely or which end is open, its junctions, the signals at an end
 // and a station beside it, and where a train stopped at a station near it would have its cars.
 inline constexpr Word kRailGhost{"fa.rail-ghost-prefix"};
-inline constexpr Word kRailPrefix{"fa.rail-prefix"};
 inline constexpr Word kRailLonely{"fa.rail-lonely"};
 inline constexpr Word kRailEnds{"fa.rail-end-direction"};
 inline constexpr Word kRailSplit{"fa.rail-junction-split"};

@@ -122,8 +122,8 @@ std::vector<const void*> drillResources(const void* drill);
 // positions in the game's fixed point, as EntitySearch<Entity> finds them.
 std::vector<const void*> entitiesIn(const void* surface, int32_t left, int32_t top, int32_t right, int32_t bottom);
 
-// The box the mouse selects `entity` in (Entity::getSelectionBox), in fixed point; a vehicle's as
-// if unturned.
+// The corners around the box the mouse selects `entity` in (Entity::getSelectionBox), in fixed
+// point. A train's box is turned with it, and these are the corners around it as turned.
 struct SelectionBox {
    int32_t left;
    int32_t top;
@@ -131,5 +131,12 @@ struct SelectionBox {
    int32_t bottom;
 };
 SelectionBox selectionBox(const void* entity);
+
+// The way rolling stock heads, of the eight, as a 16-way direction; nothing for another entity. The
+// preview in hand heads along the rail under it, the build direction turned to the nearer way.
+std::optional<uint8_t> rollingStockHeading(const void* entity);
+
+// Whether the box the mouse selects `entity` in holds the point, turned as the entity is.
+bool selectionBoxHolds(const void* entity, int32_t x, int32_t y);
 
 } // namespace fa::facts

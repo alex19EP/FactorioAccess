@@ -2475,6 +2475,9 @@ struct Layout {
    // returns the same corners with the unrotated orientation. A box left zeroed collides with no
    // rotated entity (BoundingBox::collide), such as a cliff's corners and ends.
    uintptr_t boundingAabb = 0;
+   // bool BoundingBox::collide(MapPosition const&) const: whether the box, turned by its
+   // orientation (a train's), holds the point.
+   uintptr_t boundingCollidePoint = 0;
 };
 
 // Bits of agui::Widget::usageBitMask, read from Widget::setVisible and Widget::isEnabled in

@@ -1740,6 +1740,7 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.boundingLeftTop, "BoundingBox", "leftTop");
    offset(layout.boundingRightBottom, "BoundingBox", "rightBottom");
    address(layout.boundingAabb, "?getAABB@BoundingBox@@QEBA?AV1@XZ");
+   address(layout.boundingCollidePoint, "?collide@BoundingBox@@QEBA_NAEBVMapPosition@@@Z");
 
    if (ok && (layout.chartSelectionSize > kChartSelectionCapacity || layout.patchInfoSize > kPatchInfoCapacity)) {
       log::error("A chart structure outgrew its buffer: ChartSelection {} bytes, ResourcePatchInfo {}",

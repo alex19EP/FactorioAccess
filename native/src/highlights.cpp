@@ -1,6 +1,7 @@
 #include "highlights.h"
 
 #include "agui.h"
+#include "facts.h"
 #include "footprint.h"
 #include "game.h"
 #include "log.h"
@@ -198,12 +199,20 @@ const std::byte* findEntity(const void* surface, Position leftTop, Position righ
 
 using SelectionBoxFunction = Box* (*)(const void* entity, std::byte* out, const void* context);
 
-Box selectionBox(const std::byte* entity) {
+// The corners of the entity's selection box as the game keeps it: a train's as if unturned, the
+// corners a highlight is drawn with.
+Box ownSelectionBox(const std::byte* entity) {
    // A BoundingBox, and a SelectionContext the call ignores.
-   alignas(8) std::byte out[32]{};
+   alignas(8) std::byte out[game::kBoundingBoxCapacity]{};
    alignas(8) std::byte context[64]{};
    reinterpret_cast<SelectionBoxFunction>(layout.entitySelectionBox)(entity, out, context);
    return at<Box>(out, 0);
+}
+
+// The corners around the selection box, a train's turned with it.
+Box selectionBox(const std::byte* entity) {
+   const facts::SelectionBox box = facts::selectionBox(entity);
+   return {{box.left, box.top}, {box.right, box.bottom}};
 }
 
 // The entity a highlight box was drawn on: the one with that selection box.
@@ -211,7 +220,7 @@ const std::byte* entityWithBox(const void* surface, const Box& box) {
    constexpr int32_t kMargin = 2 * game::kMapPositionScale;
    return findEntity(surface, {box.leftTop.x - kMargin, box.leftTop.y - kMargin},
                      {box.rightBottom.x + kMargin, box.rightBottom.y + kMargin}, [&](const std::byte* entity) {
-                        const Box candidate = selectionBox(entity);
+                        const Box candidate = ownSelectionBox(entity);
                         return candidate.leftTop == box.leftTop && candidate.rightBottom == box.rightBottom;
                      });
 }

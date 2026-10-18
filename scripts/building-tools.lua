@@ -225,6 +225,8 @@ function mod.rotate_item_in_hand(event)
    end
 
    local item = held_item(p)
+   -- Rolling stock turns to the rail under it: its preview says the way it heads once drawn turned.
+   if item and item.place_result and BuildDimensions.is_rolling_stock(item.place_result) then return end
    if (item and BuildDimensions.get_rotation_count(item)) or holds_library_blueprint(p) then
       local drag = NativeCursor.drag_build(pindex)
       if drag and drag.turn_pending then
