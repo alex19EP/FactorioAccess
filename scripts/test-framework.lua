@@ -55,6 +55,7 @@ local test_files = {
    "train-map-targets-test", -- Test what a click on the map would add to a train's schedule
    "fluid-views-test", -- Test the views read with a pipe's window
    "pole-views-test", -- Test the views read with an electric pole's window
+   "belt-views-test", -- Test the lane views read with belt, splitter and loader windows
    "map-overlays-test", -- Test what the map's overlays say over a map cell
    "area-summary-test", -- Test the area summary's water-like tiles
    "setting-toggle-test", -- Test the keys that toggle per-player settings

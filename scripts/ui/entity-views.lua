@@ -1,9 +1,10 @@
 --[[
 FA's own views of an entity, attached to the game's window for it: what the window does not show,
 such as what a belt carries or where a pipe connects. Each view is a frame to the right of the
-window (a relative GUI element), captioned with the view's title, holding its columns side by side
-in a table under a header row of their titles. The native screen for the window reads each frame as
-a stop after the window's own (native/src/screens/EntityWindowScreen.hpp).
+window (a relative GUI element), captioned with the view's title, holding its columns side by side,
+each a vertical flow headed by its title. The native screen for the window reads each frame as a
+stop after the window's own (native/src/screens/EntityWindowScreen.hpp), and columns of text as
+columns: Up and Down walk one, Left and Right go to the same line of the next.
 
 Every player gets the views, running the DLL or not, so every peer changes the game's GUI the same
 way. They are built as the window opens and destroyed as it closes; reopening it takes them again.
@@ -55,12 +56,12 @@ end
 
 -- A cell's label, wrapping its text at the column's width: a line that runs on would leave the
 -- screen beside a wide window.
----@param grid LuaGuiElement
+---@param column LuaGuiElement
 ---@param caption LocalisedString
 ---@param width integer
 ---@param style string?
-local function add_cell(grid, caption, width, style)
-   local label = grid.add({ type = "label", caption = caption, style = style })
+local function add_cell(column, caption, width, style)
+   local label = column.add({ type = "label", caption = caption, style = style })
    label.style.single_line = false
    label.style.maximal_width = width
 end
@@ -78,27 +79,16 @@ local function add_view(player, source, index, view)
       anchor = { gui = source.gui, position = defines.relative_gui_position.right },
    })
    local inside = frame.add({ type = "frame", style = "inside_shallow_frame_with_padding", direction = "vertical" })
-   local columns = {}
-   local rows = 0
-   local titled = false
+   local row = inside.add({ type = "flow", direction = "horizontal" })
+   row.style.horizontal_spacing = 16
    for _, column in ipairs(view.columns) do
       if #column.cells > 0 then
-         table.insert(columns, column)
-         rows = math.max(rows, #column.cells)
-         titled = titled or column.title ~= nil
-      end
-   end
-   local grid = inside.add({ type = "table", column_count = #columns })
-   grid.style.horizontal_spacing = 16
-   grid.style.vertical_spacing = 6
-   if titled then
-      for _, column in ipairs(columns) do
-         add_cell(grid, column.title or "", source.column_width, "caption_label")
-      end
-   end
-   for row = 1, rows do
-      for _, column in ipairs(columns) do
-         add_cell(grid, column.cells[row] or "", source.column_width)
+         local flow = row.add({ type = "flow", direction = "vertical" })
+         flow.style.vertical_spacing = 6
+         if column.title then add_cell(flow, column.title, source.column_width, "caption_label") end
+         for _, cell in ipairs(column.cells) do
+            add_cell(flow, cell, source.column_width)
+         end
       end
    end
 end

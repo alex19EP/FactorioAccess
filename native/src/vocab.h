@@ -54,6 +54,8 @@ inline constexpr Word kPressed{"fa.native-pressed"};
 inline constexpr Word kNotPressed{"fa.native-not-pressed"};
 inline constexpr Word kLeft{"fa.native-left"};
 inline constexpr Word kRight{"fa.native-right"};
+// A switch with its knob between the two sides: neither is on.
+inline constexpr Word kSwitchMiddle{"fa.native-switch-middle"};
 inline constexpr Word kDisabled{"fa.native-disabled"};
 inline constexpr Word kReadOnly{"fa.native-read-only"};
 inline constexpr Word kBlank{"fa.native-blank"};

@@ -501,6 +501,7 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.sliderMax, "agui::Slider", "max");
    offset(layout.sliderStep, "agui::Slider", "valueStep");
    offset(layout.switchState, "agui::Switch", "state");
+   offset(layout.switchAllowNone, "agui::Switch", "allowNoneState");
    offset(layout.labeledSwitchSwitch, "LabeledSwitch", "switchWidget");
    offset(layout.labeledSwitchLeft, "LabeledSwitch", "leftValueLabel");
    offset(layout.labeledSwitchRight, "LabeledSwitch", "rightValueLabel");

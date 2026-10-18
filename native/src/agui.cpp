@@ -2151,6 +2151,20 @@ void pressAt(const Widget* widget, int x, int y, MouseButton button, bool shift,
    pressInside(widget, widget, {x, y}, button, shift, control);
 }
 
+void pressSwitch(const Widget* toggle) {
+   // Switch::mouseClick splits the width in thirds; the middle of each third is clicked.
+   int sixths = 3;
+   if (at<bool>(asBaseChecked(toggle, ".?AVSwitch@agui@@"), layout.switchAllowNone)) {
+      switch (switchState(toggle)) {
+      case SwitchState::Left: sixths = 3; break;
+      case SwitchState::None: sixths = 5; break;
+      case SwitchState::Right: sixths = 1; break;
+      }
+   }
+   Pair size = at<Pair>(toggle, layout.widgetSize);
+   pressInside(toggle, toggle, {size.x * sixths / 6, size.y / 2}, MouseButton::Left, false, false);
+}
+
 const std::byte* objectAsBase(const void* object, std::string_view decoratedBase) {
    return asBase(static_cast<const Widget*>(object), decoratedBase);
 }

@@ -13,7 +13,10 @@
 //   - a row of texts only is one line ("Map version: 2.0.72"), and a label leading a row with a
 //     single control names that control
 //   - a multi-line label reads a line per node
-//   - a switch with a label at each side (whitelist, blacklist) is one switch reading its side
+//   - vertical flows of texts side by side (FA's lane views) are columns: Up/Down walk a column,
+//     Left/Right go to the same line of the next, and a column's first text heads it
+//   - a switch with a label at each side (whitelist, blacklist) is one switch reading its side;
+//     Enter steps it as a controller does, through the middle when it has one
 //
 // Activation never touches the mouse: buttons, toggles, tabs and dropdowns are pressed the way the
 // Gui presses the widget under a real click (agui::press), sliders step on the arrow keys through

@@ -232,9 +232,10 @@ std::string ValueText(const Widget* widget, Kind kind)
             return std::string(vocab::kLeft);
         case agui::SwitchState::Right:
             return std::string(vocab::kRight);
-        default:
-            return {};
+        case agui::SwitchState::None:
+            return std::string(vocab::kSwitchMiddle);
         }
+        return {};
     case Kind::TextBox:
     {
         std::string content = text::speakable(agui::textBoxText(widget));
@@ -467,6 +468,11 @@ public:
         }
         case Kind::HorizontalFlow:
         {
+            if (std::vector<std::vector<const Widget*>> columns = TextColumns(widget); columns.size() > 1)
+            {
+                Columns(columns, path);
+                return;
+            }
             // Only a strip of single items is a row; panels laid out side by side (a list beside
             // its details) stay vertical, each read top-down.
             std::vector<const Widget*> items;
@@ -703,6 +709,83 @@ private:
         }
     }
 
+    // The texts of each vertical flow side by side in `flow`, when that is all it holds: columns of
+    // text, such as FA's lane views. Empty when anything else is there.
+    std::vector<std::vector<const Widget*>> TextColumns(const Widget* flow) const
+    {
+        std::vector<std::vector<const Widget*>> columns;
+        bool texts = true;
+        ForEachChild(flow,
+            [&](const Widget* child, const std::string&)
+            {
+                if (!texts || Skipped(child) || !Shows(child))
+                    return;
+                if (!agui::derivesFrom(child, "agui::VerticalFlow"))
+                {
+                    texts = false;
+                    return;
+                }
+                std::vector<const Widget*>& lines = columns.emplace_back();
+                ForEachChild(child,
+                    [&](const Widget* line, const std::string&)
+                    {
+                        if (!texts || Skipped(line) || !Shows(line))
+                            return;
+                        if (KindOf(line) != Kind::Label)
+                            texts = false;
+                        else if (!Phrase(line).empty())
+                            lines.push_back(line);
+                    });
+                texts = texts && !lines.empty();
+            });
+        return texts ? columns : std::vector<std::vector<const Widget*>>{};
+    }
+
+    // Columns of text (TextColumns): Up and Down walk a column, Left and Right go to the same line of
+    // the column beside it. A column's first text heads it, the context its other lines are read in.
+    void Columns(const std::vector<std::vector<const Widget*>>& columns, const std::string& path)
+    {
+        std::vector<std::vector<graph::ControlId>> ids(columns.size());
+        for (std::size_t c = 0; c < columns.size(); ++c)
+        {
+            const std::vector<const Widget*>& lines = columns[c];
+            const bool headed = lines.size() > 1;
+            if (headed)
+                _builder.PushContext(Phrase(lines.front()), "", /*positions*/ false);
+            const std::size_t first = headed ? 1 : 0;
+            const int count = static_cast<int>(lines.size() - first);
+            for (std::size_t i = first; i < lines.size(); ++i)
+            {
+                const Widget* line = lines[i];
+                graph::NodeVtable node = TextNode(line, [line]() { return Phrase(line); });
+                const int index = static_cast<int>(i - first) + 1;
+                if (count > 1)
+                {
+                    node.Announcements.emplace_back([index, count]() { return vocab::position(index, count); }, false,
+                        graph::AnnouncementKinds::Position);
+                    node.SpeaksOwnPosition = true;
+                }
+                std::string key = Key(path) + "#" + std::to_string(c) + "." + std::to_string(i);
+                ids[c].push_back(graph::ControlId::Referenced(line, key));
+                Add(key, std::move(node), /*raw*/ true);
+            }
+            if (headed)
+                _builder.PopContext();
+        }
+        for (std::size_t c = 0; c < ids.size(); ++c)
+            for (std::size_t i = 0; i < ids[c].size(); ++i)
+            {
+                if (i > 0)
+                    _builder.Connect(ids[c][i], graph::GraphDir::Up, ids[c][i - 1]);
+                if (i + 1 < ids[c].size())
+                    _builder.Connect(ids[c][i], graph::GraphDir::Down, ids[c][i + 1]);
+                if (c > 0)
+                    _builder.Connect(ids[c][i], graph::GraphDir::Left, ids[c - 1][std::min(i, ids[c - 1].size() - 1)]);
+                if (c + 1 < ids.size())
+                    _builder.Connect(ids[c][i], graph::GraphDir::Right, ids[c + 1][std::min(i, ids[c + 1].size() - 1)]);
+            }
+    }
+
     // One line of a multi-line label, re-read live like any other label.
     void EmitLine(const Widget* label, const std::string& path, std::size_t index)
     {
@@ -719,7 +802,8 @@ private:
 
     bool Skipped(const Widget* widget) const { return Contains(_skip, widget); }
 
-    void Add(const std::string& key, graph::NodeVtable vtable)
+    // A raw node is wired by the caller (Connect) rather than as a row of the list.
+    void Add(const std::string& key, graph::NodeVtable vtable, bool raw = false)
     {
         auto* widget = static_cast<const Widget*>(vtable.HostTag);
         if (auto it = _attachments.find(widget); it != _attachments.end())
@@ -731,7 +815,10 @@ private:
             _builder.PushContext(context);
         if (Reorder)
             vtable.OnReorder = Reorder;
-        _builder.AddItem(graph::ControlId::Referenced(widget, key), std::move(vtable));
+        if (raw)
+            _builder.AddNode(graph::ControlId::Referenced(widget, key), std::move(vtable));
+        else
+            _builder.AddItem(graph::ControlId::Referenced(widget, key), std::move(vtable));
         if (!context.empty())
             _builder.PopContext();
     }
@@ -1230,6 +1317,9 @@ graph::NodeVtable ControlNode(const Widget* widget, std::function<std::string()>
         vtable.OnActivateShift = [widget]() { agui::press(widget, agui::MouseButton::Left, true, false); };
         vtable.OnActivateCtrl = [widget]() { agui::press(widget, agui::MouseButton::Left, false, true); };
         vtable.OnSecondary = [widget]() { agui::press(widget, agui::MouseButton::Right, false, false); };
+        // A switch's click acts on where it lands.
+        if (kind == Kind::Switch)
+            vtable.OnActivate = [widget]() { agui::pressSwitch(widget); };
         // A dropdown's value comes from its list; its state settles once that closes.
         if (kind != Kind::DropDown)
             vtable.StateText = stateText;
@@ -1270,9 +1360,10 @@ graph::NodeVtable LabeledSwitchNode(const Widget* labeledSwitch)
             return Phrase(left);
         case agui::SwitchState::Right:
             return Phrase(right);
-        default:
-            return std::string();
+        case agui::SwitchState::None:
+            return std::string(vocab::kSwitchMiddle);
         }
+        return std::string();
     };
     graph::NodeVtable vtable = ControlNode(toggle, []() { return std::string(); });
     for (graph::NodeAnnouncement& part : vtable.Announcements)

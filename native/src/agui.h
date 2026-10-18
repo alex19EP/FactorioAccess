@@ -849,6 +849,11 @@ void pressOver(const Widget* widget, const Widget* over, MouseButton button, boo
 // The same at a point of the widget, in its own coordinates: for widgets that act on the place
 // clicked inside them, such as a blueprint's picture.
 void pressAt(const Widget* widget, int x, int y, MouseButton button, bool shift, bool control);
+// Moves an agui::Switch one step with a left click where the mouse would click to move it there.
+// A switch of two sides flips wherever it is clicked. One with a middle (a splitter's priority)
+// takes the third clicked, so the press lands on the next state in the game's own order for a
+// controller: left, middle, right, then left again.
+void pressSwitch(const Widget* toggle);
 // Detour for determineWidgetUnderMouse: during a press the mouse is over the pressed widget, so the
 // controls its handlers ask about (craft, craft-5, craft-all) hold wherever the real mouse is. While
 // the mod drives the cursor the mouse is over no GUI otherwise, so the world answers the FA cursor

@@ -753,6 +753,7 @@ struct Layout {
    uint32_t sliderMax = 0;
    uint32_t sliderStep = 0;    // double
    uint32_t switchState = 0;   // agui::SwitchState
+   uint32_t switchAllowNone = 0; // allowNoneState, bool: a middle between the two sides
    // LabeledSwitch, a HorizontalFlow: the switch between a label for each side ("Whitelist",
    // "Blacklist").
    uint32_t labeledSwitchSwitch = 0; // switchWidget, agui::Switch
