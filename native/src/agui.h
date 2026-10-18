@@ -777,6 +777,9 @@ struct TechnologyInfo {
    std::string status;
    unsigned queuePosition = 0;
    double progress = 0;
+   // What the button draws along its bottom: the science packs of a research unit, or the icon of
+   // what a trigger technology asks for. Empty where the button draws none.
+   std::vector<std::string> ingredients;
 };
 TechnologyInfo technologyInfo(const Widget* slot);
 

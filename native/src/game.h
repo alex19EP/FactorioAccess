@@ -1824,8 +1824,27 @@ struct Layout {
    uint32_t techSlotResearchQueue = 0;   // TechnologySlot::researchQueue, ResearchQueue* (may be null)
    uint32_t techSlotResearchManager = 0; // TechnologySlot::researchManager, ResearchManager* (may be null)
    uint32_t techSlotIndicateProgress = 0; // TechnologySlot::indicateProgress: 0 none, else a bar is drawn
+   uint32_t techSlotShowIngredients = 0; // TechnologySlot::showIngredients, bool: the button draws its packs
    uint32_t techReferenceId = 0;         // TechnologyReference::technologyID, ID<TechnologyPrototype,u16>
    uint32_t technologyPrototype = 0;     // Technology::prototype
+   uint32_t technologyTrigger = 0;       // Technology::researchTrigger, TechnologyTrigger* (null: lab research)
+   // TechnologyPrototype::researchUnitIngredients, std::vector<ResearchIngredient>: the science packs
+   // one research unit takes, in the order the game draws them.
+   uint32_t techIngredients = 0;
+   uint32_t researchIngredientSize = 0;  // sizeof(ResearchIngredient)
+   uint32_t researchIngredientItem = 0;  // ResearchIngredient::id, ID<ItemPrototype,u16>
+   // What a trigger technology's button draws in place of the packs: the icon of the prototype its
+   // trigger names (TechnologyTriggerPrototype::getRequirementSprite of each kind).
+   uint32_t triggerGetPrototype = 0;     // TechnologyTrigger::getPrototype, virtual slot: its prototype
+   uint32_t triggerCraftItem = 0;        // CraftItemTechnologyTriggerPrototype::itemFilter.base.id
+   uint32_t triggerCraftFluid = 0;       // CraftFluidTechnologyTriggerPrototype::fluidID.id
+   uint32_t triggerOrbitItem = 0;        // SendItemToOrbitTechnologyTriggerPrototype::itemFilter.base.id
+   uint32_t triggerBuildEntity = 0;      // BuildEntityTechnologyTriggerPrototype::entityFilter.base.id
+   // MineEntityTechnologyTriggerPrototype::entities, std::vector<IDConnector<ID<EntityPrototype>>>,
+   // never empty; the button shows the first.
+   uint32_t triggerMineEntities = 0;
+   uint32_t entityConnectorId = 0;       // IDConnector<ID<EntityPrototype,u16>>::id
+   uint32_t triggerCaptureEntity = 0;    // CaptureSpawnerTechnologyTriggerPrototype::entityID.id, 0 for any
    uint32_t researchQueueMap = 0;        // ResearchQueue::queue, std::deque<ID<TechnologyPrototype,u16>>: _Map
    uint32_t researchQueueMapSize = 0;    // ... _Mapsize
    uint32_t researchQueueOffset = 0;     // ... _Myoff

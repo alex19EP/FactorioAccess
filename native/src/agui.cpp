@@ -1,6 +1,7 @@
 #include "agui.h"
 
 #include "game.h"
+#include "prototypes.h"
 #include "world.h"
 
 #include <windows.h>
@@ -1745,6 +1746,61 @@ std::vector<QueueEntry> researchQueueEntries(const Widget* queue) {
 
 bool isTechnologySlot(const Widget* widget) { return asBase(widget, ".?AVTechnologySlot@@") != nullptr; }
 
+namespace {
+
+std::optional<std::string> prototypeNameAt(uintptr_t list, uint16_t id) {
+   const std::byte* prototype = prototypeAt(list, id);
+   if (!prototype) return std::nullopt;
+   return std::string(localisedName(prototype));
+}
+
+// The prototype whose icon a trigger technology's button shows, by name, as each kind's
+// getRequirementSprite picks it: the item to craft or send to orbit, the fluid to make, the entity
+// to build or mine. The game shows the capture robot for capturing any spawner and the cargo pod
+// for creating a space platform. A scripted trigger's icon is its own and names nothing.
+std::optional<std::string> triggerSubject(const std::byte* trigger) {
+   const auto* prototype = callVirtualAt<const std::byte*>(trigger, layout.triggerGetPrototype);
+   const std::string& kind = className(reinterpret_cast<const Widget*>(prototype));
+   if (kind == "CraftItemTechnologyTriggerPrototype")
+      return prototypeNameAt(layout.itemPrototypes, at<uint16_t>(prototype, layout.triggerCraftItem));
+   if (kind == "SendItemToOrbitTechnologyTriggerPrototype")
+      return prototypeNameAt(layout.itemPrototypes, at<uint16_t>(prototype, layout.triggerOrbitItem));
+   if (kind == "CraftFluidTechnologyTriggerPrototype")
+      return prototypeNameAt(layout.fluidPrototypes, at<uint16_t>(prototype, layout.triggerCraftFluid));
+   if (kind == "BuildEntityTechnologyTriggerPrototype")
+      return prototypeNameAt(layout.entityPrototypes, at<uint16_t>(prototype, layout.triggerBuildEntity));
+   if (kind == "MineEntityTechnologyTriggerPrototype") {
+      const auto& entities = at<MsvcVector<const std::byte>>(prototype, layout.triggerMineEntities);
+      return prototypeNameAt(layout.entityPrototypes, at<uint16_t>(entities.first, layout.entityConnectorId));
+   }
+   if (kind == "CaptureSpawnerTechnologyTriggerPrototype") {
+      uint16_t spawner = at<uint16_t>(prototype, layout.triggerCaptureEntity);
+      return spawner ? prototypeNameAt(layout.entityPrototypes, spawner)
+                     : prototypes::localisedName("entity", "capture-robot");
+   }
+   if (kind == "CreateSpacePlatformTechnologyTriggerPrototype") return prototypes::localisedName("entity", "cargo-pod");
+   return std::nullopt;
+}
+
+// What TechnologySlot::drawIngredients draws along the bottom of a technology's button, by name.
+std::vector<std::string> ingredientNames(const std::byte* technology) {
+   std::vector<std::string> names;
+   if (const auto* trigger = at<const std::byte*>(technology, layout.technologyTrigger)) {
+      if (std::optional<std::string> subject = triggerSubject(trigger)) names.push_back(std::move(*subject));
+      return names;
+   }
+   const auto* prototype = at<const std::byte*>(technology, layout.technologyPrototype);
+   const auto& ingredients = at<MsvcVector<const std::byte>>(prototype, layout.techIngredients);
+   for (const std::byte* ingredient = ingredients.first; ingredient < ingredients.last;
+        ingredient += layout.researchIngredientSize)
+      if (std::optional<std::string> name =
+             prototypeNameAt(layout.itemPrototypes, at<uint16_t>(ingredient, layout.researchIngredientItem)))
+         names.push_back(std::move(*name));
+   return names;
+}
+
+} // namespace
+
 TechnologyInfo technologyInfo(const Widget* slot) {
    const std::byte* self = asBaseChecked(slot, ".?AVTechnologySlot@@");
    const std::byte* reference = self + layout.techSlotTechnology;
@@ -1754,6 +1810,7 @@ TechnologyInfo technologyInfo(const Widget* slot) {
    const std::byte* technology = technologyOf(reference);
    auto level = reinterpret_cast<unsigned (*)(const std::byte*)>(layout.techSlotLevel)(self);
    info.name = nameWithLevel(at<const std::byte*>(technology, layout.technologyPrototype), level);
+   if (at<bool>(self, layout.techSlotShowIngredients)) info.ingredients = ingredientNames(technology);
 
    const std::byte* queue = at<const std::byte*>(self, layout.techSlotResearchQueue);
    info.queuePosition = queue ? queuePosition(queue, info.id) : 0;

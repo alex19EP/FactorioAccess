@@ -1,6 +1,7 @@
 #include "text.h"
 
 #include "prototypes.h"
+#include "vocab.h"
 
 #include <algorithm>
 #include <array>
@@ -60,10 +61,13 @@ struct Icon {
    std::string quality;
 };
 
-// A sprite path, "item/iron-plate" or "item.iron-plate", names a prototype by its category. Any
-// other sprite (utility/clock, quantity-time) reads as its own name.
+// A sprite path, "item/iron-plate" or "item.iron-plate", names a prototype by its category. The
+// clock and the cross the game puts before a number in place of a word read as that word; any other
+// sprite (utility/clock) reads as its own name.
 Icon spriteIcon(std::string_view path) {
    path = path.substr(0, path.find(';')); // [img=infinity;tint=...]
+   if (path == "quantity-time") return {vocab::kClock, {}};
+   if (path == "quantity-multiplier") return {vocab::kMultiplier, {}};
    size_t separator = path.find_first_of("/.");
    if (separator == std::string_view::npos) return {readable(path), {}};
    std::string_view category = path.substr(0, separator);

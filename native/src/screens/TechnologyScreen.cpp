@@ -45,9 +45,18 @@ std::string ProgressText(const agui::TechnologyInfo& info)
     return info.progress > 0 ? std::format("{:.0f}%", info.progress * 100) : std::string();
 }
 
+std::string IngredientsText(const agui::TechnologyInfo& info)
+{
+    std::string text;
+    for (const std::string& name : info.ingredients)
+        text += text.empty() ? name : ", " + name;
+    return text;
+}
+
 // A technology's button: its name with its level, then its status, live so that starting or
-// queueing it is heard; the progress is read when reached, as it moves all the time. Clicked as the
-// mouse would.
+// queueing it is heard; the progress is read when reached, as it moves all the time. Last, the
+// science packs drawn along the button's bottom, which tell at a glance what the research takes.
+// Clicked as the mouse would.
 graph::NodeVtable TechnologyNode(const Widget* slot)
 {
     graph::NodeVtable vtable = ControlNode(slot);
@@ -56,6 +65,7 @@ graph::NodeVtable TechnologyNode(const Widget* slot)
     vtable.Announcements.emplace_back([slot]() { return agui::technologyInfo(slot).name; }, false, Kinds::Label);
     vtable.Announcements.emplace_back([slot]() { return StatusText(agui::technologyInfo(slot)); }, true, Kinds::Value);
     vtable.Announcements.emplace_back([slot]() { return ProgressText(agui::technologyInfo(slot)); });
+    vtable.Announcements.emplace_back([slot]() { return IngredientsText(agui::technologyInfo(slot)); });
     return vtable;
 }
 
@@ -161,10 +171,49 @@ bool HasLinks(const Widget* widget)
     return false;
 }
 
+// The time label of a technology's cost, "[img=quantity-time]30": the seconds a lab spends on one
+// research unit, as the clock means them.
+std::string UnitTimeText(const Widget* label)
+{
+    std::string_view text = agui::text(label);
+    constexpr std::string_view kClock = "[img=quantity-time]";
+    if (!text.starts_with(kClock))
+        return LabelText(label);
+    return vocab::kSecondsPerUnit(text.substr(kClock.size()));
+}
+
+// A science pack cost as one row, the way the game draws it: in a frame, what one research unit
+// takes (each pack with its count, then the time a lab spends on it), and beside the frame how many
+// units ("times 100"). False for a trigger technology, whose requirement the generic walk reads.
+bool AddCost(graph::GraphBuilder& builder, const std::string& key, const Widget* cost)
+{
+    const Widget* table = FindDescendant(cost, "agui::Table");
+    if (!table || !Shows(table))
+        return false;
+    builder.StartRow();
+    std::size_t index = 0;
+    for (const Widget* cell : VisibleChildren(table))
+    {
+        std::string cellKey = std::format("{}/{}", key, index++);
+        if (agui::kind(cell) == agui::Kind::Label)
+            builder.AddItem(
+                graph::ControlId::Referenced(cell, cellKey), TextNode(cell, [cell]() { return UnitTimeText(cell); }));
+        else
+            AddControl(builder, cellKey, cell);
+    }
+    for (const Widget* child : VisibleChildren(cost))
+        if (agui::kind(child) == agui::Kind::Label)
+            builder.AddItem(graph::ControlId::Referenced(child, key + "/units"),
+                TextNode(child, [child]() { return LabelText(child); }));
+    builder.EndRow();
+    return true;
+}
+
 // The selected technology's details in the game's order: cost, effects, description, Start
 // research. A line with icons the game makes clickable (the cost's "Craft 50 iron plate") carries
-// them as links.
-void AddDetails(graph::GraphBuilder& builder, const std::string& prefix, const Widget* widget, const Widget* skip)
+// them as links; the cost is one row.
+void AddDetails(graph::GraphBuilder& builder, const std::string& prefix, const Widget* widget, const Widget* skip,
+    const Widget* cost)
 {
     std::size_t index = 0;
     for (const Widget* child : VisibleChildren(widget))
@@ -172,10 +221,13 @@ void AddDetails(graph::GraphBuilder& builder, const std::string& prefix, const W
         std::string key = prefix + "/" + std::to_string(index++);
         if (child == skip)
             continue;
-        if (!HasLinks(child) && !(skip && Contains(child, skip)))
+        if (child == cost && AddCost(builder, key, child))
+            continue;
+        bool holds = (skip && Contains(child, skip)) || (cost && Contains(child, cost));
+        if (!HasLinks(child) && !holds)
             AddSubtree(builder, key, child);
         else if (!AddLinkLine(builder, key, child))
-            AddDetails(builder, key, child, skip);
+            AddDetails(builder, key, child, skip, cost);
     }
 }
 
@@ -193,7 +245,8 @@ void AddSelected(graph::GraphBuilder& builder, const agui::TechnologyWindow& win
                 return state.empty() ? line : line + " " + state;
             }));
     // The details start with the technology's own button, which the title already reads.
-    AddDetails(builder, "selected", window.featured, FindDescendant(window.featured, "TechnologySlot"));
+    AddDetails(builder, "selected", window.featured, FindDescendant(window.featured, "TechnologySlot"),
+        FindDescendant(window.featured, "TechnologyCostWidget"));
     EndZone(builder);
 }
 

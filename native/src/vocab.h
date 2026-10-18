@@ -213,6 +213,12 @@ inline constexpr Word kOmitted{"fa.native-omitted"};
 // the technology tree's title bar.
 inline constexpr Word kSelectedTechnology{"fa.native-selected-technology"};
 inline constexpr Word kTreeControls{"fa.native-tree-controls"};
+// A technology's cost: the clock and its number, the time a lab spends on one research unit.
+inline constexpr Word kSecondsPerUnit{"fa.native-seconds-per-unit"};
+// Icons the game draws before a number in place of a word: a clock before a time ("time 30"), a
+// cross before a multiplier ("times 100").
+inline constexpr Word kClock{"fa.native-clock"};
+inline constexpr Word kMultiplier{"fa.native-multiplier"};
 // The achievements window: what the game shows only by a card's frame (earned, failed), and the
 // achievements the player tracks on the HUD.
 inline constexpr Word kEarned{"fa.native-earned"};
