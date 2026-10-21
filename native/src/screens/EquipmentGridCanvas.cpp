@@ -62,8 +62,8 @@ std::string PieceName(const EquipmentGridView& grid, const EquipmentPiece& piece
 }
 
 // Whether the held equipment fits with its top left on the cell; if not, what is in the way.
-std::string FitText(const Widget* holder, const EquipmentGridView& grid, const EquipmentPiece& held, int x, int y,
-    bool ghost)
+std::string FitText(
+    const Widget* holder, const EquipmentGridView& grid, const EquipmentPiece& held, int x, int y, bool ghost)
 {
     if (agui::canPlaceHeld(holder, x, y, ghost))
         return vocab::kEquipmentFits;

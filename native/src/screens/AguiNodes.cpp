@@ -921,7 +921,28 @@ std::string NameOf(const Widget* widget)
     return name;
 }
 
-bool Shows(const Widget* widget) { return agui::visible(widget) && agui::kind(widget) != Kind::Ignored; }
+namespace
+{
+
+// The blank slot a vehicle's window stacks above its equipment grid button, only to hold
+// the button level with the ammo slots under the guns (DrivableVehicleGui::makeEquipmentGridButton).
+bool IsGridButtonSpacer(const Widget* widget)
+{
+    if (!agui::derivesFromTemplate(widget, "SimpleSlot") || !agui::slotButton(widget).name.empty())
+        return false;
+    const Widget* stack = agui::parent(widget);
+    if (!stack)
+        return false;
+    std::span<const Widget* const> parts = agui::children(stack);
+    return parts.size() == 2 && parts[0] == widget && agui::derivesFrom(parts[1], "IconButton");
+}
+
+} // namespace
+
+bool Shows(const Widget* widget)
+{
+    return agui::visible(widget) && agui::kind(widget) != Kind::Ignored && !IsGridButtonSpacer(widget);
+}
 
 bool HasContent(const Widget* widget) { return Navigable(widget, 1) > 0; }
 
