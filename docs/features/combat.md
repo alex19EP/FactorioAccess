@@ -140,6 +140,12 @@ Your guns, ammo and armor are on the game's toolbar beside the quickbar. Press c
 
 Early game you start with a pistol and that's it, so for a while you don't have to worry about much of this.
 
-Equipment in Factorio goes into an equipment grid, and each piece of equipment has a size. The grid is in the armor's window, which `]` on the armor opens, and in a vehicle's window. Put equipment in hand and click a grid cell with `[` to place it there, or `shift + [` on the equipment in your inventory while the grid is open to put it in the first place it fits. `y` on a piece of equipment reads its tooltip, which gives its size.
+Equipment in Factorio goes into an equipment grid, and each piece of equipment covers a rectangle of cells, such as 1 by 2 for a personal battery or 2 by 2 for a personal roboport. Equipment cannot be turned.
+
+To open the grid of the armor you wear, press `ctrl + tab` to reach the quickbar, `tab` to the toolbar, move to the armor and press `]`. `]` on armor in your inventory opens that armor's grid. A vehicle's window has an Equipment grid button beside its guns. The grid's window holds the grid, then what the equipment gives (battery capacity, shield, the roboport's robots), then your inventory.
+
+In the grid, the arrows move a cell at a time, and each cell says the piece covering it and that piece's size, or empty. Pieces with the same name are numbered from the top left, such as Personal battery 1 and Personal battery 2. `shift` with an arrow skips to the next piece. `k` says the cell's column and row, and `y` reads the piece's tooltip.
+
+With equipment in hand, each cell also says whether it fits with its top left corner on that cell, or which pieces are in the way. `enter` places it there; where it does not fit, nothing is placed. `enter` on a piece with an empty hand takes it into your hand, `shift + enter` puts it back in your inventory and `ctrl + enter` puts every piece of that kind back. `shift + enter` on equipment in your inventory while the grid is open moves the stack into the grid, each piece where it first fits.
 
 Equipping from largest to smallest uses almost all the space. It does not matter where equipment is relative to other pieces, only that it is somewhere in the grid.

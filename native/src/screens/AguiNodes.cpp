@@ -11,6 +11,7 @@
 #include <utility>
 #include <vector>
 
+#include "EquipmentGridCanvas.hpp"
 #include "GuiDump.hpp"
 #include "TooltipScreen.hpp"
 #include "blueprints.h"
@@ -157,7 +158,7 @@ int Navigable(const Widget* widget, int limit, std::span<const Widget* const> sk
     if (kind == Kind::Label)
         return Phrase(widget).empty() ? 0
                                       : static_cast<int>(std::min<std::size_t>(Lines(TextOf(widget)).size(), limit));
-    if (IsControl(kind))
+    if (IsControl(kind) || kind == Kind::EquipmentGrid)
         return 1;
     int count = 0;
     ForEachChild(widget,
@@ -428,6 +429,11 @@ public:
             return;
         }
         Kind kind = KindOf(widget);
+        if (kind == Kind::EquipmentGrid)
+        {
+            AddEquipmentGrid(_builder, Key(path), widget);
+            return;
+        }
         switch (kind)
         {
         case Kind::Label:
@@ -891,6 +897,21 @@ std::string NameOf(const Widget* widget)
     // An icon alone (a technology's effects): what it depicts.
     if (name.empty())
         name = text::speakable(agui::iconName(widget));
+    // A button whose tooltip the game builds itself (a vehicle's equipment grid): that tooltip's
+    // heading, without the category icon before it.
+    if (name.empty() && agui::kind(widget) == Kind::Button)
+    {
+        bool created = false;
+        if (const Widget* tooltip = agui::showTooltip(widget, created))
+        {
+            const text::WithoutDecorations quiet;
+            std::vector<TooltipLine> lines = TooltipLines(tooltip);
+            if (!lines.empty())
+                name = lines.front().text;
+        }
+        if (created)
+            agui::removeTooltip(widget);
+    }
     // A title bar's X: no text, no tooltip.
     if (name.empty() && agui::derivesFrom(widget, "CloseButton"))
         name = vocab::kClose;

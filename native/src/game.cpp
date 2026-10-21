@@ -1121,6 +1121,33 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.craftingQueueSlots, "CraftingQueueGui", "slots");
    offset(layout.characterInfoQueueLabel, "CharacterInfoGui", "craftingQueueLabel");
    offset(layout.characterInfoQueue, "CharacterInfoGui", "craftingQueueGui");
+   offset(layout.gridDrawerGetGrid, "EquipmentGridGuiDrawer", "getGrid");
+   offset(layout.gridDrawerHover, "EquipmentGridGuiDrawer", "previousCursorPosition");
+   address(layout.gridDrawerSlotSize, "?getSlotSize@EquipmentGridGuiDrawer@@QEBA?AVPixelSize@@XZ");
+   address(layout.gridHolderHeldEquipment,
+           "?getEquipmentInCursor@EquipmentGridGuiHolder@@AEBA?AV?$IDWithQuality@V?$ID@VEquipmentPrototype@@G@@@@XZ");
+   {
+      constexpr const char* kEquipmentId = "IDWithQuality<ID<EquipmentPrototype,unsigned short> >";
+      offset(layout.equipmentIdBase, kEquipmentId, "baseID");
+      offset(layout.equipmentIdQuality, kEquipmentId, "qualityID");
+      size(layout.equipmentIdSize, kEquipmentId);
+   }
+   offset(layout.equipmentGridPieces, "EquipmentGrid", "equipment");
+   address(layout.equipmentGridWidth, "?getWidth@EquipmentGrid@@QEBAIXZ");
+   address(layout.equipmentGridHeight, "?getHeight@EquipmentGrid@@QEBAIXZ");
+   address(layout.equipmentGridCanPlace,
+           "?canPlace@EquipmentGrid@@QEBA_NV?$IDWithQuality@V?$ID@VEquipmentPrototype@@G@@@@"
+           "VEquipmentPosition@@V?$NamedBool@VGhostModeTag@@@@@Z");
+   offset(layout.equipmentId, "Equipment", "id");
+   offset(layout.equipmentPosition, "Equipment", "position");
+   offset(layout.equipmentToBeRemoved, "Equipment", "toBeRemoved");
+   classSlot(layout.equipmentUsefulPrototype, "Equipment", "getUsefulPrototype");
+   offset(layout.equipmentShapeWidth, "EquipmentPrototype", "shape.width");
+   offset(layout.equipmentShapeHeight, "EquipmentPrototype", "shape.height");
+   offset(layout.equipmentShapeCells, "EquipmentPrototype", "shape.shape");
+   address(layout.equipmentPrototypes,
+           "?indexToPrototype@?$PrototypeList@VEquipmentPrototype@@@@2V?$vector@PEAVEquipmentPrototype@@V?$allocator@"
+           "PEAVEquipmentPrototype@@@std@@@std@@A");
    offset(layout.sideMenuMuteButton, "SideMenu", "masterMutedButton");
    offset(layout.gameViewResearch, "GameView", "currentResearchInfo");
    offset(layout.researchTitle, "CurrentResearchInfo", "title");

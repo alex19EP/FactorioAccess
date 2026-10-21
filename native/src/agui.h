@@ -7,6 +7,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 // Views of Factorio's agui widgets and the few calls we make into them. Only use these on the
@@ -80,6 +81,7 @@ enum class Kind {
    Tab,
    ListBox,
    ProgressBar,
+   EquipmentGrid, // the cells of an armor's or vehicle's grid, all drawn by one widget
 };
 
 Kind kind(const Widget* widget);
@@ -591,6 +593,44 @@ struct CharacterQueue {
    const Widget* table = nullptr;
 };
 CharacterQueue characterQueue(const Widget* characterInfo);
+
+// An equipment grid as its window draws it (EquipmentGridGuiHolder, one widget the game paints
+// every cell in): the armor's or the vehicle's grid. Cells count from the top left, from 0.
+//
+// A piece of equipment: its name and its quality unless normal (a ghost's are the equipment it
+// stands for), its top left cell, its size, and the cells it covers in that box, row by row.
+struct EquipmentPiece {
+   std::string_view name;
+   std::string_view quality;
+   int x = 0;
+   int y = 0;
+   int width = 0;
+   int height = 0;
+   std::vector<bool> cells;
+   bool ghost = false;
+   bool toBeRemoved = false;
+
+   bool covers(int column, int row) const;
+};
+struct EquipmentGridView {
+   int width = 0;
+   int height = 0;
+   std::vector<EquipmentPiece> pieces;
+};
+// The grid the widget draws, or nothing for any other widget. Names are translated, so main thread
+// only.
+std::optional<EquipmentGridView> equipmentGrid(const Widget* holder);
+// The equipment the player's hand would place in the grid (equipment, or its ghost), as a piece at
+// (0, 0); nothing for anything else in hand.
+std::optional<EquipmentPiece> heldEquipment(const Widget* holder);
+// Whether the equipment in hand goes in with its top left at the cell, as the game checks it before
+// placing it; as a ghost when `ghost`.
+bool canPlaceHeld(const Widget* holder, int x, int y, bool ghost);
+// A cell's size on screen, in pixels: width and height.
+std::pair<int, int> equipmentCellSize(const Widget* holder);
+// Rests the grid's mouse at the cell's centre, as hovering it does, so that the tooltip, the
+// pipette and the held equipment's preview are the cell's.
+void hoverEquipmentCell(const Widget* holder, int x, int y);
 
 // The HUD's status, each part null while the game does not show it. Main thread only.
 //

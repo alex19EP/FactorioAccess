@@ -13,7 +13,9 @@
 // Every slot is the game's own button, clicked as the Gui clicks it, so what a click does is
 // vanilla. Enter is the left button: with an item in hand it puts that item on the slot, with an
 // empty hand it takes the slot's item, and on an empty slot it opens the game's item chooser.
-// Backslash is the middle button, which clears a slot. Backspace is the right button.
+// Backslash is the middle button, which clears a slot. Backspace is the right button. The window a
+// toolbar press opens (the character screen from the button over the armor, the armor's equipment
+// grid from the right button on it) takes over from the quickbar.
 //
 // The game has no window to close here, so Escape is ours: it closes the page picker, and
 // otherwise goes back to what is open.
@@ -40,6 +42,7 @@ public:
     const char* TakeSuggestedLanding() override;
     bool ClaimsEscape() const override { return true; }
     void OnEscape() override;
+    void OnPush() override;
     void OnPop() override;
     std::string LeaveLine() const override;
 
@@ -51,6 +54,7 @@ private:
     const agui::Widget* _bar = nullptr;
     int _picking = -1;      // the bar the page picker chose for at the last build, or -1
     bool _cancelled = false; // Escape closed the picker
+    bool _opening = false;   // left for a window the toolbar opened
     std::string _landing;   // a one-shot landing for the next render
     std::string _taken;     // the landing handed out, kept alive for the caller
 };

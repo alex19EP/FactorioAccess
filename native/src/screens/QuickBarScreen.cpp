@@ -92,23 +92,44 @@ void AddBars(graph::GraphBuilder& builder, const std::vector<agui::QuickBarRow>&
 }
 
 // The toolbar beside the bars, as the game lays it out: the button that opens the character's window
-// over the armor, then each gun over its ammo. The armor shares its cell with its battery bar.
-void AddToolBar(graph::GraphBuilder& builder, const std::string& key, const Widget* table)
+// over the armor, then each gun over its ammo. The armor shares its cell with its battery bar. The
+// window that button opens, and the armor's equipment grid that the right button on worn armor
+// opens, take over from the quickbar: `opening` leaves it for them.
+void AddToolBar(
+    graph::GraphBuilder& builder, const std::string& key, const Widget* table, const std::function<void()>& opening)
 {
     if (!table || !agui::visible(table))
         return;
     builder.BeginStop(key);
     AddGrid(
         builder, key, table, [](const Widget* cell) { return !agui::derivesFrom(cell, "agui::EmptyWidget"); },
-        [](const Widget* cell)
+        [opening](const Widget* cell)
         {
             if (agui::derivesFrom(cell, "agui::HorizontalFlow"))
             {
                 std::vector<const Widget*> parts = VisibleChildren(cell);
-                if (!parts.empty())
-                    return ControlNode(parts.back());
+                if (parts.empty())
+                    return ControlNode(cell);
+                const Widget* armor = parts.back();
+                graph::NodeVtable vtable = ControlNode(armor);
+                if (agui::derivesFrom(armor, "InventoryGuiSlot"))
+                    vtable.OnSecondary = [armor, opening]()
+                    {
+                        bool worn = agui::slotItem(armor).count > 0;
+                        agui::press(armor, agui::MouseButton::Right, false, false);
+                        if (worn)
+                            opening();
+                    };
+                return vtable;
             }
-            return ControlNode(cell);
+            graph::NodeVtable vtable = ControlNode(cell);
+            if (agui::kind(cell) == agui::Kind::Button)
+                vtable.OnActivate = [cell, opening]()
+                {
+                    agui::press(cell, agui::MouseButton::Left, false, false);
+                    opening();
+                };
+            return vtable;
         });
 }
 
@@ -173,8 +194,13 @@ void QuickBarScreen::Build(graph::GraphBuilder& builder)
         _cancelled = false;
         picking = -1;
         AddBars(builder, rows);
-        AddToolBar(builder, "tools", agui::toolBarTable(false));
-        AddToolBar(builder, "vehicle", agui::toolBarTable(true));
+        auto opening = [this]()
+        {
+            _opening = true;
+            parts::close();
+        };
+        AddToolBar(builder, "tools", agui::toolBarTable(false), opening);
+        AddToolBar(builder, "vehicle", agui::toolBarTable(true), opening);
     }
     _picking = picking;
 }
@@ -213,10 +239,13 @@ void QuickBarScreen::OnPop()
     _landing.clear();
 }
 
+void QuickBarScreen::OnPush() { _opening = false; }
+
 std::string QuickBarScreen::LeaveLine() const
 {
-    // Left with Ctrl+Tab or Escape, not covered by a menu: the quickbar part is no longer in use.
-    return parts::current() == parts::Part::None ? std::string(vocab::kMap) : std::string();
+    // Left with Ctrl+Tab or Escape, not covered by a menu and not for a window it opened: the
+    // quickbar part is no longer in use.
+    return parts::current() == parts::Part::None && !_opening ? std::string(vocab::kMap) : std::string();
 }
 
 void QuickBarScreen::WatchPage()

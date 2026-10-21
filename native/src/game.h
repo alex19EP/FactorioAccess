@@ -1580,6 +1580,41 @@ struct Layout {
    uint32_t characterInfoQueueLabel = 0; // CharacterInfoGui::craftingQueueLabel, agui::Label
    uint32_t characterInfoQueue = 0;      // CharacterInfoGui::craftingQueueGui, CraftingQueueTableGui (an agui::Table)
 
+   // An equipment grid as its window draws it: EquipmentGridGuiHolder, an EquipmentGridGuiDrawer (an
+   // agui::EmptyWidget), paints every cell itself, so the cells are no widgets. Its getGrid
+   // (std::function<EquipmentGrid const &()>) gives the grid; a cell is getSlotSize() pixels from
+   // the widget's top left. previousCursorPosition (a Point, 0x7fffffff while the mouse is away) is
+   // where the mouse rests over it: its tooltip, the pipette (ElemProvider<Equipment>) and the held
+   // equipment's preview read it. A click places the held equipment centred on the mouse
+   // (EquipmentGridGuiHolder::getBuildingPosition): its left column is (2 * x / cell - width + 1) / 2.
+   uint32_t gridDrawerGetGrid = 0;      // EquipmentGridGuiDrawer::getGrid
+   uint32_t gridDrawerHover = 0;        // EquipmentGridGuiDrawer::previousCursorPosition, Point
+   uintptr_t gridDrawerSlotSize = 0;    // PixelSize EquipmentGridGuiDrawer::getSlotSize() const
+   // IDWithQuality<ID<EquipmentPrototype>> EquipmentGridGuiHolder::getEquipmentInCursor() const: the
+   // equipment the hand places, an item's placedAsEquipmentResult or its ghost's; baseID 0 for none.
+   uintptr_t gridHolderHeldEquipment = 0;
+   uint32_t equipmentIdBase = 0;        // IDWithQuality<ID<EquipmentPrototype>>::baseID
+   uint32_t equipmentIdQuality = 0;     // IDWithQuality<ID<EquipmentPrototype>>::qualityID
+   uint32_t equipmentIdSize = 0;        // sizeof(IDWithQuality<ID<EquipmentPrototype>>)
+   uint32_t equipmentGridPieces = 0;    // EquipmentGrid::equipment, std::vector<Equipment*>
+   uintptr_t equipmentGridWidth = 0;    // unsigned EquipmentGrid::getWidth() const, with the quality's bonus
+   uintptr_t equipmentGridHeight = 0;   // unsigned EquipmentGrid::getHeight() const
+   // bool EquipmentGrid::canPlace(IDWithQuality<ID<EquipmentPrototype>>, EquipmentPosition,
+   // NamedBool<GhostModeTag>) const: whether the equipment goes with its top left at the position.
+   uintptr_t equipmentGridCanPlace = 0;
+   uint32_t equipmentId = 0;            // Equipment::id, IDWithQuality<ID<EquipmentPrototype>>
+   uint32_t equipmentPosition = 0;      // Equipment::position, EquipmentPosition {int x, y}: its top left cell
+   uint32_t equipmentToBeRemoved = 0;   // Equipment::toBeRemoved, bool: robots are to take it out
+   // EquipmentPrototype const* Equipment::getUsefulPrototype() const, a virtual slot: the piece's
+   // prototype, or for a ghost (EquipmentGhost) the equipment it stands for.
+   uint32_t equipmentUsefulPrototype = 0;
+   // EquipmentPrototype::shape (EquipmentShape): its width and height, and the cells it covers in
+   // them as EquipmentGrid::collides reads them, shape[x][y] (std::vector<std::vector<char>>).
+   uint32_t equipmentShapeWidth = 0;
+   uint32_t equipmentShapeHeight = 0;
+   uint32_t equipmentShapeCells = 0;
+   uintptr_t equipmentPrototypes = 0;   // PrototypeList<EquipmentPrototype>::indexToPrototype
+
    // The HUD's status: the research box at the top right, the alert buttons, the scenario's goal and
    // the bars over the quickbar.
    uint32_t gameViewResearch = 0;        // GameView::currentResearchInfo, std::unique_ptr<CurrentResearchInfo>

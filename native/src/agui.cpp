@@ -13,6 +13,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <functional>
 #include <optional>
 #include <unordered_map>
 #include <utility>
@@ -115,6 +116,8 @@ std::string undecorate(const char* decorated) {
 constexpr std::pair<std::string_view, Kind> kKindBases[] = {
    {".?AVToolTip@agui@@", Kind::Ignored},
    {".?AVFiller@agui@@", Kind::Ignored},
+   // An EmptyWidget that paints the grid's cells, ahead of the fillers it derives from.
+   {".?AVEquipmentGridGuiHolder@@", Kind::EquipmentGrid},
    {".?AVEmptyWidget@agui@@", Kind::Ignored},
    {".?AVCheckBox@agui@@", Kind::CheckBox},
    {".?AVRadioButton@agui@@", Kind::RadioButton},
@@ -1909,6 +1912,135 @@ std::vector<const Widget*> craftingQueueSlots(const Widget* craftingQueue) {
 
 CharacterQueue characterQueue(const Widget* characterInfo) {
    return {member(characterInfo, layout.characterInfoQueueLabel), member(characterInfo, layout.characterInfoQueue)};
+}
+
+bool EquipmentPiece::covers(int column, int row) const {
+   if (column < x || row < y || column >= x + width || row >= y + height) return false;
+   return cells[static_cast<size_t>((row - y) * width + (column - x))];
+}
+
+namespace {
+
+// EquipmentPosition, PixelSize and Point alike: two ints.
+struct IntPoint {
+   int32_t x;
+   int32_t y;
+};
+
+// The drawer part of a grid's widget, or null for any other widget.
+const std::byte* gridDrawer(const Widget* holder) { return asBase(holder, ".?AVEquipmentGridGuiDrawer@@"); }
+
+// The grid the drawer draws, through its getGrid. The function object is the game's MSVC
+// std::function, which ours lays out and calls alike.
+const std::byte* drawnGrid(const std::byte* drawer) {
+   const auto& getGrid = at<std::function<const std::byte&()>>(drawer, layout.gridDrawerGetGrid);
+   return getGrid ? &getGrid() : nullptr;
+}
+
+// The equipment the hand places, as the grid's widget reads it: IDWithQuality, baseID 0 for none.
+std::array<std::byte, 8> heldEquipmentId(const Widget* holder) {
+   using Held = void* (*)(const std::byte* holder, std::byte* out);
+   std::array<std::byte, 8> id{};
+   if (layout.equipmentIdSize > id.size()) return id;
+   reinterpret_cast<Held>(layout.gridHolderHeldEquipment)(asBase(holder, ".?AVEquipmentGridGuiHolder@@"), id.data());
+   return id;
+}
+
+// A piece of the prototype's shape at (0, 0), its name and quality unset.
+EquipmentPiece shapeOf(const std::byte* prototype) {
+   EquipmentPiece piece;
+   piece.width = static_cast<int>(at<uint32_t>(prototype, layout.equipmentShapeWidth));
+   piece.height = static_cast<int>(at<uint32_t>(prototype, layout.equipmentShapeHeight));
+   piece.cells.assign(static_cast<size_t>(piece.width * piece.height), true);
+   // A column per x, a cell per y.
+   const auto& columns = at<MsvcVector<const MsvcVector<const char>>>(prototype, layout.equipmentShapeCells);
+   for (int column = 0; column < piece.width && columns.first + column < columns.last; ++column) {
+      const auto& cells = columns.first[column];
+      for (int row = 0; row < piece.height && cells.first + row < cells.last; ++row)
+         piece.cells[static_cast<size_t>(row * piece.width + column)] = cells.first[row] != 0;
+   }
+   return piece;
+}
+
+std::string_view qualityName(uint8_t index) {
+   const std::byte* quality = prototypeAt(layout.qualityPrototypes, index);
+   if (!quality || readString(quality, layout.prototypeName) == "normal") return {};
+   return localisedName(quality);
+}
+
+} // namespace
+
+std::optional<EquipmentGridView> equipmentGrid(const Widget* holder) {
+   const std::byte* drawer = gridDrawer(holder);
+   const std::byte* grid = drawer ? drawnGrid(drawer) : nullptr;
+   if (!grid) return std::nullopt;
+   using Size = uint32_t (*)(const std::byte* grid);
+   EquipmentGridView view;
+   view.width = static_cast<int>(reinterpret_cast<Size>(layout.equipmentGridWidth)(grid));
+   view.height = static_cast<int>(reinterpret_cast<Size>(layout.equipmentGridHeight)(grid));
+   const auto& pieces = at<MsvcVector<const std::byte* const>>(grid, layout.equipmentGridPieces);
+   for (const std::byte* const* it = pieces.first; it != pieces.last; ++it) {
+      const std::byte* equipment = *it;
+      auto* self = const_cast<std::byte*>(equipment);
+      auto vtable = *reinterpret_cast<VirtualTable*>(self);
+      using Useful = const std::byte* (*)(std::byte*);
+      const std::byte* prototype = reinterpret_cast<Useful>(vtable[layout.equipmentUsefulPrototype])(self);
+      EquipmentPiece piece = shapeOf(prototype);
+      piece.name = localisedName(prototype);
+      piece.quality = qualityName(at<uint8_t>(equipment, layout.equipmentId + layout.equipmentIdQuality));
+      const auto& position = at<IntPoint>(equipment, layout.equipmentPosition);
+      piece.x = position.x;
+      piece.y = position.y;
+      piece.ghost = objectAsBase(equipment, ".?AVEquipmentGhost@@") != nullptr;
+      piece.toBeRemoved = at<bool>(equipment, layout.equipmentToBeRemoved);
+      view.pieces.push_back(std::move(piece));
+   }
+   return view;
+}
+
+std::optional<EquipmentPiece> heldEquipment(const Widget* holder) {
+   if (!gridDrawer(holder)) return std::nullopt;
+   std::array<std::byte, 8> id = heldEquipmentId(holder);
+   const std::byte* prototype =
+      prototypeAt(layout.equipmentPrototypes, at<uint16_t>(id.data(), layout.equipmentIdBase));
+   if (!prototype || at<uint16_t>(id.data(), layout.equipmentIdBase) == 0) return std::nullopt;
+   EquipmentPiece piece = shapeOf(prototype);
+   piece.name = localisedName(prototype);
+   piece.quality = qualityName(at<uint8_t>(id.data(), layout.equipmentIdQuality));
+   return piece;
+}
+
+bool canPlaceHeld(const Widget* holder, int x, int y, bool ghost) {
+   const std::byte* drawer = gridDrawer(holder);
+   const std::byte* grid = drawer ? drawnGrid(drawer) : nullptr;
+   if (!grid) return false;
+   std::array<std::byte, 8> id = heldEquipmentId(holder);
+   if (at<uint16_t>(id.data(), layout.equipmentIdBase) == 0) return false;
+   // IDWithQuality and EquipmentPosition go by value, each in a register as an integer of its size.
+   uint32_t packedId = 0;
+   std::memcpy(&packedId, id.data(), sizeof(packedId));
+   IntPoint position{x, y};
+   uint64_t packedPosition = 0;
+   std::memcpy(&packedPosition, &position, sizeof(packedPosition));
+   using CanPlace = bool (*)(const std::byte* grid, uint32_t id, uint64_t position, bool ghost);
+   return reinterpret_cast<CanPlace>(layout.equipmentGridCanPlace)(grid, packedId, packedPosition, ghost);
+}
+
+std::pair<int, int> equipmentCellSize(const Widget* holder) {
+   const std::byte* drawer = gridDrawer(holder);
+   if (!drawer) return {0, 0};
+   using SlotSize = void* (*)(const std::byte* drawer, IntPoint* out);
+   IntPoint size{};
+   reinterpret_cast<SlotSize>(layout.gridDrawerSlotSize)(drawer, &size);
+   return {size.x, size.y};
+}
+
+void hoverEquipmentCell(const Widget* holder, int x, int y) {
+   const std::byte* drawer = gridDrawer(holder);
+   if (!drawer) return;
+   auto [width, height] = equipmentCellSize(holder);
+   auto* hover = reinterpret_cast<IntPoint*>(const_cast<std::byte*>(drawer) + layout.gridDrawerHover);
+   *hover = {x * width + width / 2, y * height + height / 2};
 }
 
 std::vector<const Widget*> shortcutBarListCheckBoxes(const Widget* shortcutBar) {

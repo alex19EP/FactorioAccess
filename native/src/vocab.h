@@ -578,6 +578,15 @@ inline constexpr Word kRailPlanLayerGround{"fa.native-rail-plan-layer-ground"};
 inline constexpr Word kRailGoalNudged{"fa.native-rail-goal-nudged"};
 inline constexpr Word kRailDetachNotPlanning{"fa.native-rail-detach-not-planning"};
 
+// A cell of an equipment grid: the piece covering it and its size ("battery 2, 1 by 2"), a piece
+// numbered among those of the same name, and whether the equipment in hand fits there.
+inline constexpr Word kEquipmentPiece{"fa.native-equipment-piece"};
+inline constexpr Word kEquipmentNumbered{"fa.native-equipment-numbered"};
+inline constexpr Word kEquipmentGhost{"fa.native-equipment-ghost"};
+inline constexpr Word kEquipmentFits{"fa.native-equipment-fits"};
+inline constexpr Word kEquipmentBlocked{"fa.native-equipment-blocked"};
+inline constexpr Word kEquipmentDoesNotFit{"fa.native-equipment-does-not-fit"};
+
 inline constexpr Word kNoTooltip{"fa.native-no-tooltip"};
 inline constexpr Word kNoAction{"fa.native-no-action"};
 
