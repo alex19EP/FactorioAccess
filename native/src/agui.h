@@ -304,6 +304,15 @@ struct SlotButton {
 };
 SlotButton slotButton(const Widget* slot);
 
+// A logistic request slot (ChooseLogisticRequestAndTrashButton), whose slotButton count is the
+// request's minimum.
+bool isRequestSlot(const Widget* widget);
+// Its maximum, as drawn in its top corner; nothing for a request without one.
+std::optional<uint32_t> requestMax(const Widget* slot);
+// Sets its minimum as the Set request window's confirm does, keeping its item and its maximum
+// (raised to the minimum below it): the slot's section sends the change to the game.
+void setRequestMin(const Widget* slot, int64_t min);
+
 // How full an agui::ProgressBar is, 0 to 1.
 double progress(const Widget* bar);
 

@@ -23,6 +23,7 @@
 // their own keyDown.
 
 #include <functional>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -169,5 +170,47 @@ const agui::Widget* DialogConfirm(const agui::Widget* window);
 
 /// Whether `widget` is `ancestor` or lies inside it.
 bool Contains(const agui::Widget* ancestor, const agui::Widget* widget);
+
+/// Where the cursor goes once the game shows a change: the node keyed `key`, at the first build
+/// where `ready` holds (a section dragged to its new place, once the game has rebuilt the list).
+using Lander = std::function<void(std::string key, std::function<bool()> ready)>;
+
+/// A screen's landing for a change the game shows a frame or more after the key that asked for
+/// it, given up after about two seconds.
+class PendingLanding
+{
+public:
+    void Set(std::string key, std::function<bool()> ready);
+    void Reset() { _landing.reset(); }
+    /// For Screen::TakeSuggestedLanding, after a build that found the screen's window still open.
+    const char* Take();
+
+private:
+    struct Landing
+    {
+        std::string key;
+        std::function<bool()> ready;
+        int builds = 0; // left before it is given up
+    };
+    std::optional<Landing> _landing;
+    std::string _landed; // what the last Take returned
+};
+
+/// The screen's lander while it builds, for the parts the walker hands off (a logistics panel);
+/// empty outside a build or for a screen that does not land.
+const Lander& BuildLander();
+
+/// Sets BuildLander for the build it spans.
+class ScopedBuildLander
+{
+public:
+    explicit ScopedBuildLander(Lander land);
+    ~ScopedBuildLander();
+    ScopedBuildLander(const ScopedBuildLander&) = delete;
+    ScopedBuildLander& operator=(const ScopedBuildLander&) = delete;
+
+private:
+    Lander _previous;
+};
 
 } // namespace fa::screens

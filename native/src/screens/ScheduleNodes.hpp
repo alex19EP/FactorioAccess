@@ -17,14 +17,13 @@
 #include <string>
 #include <vector>
 
+#include "AguiNodes.hpp"
 #include "agui.h"
 #include "graph/GraphBuilder.hpp"
 
 namespace fa::screens
 {
 
-/// The screen's EntityWindowScreen::LandWhen: where the cursor goes once the game shows a change.
-using Lander = std::function<void(std::string key, std::function<bool()> ready)>;
 /// The game's widgets as they are now, read afresh: lists the game rebuilds after a change.
 using StationsNow = std::function<std::vector<agui::ScheduleStation>()>;
 using ConditionsNow = std::function<std::vector<const agui::Widget*>()>;

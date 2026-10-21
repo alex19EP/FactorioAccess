@@ -19,6 +19,8 @@ inline constexpr uint32_t Escape = 0x1b;
 inline constexpr uint32_t Space = 0x20;
 inline constexpr uint32_t Minus = 0x2d;
 inline constexpr uint32_t Slash = 0x2f;
+inline constexpr uint32_t Digit0 = 0x30;
+inline constexpr uint32_t Digit9 = 0x39;
 inline constexpr uint32_t Equals = 0x3d;
 inline constexpr uint32_t LeftBracket = 0x5b;
 inline constexpr uint32_t Backslash = 0x5c;
@@ -43,6 +45,8 @@ inline constexpr uint32_t KeypadMultiply = 0x40000055;
 inline constexpr uint32_t KeypadMinus = 0x40000056;
 inline constexpr uint32_t KeypadPlus = 0x40000057;
 inline constexpr uint32_t KeypadEnter = 0x40000058;
+// Keypad 1 to 9 follow one another, then keypad 0.
+inline constexpr uint32_t Keypad1 = 0x40000059;
 inline constexpr uint32_t Keypad0 = 0x40000062;
 inline constexpr uint32_t KeypadPeriod = 0x40000063;
 inline constexpr uint32_t LeftCtrl = 0x400000e0;

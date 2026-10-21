@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "AguiNodes.hpp"
+#include "LogisticsPanel.hpp"
 #include "text.h"
 #include "vocab.h"
 
@@ -102,6 +103,28 @@ void AddCrafting(graph::GraphBuilder& builder, const Widget* crafting)
 
     if (!title.empty())
         builder.PopContext();
+}
+
+// The personal logistics (an ItemLogisticGui) in the Logistics frame, once researched: its
+// requests, then its trash slots, read with the inventories.
+void AddLogisticsStop(graph::GraphBuilder& builder, const Widget* panel)
+{
+    builder.BeginStop("logistics");
+    std::string title = TitleAbove(panel);
+    if (!title.empty())
+        builder.PushContext(title);
+    AddLogistics(builder, "logistics", panel);
+    if (!title.empty())
+        builder.PopContext();
+}
+
+// The frame titled above `widget` ("Logistics"), or null.
+const Widget* TitledFrame(const Widget* widget)
+{
+    for (const Widget* ancestor = agui::parent(widget); ancestor; ancestor = agui::parent(ancestor))
+        if (const Widget* title = agui::frameTitle(ancestor); title && !text::speakable(agui::text(title)).empty())
+            return ancestor;
+    return nullptr;
 }
 
 // The crafting queue under its label in the left pane, a row per row of the game's table; a slot
@@ -214,9 +237,23 @@ void CharacterScreen::Build(graph::GraphBuilder& builder)
     }
     _landOnSearch = search && !_searching;
     _searching = search != nullptr;
+    ScopedBuildLander lander(
+        [this](std::string key, std::function<bool()> ready) { _landing.Set(std::move(key), std::move(ready)); });
+    // The requests come before the trash slots in the frame they share.
+    const Widget* logistics = FindDescendant(_window, "ItemLogisticGui");
+    const Widget* logisticsFrame = logistics ? TitledFrame(logistics) : nullptr;
     std::vector<const Widget*> inventories = FindAll(_window, "InventoryGui");
     for (std::size_t i = 0; i < inventories.size(); ++i)
+    {
+        if (logistics && logisticsFrame && Contains(logisticsFrame, inventories[i]))
+        {
+            AddLogisticsStop(builder, logistics);
+            logistics = nullptr;
+        }
         AddInventory(builder, "inventory" + std::to_string(i), inventories[i]);
+    }
+    if (logistics)
+        AddLogisticsStop(builder, logistics);
     AddTabs(builder, _window);
     if (const Widget* crafting = FindDescendant(_window, "CraftingGui"))
         AddCrafting(builder, crafting);
@@ -228,9 +265,15 @@ void CharacterScreen::Build(graph::GraphBuilder& builder)
 
 const char* CharacterScreen::TakeSuggestedLanding()
 {
+    // Asked after Build, which returns early once the window is gone; nothing in it may be read then.
+    if (!_window || FindWindow() != _window)
+    {
+        _landing.Reset();
+        return nullptr;
+    }
     bool land = _landOnSearch;
     _landOnSearch = false;
-    return land ? kSearchKey : nullptr;
+    return land ? kSearchKey : _landing.Take();
 }
 
 bool CharacterScreen::TypingIn(const graph::GraphNode& node) { return TypingInField(node); }
@@ -242,6 +285,7 @@ void CharacterScreen::OnPop()
     _window = nullptr;
     _searching = false;
     _landOnSearch = false;
+    _landing.Reset();
 }
 
 } // namespace fa::screens

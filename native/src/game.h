@@ -2513,6 +2513,33 @@ struct Layout {
    // bool BoundingBox::collide(MapPosition const&) const: whether the box, turned by its
    // orientation (a train's), holds the point.
    uintptr_t boundingCollidePoint = 0;
+   // The logistics panel (ItemLogisticGui, a VerticalFlow) of a character, chest, roboport,
+   // vehicle, constant combinator, platform hub or landing pad: the point's checkboxes, then
+   // `sectionsDragPane`, a DragPaneWidget<agui::VerticalFlow> of LogisticGuiSection whose drags
+   // send InputAction ReorderLogisticSection, then the add section button.
+   uint32_t logisticGuiSections = 0;       // ItemLogisticGui::sectionsDragPane
+   uint32_t logisticGuiAddSection = 0;     // ItemLogisticGui::addSectionButton, agui::TextButton
+   // A section (LogisticGuiSection, a Frame): its `subheader` holds the group checkbox (active,
+   // captioned with the group's name), the rename button that opens LogisticPointRenameGui, a drag
+   // handle and the remove button; a section the player cannot edit shows a label there instead.
+   // Its slots are LogisticGuiBase::filterTable, a DragPaneWidget<agui::Table> whose drags swap
+   // two filters.
+   uint32_t logisticSectionSubheader = 0;  // LogisticGuiSection::subheader, agui::Frame
+   uint32_t logisticSectionFilters = 0;    // LogisticGuiBase::filterTable
+   // A request slot (ChooseLogisticRequestAndTrashButton): the number drawn is the minimum (its
+   // ButtonNumber count), `highCount` the maximum, UINT32_MAX for none (ChooseLogisticRequest
+   // AndTrashButton::paintHighNumber draws it only otherwise). `selectedID` is its SignalFilter.
+   // void setItem(SignalFilter, __int64 min, __int64 max) is what the Set request window's
+   // confirm calls: it sets the slot and hands it to its section (setFilterAndCount), which sends
+   // InputAction SetLogisticFilterItem. A min of INT64_MAX is a stack.
+   // The Set request window (ItemAndDoubleCountSelectGui, a FilterSelectGui<SignalFilter>) holds, in
+   // its extras frame, `numberInputFlow`: the minimum's TextField, a DoubleSlider with a handle for
+   // each, and the maximum's TextField ("inf." for none).
+   uint32_t requestWindowCounts = 0;       // ItemAndDoubleCountSelectGui::numberInputFlow
+   uint32_t requestSlotHigh = 0;           // highCount, unsigned int
+   uint32_t requestSlotFilter = 0;         // selectedID, SignalFilter
+   uint32_t signalFilterSize = 0;          // passed in a register only at 8 bytes
+   uintptr_t requestSlotSetItem = 0;
 };
 
 // Bits of agui::Widget::usageBitMask, read from Widget::setVisible and Widget::isEnabled in

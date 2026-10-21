@@ -14,7 +14,7 @@ These are the game's own keys, after the keys script:
 
 ## Description
 
-The circuit network is configured in the game's own windows: a combinator's window, and the circuit connection part of an inserter's, belt's or chest's window. They are read like any other window; see [windows](ui.md). The cursor reads the operation an arithmetic, decider or selector combinator shows on its display, such as "multiply". With alt mode on, and the interface setting for combinator settings, it reads the signals around it too: "Iron plate multiply, output Signal B", and a constant combinator's signals.
+The circuit network is configured in the game's own windows: a combinator's window, and the circuit connection part of an inserter's, belt's or chest's window. They are read like any other window; see [windows](ui.md). A constant combinator's signals are sections of slots, as logistic requests are: typing a number on a signal and pressing `enter` sets its count (see [logistic requests](ui.md#logistic-requests)). The cursor reads the operation an arithmetic, decider or selector combinator shows on its display, such as "multiply". With alt mode on, and the interface setting for combinator settings, it reads the signals around it too: "Iron plate multiply, output Signal B", and a constant combinator's signals.
 
 Teaching the circuit network is beyond these pages. Start at [the Factorio wiki](https://wiki.factorio.com/Circuit_network) if you are new to it.
 

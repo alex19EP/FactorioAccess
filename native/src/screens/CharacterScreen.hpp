@@ -15,6 +15,7 @@
 // Slots read live, so a click's result is spoken once the game has applied it. Y reads the
 // game's own tooltip, and \ is the middle button, which sets a slot's filter.
 
+#include "AguiNodes.hpp"
 #include "agui.h"
 #include "navigator/Screen.hpp"
 
@@ -38,6 +39,7 @@ private:
     const agui::Widget* _window = nullptr;
     bool _searching = false;    // the search field showed at the last build
     bool _landOnSearch = false; // it has just opened
+    PendingLanding _landing;    // a logistic section moved, followed to its new place
 };
 
 } // namespace fa::screens

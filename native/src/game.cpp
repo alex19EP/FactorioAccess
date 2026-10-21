@@ -1768,7 +1768,20 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.boundingRightBottom, "BoundingBox", "rightBottom");
    address(layout.boundingAabb, "?getAABB@BoundingBox@@QEBA?AV1@XZ");
    address(layout.boundingCollidePoint, "?collide@BoundingBox@@QEBA_NAEBVMapPosition@@@Z");
+   offset(layout.logisticGuiSections, "ItemLogisticGui", "sectionsDragPane");
+   offset(layout.logisticGuiAddSection, "ItemLogisticGui", "addSectionButton");
+   offset(layout.logisticSectionSubheader, "LogisticGuiSection", "subheader");
+   offset(layout.logisticSectionFilters, "LogisticGuiBase", "filterTable");
+   offset(layout.requestWindowCounts, "ItemAndDoubleCountSelectGui", "numberInputFlow");
+   offset(layout.requestSlotHigh, "ChooseLogisticRequestAndTrashButton", "highCount");
+   offset(layout.requestSlotFilter, "ChooseLogisticRequestAndTrashButton", "selectedID");
+   size(layout.signalFilterSize, "SignalFilter");
+   address(layout.requestSlotSetItem, "?setItem@ChooseLogisticRequestAndTrashButton@@QEAAXVSignalFilter@@_J1@Z");
 
+   if (ok && layout.signalFilterSize != sizeof(uint64_t)) {
+      log::error("SignalFilter is {} bytes, no longer passed in a register", layout.signalFilterSize);
+      ok = false;
+   }
    if (ok && (layout.chartSelectionSize > kChartSelectionCapacity || layout.patchInfoSize > kPatchInfoCapacity)) {
       log::error("A chart structure outgrew its buffer: ChartSelection {} bytes, ResourcePatchInfo {}",
                  layout.chartSelectionSize, layout.patchInfoSize);

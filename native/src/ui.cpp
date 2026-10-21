@@ -30,6 +30,7 @@
 #include "screens/TipsAndTricksScreen.hpp"
 #include "screens/BlueprintSetupScreen.hpp"
 #include "screens/GameDialogScreen.hpp"
+#include "screens/GameWindowScreen.hpp"
 #include "screens/MachineScreen.hpp"
 #include "screens/MapGeneratorScreen.hpp"
 #include "screens/MapSearchScreen.hpp"
@@ -148,46 +149,54 @@ void start() {
    }
    // Whatever window no recipe reads.
    manager.Register(std::make_unique<screens::GenericWindowScreen>(std::move(claimed)));
+   // Whatever window of the game's over a loaded game no recipe below reads: a combinator's, a lamp's.
+   auto gameWindows = std::make_unique<screens::GameWindowScreen>();
+   screens::GameWindowScreen* gameWindowScreen = gameWindows.get();
+   manager.Register(std::move(gameWindows));
+   auto entity = [&](std::unique_ptr<screens::EntityWindowScreen> recipe) {
+      gameWindowScreen->Leave(recipe.get());
+      manager.Register(std::move(recipe));
+   };
    // The scenario's message dialog over a loaded game, above its windows.
    manager.Register(std::make_unique<screens::ScenarioMessageScreen>());
    // The game's character screen (E) over a loaded game; the game menu takes over while it is open.
    manager.Register(std::make_unique<screens::CharacterScreen>());
    // An entity's window (a chest, a furnace, a drill, ...), opened by the game's own open-gui control.
-   manager.Register(std::make_unique<screens::MachineScreen>());
+   entity(std::make_unique<screens::MachineScreen>());
    // The planners' windows, opened from the planner's slot.
-   manager.Register(std::make_unique<screens::DeconstructionPlannerScreen>());
-   manager.Register(std::make_unique<screens::UpgradePlannerScreen>());
+   entity(std::make_unique<screens::DeconstructionPlannerScreen>());
+   entity(std::make_unique<screens::UpgradePlannerScreen>());
    // A blueprint's setup, opened from its slot or by selecting an area with a blank one.
-   manager.Register(std::make_unique<screens::BlueprintSetupScreen>());
+   entity(std::make_unique<screens::BlueprintSetupScreen>());
    // A blueprint book's window, opened from its slot.
-   manager.Register(std::make_unique<screens::BlueprintBookScreen>());
+   entity(std::make_unique<screens::BlueprintBookScreen>());
    // The blueprint library's window, from its key or the shortcut bar.
-   manager.Register(std::make_unique<screens::BlueprintLibraryScreen>());
+   entity(std::make_unique<screens::BlueprintLibraryScreen>());
    // The achievements window, from the side menu.
-   manager.Register(std::make_unique<screens::AchievementsScreen>());
+   entity(std::make_unique<screens::AchievementsScreen>());
    // The alerts configuration window, from the side menu.
-   manager.Register(std::make_unique<screens::AlertsConfigScreen>());
+   entity(std::make_unique<screens::AlertsConfigScreen>());
    // The tips and tricks window, from the side menu or the "New tip" button.
-   manager.Register(std::make_unique<screens::TipsAndTricksScreen>());
+   entity(std::make_unique<screens::TipsAndTricksScreen>());
    // Any other dialog over a game: a planner's name, description and icons.
-   manager.Register(std::make_unique<screens::GameDialogScreen>());
+   entity(std::make_unique<screens::GameDialogScreen>());
    // A transport belt's window, with the mod's views of what the belt carries.
-   manager.Register(std::make_unique<screens::BeltScreen>());
-   manager.Register(std::make_unique<screens::SplitterScreen>());
+   entity(std::make_unique<screens::BeltScreen>());
+   entity(std::make_unique<screens::SplitterScreen>());
    // A pipe's or a storage tank's window, with the mod's views of where its pipeline goes.
-   manager.Register(std::make_unique<screens::PipeScreen>());
+   entity(std::make_unique<screens::PipeScreen>());
    // An electric pole's network window, with the mod's views of its wires and supply area, and the
    // surface's like it.
-   manager.Register(std::make_unique<screens::ElectricNetworkScreen>());
+   entity(std::make_unique<screens::ElectricNetworkScreen>());
    // A train stop's window, with the trains whose schedules have it and the trains on the way.
-   manager.Register(std::make_unique<screens::TrainStopScreen>());
+   entity(std::make_unique<screens::TrainStopScreen>());
    // A train's window, with its schedule, and the window editing one of its interrupts.
-   manager.Register(std::make_unique<screens::TrainScreen>());
-   manager.Register(std::make_unique<screens::InterruptScreen>());
+   entity(std::make_unique<screens::TrainScreen>());
+   entity(std::make_unique<screens::InterruptScreen>());
    // The trains overview: every train, stop and group of a surface.
-   manager.Register(std::make_unique<screens::TrainsScreen>());
+   entity(std::make_unique<screens::TrainsScreen>());
    // The production statistics: what is made and used, built, polluted and killed.
-   manager.Register(std::make_unique<screens::ProductionScreen>());
+   entity(std::make_unique<screens::ProductionScreen>());
    // The windows mods and the scenario put on the screen, while Ctrl+Tab has moved to them; it
    // also announces one that shows up.
    manager.Register(std::make_unique<screens::ModWindowsScreen>());

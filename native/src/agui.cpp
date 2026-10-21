@@ -739,6 +739,30 @@ SlotButton slotButton(const Widget* slot) {
    return button;
 }
 
+bool isRequestSlot(const Widget* widget) { return asBase(widget, ".?AVChooseLogisticRequestAndTrashButton@@"); }
+
+namespace {
+
+constexpr uint32_t kNoRequestMax = 0xffffffff;
+
+} // namespace
+
+std::optional<uint32_t> requestMax(const Widget* slot) {
+   uint32_t high =
+      at<uint32_t>(asBaseChecked(slot, ".?AVChooseLogisticRequestAndTrashButton@@"), layout.requestSlotHigh);
+   if (high == kNoRequestMax) return std::nullopt;
+   return high;
+}
+
+void setRequestMin(const Widget* slot, int64_t min) {
+   auto* self = const_cast<std::byte*>(asBaseChecked(slot, ".?AVChooseLogisticRequestAndTrashButton@@"));
+   uint32_t high = at<uint32_t>(self, layout.requestSlotHigh);
+   int64_t max = high;
+   if (high != kNoRequestMax && min > max) max = min;
+   using SetItem = void (*)(void* button, uint64_t filter, int64_t min, int64_t max);
+   reinterpret_cast<SetItem>(layout.requestSlotSetItem)(self, at<uint64_t>(self, layout.requestSlotFilter), min, max);
+}
+
 std::string slotNumberText(const Widget* slot) {
    // As ButtonNumber::paintNumber has drawNumber write it, which also prefixes numberPrefix(): no
    // slot that FA reads this way has a prefix.

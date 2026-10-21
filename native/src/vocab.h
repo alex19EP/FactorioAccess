@@ -131,6 +131,13 @@ inline constexpr Word kActive{"fa.native-active"};
 // What robots are to bring to an entity's slot: the item's ghost and its count drawn on the slot
 // ("iron plate 10 requested").
 inline constexpr Word kSlotRequested{"fa.native-slot-requested"};
+// A logistic request slot: its item, the minimum drawn on it and the maximum drawn in its corner
+// ("iron plate 200 to 400").
+inline constexpr Word kRequestRange{"fa.native-request-range"};
+// The Set request window's two count fields, which the game leaves unnamed but for the maximum's
+// long tooltip.
+inline constexpr Word kMinimum{"fa.native-minimum"};
+inline constexpr Word kMaximum{"fa.native-maximum"};
 // An entity's slot whose stack robots are to take out: the game draws a deconstruction mark on it.
 inline constexpr Word kToBeRemoved{"fa.native-to-be-removed"};
 // A library record whose content has not arrived yet (drawn grey), or is arriving ("transferring 40
@@ -589,6 +596,8 @@ inline constexpr Word kEquipmentDoesNotFit{"fa.native-equipment-does-not-fit"};
 
 inline constexpr Word kNoTooltip{"fa.native-no-tooltip"};
 inline constexpr Word kNoAction{"fa.native-no-action"};
+// Escape on a number typed on a control (a request's count): it is not given.
+inline constexpr Word kNumberDropped{"fa.native-number-dropped"};
 
 std::string position(int index, int count);
 std::string expandedState(bool expanded);

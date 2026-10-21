@@ -40,10 +40,10 @@ public:
     /// is asked only while the window is still open.
     void LandWhen(std::string key, std::function<bool()> ready);
 
-protected:
     /// Whether this recipe reads the window.
     virtual bool Handles(const agui::Widget* window) const = 0;
 
+protected:
     /// Declares the window's stops.
     virtual void BuildWindow(graph::GraphBuilder& builder, const agui::Widget* window) = 0;
 
@@ -74,15 +74,7 @@ private:
 
     const agui::Widget* _window = nullptr;
     std::string _class;
-
-    struct Landing
-    {
-        std::string key;
-        std::function<bool()> ready;
-        int builds = 0; // left before it is given up
-    };
-    std::optional<Landing> _landing;
-    std::string _landed; // what the last TakeSuggestedLanding returned
+    PendingLanding _landing;
 };
 
 } // namespace fa::screens

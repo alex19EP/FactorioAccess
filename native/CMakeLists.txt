@@ -135,8 +135,10 @@ add_library(fa_native SHARED
   src/screens/ModWindowsScreen.cpp
   src/screens/PreviewCanvas.cpp
   src/screens/EquipmentGridCanvas.cpp
+  src/screens/LogisticsPanel.cpp
   src/screens/ProductionScreen.cpp
   src/screens/GameDialogScreen.cpp
+  src/screens/GameWindowScreen.cpp
   src/screens/MachineScreen.cpp
   src/screens/BeltScreen.cpp
   src/screens/SplitterScreen.cpp

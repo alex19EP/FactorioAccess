@@ -13,6 +13,7 @@
 
 #include "EquipmentGridCanvas.hpp"
 #include "GuiDump.hpp"
+#include "LogisticsPanel.hpp"
 #include "TooltipScreen.hpp"
 #include "blueprints.h"
 #include "game.h"
@@ -432,6 +433,11 @@ public:
         if (kind == Kind::EquipmentGrid)
         {
             AddEquipmentGrid(_builder, Key(path), widget);
+            return;
+        }
+        if (agui::derivesFrom(widget, "ItemLogisticGui"))
+        {
+            AddLogistics(_builder, Key(path), widget);
             return;
         }
         switch (kind)
@@ -1037,6 +1043,10 @@ std::string StackText(const Widget* slot)
         return caption.empty() ? std::string(vocab::kEmpty) : std::format("{}, {}", caption, vocab::kEmpty);
     }
     std::string spoken = quality.empty() ? std::string(name) : std::format("{} {}", quality, name);
+    // A logistic request: its minimum, and the maximum drawn in its corner when it has one.
+    if (agui::isRequestSlot(slot))
+        if (std::optional<uint32_t> max = agui::requestMax(slot))
+            return vocab::kRequestRange(spoken, std::format("{:.0f}", count), *max);
     // A choose button (a filter, a planner's rule) holds a choice, not a stack; a vehicle's gun slot
     // (a SimpleSlot on the toolbar) shows a gun fixed to it.
     if (count == 0 && (agui::derivesFrom(slot, "ChooseButtonBase") || agui::derivesFromTemplate(slot, "SimpleSlot")))
@@ -1304,6 +1314,10 @@ graph::NodeVtable SlotNode(const Widget* slot, std::function<std::string()> name
     vtable.OnSecondary = [slot]() { agui::press(slot, agui::MouseButton::Right, false, false); };
     vtable.OnTertiary = [slot]() { agui::press(slot, agui::MouseButton::Middle, false, false); };
     vtable.OnTooltip = [slot]() { SpeakGameTooltip(slot); };
+    // A request's minimum is typed on it, as the Set request window would set it. The game disables
+    // the slots of a section the player cannot edit.
+    if (agui::isRequestSlot(slot) && agui::enabled(slot) && !agui::slotButton(slot).name.empty())
+        vtable.OnNumber = [slot](long long number) { agui::setRequestMin(slot, number); };
     // No StateText: a click reaches the game as an input action applied later, so the result is
     // spoken by the live watch once it shows.
     return vtable;
@@ -1712,5 +1726,41 @@ bool Contains(const Widget* ancestor, const Widget* widget)
             return true;
     return false;
 }
+
+void PendingLanding::Set(std::string key, std::function<bool()> ready)
+{
+    // Builds run every frame and after every key; 120 is about two seconds.
+    _landing = Landing{std::move(key), std::move(ready), 120};
+}
+
+const char* PendingLanding::Take()
+{
+    if (!_landing)
+        return nullptr;
+    if (--_landing->builds <= 0)
+    {
+        _landing.reset();
+        return nullptr;
+    }
+    if (!_landing->ready())
+        return nullptr;
+    _landed = std::move(_landing->key);
+    _landing.reset();
+    return _landed.c_str();
+}
+
+namespace
+{
+
+// Screens build on the main thread, one at a time.
+Lander g_buildLander;
+
+} // namespace
+
+const Lander& BuildLander() { return g_buildLander; }
+
+ScopedBuildLander::ScopedBuildLander(Lander land) : _previous(std::exchange(g_buildLander, std::move(land))) {}
+
+ScopedBuildLander::~ScopedBuildLander() { g_buildLander = std::move(_previous); }
 
 } // namespace fa::screens

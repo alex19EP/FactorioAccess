@@ -162,6 +162,18 @@ void Navigator::HandleKey(const input::KeyEvent& e)
         return;
     }
 
+    // Claimed only on a node that takes a number.
+    if (e.key >= input::keys::Digit0 && e.key <= input::keys::Digit9)
+    {
+        HandleDigit(static_cast<int>(e.key - input::keys::Digit0));
+        return;
+    }
+    if (e.key >= input::keys::Keypad1 && e.key <= input::keys::Keypad0)
+    {
+        HandleDigit(static_cast<int>((e.key - input::keys::Keypad1 + 1) % 10));
+        return;
+    }
+
     switch (e.key)
     {
     // Arrows act on autorepeat too (held-key scrolling). WASD mirrors them, as it moves the FA
@@ -230,6 +242,14 @@ void Navigator::HandleKey(const input::KeyEvent& e)
             HandleTooltip();
         break;
     case input::keys::Backspace:
+        // Takes back a digit of the number being typed, held down as in a text field.
+        if (TypingNumber())
+        {
+            _number.pop_back();
+            Speak(_number.empty() ? std::string(vocab::kBlank) : _number);
+            break;
+        }
+        [[fallthrough]];
     case input::keys::RightBracket:
         if (!e.repeat)
             HandleContextMenu();
@@ -244,7 +264,12 @@ void Navigator::HandleKey(const input::KeyEvent& e)
     case input::keys::Escape:
         if (e.repeat)
             break;
-        if (_adjusting.IsValid())
+        if (TypingNumber())
+        {
+            _number.clear();
+            Speak(vocab::kNumberDropped);
+        }
+        else if (_adjusting.IsValid())
             StopAdjusting();
         else if (_screen->ClaimsEscape())
             _screen->OnEscape();
@@ -365,9 +390,43 @@ void Navigator::HandleHomeEnd(bool home)
         AnnounceMove(r);
 }
 
+bool Navigator::TypingNumber() const
+{
+    if (_number.empty())
+        return false;
+    graph::GraphNode* node = _graph->CurrentNode();
+    return node && node->Id == _numberFor && node->Vtable.OnNumber;
+}
+
+void Navigator::HandleDigit(int digit)
+{
+    graph::GraphNode* node = _graph->CurrentNode();
+    if (!node || !node->Vtable.OnNumber)
+        return;
+    if (!TypingNumber())
+    {
+        _number.clear();
+        _numberFor = node->Id;
+    }
+    // No leading zero; ten digits are past the largest count the game takes.
+    if (_number == "0")
+        _number.clear();
+    if (_number.size() < 10)
+        _number += static_cast<char>('0' + digit);
+    Speak(_number);
+}
+
 void Navigator::HandleEnter(bool shift, bool ctrl)
 {
     graph::GraphNode* node = _graph->CurrentNode();
+    if (!shift && !ctrl && TypingNumber())
+    {
+        long long number = std::stoll(_number);
+        _number.clear();
+        // The node says its new value through the live watch, once it shows it.
+        node->Vtable.OnNumber(number);
+        return;
+    }
     if (!shift && !ctrl && node && node->Vtable.AdjustOnEnter && node->Vtable.OnAdjust)
     {
         if (node->Id == _adjusting)
@@ -589,8 +648,13 @@ void Navigator::UpdateClaims(bool haveRender)
     bool adjusting = _adjusting.IsValid();
     bool canvas = !typing && node && node->Vtable.OnMoveWithin;
     bool positional = !typing && node && node->Vtable.PositionText;
+    bool digits = !typing && node && node->Vtable.OnNumber;
+    // Moving away drops a number typed on the node left.
+    if (!_number.empty() && !TypingNumber())
+        _number.clear();
+    bool number = TypingNumber();
     if (_claimsActive && typing == _claimsTyping && adjusting == _claimsAdjusting && canvas == _claimsCanvas
-        && positional == _claimsPositional)
+        && positional == _claimsPositional && digits == _claimsDigits && number == _claimsNumber)
     {
         input::keepAlive();
         return;
@@ -631,8 +695,16 @@ void Navigator::UpdateClaims(bool haveRender)
             claims.push_back({key, plain | mods::Shift | mods::Ctrl});
         // Leaving adjust mode is an Escape the game must not see, and so is any Escape on a part of
         // the HUD.
-        if (adjusting || _screen->ClaimsEscape())
+        if (adjusting || number || _screen->ClaimsEscape())
             claims.push_back({keys::Escape, plain});
+        // A node taking a number takes the digits, which otherwise pick from the quickbar.
+        if (digits)
+        {
+            for (uint32_t key = keys::Digit0; key <= keys::Digit9; ++key)
+                claims.push_back({key, plain});
+            for (uint32_t key = keys::Keypad1; key <= keys::Keypad0; ++key)
+                claims.push_back({key, plain});
+        }
         // The mod's read-coordinates control, wherever the player bound it, says where a canvas's
         // cursor is; the game must not see it, or the mod would read the world cursor's place.
         if (positional)
@@ -651,6 +723,8 @@ void Navigator::UpdateClaims(bool haveRender)
     _claimsAdjusting = adjusting;
     _claimsCanvas = canvas;
     _claimsPositional = positional;
+    _claimsDigits = digits;
+    _claimsNumber = number;
 }
 
 void Navigator::Speak(const std::string& text)

@@ -73,6 +73,20 @@ The scanner lists your pins too, under its pins category.
 
 For a pin set to show on the map from afar, the game draws an arrow at the edge of the screen pointing to it while it is off screen. FactorioAccess plays a sound for those arrows while the scanner is in its pins category: every 2 seconds while the cursor or your character moves, each such pin sounds from its direction, muffled when it is to the south and quieter the farther it is. "Pin arrow sonification" in the game's Mod settings turns these off. The scanner plays the same sound when it reaches such a pin.
 
+## Logistic requests
+
+Whatever logistic robots fill or empty has a logistics part in its window: your character screen once robots are researched, requester, buffer and storage chests, roboports, vehicles, and in Space Age the platform hub and the cargo landing pad. Constant combinators set their signals the same way.
+
+- It starts with its checkboxes, such as Personal logistics or Trash unrequested.
+- Then come its sections, each a header and its slots. `ctrl + up` and `ctrl + down` jump between sections. The header's checkbox, named after the section's logistic group ("[No group assigned]" for none), turns the section on or off. Change logistic group picks or makes a group, and Remove deletes the section.
+- A slot says its request. "Iron plate 200 to 400" has robots keep 200 and take away what is over 400; "Iron plate 200" has no maximum. A combinator's slot says its signal and count.
+- `enter` on a slot opens the game's Set request window. Pick the item; `tab` then reaches the quality, the minimum and maximum fields and the confirm button.
+- On a slot that holds an item, type a number and press `enter` to set its minimum, or a combinator signal's count. `backspace` takes back a digit and `escape` cancels. A minimum over the maximum raises the maximum with it.
+- `ctrl + shift + up` and `ctrl + shift + down` on a section's header move the section up or down.
+- Add section, last, adds an empty section.
+
+A storage chest has one filter slot instead: the item robots bring there.
+
 ## FactorioAccess's views beside a window
 
 Where a window lacks something worth saying, FactorioAccess adds a view beside it, as an ordinary part of the window that sighted players see too: what a belt carries (see [basics](basics.md)), where a pipe connects, what a pole is wired to. `tab` reaches it after the window's own parts.

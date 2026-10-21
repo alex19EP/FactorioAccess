@@ -62,6 +62,10 @@ private:
     void HandleArrow(graph::GraphDir dir, bool ctrl);
     /// Ctrl+Shift+Up/Down: the focused node's list item moves one place (NodeVtable::OnReorder).
     void HandleReorder(int by);
+    /// A digit typed on a node that takes a number (NodeVtable::OnNumber).
+    void HandleDigit(int digit);
+    /// Whether a number is being typed on the focused node.
+    bool TypingNumber() const;
     /// Shift+arrow: a canvas's cursor skips to the next change.
     void HandleSkip(graph::GraphDir dir);
     /// After a canvas's cursor moved: say where it is now, keeping the focus.
@@ -118,7 +122,12 @@ private:
     bool _claimsAdjusting = false;             // the published set includes Escape
     bool _claimsCanvas = false;                // ... Shift+arrows, for a canvas
     bool _claimsPositional = false;            // ... the read-coordinates keys
-    std::vector<bindings::Key> _positionKeys;  // those keys, as claimed
+    bool _claimsDigits = false;                // ... the digits, for a node taking a number
+    bool _claimsNumber = false;                // ... Escape, while one is typed
+    std::vector<bindings::Key> _positionKeys;  // the read-coordinates keys, as claimed
+
+    std::string _number;                       // the number typed on the node below, so far
+    graph::ControlId _numberFor;
 
     /// The mod's custom input that reads the cursor's coordinates.
     static constexpr std::string_view kReadCoordinatesInput = "fa-k";

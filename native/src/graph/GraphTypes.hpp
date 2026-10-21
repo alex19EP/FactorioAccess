@@ -161,6 +161,11 @@ struct NodeVtable
     /// does not, silent as an arrow at an edge is.
     std::function<bool(int by)> OnReorder;
 
+    /// Optional. The control takes a number typed on it (a request's count): digits make the
+    /// number, said as typed, Backspace takes the last one back, Enter gives it here and Escape
+    /// or moving away drops it. Enter does not activate the control while a number is typed.
+    std::function<void(long long number)> OnNumber;
+
     /// Optional. Horizontal value adjust (a slider): sign is -1 (decrease) / +1 (increase), large
     /// requests a coarse step. When set, Left/Right do NOT navigate.
     std::function<void(int sign, bool large)> OnAdjust;
