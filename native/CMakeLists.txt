@@ -85,6 +85,9 @@ target_link_libraries(fa_core PRIVATE raw_pdb)
 # miniaudio and stb_vorbis as they come, built apart so our /W4 never reaches them.
 add_library(fa_miniaudio STATIC src/miniaudio.c)
 target_include_directories(fa_miniaudio PUBLIC vendor/miniaudio)
+# Public: these change miniaudio's struct layouts (ma_engine_config), so every user of the header
+# needs them too.
+target_compile_definitions(fa_miniaudio PUBLIC MA_NO_ENCODING MA_NO_RESOURCE_MANAGER)
 target_compile_options(fa_miniaudio PRIVATE /W0)
 
 add_library(fa_native SHARED

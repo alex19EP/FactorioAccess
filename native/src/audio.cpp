@@ -147,6 +147,18 @@ struct Sound {
    }
 };
 
+// miniaudio's info lines describe the device it opened (format, rate, buffer size); its debug
+// lines are mostly library loading.
+void onMiniaudioLog(void*, ma_uint32 level, const char* message) {
+   if (level == MA_LOG_LEVEL_DEBUG) return;
+   std::string_view text = message;
+   while (text.ends_with('\n')) text.remove_suffix(1);
+   const char* tag = level == MA_LOG_LEVEL_ERROR     ? "miniaudio error"
+                     : level == MA_LOG_LEVEL_WARNING ? "miniaudio warn"
+                                                     : "miniaudio";
+   log::write(tag, text);
+}
+
 bool check(ma_result result, const char* what, const std::string& id) {
    if (result == MA_SUCCESS) return true;
    log::error("Audio: {} failed for sound {}: {}", what, id, ma_result_description(result));
@@ -156,8 +168,13 @@ bool check(ma_result result, const char* what, const std::string& id) {
 class Engine {
 public:
    bool init() {
+      if (ma_log_init(nullptr, &log_) == MA_SUCCESS) {
+         hasLog_ = true;
+         ma_log_register_callback(&log_, ma_log_callback_init(&onMiniaudioLog, nullptr));
+      }
       ma_engine_config config = ma_engine_config_init();
       config.channels = 2; // the panners' stereo
+      config.pLog = hasLog_ ? &log_ : nullptr;
       if (ma_result result = ma_engine_init(&config, &engine_); result != MA_SUCCESS) {
          log::error("Audio: no output device: {}", ma_result_description(result));
          return false;
@@ -172,6 +189,7 @@ public:
       // Sounds belong to the engine and go first.
       sounds_.clear();
       if (initialized_) ma_engine_uninit(&engine_);
+      if (hasLog_) ma_log_uninit(&log_);
    }
 
    void run(const Command& command) {
@@ -315,6 +333,8 @@ private:
       return s;
    }
 
+   ma_log log_{};
+   bool hasLog_ = false;
    ma_engine engine_{};
    bool initialized_ = false;
    ma_uint32 rate_ = 0;
