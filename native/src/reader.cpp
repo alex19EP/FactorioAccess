@@ -6,6 +6,7 @@
 #include "game.h"
 #include "mappicture.h"
 #include "prototypes.h"
+#include "scanner.h"
 #include "graph/GraphAnnouncer.hpp"
 #include "graph/GraphBuilder.hpp"
 #include "screens/AguiNodes.hpp"
@@ -539,6 +540,8 @@ std::string describe(const std::byte* player, const std::byte* entity, Position 
    virtualAt<void (*)(const void*, void*)>(entity, layout.entityAddToDescription)(entity, description);
 
    std::vector<std::string> parts{nameOf(entity, description)};
+   // The logistic networks window marks it on the map; the scanner's category of those says so.
+   if (!chestContents && scanner::isMarked(entity)) parts.emplace_back(vocab::kMarked);
    for (std::string& fact : facts::describe(entity, tile.x, tile.y)) parts.push_back(std::move(fact));
    std::vector<std::string> modLists;
    const auto* head = *reinterpret_cast<const StringNode* const*>(description + layout.descriptionModLists);

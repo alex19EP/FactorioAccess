@@ -2540,6 +2540,18 @@ struct Layout {
    uint32_t requestSlotFilter = 0;         // selectedID, SignalFilter
    uint32_t signalFilterSize = 0;          // passed in a register only at 8 bytes
    uintptr_t requestSlotSetItem = 0;
+   // The logistic networks window (LogisticNetworksGui, L) marks on the map what is selected in it:
+   // GameView::draw, while it is the active window, calls drawSelectedItem when `selectedItem` is
+   // set (the network's active provider, passive provider, storage and buffer chests holding it),
+   // else drawSelectedEntity when `selectedEntity` is (its members of that type, robots of it where
+   // they fly, roboports holding them), else drawRoboportIcons (its roboports, on the full map
+   // only). Each fills `entitiesToDraw` (std::vector<Entity*>) and calls void
+   // drawEntities(DrawQueue&), which draws those on screen and empties it. Both selections are
+   // IDWithQuality, the prototype's ID first; a click on the selected slot clears both.
+   uintptr_t networksGuiDrawEntities = 0;
+   uint32_t networksGuiEntitiesToDraw = 0;
+   uint32_t networksGuiSelectedItem = 0;   // selectedItem.baseID, uint16_t
+   uint32_t networksGuiSelectedEntity = 0; // selectedEntity.baseID, uint16_t
 };
 
 // Bits of agui::Widget::usageBitMask, read from Widget::setVisible and Widget::isEnabled in

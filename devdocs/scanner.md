@@ -73,6 +73,15 @@ dropped, as its icon leaves the map. Lua says it by the alerts configuration's n
 wells are not listed apart from their forest or field, and build spots are left out, as nothing but
 blueprints and rails is built on the map.
 
+Either list, map or not, holds what the logistic networks window marks on the map (Marked, each
+prototype a subcategory, kept out of All). `GameView::draw` has the window gather them every frame
+(`LogisticNetworksGui::drawSelectedItem` or `drawSelectedEntity` fill `entitiesToDraw`) and draw them
+with `drawEntities`, which FA hooks while the world stands still: a changed set is linked at once and
+starts an automatic refresh, and a set not drawn for half a second (the window closed, the selection
+cleared) is no longer marked, so each move passes over an entry the window stopped marking. Without a
+selection the window draws only its roboports on the full map, which mark nothing. The tile reader
+says "marked" on a marked entity.
+
 Opening or closing the map starts a new list at once, from where the camera is, and the cursor stays
 on what it was on when the new list has it. Until the new list is put in place, the old one is used.
 

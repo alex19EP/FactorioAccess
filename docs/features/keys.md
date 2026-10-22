@@ -156,6 +156,14 @@ FactorioAccess reads every game window and moves through it from the keyboard. S
 
 On the map, each cursor move also says what these two would add: a temporary stop on the nearest rail and the nearest train stop, each within 20 tiles, with "no path to" when the train cannot reach it.
 
+### In the Logistic networks window
+
+| Key | What it does |
+| --- | --- |
+| `enter` on an item or member | Select it, and the map marks where it is; `enter` again clears it |
+| `ctrl + tab` | Go to the map beside the window; `ctrl + shift + tab` comes back |
+| `ctrl + page down` on the map | To the scanner's Marked category: the places the window marks |
+
 See [rails](rails.md).
 
 ## Kruise Kontrol

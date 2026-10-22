@@ -48,8 +48,8 @@ bool ShownIn(const Widget* panel, const Widget* widget)
 
 std::string SectionKey(const std::string& key, std::size_t index) { return std::format("{}/section/{}", key, index); }
 
-void AddSection(graph::GraphBuilder& builder, const std::string& key, const Widget* pane, const Widget* section,
-    std::size_t index)
+void AddSection(
+    graph::GraphBuilder& builder, const std::string& key, const Widget* pane, const Widget* section, std::size_t index)
 {
     std::string sectionKey = SectionKey(key, index);
     std::string name = SectionName(section);

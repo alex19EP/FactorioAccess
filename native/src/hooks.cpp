@@ -16,6 +16,7 @@
 #include "movement.h"
 #include "popups.h"
 #include "railplanner.h"
+#include "scanner.h"
 #include "selection.h"
 #include "tutorial.h"
 #include "ui.h"

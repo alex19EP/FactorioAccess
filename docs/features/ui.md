@@ -87,6 +87,14 @@ Whatever logistic robots fill or empty has a logistics part in its window: your 
 
 A storage chest has one filter slot instead: the item robots bring there.
 
+## Logistic networks
+
+`l` opens the game's Logistic networks window beside the map, in remote view. It lists the networks on the surface you are viewing; choosing one moves the map to it. Then come the network's name with its Edit button, the search field, its Members (roboports, chests, robots, with counts) and its Items (everything stored in it, with counts).
+
+`enter` on an item selects it and the game marks on the map every chest holding it; on a member, every one of that type, robots where they fly. A selected slot says "selected", and `enter` again clears it ("not selected").
+
+`ctrl + tab` goes to the map beside the window, and `ctrl + shift + tab` comes back. There the cursor moves as in remote view and says "marked" on what the window marks, and the scanner's Marked category lists those places, nearest first, each type a subcategory: `page down` and `shift + page down` move through them, and `home` moves the cursor onto one, where `[` opens it as usual.
+
 ## FactorioAccess's views beside a window
 
 Where a window lacks something worth saying, FactorioAccess adds a view beside it, as an ordinary part of the window that sighted players see too: what a belt carries (see [basics](basics.md)), where a pipe connects, what a pole is wired to. `tab` reaches it after the window's own parts.

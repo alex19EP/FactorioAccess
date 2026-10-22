@@ -3,7 +3,6 @@
 #include "ScheduleNodes.hpp"
 #include "game.h"
 #include "navigator/ScreenManager.hpp"
-#include "parts.h"
 #include "speech.h"
 #include "vocab.h"
 
@@ -56,9 +55,8 @@ std::size_t AddedAt(const std::vector<std::string>& before, const std::vector<st
 
 bool TrainScreen::IsActive()
 {
-    const Widget* window = FindWindow().window;
-    parts::setAvailable(parts::Part::Map, window != nullptr);
-    if (window)
+    // Watched on the map beside the window as well.
+    if (const Widget* window = FindWindow().window)
     {
         WatchSchedule(window);
         WatchStatus(window);
@@ -67,12 +65,6 @@ bool TrainScreen::IsActive()
     {
         _seen.reset();
         _labels.clear();
-    }
-    if (parts::current() == parts::Part::Map)
-    {
-        if (window)
-            return false;
-        parts::close();
     }
     return EntityWindowScreen::IsActive();
 }
@@ -119,11 +111,6 @@ void TrainScreen::WatchStatus(const Widget* window)
     _labels.clear();
     for (auto& [label, text] : labels)
         _labels.push_back(std::move(text));
-}
-
-std::string TrainScreen::LeaveLine() const
-{
-    return parts::current() == parts::Part::Map ? std::string(vocab::kMap) : std::string();
 }
 
 bool TrainScreen::Handles(const Widget* window) const { return agui::derivesFrom(window, "TrainGui"); }

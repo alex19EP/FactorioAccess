@@ -30,6 +30,7 @@
 #include <thread>
 #include <tuple>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 
 namespace fa::scanner {
@@ -92,6 +93,7 @@ Position tileCentre(int32_t x, int32_t y) { return {x * 256 + 128, y * 256 + 128
 // CATEGORIES, which name them in the mod's locale (fa.scanner-category-<key>).
 enum Cat : uint8_t {
    All,
+   Marked,
    Alerts,
    BuildSpots,
    Pins,
@@ -114,10 +116,27 @@ enum Cat : uint8_t {
    kCategoryCount,
 };
 constexpr std::array<std::string_view, kCategoryCount> kCategoryKeys{
-   "all",        "alerts",   "build_spots", "pins",        "tags",
-   "resources",  "enemies",  "remnants",    "production",  "logistics_and_power",
-   "containers", "military", "vehicles",    "spidertrons", "trains",
-   "ghosts",     "players",  "corpses",     "other",       "terrain",
+   "all",
+   "marked",
+   "alerts",
+   "build_spots",
+   "pins",
+   "tags",
+   "resources",
+   "enemies",
+   "remnants",
+   "production",
+   "logistics_and_power",
+   "containers",
+   "military",
+   "vehicles",
+   "spidertrons",
+   "trains",
+   "ghosts",
+   "players",
+   "corpses",
+   "other",
+   "terrain",
 };
 static_assert(!kCategoryKeys.back().empty(), "a category has no key");
 
@@ -600,6 +619,48 @@ private:
    const std::byte* game_ = nullptr;
 };
 
+// What the logistic networks window marks on the map: the chests holding the item selected in it,
+// or the members of the type selected. The game gathers them afresh every frame it draws them
+// (LogisticNetworksGui::drawSelectedItem, drawSelectedEntity), and stops drawing once the window
+// closes or the selection is cleared.
+struct Marks {
+   std::vector<std::byte*> entities; // as last drawn, to tell when they change
+   std::unordered_set<const std::byte*> set;
+   Links links;
+   Clock::time_point drawn;
+};
+std::mutex g_marksMutex;
+Marks g_marks;
+// The marks changed since the last automatic refresh started.
+std::atomic<bool> g_marksChanged = false;
+// Marks not drawn for this long are no longer on the map.
+constexpr auto kMarksShown = std::chrono::milliseconds(500);
+
+// Whether the window still marks what was last drawn. Under g_marksMutex.
+bool marksShown() { return Clock::now() - g_marks.drawn < kMarksShown; }
+
+// Takes the marks being drawn: entities that are there, while the world stands still.
+void noteMarks(std::byte* const* first, std::byte* const* last) {
+   std::scoped_lock lock(g_marksMutex);
+   const bool shown = marksShown();
+   g_marks.drawn = Clock::now();
+   if (shown && std::equal(first, last, g_marks.entities.begin(), g_marks.entities.end())) return;
+   g_marks.entities.assign(first, last);
+   g_marks.set.clear();
+   g_marks.links = Links(currentGame());
+   for (std::byte* const* entity = first; entity < last; ++entity) {
+      g_marks.links.add(*entity);
+      g_marks.set.insert(*entity);
+   }
+   g_marksChanged = true;
+}
+
+// Whether the window marks `entity` now.
+bool marked(const std::byte* entity) {
+   std::scoped_lock lock(g_marksMutex);
+   return marksShown() && g_marks.set.contains(entity);
+}
+
 // Spawners are grouped by how much pollution they absorbed, at these thresholds: those of
 // scripts/scanner/readout.lua's SPAWNER_POLLUTION_BUCKETS, which says the group.
 constexpr double kSpawnerPollution[] = {0, 1, 99};
@@ -1028,8 +1089,9 @@ size_t parallelFor(unsigned threads, size_t first, size_t count, size_t batch, c
    return std::min(next.load(), count);
 }
 
-// Groups the items into categories and subcategories, every item into All as well, nearest first:
-// the entries of each subcategory, then the subcategories by their nearest.
+// Groups the items into categories and subcategories, every item into All as well but the marks,
+// which are listed already as what they are, nearest first: the entries of each subcategory, then
+// the subcategories by their nearest.
 void group(List& list) {
    const auto count = static_cast<uint32_t>(list.items.size());
    // Each item's key by number, so that each is hashed once.
@@ -1058,9 +1120,10 @@ void group(List& list) {
          }
          found[place].items.push_back(i);
       };
-      if (category == All)
-         for (uint32_t i = 0; i < count; ++i) add(i);
-      else
+      if (category == All) {
+         for (uint32_t i = 0; i < count; ++i)
+            if (list.items[i].category != Marked) add(i);
+      } else
          for (uint32_t i : byCategory[category]) add(i);
       for (Subcategory& subcategory : found) subcategories.push_back(&subcategory);
    }
@@ -1658,6 +1721,8 @@ bool validate(const World& world, uint32_t index) {
    switch (item.kind) {
    case Kind::Entity:
       if (const std::byte* entity = firstLive(world, item)) {
+         // A mark goes as the window stops drawing it: a chest emptied, the selection changed.
+         if (item.category == Marked && !marked(entity)) return false;
          item.position = at<Position>(entity, layout.entityPosition);
          return true;
       }
@@ -2156,6 +2221,7 @@ struct Job {
    std::vector<Item> extras;    // the mod's, where they are listed
    std::vector<Item> chunks;    // asteroid chunks, linked as the list starts
    std::vector<Item> alerts;    // the player's alerts on the map, linked as the list starts
+   std::vector<Item> marks;     // what the logistic networks window marks, linked as the list starts
    std::vector<Position> order; // the chunks' positions, nearest first
    size_t next = 0;             // the first in `order` not walked
    std::deque<Walk> walks;
@@ -2241,6 +2307,24 @@ std::unique_ptr<Job> startJob(const Refresh& request, Position origin, std::opti
                       }
                       job->alerts.push_back(std::move(item));
                    });
+   }
+
+   // What the logistic networks window marks on the map, each type a subcategory, while it does.
+   {
+      std::scoped_lock lock(g_marksMutex);
+      if (marksShown()) {
+         for (size_t i = 0; i < g_marks.links.size(); ++i) {
+            const std::byte* entity = g_marks.links.entity(i);
+            if (!entity || at<const std::byte*>(entity, layout.entitySurface) != place->surface) continue;
+            const Position position = at<Position>(entity, layout.entityPosition);
+            if (!scan.wanted(position)) continue;
+            const std::byte* prototype = at<const std::byte*>(entity, layout.entityPrototypeOf);
+            Item item{Kind::Entity, Marked, prototype, position, std::format("marked/{}", prototypeName(prototype))};
+            item.first = job->links.add(const_cast<std::byte*>(entity));
+            item.count = 1;
+            job->marks.push_back(std::move(item));
+         }
+      }
    }
 
    // The asteroid chunks floating past a platform are resources, each kind a subcategory. The map
@@ -2329,6 +2413,7 @@ List assemble(Job& job) {
    list.items.insert(list.items.end(), job.extras.begin(), job.extras.end());
    list.items.insert(list.items.end(), job.chunks.begin(), job.chunks.end());
    list.items.insert(list.items.end(), job.alerts.begin(), job.alerts.end());
+   list.items.insert(list.items.end(), job.marks.begin(), job.marks.end());
    group(list);
    list.tiles = std::move(job.tiles);
    return list;
@@ -2563,6 +2648,8 @@ bool step(int playerIndex, uint32_t surfaceIndex, bool mayStart) {
       return false;
    }
    if (!mayStart) return false;
+   // What the window marks is listed as soon as it changes.
+   if (g_marksChanged.exchange(false)) g_nextCycle = now;
 
    bool current;
    {
@@ -2596,6 +2683,10 @@ void stop() {
    }
    for (Links& links : g_retired) links.abandon();
    g_retired.clear();
+   {
+      std::scoped_lock marks(g_marksMutex);
+      g_marks.links.abandon();
+   }
    std::scoped_lock lock(g_mutex);
    g_list.links.abandon();
    for (Dropper& dropper : g_droppers) dropper.thread.join();
@@ -2650,5 +2741,27 @@ std::optional<std::string> currentCategory(int playerIndex) {
    if (!g_cursor.category) return std::nullopt;
    return std::string(kCategoryKeys[*g_cursor.category]);
 }
+
+namespace {
+
+using DrawEntities = void (*)(std::byte* gui, void* queue);
+DrawEntities g_drawEntitiesOriginal = nullptr;
+
+// LogisticNetworksGui::drawEntities, as the game view draws, while the world stands still. With
+// nothing selected it draws only the network's roboports on the full map, which mark nothing.
+void detourDrawEntities(std::byte* gui, void* queue) {
+   if (at<uint16_t>(gui, layout.networksGuiSelectedItem) || at<uint16_t>(gui, layout.networksGuiSelectedEntity)) {
+      const auto& entities = at<MsvcVector<std::byte*>>(gui, layout.networksGuiEntitiesToDraw);
+      noteMarks(entities.first, entities.last);
+   }
+   g_drawEntitiesOriginal(gui, queue);
+}
+
+} // namespace
+
+void* drawMarksDetour() { return reinterpret_cast<void*>(&detourDrawEntities); }
+void** drawMarksOriginal() { return reinterpret_cast<void**>(&g_drawEntitiesOriginal); }
+
+bool isMarked(const void* entity) { return marked(static_cast<const std::byte*>(entity)); }
 
 } // namespace fa::scanner

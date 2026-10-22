@@ -8,6 +8,10 @@
 //
 // The elements a mod attached to the window (LuaGuiElement anchor), FA's own views of the entity
 // among them, follow the window's stops, a stop each.
+//
+// Remote view docks some windows beside the map: a train's, the logistic networks window. From one,
+// Ctrl+Tab goes to the map (parts::Part::Map), where its screen steps aside: FA's world keys and the
+// scanner act on the map, and the game's clicks act where the cursor is.
 
 #include <functional>
 #include <optional>
@@ -28,6 +32,7 @@ public:
     const char* DiagName() const override { return _class.c_str(); }
     bool RemembersCursor() const override { return true; }
     bool IsActive() override;
+    std::string LeaveLine() const override;
     void Build(graph::GraphBuilder& builder) override;
     bool TypingIn(const graph::GraphNode& node) override;
     void OnCursorMoved(const graph::GraphNode& node) override;
@@ -60,15 +65,20 @@ protected:
     /// while one is open.
     static void AddSidePanel(graph::GraphBuilder& builder, const agui::Widget* sidePanel);
 
-    /// The window, and the wrapper the game put it in when a mod attached elements to it.
+    /// The window, the wrapper the game put it in when a mod attached elements to it, and whether
+    /// remote view docks it beside the map.
     struct Found
     {
         const agui::Widget* window = nullptr;
         const agui::Widget* wrapper = nullptr;
+        bool docked = false;
     };
     Found FindWindow() const;
 
 private:
+    /// The window last found was docked beside the map.
+    bool _docked = false;
+
     /// The mod elements in the wrapper's flows, a stop each.
     static void AddRelativeElements(graph::GraphBuilder& builder, const agui::Widget* wrapper);
 

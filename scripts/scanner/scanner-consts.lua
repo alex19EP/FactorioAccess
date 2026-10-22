@@ -6,6 +6,9 @@ local mod = {}
 ---@enum fa.scanner.Category
 mod.CATEGORIES = {
    ALL = "all",
+   -- What the logistic networks window marks on the map: the chests holding the item selected in it,
+   -- or its members of the type selected, while it does.
+   MARKED = "marked",
    -- The alerts the game shows on the map and the minimap, a subcategory per alert type.
    ALERTS = "alerts",
    -- Places the item in hand can be built, such as the shore for an offshore pump.

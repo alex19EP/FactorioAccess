@@ -94,4 +94,6 @@
    X(characterChangePosition, movement::changePositionDetour(), movement::changePositionOriginal(),                    \
      "Character::changePosition")                                                                                      \
    X(editorActionPerformed, editoractions::actionPerformedDetour(), editoractions::actionPerformedOriginal(),          \
-     "MapEditorActionHandler::actionPerformed")
+     "MapEditorActionHandler::actionPerformed")                                                                        \
+   X(networksGuiDrawEntities, scanner::drawMarksDetour(), scanner::drawMarksOriginal(),                                \
+     "LogisticNetworksGui::drawEntities")

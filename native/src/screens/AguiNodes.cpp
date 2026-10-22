@@ -1288,6 +1288,15 @@ bool SlotInHand(const Widget* slot)
     return agui::derivesFrom(slot, "InventoryGuiSlot") && agui::slotItem(slot).inHand;
 }
 
+// The slot Enter last clicked and whether it was shown pressed then, for the render after the click,
+// whose nodes are new. Only on the Gui's logic.
+struct ClickedSlot
+{
+    const Widget* slot = nullptr;
+    bool toggled = false;
+};
+ClickedSlot g_clickedSlot;
+
 graph::NodeVtable SlotNode(const Widget* slot, std::function<std::string()> name)
 {
     graph::NodeVtable vtable;
@@ -1306,6 +1315,11 @@ graph::NodeVtable SlotNode(const Widget* slot, std::function<std::string()> name
     vtable.Announcements.emplace_back(
         [slot]() { return SlotInHand(slot) ? std::string(vocab::kInHand) : std::string(); }, false, Value);
     vtable.Announcements.emplace_back([slot]() { return LockText(slot); }, true, Value);
+    // A slot shown pressed is the one selected: the item or member the logistic networks window marks
+    // on the map.
+    if (!agui::isRecordSlot(slot))
+        vtable.Announcements.emplace_back([slot]()
+            { return agui::buttonToggled(slot) ? std::string(vocab::kSelected) : std::string(); }, false, Value);
     vtable.Announcements.emplace_back(
         [slot]() { return agui::enabled(slot) ? std::string() : std::string(vocab::kDisabled); }, false, Enabled);
     vtable.OnActivate = [slot]() { agui::press(slot, agui::MouseButton::Left, false, false); };
@@ -1314,12 +1328,29 @@ graph::NodeVtable SlotNode(const Widget* slot, std::function<std::string()> name
     vtable.OnSecondary = [slot]() { agui::press(slot, agui::MouseButton::Right, false, false); };
     vtable.OnTertiary = [slot]() { agui::press(slot, agui::MouseButton::Middle, false, false); };
     vtable.OnTooltip = [slot]() { SpeakGameTooltip(slot); };
+    // A click the window answers by selecting or clearing the slot (the logistic networks window's)
+    // says so: the window toggles it as it handles the click, before the live watch looks again.
+    if (!agui::isRecordSlot(slot))
+    {
+        vtable.OnActivate = [slot]()
+        {
+            g_clickedSlot = {slot, agui::buttonToggled(slot)};
+            agui::press(slot, agui::MouseButton::Left, false, false);
+        };
+        vtable.StateText = [slot]()
+        {
+            const bool toggled = agui::buttonToggled(slot);
+            if (g_clickedSlot.slot != slot || g_clickedSlot.toggled == toggled)
+                return std::string();
+            return std::string(toggled ? vocab::kSelected : vocab::kNotSelected);
+        };
+    }
     // A request's minimum is typed on it, as the Set request window would set it. The game disables
     // the slots of a section the player cannot edit.
     if (agui::isRequestSlot(slot) && agui::enabled(slot) && !agui::slotButton(slot).name.empty())
         vtable.OnNumber = [slot](long long number) { agui::setRequestMin(slot, number); };
-    // No StateText: a click reaches the game as an input action applied later, so the result is
-    // spoken by the live watch once it shows.
+    // Otherwise a click reaches the game as an input action applied later, so the result is spoken by
+    // the live watch once it shows.
     return vtable;
 }
 

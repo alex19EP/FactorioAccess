@@ -50,6 +50,9 @@ inline constexpr Word kChecked{"fa.native-checked"};
 inline constexpr Word kUnchecked{"fa.native-unchecked"};
 inline constexpr Word kPartlyChecked{"fa.native-partly-checked"};
 inline constexpr Word kSelected{"fa.native-selected"};
+inline constexpr Word kNotSelected{"fa.native-not-selected"};
+// Marked on the map by the logistic networks window.
+inline constexpr Word kMarked{"fa.native-marked"};
 inline constexpr Word kPressed{"fa.native-pressed"};
 inline constexpr Word kNotPressed{"fa.native-not-pressed"};
 inline constexpr Word kLeft{"fa.native-left"};

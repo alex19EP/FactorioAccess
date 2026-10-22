@@ -1777,6 +1777,10 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.requestSlotFilter, "ChooseLogisticRequestAndTrashButton", "selectedID");
    size(layout.signalFilterSize, "SignalFilter");
    address(layout.requestSlotSetItem, "?setItem@ChooseLogisticRequestAndTrashButton@@QEAAXVSignalFilter@@_J1@Z");
+   address(layout.networksGuiDrawEntities, "?drawEntities@LogisticNetworksGui@@QEAAXAEAVDrawQueue@@@Z");
+   offset(layout.networksGuiEntitiesToDraw, "LogisticNetworksGui", "entitiesToDraw");
+   offset(layout.networksGuiSelectedItem, "LogisticNetworksGui", "selectedItem.baseID");
+   offset(layout.networksGuiSelectedEntity, "LogisticNetworksGui", "selectedEntity.baseID");
 
    if (ok && layout.signalFilterSize != sizeof(uint64_t)) {
       log::error("SignalFilter is {} bytes, no longer passed in a register", layout.signalFilterSize);

@@ -11,9 +11,9 @@
 //     their wait conditions, then the interrupts;
 //   - while the Cargo tab shows, its contents.
 //
-// The window opens docked in remote view, beside the map. Ctrl+Tab goes to the map (parts::Part::Map),
-// where this screen steps aside: FA's world keys move the cursor on the map, and the game's own
-// Ctrl+click (add a temporary stop) and Shift+click (add a stop) act where it is.
+// The window opens docked in remote view, beside the map, which Ctrl+Tab goes to (see
+// EntityWindowScreen): there the game's own Ctrl+click (add a temporary stop) and Shift+click (add a
+// stop) act where the cursor is.
 
 #include "EntityWindowScreen.hpp"
 
@@ -24,7 +24,6 @@ class TrainScreen final : public EntityWindowScreen
 {
 public:
     bool IsActive() override;
-    std::string LeaveLine() const override;
 
 protected:
     bool Handles(const agui::Widget* window) const override;

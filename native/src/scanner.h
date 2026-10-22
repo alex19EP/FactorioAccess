@@ -109,4 +109,11 @@ std::optional<Category> category(int playerIndex);
 // before the first scanner key. For sounds and speech only.
 std::optional<std::string> currentCategory(int playerIndex);
 
+// The hook on LogisticNetworksGui::drawEntities, which lists what the logistic networks window marks
+// on the map as a category of its own ("marked") while it does.
+void* drawMarksDetour();
+void** drawMarksOriginal();
+// Whether the logistic networks window marks `entity` on the map now.
+bool isMarked(const void* entity);
+
 } // namespace fa::scanner
