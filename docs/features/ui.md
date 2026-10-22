@@ -75,12 +75,13 @@ For a pin set to show on the map from afar, the game draws an arrow at the edge 
 
 ## Logistic requests
 
-Whatever logistic robots fill or empty has a logistics part in its window: your character screen once robots are researched, requester, buffer and storage chests, roboports, vehicles, and in Space Age the platform hub and the cargo landing pad. Constant combinators set their signals the same way.
+Whatever logistic robots fill or empty has a logistics part in its window: your character screen once robots are researched, requester, buffer and storage chests, roboports, the spidertron, the tank once Logistic system is researched (the car has no trash slots, so never), and in Space Age the platform hub and the cargo landing pad. Constant combinators set their signals the same way.
 
 - It starts with its checkboxes, such as Personal logistics or Trash unrequested.
 - Then come its sections, each a header and its slots. `ctrl + up` and `ctrl + down` jump between sections. The header's checkbox, named after the section's logistic group ("[No group assigned]" for none), turns the section on or off. Change logistic group picks or makes a group, and Remove deletes the section.
-- A slot says its request. "Iron plate 200 to 400" has robots keep 200 and take away what is over 400; "Iron plate 200" has no maximum. A combinator's slot says its signal and count.
+- A slot says its request. "Iron plate 200 to 400" has robots keep 200 and take away what is over 400; "Iron plate 200" has no maximum. A combinator's slot says its signal and count. "Inactive" after it means the request is off, where the game grays its numbers: its section or the whole logistics part is switched off, the combinator is off, or a platform is not over the planet the request imports from.
 - `enter` on a slot opens the game's Set request window. Pick the item; `tab` then reaches the quality, the minimum and maximum fields and the confirm button.
+- A platform hub's slot opens Set orbital request instead, which also has Custom minimum payload with its field, Import from (the planet; `enter` picks it) and whether to request from the planet, its platforms or all. `y` on a hub's slot reads its tooltip, which says the planet it imports from.
 - On a slot that holds an item, type a number and press `enter` to set its minimum, or a combinator signal's count. `backspace` takes back a digit and `escape` cancels. A minimum over the maximum raises the maximum with it.
 - `ctrl + shift + up` and `ctrl + shift + down` on a section's header move the section up or down.
 - Add section, last, adds an empty section.

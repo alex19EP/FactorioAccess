@@ -131,6 +131,7 @@ inline constexpr Word kRemoved{"fa.native-removed"};
 inline constexpr Word kInHand{"fa.native-in-hand"};
 // A book's slot it builds from while held, highlighted in the book's window.
 inline constexpr Word kActive{"fa.native-active"};
+inline constexpr Word kInactive{"fa.native-inactive"};
 // What robots are to bring to an entity's slot: the item's ghost and its count drawn on the slot
 // ("iron plate 10 requested").
 inline constexpr Word kSlotRequested{"fa.native-slot-requested"};

@@ -2540,6 +2540,23 @@ struct Layout {
    uint32_t requestSlotFilter = 0;         // selectedID, SignalFilter
    uint32_t signalFilterSize = 0;          // passed in a register only at 8 bytes
    uintptr_t requestSlotSetItem = 0;
+   // bool LogisticButton::isCurrentlyActive() decides how paintComponent draws the count: white,
+   // or gray for a request that is off (its section unchecked, the requests switched off, a
+   // combinator off, a platform not over the planet the request imports from).
+   uint32_t requestSlotLogistic = 0;       // the LogisticButton base
+   uintptr_t requestSlotIsActive = 0;
+   // A space platform hub's request slots (ChooseOrbitalRequestButton) open the Set orbital request
+   // window (OrbitalRequestSelectGui) instead. Its extras: `numberInput`, a DoubleNumberInputGui
+   // (the minimum's TextField `valueTextField`, a DoubleSlider and the maximum's
+   // `highValueTextField`, in one flow); `customMinimumRequestCheckbox` above
+   // `minimRequestNumberInput`, a Slider and its TextField in a flow; and `importFromFlow`: the
+   // planet ChooseButton `importFromButton` beside a label ("Import from") over three radio buttons.
+   uint32_t orbitalWindowMinimum = 0;      // numberInput.valueTextField
+   uint32_t orbitalWindowMaximum = 0;      // numberInput.highValueTextField
+   uint32_t orbitalWindowPayload = 0;      // customMinimumRequestCheckbox
+   uint32_t orbitalWindowPayloadField = 0; // minimRequestNumberInput.valueTextField
+   uint32_t orbitalWindowImport = 0;       // importFromFlow
+   uint32_t orbitalWindowImportButton = 0; // importFromButton
    // The logistic networks window (LogisticNetworksGui, L) marks on the map what is selected in it:
    // GameView::draw, while it is the active window, calls drawSelectedItem when `selectedItem` is
    // set (the network's active provider, passive provider, storage and buffer chests holding it),

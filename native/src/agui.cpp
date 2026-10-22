@@ -754,6 +754,13 @@ std::optional<uint32_t> requestMax(const Widget* slot) {
    return high;
 }
 
+bool requestActive(const Widget* slot) {
+   const std::byte* logistic =
+      asBaseChecked(slot, ".?AVChooseLogisticRequestAndTrashButton@@") + layout.requestSlotLogistic;
+   using IsActive = bool (*)(const void* button);
+   return reinterpret_cast<IsActive>(layout.requestSlotIsActive)(logistic);
+}
+
 void setRequestMin(const Widget* slot, int64_t min) {
    auto* self = const_cast<std::byte*>(asBaseChecked(slot, ".?AVChooseLogisticRequestAndTrashButton@@"));
    uint32_t high = at<uint32_t>(self, layout.requestSlotHigh);

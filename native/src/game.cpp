@@ -1777,6 +1777,14 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.requestSlotFilter, "ChooseLogisticRequestAndTrashButton", "selectedID");
    size(layout.signalFilterSize, "SignalFilter");
    address(layout.requestSlotSetItem, "?setItem@ChooseLogisticRequestAndTrashButton@@QEAAXVSignalFilter@@_J1@Z");
+   offset(layout.requestSlotLogistic, "ChooseLogisticRequestAndTrashButton", "LogisticButton");
+   address(layout.requestSlotIsActive, "?isCurrentlyActive@LogisticButton@@QEBA_NXZ");
+   offset(layout.orbitalWindowMinimum, "OrbitalRequestSelectGui", "numberInput.valueTextField");
+   offset(layout.orbitalWindowMaximum, "OrbitalRequestSelectGui", "numberInput.highValueTextField");
+   offset(layout.orbitalWindowPayload, "OrbitalRequestSelectGui", "customMinimumRequestCheckbox");
+   offset(layout.orbitalWindowPayloadField, "OrbitalRequestSelectGui", "minimRequestNumberInput.valueTextField");
+   offset(layout.orbitalWindowImport, "OrbitalRequestSelectGui", "importFromFlow");
+   offset(layout.orbitalWindowImportButton, "OrbitalRequestSelectGui", "importFromButton");
    address(layout.networksGuiDrawEntities, "?drawEntities@LogisticNetworksGui@@QEAAXAEAVDrawQueue@@@Z");
    offset(layout.networksGuiEntitiesToDraw, "LogisticNetworksGui", "entitiesToDraw");
    offset(layout.networksGuiSelectedItem, "LogisticNetworksGui", "selectedItem.baseID");

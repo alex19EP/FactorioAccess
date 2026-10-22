@@ -309,6 +309,8 @@ SlotButton slotButton(const Widget* slot);
 bool isRequestSlot(const Widget* widget);
 // Its maximum, as drawn in its top corner; nothing for a request without one.
 std::optional<uint32_t> requestMax(const Widget* slot);
+// Whether the request is on, which the game shows by drawing its count white rather than gray.
+bool requestActive(const Widget* slot);
 // Sets its minimum as the Set request window's confirm does, keeping its item and its maximum
 // (raised to the minimum below it): the slot's section sends the change to the game.
 void setRequestMin(const Widget* slot, int64_t min);

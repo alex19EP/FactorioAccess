@@ -20,21 +20,29 @@ using agui::Widget;
 
 constexpr const char* kSearchKey = "search/field";
 
-const Widget* FindWindow()
+// The choosers shown, the topmost last: one can open another over it (Set orbital request's planet).
+std::vector<const Widget*> OpenChoosers()
 {
+    std::vector<const Widget*> open;
     if (!agui::inGame() || agui::menuStateWindow())
-        return nullptr;
+        return open;
     const agui::Gui* gui = agui::applicationGui();
     const Widget* root = gui ? agui::baseWidget(gui) : nullptr;
     if (!root)
-        return nullptr;
+        return open;
     // Every chooser is a SelectListGui<T>; the assembler's recipe list is one too, read with its
     // machine's window.
     for (const Widget* child : agui::children(root))
         if (agui::visible(child) && agui::derivesFromTemplate(child, "SelectListGui")
             && !agui::derivesFrom(child, "AssemblingMachineSelectRecipeGui"))
-            return child;
-    return nullptr;
+            open.push_back(child);
+    return open;
+}
+
+const Widget* FindWindow()
+{
+    std::vector<const Widget*> open = OpenChoosers();
+    return open.empty() ? nullptr : open.back();
 }
 
 const Widget* SearchField(const Widget* window)
@@ -43,21 +51,48 @@ const Widget* SearchField(const Widget* window)
     return popup ? FindDescendant(popup, "agui::TextField") : nullptr;
 }
 
+// What the Set orbital request window asks besides the counts, below them: a minimum payload, and
+// the planet to import from with where to request from there.
+struct OrbitalParts
+{
+    const Widget* payload = nullptr;
+    const Widget* payloadField = nullptr;
+    const Widget* import = nullptr;
+};
+
 // What the chooser asks besides the choice, as a stop of its own, in the order shown: the quality
 // condition (a comparison and the qualities), a request's minimum and maximum (the Set request
-// window), and the confirm button, which shows only an icon.
+// window), an orbital request's minimum payload and planet, and the confirm button, which shows only
+// an icon.
 void AddExtras(graph::GraphBuilder& builder, const Widget* window)
 {
     builder.BeginStop("extras");
     std::vector<const Widget*> skip{agui::member(window, game::layout.frameHeader),
         FindDescendant(window, "SearchPopup"), FindDescendant(window, "agui::TabbedPane")};
+    // The choices, a stop of their own. A chooser without groups (a planet's) shows them outside the
+    // tabs.
+    for (const Widget* table : FindAll(window, "agui::Table"))
+        if (std::ranges::any_of(agui::children(table), [](const Widget* cell) { return agui::isSlotButton(cell); }))
+            skip.push_back(table);
     std::vector<const Widget*> fields;
+    OrbitalParts orbital;
     if (agui::derivesFrom(window, "ItemAndDoubleCountSelectGui"))
     {
         const Widget* counts = agui::member(window, game::layout.requestWindowCounts);
         fields = FindAll(counts, "agui::TextField");
         if (fields.size() == 2)
             skip.push_back(counts);
+    }
+    else if (agui::derivesFrom(window, "OrbitalRequestSelectGui"))
+    {
+        // The fields stand for their sliders, as in the Set request window.
+        fields = {agui::member(window, game::layout.orbitalWindowMinimum),
+            agui::member(window, game::layout.orbitalWindowMaximum)};
+        orbital = {agui::member(window, game::layout.orbitalWindowPayload),
+            agui::member(window, game::layout.orbitalWindowPayloadField),
+            agui::member(window, game::layout.orbitalWindowImport)};
+        skip.insert(
+            skip.end(), {agui::parent(fields[0]), orbital.payload, agui::parent(orbital.payloadField), orbital.import});
     }
     // The icon buttons left, but for the qualities: the confirm button, last on screen. Named by its
     // tooltip once a choice is made.
@@ -75,6 +110,18 @@ void AddExtras(graph::GraphBuilder& builder, const Widget* window)
         AddControl(builder, "extras/minimum", fields[0], []() { return std::string(vocab::kMinimum); });
         AddControl(builder, "extras/maximum", fields[1], []() { return std::string(vocab::kMaximum); });
     }
+    if (orbital.payload)
+    {
+        // The payload's field is named by the checkbox above it, which unlocks it.
+        const Widget* payload = orbital.payload;
+        AddControl(builder, "extras/payload", payload);
+        AddControl(builder, "extras/payload/field", orbital.payloadField, [payload]() { return NameOf(payload); });
+        // The planet's button, named by the label beside it, which heads the radio buttons too.
+        const Widget* planet = agui::member(window, game::layout.orbitalWindowImportButton);
+        const Widget* label = FindDescendant(orbital.import, "agui::Label");
+        builder.AddItem(graph::ControlId::Referenced(planet, "extras/import"), ControlNode(planet, label));
+        AddSubtree(builder, "extras/import", orbital.import, {planet, label});
+    }
     for (std::size_t i = 0; i < confirms.size(); ++i)
     {
         const Widget* confirm = confirms[i];
@@ -91,12 +138,26 @@ void AddExtras(graph::GraphBuilder& builder, const Widget* window)
 
 bool FilterSelectScreen::IsActive()
 {
-    const Widget* window = FindWindow();
+    std::vector<const Widget*> open = OpenChoosers();
+    const Widget* window = open.empty() ? nullptr : open.back();
     if (!window || (_window && window != _window))
     {
-        // Gone, or a new chooser in its place: one inactive frame pops this screen.
+        // Gone, or a new chooser in its place: one inactive frame pops this screen. One opened over
+        // this one gives the cursor back where it was when it closes.
+        if (window && std::ranges::contains(open, _window))
+        {
+            _under = _window;
+            _underKey = _focusKey;
+        }
         _window = nullptr;
         return false;
+    }
+    if (!_window && _under)
+    {
+        if (window == _under)
+            _returnKey = std::move(_underKey);
+        if (window == _under || !std::ranges::contains(open, _under))
+            _under = nullptr;
     }
     _window = window;
     return true;
@@ -134,12 +195,22 @@ const char* FilterSelectScreen::TakeSuggestedLanding()
 {
     bool land = _landOnSearch;
     _landOnSearch = false;
+    if (!_returnKey.empty())
+    {
+        _landing = std::move(_returnKey);
+        _returnKey.clear();
+        return _landing.c_str();
+    }
     return land ? kSearchKey : nullptr;
 }
 
 bool FilterSelectScreen::TypingIn(const graph::GraphNode& node) { return TypingInField(node); }
 
-void FilterSelectScreen::OnCursorMoved(const graph::GraphNode& node) { FollowCursor(node); }
+void FilterSelectScreen::OnCursorMoved(const graph::GraphNode& node)
+{
+    _focusKey = node.Id.StructuralKey;
+    FollowCursor(node);
+}
 
 void FilterSelectScreen::OnPop()
 {
