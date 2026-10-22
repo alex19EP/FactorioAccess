@@ -8,18 +8,11 @@ namespace fa::graph
 namespace
 {
 
-int IndexOf(const std::vector<ControlId>& order, const ControlId& key)
+template <typename T>
+int IndexOf(const std::vector<T>& items, const T& item)
 {
-    for (std::size_t i = 0; i < order.size(); i++)
-        if (order[i] == key)
-            return static_cast<int>(i);
-    return -1;
-}
-
-int IndexOf(const std::vector<std::string>& keys, const std::string& key)
-{
-    for (std::size_t i = 0; i < keys.size(); i++)
-        if (keys[i] == key)
+    for (std::size_t i = 0; i < items.size(); i++)
+        if (items[i] == item)
             return static_cast<int>(i);
     return -1;
 }
@@ -286,7 +279,7 @@ MoveResult KeyGraph::MoveRegion(int dir)
     GraphNode* node = CurrentNode();
     result.From = node;
     result.To = node;
-    if (!node || node->RegionKey.empty())
+    if (!node)
         return result;
 
     std::vector<std::string> regions;
@@ -294,9 +287,21 @@ MoveResult KeyGraph::MoveRegion(int dir)
         if (n->StopKey == node->StopKey && !n->RegionKey.empty() && IndexOf(regions, n->RegionKey) < 0)
             regions.push_back(n->RegionKey);
 
-    int idx = IndexOf(regions, node->RegionKey);
-    int ni = idx + dir;
-    if (idx < 0 || ni < 0 || ni >= static_cast<int>(regions.size()))
+    int ni = -1;
+    if (!node->RegionKey.empty())
+        ni = IndexOf(regions, node->RegionKey) + dir;
+    else
+    {
+        // A node outside every region (a header above the first one, a button between two) jumps
+        // to the nearest region on that side.
+        const auto& order = _current->Order;
+        int count = static_cast<int>(order.size());
+        int i = IndexOf(order, node);
+        for (i += dir; i >= 0 && i < count && ni < 0; i += dir)
+            if (order[i]->StopKey == node->StopKey && !order[i]->RegionKey.empty())
+                ni = IndexOf(regions, order[i]->RegionKey);
+    }
+    if (ni < 0 || ni >= static_cast<int>(regions.size()))
         return result;
 
     for (GraphNode* n : _current->Order)

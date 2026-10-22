@@ -331,6 +331,39 @@ TEST(RegionJumpsWithinStop)
     CHECK_EQ(Id("i1"), r.To->Id);
 }
 
+TEST(RegionJumpsFromOutsideEveryRegion)
+{
+    GraphState state;
+    KeyGraph g(
+        []()
+        {
+            return GraphBuilder()
+                .AddItem(Id("top"), Vt("Top"))
+                .SetRegion("a")
+                .AddItem(Id("a1"), Vt("A1"))
+                .AddItem(Id("a2"), Vt("A2"))
+                .SetRegion("")
+                .AddItem(Id("mid"), Vt("Mid"))
+                .SetRegion("b")
+                .AddItem(Id("b1"), Vt("B1"))
+                .Build();
+        },
+        &state);
+
+    MoveResult r = g.MoveRegion(-1); // nothing above the top line
+    CHECK_FALSE(r.Moved);
+    r = g.MoveRegion(+1);
+    CHECK_EQ(Id("a1"), r.To->Id);
+    g.Move(GraphDir::Down); // a2
+    g.Move(GraphDir::Down); // mid
+    r = g.MoveRegion(-1); // the region above, from its first line
+    CHECK_EQ(Id("a1"), r.To->Id);
+    g.Move(GraphDir::Down);
+    g.Move(GraphDir::Down);
+    r = g.MoveRegion(+1);
+    CHECK_EQ(Id("b1"), r.To->Id);
+}
+
 TEST(TypeJumpVisitsOnlyThatRole)
 {
     GraphState state;
