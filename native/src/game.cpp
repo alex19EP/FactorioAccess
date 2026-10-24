@@ -652,6 +652,7 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.itemStackItem, "ItemStack", "itemID");
    offset(layout.itemStackQuality, "ItemStack", "qualityID");
    offset(layout.recipeSlotCount, "RecipeSlot", "count");
+   offset(layout.recipeSlotNotification, "RecipeSlot", "notification");
    address(layout.itemPrototypes,
            "?indexToPrototype@?$PrototypeList@VItemPrototype@@@@2V?$vector@PEAVItemPrototype@@V?$allocator@"
            "PEAVItemPrototype@@@std@@@std@@A");

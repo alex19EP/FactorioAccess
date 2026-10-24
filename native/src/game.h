@@ -939,6 +939,9 @@ struct Layout {
    uint32_t itemStackItem = 0;        // ItemStack::itemID, an index into the item prototypes
    uint32_t itemStackQuality = 0;     // ItemStack::qualityID, an index into the quality prototypes
    uint32_t recipeSlotCount = 0;      // RecipeSlot::count, how many the player can craft now
+   // RecipeSlot::notification, the dot on a recipe unlocked since the player last clicked it. The
+   // slot shows toggled while it has one (RecipeSlot::modifyIsToggled), selected or not.
+   uint32_t recipeSlotNotification = 0;
    // SelectListGui<ID<RecipePrototype>>::slots, std::map<recipe ID, unique_ptr<agui::Button>>: the
    // crafting list's buttons by recipe.
    uint32_t recipeListSlots = 0;

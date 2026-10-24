@@ -124,6 +124,8 @@ inline constexpr Word kLocked{"fa.native-locked"};
 inline constexpr Word kLockFromHere{"fa.native-lock-from-here"};
 // A suggested tip in the tips and tricks list: the game marks it with the notification dot.
 inline constexpr Word kNewTip{"fa.native-new-tip"};
+// A recipe unlocked since the player last clicked it: the game marks it with the notification dot.
+inline constexpr Word kNewRecipe{"fa.native-new-recipe"};
 
 // A blueprint's component the player took out of it: the game shows it red with a count of 0.
 inline constexpr Word kRemoved{"fa.native-removed"};

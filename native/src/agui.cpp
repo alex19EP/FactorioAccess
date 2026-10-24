@@ -705,6 +705,14 @@ RecipeItem recipeItem(const Widget* craftingList, const Widget* slot) {
    return item;
 }
 
+bool recipeIsNew(const Widget* slot) {
+   const std::byte* self = asBase(slot, ".?AVRecipeSlot@@");
+   return self && at<bool>(self, layout.recipeSlotNotification);
+}
+
+// A click clears the dot before the list selects the recipe, so a new recipe is never the selected one.
+bool slotSelected(const Widget* slot) { return buttonToggled(slot) && !recipeIsNew(slot); }
+
 namespace {
 
 // A const getter that `subobject`'s own vtable introduces: the game's slot buttons inherit theirs

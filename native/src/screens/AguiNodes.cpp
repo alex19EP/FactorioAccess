@@ -1058,9 +1058,12 @@ std::string StackText(const Widget* slot)
             request = std::format("{} {:.0f}", spoken, count);
         return agui::requestActive(slot) ? request : std::format("{}, {}", request, vocab::kInactive);
     }
-    // A choose button (a filter, a planner's rule) holds a choice, not a stack; a vehicle's gun slot
-    // (a SimpleSlot on the toolbar) shows a gun fixed to it.
-    if (count == 0 && (agui::derivesFrom(slot, "ChooseButtonBase") || agui::derivesFromTemplate(slot, "SimpleSlot")))
+    // A choose button (a filter, a planner's rule) and a recipe button (an assembler's recipe list)
+    // hold a choice, not a stack; a vehicle's gun slot (a SimpleSlot on the toolbar) shows a gun fixed
+    // to it.
+    if (count == 0
+        && (agui::derivesFrom(slot, "ChooseButtonBase") || agui::derivesFrom(slot, "RecipeSlot")
+            || agui::derivesFromTemplate(slot, "SimpleSlot")))
         return spoken;
     if (count == 0)
         return std::format("{}, {}", spoken, vocab::kEmpty);
@@ -1330,7 +1333,9 @@ graph::NodeVtable SlotNode(const Widget* slot, std::function<std::string()> name
     // on the map.
     if (!agui::isRecordSlot(slot))
         vtable.Announcements.emplace_back([slot]()
-            { return agui::buttonToggled(slot) ? std::string(vocab::kSelected) : std::string(); }, false, Value);
+            { return agui::slotSelected(slot) ? std::string(vocab::kSelected) : std::string(); }, false, Value);
+    vtable.Announcements.emplace_back(
+        [slot]() { return agui::recipeIsNew(slot) ? std::string(vocab::kNewRecipe) : std::string(); }, false, Value);
     vtable.Announcements.emplace_back(
         [slot]() { return agui::enabled(slot) ? std::string() : std::string(vocab::kDisabled); }, false, Enabled);
     vtable.OnActivate = [slot]() { agui::press(slot, agui::MouseButton::Left, false, false); };
@@ -1345,12 +1350,12 @@ graph::NodeVtable SlotNode(const Widget* slot, std::function<std::string()> name
     {
         vtable.OnActivate = [slot]()
         {
-            g_clickedSlot = {slot, agui::buttonToggled(slot)};
+            g_clickedSlot = {slot, agui::slotSelected(slot)};
             agui::press(slot, agui::MouseButton::Left, false, false);
         };
         vtable.StateText = [slot]()
         {
-            const bool toggled = agui::buttonToggled(slot);
+            const bool toggled = agui::slotSelected(slot);
             if (g_clickedSlot.slot != slot || g_clickedSlot.toggled == toggled)
                 return std::string();
             return std::string(toggled ? vocab::kSelected : vocab::kNotSelected);

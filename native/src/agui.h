@@ -290,6 +290,13 @@ struct RecipeItem {
 };
 RecipeItem recipeItem(const Widget* craftingList, const Widget* slot);
 
+// Whether a recipe button shows the new recipe dot; false for any other widget.
+bool recipeIsNew(const Widget* slot);
+
+// Whether a slot shows its choice selected: toggled, but for a recipe button, which shows toggled
+// while it is new as well.
+bool slotSelected(const Widget* slot);
+
 // Any slot button (SlotButtonBase): the item slots of inventories, a machine's fluid boxes, recipe
 // and filter choices.
 bool isSlotButton(const Widget* widget);
