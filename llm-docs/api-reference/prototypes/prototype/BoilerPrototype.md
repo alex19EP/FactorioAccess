@@ -75,7 +75,7 @@ If specified, an input fluid below this temperature will cause the boiler to sto
 
 ### maximum_input_temperature
 
-If specified, an input fluid above this temperature will cause the boiler to stop working.
+If specified, an input fluid above this temperature will cause the boiler to stop working. This can be lower than the `target_temperature` for heating the fluid.
 
 **Type:** `float`
 

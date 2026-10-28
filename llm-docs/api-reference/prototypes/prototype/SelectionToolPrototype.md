@@ -67,7 +67,7 @@ If tiles should be included in the selection regardless of entities also being i
 
 ### send_pre_selection_events
 
-If true, the selection tool will send pre-selection events to mods [defines.events.on_player_start_select_area](runtime:defines.events.on_player_start_select_area), [defines.events.on_player_change_select_area](runtime:defines.events.on_player_change_select_area), and [defines.events.on_player_cancel_select_area](runtime:defines.events.on_player_cancel_select_area). Off by default because it will incur a performance penalty in multiplayer. It should only be enabled if a mod specifically needs it.
+If true, the selection tool will send pre-selection events to mods [defines.events.on_player_start_selected_area](runtime:defines.events.on_player_start_selected_area), [defines.events.on_player_change_selected_area](runtime:defines.events.on_player_change_selected_area), and [defines.events.on_player_cancel_selected_area](runtime:defines.events.on_player_cancel_selected_area). Off by default because it will incur a performance penalty in multiplayer. It should only be enabled if a mod specifically needs it.
 
 **Type:** `boolean`
 

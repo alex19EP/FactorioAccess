@@ -40,7 +40,9 @@ All standard fluid box configurations are acceptable, but the type must be `"inp
 
 ### effectivity
 
-`1` means 100% effectivity. Must be greater than `0`. Multiplier of the energy output.
+`1` means 100% effectivity. Must be greater than `0`.
+
+How much energy the fluid energy source produces compared to how much energy it consumes. For example, an effectivity of 0.5
 
 **Type:** `double`
 
@@ -60,7 +62,9 @@ If set to `true`, the available power output is based on the [FluidPrototype::fu
 
 ### scale_fluid_usage
 
-If set to `true`, the energy source will consume as much fluid as required to produce the desired power, otherwise it will consume as much as it is allowed to, wasting any excess.
+Scales the energy source's fluid usage to its maximum power output.
+
+If this is `false` the energy source will overconsume fluid. For example when higher than `maximum_temperature` fluid is fed to the energy source, it will consume the full `fluid_usage_per_tick` and any of the extra energy in the fluid (in the form of higher temperature) is wasted. Setting scale_fluid_usage to `true` prevents this behavior.
 
 **Type:** `boolean`
 

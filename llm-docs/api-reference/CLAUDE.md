@@ -1,6 +1,6 @@
 # Factorio API Reference Documentation
 
-Complete markdown documentation for Factorio 2.1.22 API (both runtime and prototype).
+Complete markdown documentation for Factorio 2.1.24 API (both runtime and prototype).
 
 Generated from JSON documentation using `json_to_markdown.py` (in the mod root).
 
@@ -27,7 +27,7 @@ Documentation for prototype definitions (used in `data.lua`).
 - **Total files:** 2,020 markdown files
 - **Total size:** 5.8 MB
 - **API version:** 6
-- **Game version:** 2.1.22
+- **Game version:** 2.1.24
 
 ## Regenerating
 

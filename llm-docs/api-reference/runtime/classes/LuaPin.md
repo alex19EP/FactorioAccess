@@ -1,14 +1,14 @@
 # LuaPin
 
-A pin owned by a player.
+A map pin owned by a player.
 
 ## Attributes
 
 ### index
 
-The index of this pin (unique to this player).
+The index of this pin. The index is unique to this player.
 
-Note that this index has no correlation to the position of the pin within [LuaPlayer::get_pins](runtime:LuaPlayer::get_pins)
+Note that this index has no correlation to the position of the pin within [LuaPlayer::get_pins](runtime:LuaPlayer::get_pins).
 
 **Read type:** `uint32`
 
@@ -20,17 +20,17 @@ The player that this pin belongs to.
 
 ### player
 
-The player that this pin is bound to.
+The player that this pin targets, if any.
 
 **Read type:** `LuaPlayer`
 
-**Write type:** `LuaPlayer`
+**Write type:** `PlayerIdentification`
 
 **Optional:** Yes
 
 ### targets
 
-The targets of this pin - if any.
+The entities that this pin targets, if any.
 
 **Read type:** Array[`LuaEntity`]
 
@@ -38,9 +38,9 @@ The targets of this pin - if any.
 
 ### surface_index
 
-The surface index if this pin specifically binds to a surface and position.
+The surface index if this pin specifically targets a surface and position.
 
-If writing, and this pin was not bound to a specific surface and position, the default position of (0,0) is used.
+When writing, and this pin was not bound to a specific surface and position, the default position of `{0, 0}` is used.
 
 **Read type:** `uint32`
 
@@ -50,9 +50,9 @@ If writing, and this pin was not bound to a specific surface and position, the d
 
 ### position
 
-The position if this pin specifically binds to a surface and position.
+The position if this pin specifically targets a surface and position.
 
-If writing, and this pin was not bound to a specific surface and position, the default surface of nauvis is used.
+When writing, and this pin was not bound to a specific surface and position, the default surface of nauvis is used.
 
 **Read type:** `MapPosition`
 
@@ -62,9 +62,9 @@ If writing, and this pin was not bound to a specific surface and position, the d
 
 ### chart_tag
 
-The custom chart tag - if this pin specifically binds to a chart tag.
+The custom chart tag, if this pin specifically targets a chart tag.
 
-The chart tag must be on the same force as the owning player.
+The chart tag must be on the same force as the [owning player](runtime:LuaPin::owner).
 
 **Read type:** `LuaCustomChartTag`
 
@@ -74,7 +74,7 @@ The chart tag must be on the same force as the owning player.
 
 ### label
 
-The label for this pin - if any. This will be an empty string if there is no label set.
+The label for this pin, if any. This will be an empty string if there is no label set.
 
 **Read type:** `string`
 
@@ -96,7 +96,7 @@ The radius (in tiles) that is shown in the tooltip for this pin.
 
 ### alert_type
 
-The type of alert this pin is for (if configured to be about alerts).
+The type of alert this pin is for, if this pin targets an alert.
 
 **Read type:** `defines.alert_type`
 
@@ -106,7 +106,7 @@ The type of alert this pin is for (if configured to be about alerts).
 
 ### alert_positions
 
-The alert positions if this pin is configured to show alert data.
+The alert positions, if this pin targets an alert.
 
 **Read type:** Array[`MapPosition`]
 

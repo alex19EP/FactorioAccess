@@ -2,7 +2,7 @@
 
 **Application:** factorio
 
-**Application Version:** 2.1.22
+**Application Version:** 2.1.24
 
 **API Version:** 6
 

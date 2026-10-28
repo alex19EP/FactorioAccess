@@ -28,6 +28,14 @@ A dictionary of feature flags mapping to whether they are enabled.
 
 **Read type:** Table (see below for parameters)
 
+### test_arg
+
+The string given with `--test-arg` when the game was started with `--test-scenario` or `--test-save`.
+
+**Read type:** `string`
+
+**Optional:** Yes
+
 ### object_name
 
 The class name of this object. Available even when `valid` is false. For LuaStruct objects it may also be suffixed with a dotted path to a member of the struct.
@@ -273,6 +281,14 @@ Creates new empty instance of LuaNotificationQueue
 **Returns:**
 
 - `LuaNotificationQueue`
+
+### finish_test
+
+Finishes the test when the game was started with `--test-scenario` or `--test-save`: the game exits after the current tick, with exit code 0 if the test passed and 1 if it failed. Does nothing otherwise.
+
+**Parameters:**
+
+- `passed` `boolean` *(optional)* - Whether the test passed. Defaults to `true`.
 
 ### raise_event
 

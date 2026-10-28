@@ -14,12 +14,6 @@ Identifier of the event.
 
 **Type:** `uint32`
 
-### player_port
-
-**Type:** `LuaEntity` *(optional)*
-
-The player port used to respawn if one was used.
-
 ### tick
 
 **Type:** `MapTick`

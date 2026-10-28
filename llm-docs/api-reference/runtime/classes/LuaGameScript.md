@@ -364,6 +364,7 @@ If Factorio is running headless, this function will do nothing.
 - `anti_alias` `boolean` *(optional)* - Whether to render in double resolution and downscale the result (including GUI). Defaults to `false`.
 - `hide_clouds` `boolean` *(optional)* - If `true` cloud shadows on ground won't be rendered. Defaults to `false`.
 - `hide_fog` `boolean` *(optional)* - If `true` fog effect and foreground space dust effect won't be rendered. Defaults to `false`.
+- `hide_health_bars` `boolean` *(optional)* - If `true` entity health bars won't be rendered. Defaults to `false`.
 - `quality` `int32` *(optional)* - The `.jpg` render quality as a percentage (from 0% to 100% inclusive), if used. A lower value means a more compressed image. Defaults to `80`.
 - `allow_in_replay` `boolean` *(optional)* - Whether to save the screenshot even during replay playback. Defaults to `false`.
 - `daytime` `double` *(optional)* - Overrides the current surface daytime for the duration of screenshot rendering.

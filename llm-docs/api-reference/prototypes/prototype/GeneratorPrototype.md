@@ -97,7 +97,7 @@ If set to `true`, the available power output is based on the [FluidPrototype::fu
 
 Scales the generator's fluid usage to its maximum power output.
 
-Setting this to true prevents the generator from overconsuming fluid, for example when higher than`maximum_temperature` fluid is fed to the generator.
+Setting this to `true` prevents the generator from overconsuming fluid, for example when higher than `maximum_temperature` fluid is fed to the generator.
 
 If scale_fluid_usage is false, the generator consumes the full `fluid_usage_per_tick` and any of the extra energy in the fluid (in the form of higher temperature) is wasted. The [steam engine](https://wiki.factorio.com/Steam_engine) exhibits this behavior when fed steam from [heat exchangers](https://wiki.factorio.com/Heat_exchanger).
 

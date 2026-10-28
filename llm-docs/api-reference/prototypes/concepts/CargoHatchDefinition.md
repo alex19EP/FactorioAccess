@@ -112,6 +112,8 @@ Cannot use `fade_ticks`.
 
 ### cargo_unit_entity_to_spawn
 
+The [cargo pod](prototype:CargoPodPrototype) that this cargo hatch spawns when sending cargo.
+
 **Type:** `EntityID`
 
 **Optional:** Yes
@@ -127,6 +129,8 @@ Cannot use `fade_ticks`.
 **Default:** "MAX_UINT32"
 
 ### receiving_cargo_units
+
+The [cargo pods](prototype:CargoPodPrototype) that this cargo hatch can receive.
 
 **Type:** Array[`EntityID`]
 
