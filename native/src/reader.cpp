@@ -639,12 +639,12 @@ Seen sightOf(const Local& here, Position tile) {
       at<const std::byte* const*>(map, layout.mapForces)[at<uint8_t>(here.player, layout.playerForce)];
    const uint32_t surfaceIndex = at<uint32_t>(here.surface, layout.surfaceIndex);
    const Position centre = centreOf(tile);
-   using ChartedFunction = bool (*)(const void* force, uint32_t surfaceIndex, const Position* position);
-   if (!reinterpret_cast<ChartedFunction>(layout.forceIsChunkCharted)(force, surfaceIndex, &centre))
+   const Position chunk{centre.x >> 13, centre.y >> 13};
+   using ChartedFunction = bool (*)(const void* force, uint32_t surfaceIndex, const Position* chunkPosition);
+   if (!reinterpret_cast<ChartedFunction>(layout.forceIsChunkCharted)(force, surfaceIndex, &chunk))
       return {Sight::Uncharted};
    using ChartFunction = const void* (*)(const void* force, uint32_t surfaceIndex);
    const void* chart = reinterpret_cast<ChartFunction>(layout.forceChart)(force, surfaceIndex);
-   const Position chunk{centre.x >> 13, centre.y >> 13};
    using CoveredFunction = bool (*)(const void* chart, const Position* chunk);
    if (!chart) return {Sight::Uncharted};
    if (reinterpret_cast<CoveredFunction>(layout.chartChunkCovered)(chart, &chunk)) return {Sight::Fogged, chart};

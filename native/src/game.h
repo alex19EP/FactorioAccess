@@ -140,9 +140,9 @@ struct Layout {
    uint32_t inputSourceDragContext = 0; // PlayerInputSource::manualBuilder.dragBuildingContext
    uint32_t dragStartPosition = 0;      // ClientDragBuildingContext::startPosition, Optional<MapPosition>
    uint32_t dragTurnPending = 0;        // ClientDragBuildingContext::belt.applySmartDirectionChangeWhenPossible
-   // bool ControlInput::isActive(NamedBool<GuiCheckTag>, NamedBool<CheckIsUsedByActionTag>,
-   // NamedBool<CheckModifiersTag>, NamedBool<IgnoreBlockingTag>) const: whether a control is held, as
-   // every held control is read.
+   // bool ControlInput::isActive(ControlContexts::Enum, ControlContexts const&, ControlOptions const&,
+   // NamedBool<CheckIsUsedByActionTag>, NamedBool<CheckModifiersTag>, NamedBool<IgnoreBlockingTag>)
+   // const: whether a control is held, as every held control is read.
    uintptr_t controlInputIsActive = 0;
    // Zoom. bool PlayerInputSource::processZoom(Event const&) takes a zoom control triggered while
    // not held, a wheel notch, and calls void PlayerInputSource::zoom(ZoomDirection, double steps),
@@ -170,8 +170,8 @@ struct Layout {
    // PlayerInputSource::finishSelection(): the selection's action, sent like any other input
    // action. bool PlayerInputSource::processActions(Event const&, bool paused) runs the game's
    // controls for one input event in a fixed order; ControlInputValue const*
-   // ControlInput::triggeredBy(Event const&, ControlContext const*, unsigned) const tells whether
-   // the event triggers a control.
+   // ControlInput::triggeredBy(Event const&, ControlContexts::Enum, unsigned) const tells whether
+   // the event triggers a control in the world (InGame) or a GUI (InGui).
    uintptr_t processSelectionToolCommon = 0;
    // bool PlayerInputSource::processDeselection(): the deselect control, a spidertron remote's own,
    // starts a ReverseSelect selection without processSelectionToolCommon and has no second press.
@@ -479,7 +479,7 @@ struct Layout {
    uint32_t fluidBoxConnectionsEnd = 0;    // FluidBox::connections.end_
    uint32_t fluidConnectionSize = 0;       // sizeof(FluidBoxConnection)
    uint32_t fluidConnectionTarget = 0;     // FluidBoxConnection::target
-   // bool ForceData::isChunkCharted(SurfaceIndex, MapPosition const&) const
+   // bool ForceData::isChunkCharted(SurfaceIndex, ChunkPosition const&) const
    uintptr_t forceIsChunkCharted = 0;
    // Fog of war: Chart const* ForceData::getChart(SurfaceIndex) const, the force's chart of a
    // surface or null, and bool Chart::isChunkCoveredByFogOfWar(ChunkPosition const&) const, true
@@ -488,12 +488,12 @@ struct Layout {
    uintptr_t forceChart = 0;
    uintptr_t chartChunkCovered = 0;
    // The map picture (mappicture.h): Chart::chartedChunks, an InfiniteRectangle<SubChart*> of chunk
-   // columns, each an InfiniteVector<SubChart*> {data, dataSize, zeroIndex} indexed by chunk y,
+   // columns, each an InfiniteVector<SubChart*> {data, lowIndex, highIndex} indexed by chunk y,
    // in a vector of them indexed by chunk x the same way; null where uncharted.
    uint32_t chartColumns = 0;     // Chart::chartedChunks.data, InfiniteVector<InfiniteVector<SubChart*>>
    uint32_t infiniteData = 0;     // InfiniteVector<SubChart *>::data
-   uint32_t infiniteSize = 0;     // InfiniteVector<SubChart *>::dataSize, int
-   uint32_t infiniteZero = 0;     // InfiniteVector<SubChart *>::zeroIndex, int
+   uint32_t infiniteLow = 0;      // InfiniteVector<SubChart *>::lowIndex, int, data[0]'s index
+   uint32_t infiniteHigh = 0;     // InfiniteVector<SubChart *>::highIndex, int, one past the last
    uint32_t infiniteVectorSize = 0; // sizeof(InfiniteVector<SubChart *>)
    // SubChart::pixels, uint16_t[32][32] by [y][x]: RGB565, one a tile, 0 where nothing was drawn.
    uint32_t subChartPixels = 0;
@@ -2010,12 +2010,17 @@ struct Layout {
    uint32_t mapForceData = 0;
    uintptr_t gameOperatorDelete = 0; // the game's operator delete(void*), which frees what its strings hold
 
-   // The FA cursor (see cursor.h). bool PlayerInputSource::processCustomInput(Event const&,
-   // ControlContext const&) sends a CustomInput action, carrying getCursorMapPosition, for each mod
-   // control the event triggers; ControlInputValue const* ControlInput::triggeredByWithoutSideEffect(
-   // Event const&, ControlContext const*, unsigned) const tells which, without marking the keys used.
+   // The FA cursor (see cursor.h). bool PlayerInputSource::processCustomInput(Event const&) sends a
+   // CustomInput action, carrying getCursorMapPosition, for each mod control the event triggers in
+   // the InGame context; ControlInputValue const* ControlInput::triggeredByWithoutSideEffect(
+   // Event const&, ControlContexts::Enum, ControlContexts const&, ControlOptions const&, unsigned)
+   // const tells which, without marking the keys used. triggeredBy passes the control's own
+   // usageContexts and options (one-byte bitsets).
    uintptr_t processCustomInput = 0;
    uintptr_t controlTriggeredQuietly = 0;
+   uint32_t controlInputUsageContexts = 0; // ControlInput::usageContexts, ControlContexts
+   uint32_t controlInputOptions = 0;       // ControlInput::options, ControlOptions
+   uint32_t controlContextInGame = 0;      // ControlContexts::Enum::InGame
    // ProcessResult MainLoop::processEvent(Event const&, bool) hands a held key's repeats (a KEY_DOWN
    // with KeyboardEvent::repeat) to the GUI only, never to the game's controls, so no mod control
    // repeats. Event: type (Event::Type), the union's keyboard.repeat, and its size (a key event
@@ -2473,15 +2478,17 @@ struct Layout {
    // const*, std::function<Entity const*()>, EntitySelectionMode) runs the search a step further and
    // draws the route each frame, in the world, the map and the editor. It draws the route's end with
    // static void BuildingRenderer::drawRailPlanArrow(RailLocation const&, DrawQueue&,
-   // NamedBool<AnchoredTag>, bool tooFar), and the items it takes with static void RenderUtil::
-   // drawItemCounts(DrawQueue&, std::map<IDWithQuality<ID<ItemPrototype>>, unsigned> const&, Corner,
-   // Color const&), whose map has the selection counts' node layout. GameView::railPlannerActive
+   // NamedBool<AnchoredTag>, bool tooFar), and the items it takes with RenderUtil::drawItemCounts,
+   // inlined there since 2.1.25: std::vector<IDWithCount<...>> getSortedCounts<IDWithQuality<ID<
+   // ItemPrototype>>, unsigned>(std::map<IDWithQuality<ID<ItemPrototype>>, unsigned> const&, bool)
+   // sorts the map, which has the selection counts' node layout, for RenderUtil::drawSortedCounts.
+   // GameView::railPlannerActive
    // (bool), ::railPathFinderNodeLocation (the start, a RailLocation) and ::railPlanFinder
    // (std::unique_ptr<RailPlanFinder>). RailPlanFinder::stepCount (uint32, the search's steps since it
    // last started over), ::goalLocation (the cursor's, a RailLocation) and ::ghostMode (bool).
    uintptr_t drawRailPlanBuilder = 0;
    uintptr_t drawRailPlanArrow = 0;
-   uintptr_t drawItemCounts = 0;
+   uintptr_t sortedItemCounts = 0;
    uint32_t gameViewRailPlannerActive = 0;
    uint32_t gameViewRailPlanStart = 0;
    uint32_t gameViewRailPlanFinder = 0;

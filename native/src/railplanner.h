@@ -57,14 +57,14 @@ void sayRoute();
 bool drawing();
 
 // MinHook detours for BuildingRenderer::drawRailPlanBuilder, BuildingRenderer::drawRailPlanArrow,
-// RenderUtil::drawItemCounts and RailPlanFinder::getBestSolution, and where MinHook keeps the
-// originals.
+// getSortedCounts (the item counts it draws) and RailPlanFinder::getBestSolution, and where MinHook
+// keeps the originals.
 void* drawPlanDetour();
 void** drawPlanOriginal();
 void* drawArrowDetour();
 void** drawArrowOriginal();
-void* drawCountsDetour();
-void** drawCountsOriginal();
+void* sortedCountsDetour();
+void** sortedCountsOriginal();
 void* bestSolutionDetour();
 void** bestSolutionOriginal();
 

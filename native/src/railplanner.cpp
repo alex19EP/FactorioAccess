@@ -399,13 +399,14 @@ void detourDrawArrow(const void* end, void* queue, uint8_t anchored, bool tooFar
    g_drawArrowOriginal(end, queue, anchored, tooFar);
 }
 
-// RenderUtil::Corner is an enum, by value.
-using DrawCountsFunction = void (*)(void* queue, const void* counts, int32_t corner, const void* color);
-DrawCountsFunction g_drawCountsOriginal = nullptr;
+// The sorted vector is returned through a hidden pointer, which the call gives back. The bool goes
+// on as the caller left the register.
+using SortedCountsFunction = void* (*)(void* sorted, const void* counts, uint64_t flag);
+SortedCountsFunction g_sortedCountsOriginal = nullptr;
 
-void detourDrawCounts(void* queue, const void* counts, int32_t corner, const void* color) {
+void* detourSortedCounts(void* sorted, const void* counts, uint64_t flag) {
    if (t_drawn) t_drawn->counts = readCounts(counts);
-   g_drawCountsOriginal(queue, counts, corner, color);
+   return g_sortedCountsOriginal(sorted, counts, flag);
 }
 
 // RailBuildPlan is returned through a hidden pointer, which the call gives back.
@@ -444,8 +445,8 @@ void* drawPlanDetour() { return reinterpret_cast<void*>(&detourDrawPlan); }
 void** drawPlanOriginal() { return reinterpret_cast<void**>(&g_drawPlanOriginal); }
 void* drawArrowDetour() { return reinterpret_cast<void*>(&detourDrawArrow); }
 void** drawArrowOriginal() { return reinterpret_cast<void**>(&g_drawArrowOriginal); }
-void* drawCountsDetour() { return reinterpret_cast<void*>(&detourDrawCounts); }
-void** drawCountsOriginal() { return reinterpret_cast<void**>(&g_drawCountsOriginal); }
+void* sortedCountsDetour() { return reinterpret_cast<void*>(&detourSortedCounts); }
+void** sortedCountsOriginal() { return reinterpret_cast<void**>(&g_sortedCountsOriginal); }
 void* bestSolutionDetour() { return reinterpret_cast<void*>(&detourBestSolution); }
 void** bestSolutionOriginal() { return reinterpret_cast<void**>(&g_bestSolutionOriginal); }
 

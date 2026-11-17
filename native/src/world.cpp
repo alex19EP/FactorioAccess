@@ -193,11 +193,14 @@ void detourSelectionUpdate(void* selector, void* surface, const void* position, 
 }
 
 // NamedBool<Tag> is a one-byte struct, passed by value like a uint8_t.
-using IsActiveFunction = bool (*)(const void* control, uint8_t, uint8_t, uint8_t, uint8_t);
+using IsActiveFunction = bool (*)(const void* control, uint32_t context, const void* usageContexts, const void* options,
+                                  uint8_t, uint8_t, uint8_t);
 IsActiveFunction g_isActiveOriginal = nullptr;
 
-bool detourIsActive(const void* control, uint8_t gui, uint8_t usedByAction, uint8_t modifiers, uint8_t ignoreBlocking) {
-   const bool held = g_isActiveOriginal(control, gui, usedByAction, modifiers, ignoreBlocking);
+bool detourIsActive(const void* control, uint32_t context, const void* usageContexts, const void* options,
+                    uint8_t usedByAction, uint8_t modifiers, uint8_t ignoreBlocking) {
+   const bool held =
+      g_isActiveOriginal(control, context, usageContexts, options, usedByAction, modifiers, ignoreBlocking);
    return zoom::isZoomControl(control) ? zoom::isActive(control, held) : held;
 }
 

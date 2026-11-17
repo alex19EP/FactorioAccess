@@ -76,8 +76,8 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.dragStartPosition, "ClientDragBuildingContext", "startPosition");
    offset(layout.dragTurnPending, "ClientDragBuildingContext", "belt.applySmartDirectionChangeWhenPossible");
    address(layout.controlInputIsActive,
-           "?isActive@ControlInput@@QEBA_NV?$NamedBool@VGuiCheckTag@@@@V?$NamedBool@VCheckIsUsedByActionTag@@@@V?$"
-           "NamedBool@VCheckModifiersTag@@@@V?$NamedBool@VIgnoreBlockingTag@@@@@Z");
+           "?isActive@ControlInput@@AEBA_NW4Enum@ControlContexts@@AEBV3@AEBVControlOptions@@V?$NamedBool@"
+           "VCheckIsUsedByActionTag@@@@V?$NamedBool@VCheckModifiersTag@@@@V?$NamedBool@VIgnoreBlockingTag@@@@@Z");
    address(layout.processZoom, "?processZoom@PlayerInputSource@@AEAA_NAEBVEvent@@@Z");
    address(layout.playerInputSourceZoom, "?zoom@PlayerInputSource@@AEAAXW4ZoomDirection@@N@Z");
    offset(layout.controlSettingsZoomIn, "ControlSettings", "zoomIn");
@@ -93,7 +93,7 @@ bool resolve(pdb::SymbolTable& symbols) {
    address(layout.finishSelection, "?finishSelection@PlayerInputSource@@QEAAXXZ");
    address(layout.processActions, "?processActions@PlayerInputSource@@QEAA_NAEBVEvent@@_N@Z");
    address(layout.controlTriggeredBy,
-           "?triggeredBy@ControlInput@@AEBAPEBVControlInputValue@@AEBVEvent@@PEBVControlContext@@I@Z");
+           "?triggeredBy@ControlInput@@QEBAPEBVControlInputValue@@AEBVEvent@@W4Enum@ControlContexts@@I@Z");
    offset(layout.controlSettingsToggleMenu, "ControlSettings", "toggleMenu");
    offset(layout.gameViewStartSelectionMode, "GameView", "startSelectionMode");
    offset(layout.gameViewSelectionMode, "GameView", "selectionMode");
@@ -311,13 +311,13 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.fluidBoxConnectionsEnd, "FluidBox", "connections.end_");
    size(layout.fluidConnectionSize, "FluidBoxConnection");
    offset(layout.fluidConnectionTarget, "FluidBoxConnection", "target");
-   address(layout.forceIsChunkCharted, "?isChunkCharted@ForceData@@QEBA_NVSurfaceIndex@@AEBVMapPosition@@@Z");
+   address(layout.forceIsChunkCharted, "?isChunkCharted@ForceData@@QEBA_NVSurfaceIndex@@AEBVChunkPosition@@@Z");
    address(layout.forceChart, "?getChart@ForceData@@QEBAPEBVChart@@VSurfaceIndex@@@Z");
    address(layout.chartChunkCovered, "?isChunkCoveredByFogOfWar@Chart@@QEBA_NAEBVChunkPosition@@@Z");
    offset(layout.chartColumns, "Chart", "chartedChunks.data");
    offset(layout.infiniteData, "InfiniteVector<SubChart *>", "data");
-   offset(layout.infiniteSize, "InfiniteVector<SubChart *>", "dataSize");
-   offset(layout.infiniteZero, "InfiniteVector<SubChart *>", "zeroIndex");
+   offset(layout.infiniteLow, "InfiniteVector<SubChart *>", "lowIndex");
+   offset(layout.infiniteHigh, "InfiniteVector<SubChart *>", "highIndex");
    size(layout.infiniteVectorSize, "InfiniteVector<SubChart *>");
    offset(layout.subChartPixels, "SubChart", "pixels");
    offset(layout.tilePrototypeMapColor, "TilePrototype", "mapColor");
@@ -1447,9 +1447,13 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.mapForceData, "Map", "forceManager.sortedForceDataList.begin_");
    address(layout.gameOperatorDelete, "??3@YAXPEAX@Z");
 
-   address(layout.processCustomInput, "?processCustomInput@PlayerInputSource@@QEAA_NAEBVEvent@@AEBVControlContext@@@Z");
+   address(layout.processCustomInput, "?processCustomInput@PlayerInputSource@@QEAA_NAEBVEvent@@@Z");
    address(layout.controlTriggeredQuietly,
-           "?triggeredByWithoutSideEffect@ControlInput@@AEBAPEBVControlInputValue@@AEBVEvent@@PEBVControlContext@@I@Z");
+           "?triggeredByWithoutSideEffect@ControlInput@@AEBAPEBVControlInputValue@@AEBVEvent@@W4Enum@ControlContexts@@"
+           "AEBV5@AEBVControlOptions@@I@Z");
+   offset(layout.controlInputUsageContexts, "ControlInput", "usageContexts");
+   offset(layout.controlInputOptions, "ControlInput", "options");
+   enumerator(layout.controlContextInGame, "ControlContexts::Enum", "InGame");
    address(layout.mainLoopProcessEvent, "?processEvent@MainLoop@@YA?AW4ProcessResult@@AEBVEvent@@_N@Z");
    offset(layout.eventType, "Event", "type");
    offset(layout.eventKeyRepeat, "Event", "keyboard.repeat");
@@ -1743,10 +1747,12 @@ bool resolve(pdb::SymbolTable& symbols) {
            "W4EntitySelectionMode@@@Z");
    address(layout.drawRailPlanArrow, "?drawRailPlanArrow@BuildingRenderer@@SAXAEBVRailLocation@@AEAVDrawQueue@@V?$"
                                      "NamedBool@VAnchoredTag@@@@_N@Z");
-   address(layout.drawItemCounts,
-           "?drawItemCounts@RenderUtil@@YAXAEAVDrawQueue@@AEBV?$map@V?$IDWithQuality@V?$ID@VItemPrototype@@G@@@@IU?$"
-           "less@V?$IDWithQuality@V?$ID@VItemPrototype@@G@@@@@std@@V?$allocator@U?$pair@$$CBV?$IDWithQuality@V?$ID@"
-           "VItemPrototype@@G@@@@I@std@@@3@@std@@W4Corner@1@AEBVColor@@@Z");
+   address(layout.sortedItemCounts,
+           "??$getSortedCounts@V?$IDWithQuality@V?$ID@VItemPrototype@@G@@@@I@@YA?AV?$vector@V?$IDWithCount@V?$"
+           "IDWithQuality@V?$ID@VItemPrototype@@G@@@@I@@V?$allocator@V?$IDWithCount@V?$IDWithQuality@V?$ID@"
+           "VItemPrototype@@G@@@@I@@@std@@@std@@AEBV?$map@V?$IDWithQuality@V?$ID@VItemPrototype@@G@@@@IU?$less@V?$"
+           "IDWithQuality@V?$ID@VItemPrototype@@G@@@@@std@@V?$allocator@U?$pair@$$CBV?$IDWithQuality@V?$ID@"
+           "VItemPrototype@@G@@@@I@std@@@3@@1@_N@Z");
    offset(layout.gameViewRailPlannerActive, "GameView", "railPlannerActive");
    offset(layout.gameViewRailPlanStart, "GameView", "railPathFinderNodeLocation");
    offset(layout.gameViewRailPlanFinder, "GameView", "railPlanFinder._Mypair._Myval2");

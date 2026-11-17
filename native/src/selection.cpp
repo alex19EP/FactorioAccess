@@ -188,15 +188,13 @@ bool detourDeselection(void* source) {
    return g_deselectionOriginal(source);
 }
 
-using TriggeredByFunction = const void* (*)(const void* control, const void* event, const void* context, uint32_t);
+using TriggeredByFunction = const void* (*)(const void* control, const void* event, uint32_t context, uint32_t);
 
 bool triggersToggleMenu(const void* event) {
    auto* context = *reinterpret_cast<const std::byte* const*>(layout.globalContext);
    const auto* settings = *reinterpret_cast<const std::byte* const*>(context + layout.globalControlSettings);
-   // ControlContext: inGui, false in the world.
-   const bool controlContext = false;
-   return reinterpret_cast<TriggeredByFunction>(layout.controlTriggeredBy)(settings + layout.controlSettingsToggleMenu,
-                                                                           event, &controlContext, 0) != nullptr;
+   return reinterpret_cast<TriggeredByFunction>(layout.controlTriggeredBy)(
+             settings + layout.controlSettingsToggleMenu, event, layout.controlContextInGame, 0) != nullptr;
 }
 
 using ProcessActionsFunction = bool (*)(void* source, const void* event, bool paused);

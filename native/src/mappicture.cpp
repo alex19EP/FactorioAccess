@@ -121,18 +121,21 @@ constexpr int32_t kChunkTiles = 32;
 // The pixel the chart holds for the tile, or nothing where its chunk is not charted.
 std::optional<uint16_t> pixelAt(const void* chart, int32_t tileX, int32_t tileY) {
    const auto* columns = static_cast<const std::byte*>(chart) + layout.chartColumns;
-   const auto entry = [](const std::byte* vector, int32_t index) -> const std::byte* {
-      const int32_t slot = index + at<int32_t>(vector, layout.infiniteZero);
-      if (slot < 0 || slot >= at<int32_t>(vector, layout.infiniteSize)) return nullptr;
-      return at<const std::byte*>(vector, layout.infiniteData) + static_cast<size_t>(slot) * layout.infiniteVectorSize;
+   // An InfiniteVector holds indices lowIndex up to, not including, highIndex.
+   const auto slot = [](const std::byte* vector, int32_t index) -> std::optional<size_t> {
+      const int32_t low = at<int32_t>(vector, layout.infiniteLow);
+      if (index < low || index >= at<int32_t>(vector, layout.infiniteHigh)) return std::nullopt;
+      return static_cast<size_t>(index - low);
    };
    // Floored, as chunks are.
    const int32_t chunkX = tileX >> 5, chunkY = tileY >> 5;
-   const std::byte* column = entry(columns, chunkX);
-   if (!column) return std::nullopt;
-   const int32_t slot = chunkY + at<int32_t>(column, layout.infiniteZero);
-   if (slot < 0 || slot >= at<int32_t>(column, layout.infiniteSize)) return std::nullopt;
-   const auto* subChart = at<const std::byte* const*>(column, layout.infiniteData)[slot];
+   const std::optional<size_t> columnSlot = slot(columns, chunkX);
+   if (!columnSlot) return std::nullopt;
+   const std::byte* column =
+      at<const std::byte*>(columns, layout.infiniteData) + *columnSlot * layout.infiniteVectorSize;
+   const std::optional<size_t> rowSlot = slot(column, chunkY);
+   if (!rowSlot) return std::nullopt;
+   const auto* subChart = at<const std::byte* const*>(column, layout.infiniteData)[*rowSlot];
    if (!subChart) return std::nullopt;
    const int32_t x = tileX & (kChunkTiles - 1), y = tileY & (kChunkTiles - 1);
    return at<uint16_t>(subChart, layout.subChartPixels + static_cast<uint32_t>((y * kChunkTiles + x) * 2));

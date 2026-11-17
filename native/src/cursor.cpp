@@ -210,13 +210,17 @@ const MoveInputs& moveInputs() {
    return g_moveInputs;
 }
 
-using TriggeredFunction = const void* (*)(const void* control, const void* event, const void* context, uint32_t);
+using TriggeredFunction = const void* (*)(const void* control, const void* event, uint32_t context,
+                                          const void* usageContexts, const void* options, uint32_t);
 
-const MoveKey* triggeredMove(const void* event, const void* context) {
+// As processCustomInput asks, in the InGame context.
+const MoveKey* triggeredMove(const void* event) {
    const MoveInputs& found = moveInputs();
    for (size_t i = 0; i < kMoveKeys.size(); ++i) {
-      if (found.inputs[i] &&
-          reinterpret_cast<TriggeredFunction>(layout.controlTriggeredQuietly)(found.inputs[i], event, context, 0))
+      const std::byte* input = found.inputs[i];
+      if (input && reinterpret_cast<TriggeredFunction>(layout.controlTriggeredQuietly)(
+                      input, event, layout.controlContextInGame, input + layout.controlInputUsageContexts,
+                      input + layout.controlInputOptions, 0))
          return &kMoveKeys[i];
    }
    return nullptr;
@@ -463,7 +467,7 @@ void flushDragNews() {
    speech::say(newsText(*news, nullptr));
 }
 
-void moveForKey(const void* event, const void* context) {
+void moveForKey(const void* event) {
    if (!event) return;
    {
       std::scoped_lock lock(g_mutex);
@@ -471,7 +475,7 @@ void moveForKey(const void* event, const void* context) {
    }
    const std::optional<Position> cursor = currentCursor();
    if (!cursor) return;
-   const MoveKey* key = triggeredMove(event, context);
+   const MoveKey* key = triggeredMove(event);
    if (!key) return;
    {
       std::scoped_lock lock(g_mutex);
@@ -823,12 +827,12 @@ void frame(void* source) {
    g_lastCentre = view->centre;
 }
 
-using CustomInputFunction = bool (*)(void* source, const void* event, const void* context);
+using CustomInputFunction = bool (*)(void* source, const void* event);
 CustomInputFunction g_customInputOriginal = nullptr;
 
-bool detourCustomInput(void* source, const void* event, const void* context) {
-   moveForKey(event, context);
-   return g_customInputOriginal(source, event, context);
+bool detourCustomInput(void* source, const void* event) {
+   moveForKey(event);
+   return g_customInputOriginal(source, event);
 }
 
 constexpr size_t kEventCapacity = 64;
@@ -843,7 +847,7 @@ bool repeatsAsPress(const void* event) {
       std::scoped_lock lock(g_mutex);
       if (!g_keys || g_repeatHalted) return false;
    }
-   const MoveKey* key = triggeredMove(event, nullptr);
+   const MoveKey* key = triggeredMove(event);
    return key && repeats(key->kind);
 }
 

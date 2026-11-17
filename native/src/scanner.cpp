@@ -778,7 +778,8 @@ void forEachEntity(const std::byte* surface, Position first, Position last, Visi
 // Entity::usageBitMask bits of entities the Lua API never hands out (see game.h).
 constexpr uint16_t kNotListedBits = 0x4 | 0x10;
 
-using ChartedFunction = bool (*)(const void* force, uint32_t surfaceIndex, const Position* position);
+// ForceData::isChunkCharted takes a ChunkPosition: two ints, like Position.
+using ChartedFunction = bool (*)(const void* force, uint32_t surfaceIndex, const Position* chunkPosition);
 
 // TilePosition: two ints.
 struct TilePosition {
@@ -2026,9 +2027,12 @@ struct Scan {
 
    bool wanted(Position position) const { return inDirection(position, origin, direction); }
 
-   bool charted(Position position) const {
-      return reinterpret_cast<ChartedFunction>(layout.forceIsChunkCharted)(force, surfaceIndex, &position);
+   bool chunkCharted(Position chunkPosition) const {
+      return reinterpret_cast<ChartedFunction>(layout.forceIsChunkCharted)(force, surfaceIndex, &chunkPosition);
    }
+
+   // Whether the chunk holding the map position `position` is charted.
+   bool charted(Position position) const { return chunkCharted({position.x >> 13, position.y >> 13}); }
 
    // Whether the force does not see into the chunk at `chunkPosition` now.
    bool covered(Position chunkPosition) const {
@@ -2039,7 +2043,7 @@ struct Scan {
    const std::byte* chunkAt(Position chunkPosition) const {
       const std::byte* chunk = reinterpret_cast<ChunkAtFunction>(layout.surfaceChunkAt)(surface, &chunkPosition);
       if (!chunk) return nullptr;
-      return charted({chunkPosition.x * 32 * 256 + 16 * 256, chunkPosition.y * 32 * 256 + 16 * 256}) ? chunk : nullptr;
+      return chunkCharted(chunkPosition) ? chunk : nullptr;
    }
 };
 

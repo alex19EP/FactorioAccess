@@ -72,7 +72,7 @@
      "BuildingRenderer::drawRailPlanBuilder")                                                                          \
    X(drawRailPlanArrow, railplanner::drawArrowDetour(), railplanner::drawArrowOriginal(),                              \
      "BuildingRenderer::drawRailPlanArrow")                                                                            \
-   X(drawItemCounts, railplanner::drawCountsDetour(), railplanner::drawCountsOriginal(), "RenderUtil::drawItemCounts") \
+   X(sortedItemCounts, railplanner::sortedCountsDetour(), railplanner::sortedCountsOriginal(), "getSortedCounts")      \
    X(railPlanBestSolution, railplanner::bestSolutionDetour(), railplanner::bestSolutionOriginal(),                     \
      "RailPlanFinder::getBestSolution")                                                                                \
    X(entityDrawAlert, entityicons::drawAlertDetour(), entityicons::drawAlertOriginal(), "Entity::drawAlert")           \
