@@ -11,6 +11,10 @@
 // The toggles change only what this client's map draws; the mod reads them to say the same things
 // in the map's cells (fa_native.map_overlays).
 //
+// While a character rides a space platform, a stop before them holds the panel the game shows above
+// them (RemoteViewGui): the drop to a planet button, which opens the planet list
+// (DropToPlanetSelectionGui, read as any window), and the button cancelling the drop.
+//
 // The game has no window to close here, so Escape is ours: it goes back to what is open.
 
 #include <string>
@@ -34,11 +38,15 @@ public:
     void Build(graph::GraphBuilder& builder) override;
     bool ClaimsEscape() const override { return true; }
     void OnEscape() override;
+    void OnPush() override;
     void OnPop() override;
     std::string LeaveLine() const override;
 
 private:
     const agui::Widget* _options = nullptr;
+    const agui::Widget* _panel = nullptr;
+    // The drop button was pressed; the planet list, not the map, is where the player goes.
+    bool _opening = false;
 };
 
 } // namespace fa::screens

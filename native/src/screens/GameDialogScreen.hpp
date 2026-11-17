@@ -16,6 +16,11 @@ class GameDialogScreen final : public EntityWindowScreen
 protected:
     bool Handles(const agui::Widget* window) const override;
     void BuildWindow(graph::GraphBuilder& builder, const agui::Widget* window) override;
+    void OnPop() override;
+
+private:
+    // The search field showed at the last build.
+    bool _searching = false;
 };
 
 } // namespace fa::screens

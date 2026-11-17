@@ -34,6 +34,8 @@ A window is read as a few parts, such as the building's inventory, its recipe an
 
 `ctrl + tab` moves beyond the window to the other parts of the screen: the quickbar, the shortcut bar, the side menu, the pins, the crafting queue, the HUD's research, alerts and goal. `ctrl + tab` with no window open does the same.
 
+In remote view the map view options are one of those parts. While your character rides a space platform, they start with the game's "Drop to a planet" button: `enter` opens the list of planets to drop to, which `ctrl + f` or its Search button filters as you type, and the button beside it cancels a planned drop.
+
 Where the game shows a tooltip only on hovering, `y` reads it.
 
 ## Using controls

@@ -1401,6 +1401,8 @@ ChartSearchResults chartSearchResults() {
 
 const Widget* mapViewOptions() { return shownMember(gameView(), layout.gameViewMapViewOptions); }
 
+const Widget* remoteViewPanel() { return shownMember(gameView(), layout.gameViewRemoteView); }
+
 const Widget* pinsPanel() { return shownMember(gameView(), layout.gameViewPins); }
 
 PinRows pinRows(const Widget* pinsPanel) {

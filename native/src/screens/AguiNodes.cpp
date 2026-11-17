@@ -564,8 +564,25 @@ private:
         }
         if (leaves.size() == 2 && isLabel(leaves[0]))
         {
+            const Widget* label = leaves[0];
+            const Widget* control = leaves[1];
+            // An icon button beside a heading says what it does only in its tooltip ("Fluid system
+            // contents:" and "Flush all fluids from this fluid system."): the heading, then that.
+            if (agui::kind(control) == Kind::Button && !agui::isSlotButton(control) && OwnText(control).empty())
+            {
+                graph::NodeVtable node = ControlNode(control,
+                    [label, control]()
+                    {
+                        std::string heading = Phrase(label);
+                        std::string own = NameOf(control);
+                        return own.empty() || own == heading ? heading : heading + " " + own;
+                    });
+                SetTooltip(node, {label, control});
+                Add(key, std::move(node));
+                return;
+            }
             // A label and the one control it describes: "Website, https://..., button".
-            Add(key, ControlNode(leaves[1], leaves[0]));
+            Add(key, ControlNode(control, label));
             return;
         }
         if (leaves.size() == 1)

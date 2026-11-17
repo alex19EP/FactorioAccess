@@ -706,6 +706,11 @@ ChartSearchResults chartSearchResults();
 // tag and add ping buttons, and on the map the overlay toggles. Null in the character view.
 const Widget* mapViewOptions();
 
+// The panel above them while a character rides a space platform (RemoteViewGui): its drop to a
+// planet button, which opens DropToPlanetSelectionGui, and the button cancelling the drop. Null
+// while it does not show.
+const Widget* remoteViewPanel();
+
 // The pins panel at the right (PinsGui) while it shows: in every view, while the player has a pin.
 // Null outside a game, without pins, or while game_view_settings hides it.
 const Widget* pinsPanel();

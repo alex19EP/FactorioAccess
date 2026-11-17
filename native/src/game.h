@@ -1689,6 +1689,8 @@ struct Layout {
    // pollution, station names, player names, tags, worker robots, rail signal states, recipe icons,
    // pipelines). A toggle flips its MapViewSettings item, which is this client's alone.
    uint32_t gameViewMapViewOptions = 0;  // GameView::mapViewOptionsGui, std::unique_ptr<MapViewOptionsGui>
+   // GameView::remoteViewGui, std::unique_ptr<RemoteViewGui>: the drop to a planet button and its cancel
+   uint32_t gameViewRemoteView = 0;
    // What the map draws (MapViewSettings, the client's config, not game state). Each item is a
    // SimpleConfigItem<bool>; every overlay but station names, player names and tags shows only while
    // showNonstandardMapInfo is also on, as MapViewOptionsGui::updateToggleState shows them.

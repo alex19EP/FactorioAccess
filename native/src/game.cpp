@@ -1190,6 +1190,7 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.chartSearchList, "ChartSearchResultGui", "listbox");
    offset(layout.chartSearchPins, "ChartSearchResultGui", "pinButtonFlow");
    offset(layout.gameViewMapViewOptions, "GameView", "mapViewOptionsGui");
+   offset(layout.gameViewRemoteView, "GameView", "remoteViewGui");
    offset(layout.globalMapViewSettings, "GlobalContext", "mapViewSettings.value");
    offset(layout.gameViewPins, "GameView", "pinsGui");
    offset(layout.pinsGuiList, "PinsGui", "pinList");
