@@ -43,7 +43,9 @@ constexpr DWORD kGameWaitMs = 3000;
 
 std::atomic<bool> g_running{false};
 std::atomic<uint64_t> g_frames{0};
-std::thread g_thread;
+// Never destroyed: the game exits without fa_core_stop, and a joinable std::thread destroyed as the
+// DLL unloads calls std::terminate (0xC0000409 on every exit). stop() joins it for a reload.
+std::thread& g_thread = *new std::thread;
 // The listening sockets, which stop() closes under the server thread; the mutex keeps that from
 // racing the thread while it is still binding them.
 std::mutex g_listenMutex;

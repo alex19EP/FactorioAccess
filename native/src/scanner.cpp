@@ -2488,12 +2488,14 @@ Cursor carried(const List& fresh) {
 // The links of lists put out of use, dropped a slice at a time. Only on the game's update thread.
 std::deque<Links> g_retired;
 
-// The threads dropping old lists, each joined once done, and all by stop(). Under g_mutex.
+// The threads dropping old lists, each joined once done, and all by stop(). Under g_mutex. Never
+// destroyed: the game exits without fa_core_stop, and a finished dropper not yet joined would call
+// std::terminate as the DLL unloads.
 struct Dropper {
    std::thread thread;
    std::shared_ptr<std::atomic<bool>> done;
 };
-std::vector<Dropper> g_droppers;
+std::vector<Dropper>& g_droppers = *new std::vector<Dropper>;
 
 // Drops `old` on a thread of its own: a big list takes a while to go.
 void dropApart(List old) {
@@ -2539,8 +2541,9 @@ void install(Job& job, bool keep) {
 }
 
 // The automatic refresh under way, if any. On the game's update thread, from Lua, or on frames
-// while the update thread waits (carry).
-std::unique_ptr<Job> g_job;
+// while the update thread waits (carry). Never destroyed: at the game's exit, without fa_core_stop,
+// its assembler would be joined and its links freed while the DLL unloads.
+std::unique_ptr<Job>& g_job = *new std::unique_ptr<Job>;
 // When Lua last ticked. While ticks stop (a paused map, as the map editor's in single player), frames
 // carry the refresh along instead.
 Clock::time_point g_lastTick;

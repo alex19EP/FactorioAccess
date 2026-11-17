@@ -25,7 +25,9 @@ std::deque<std::string> g_queue;
 std::atomic<bool> g_enabled = false;
 std::atomic<bool> g_muted = false;
 bool g_stopping = false;
-std::thread g_thread;
+// Never destroyed: the game exits without fa_core_stop, and a joinable std::thread destroyed as the
+// DLL unloads calls std::terminate (0xC0000409 on every exit). stop() joins it for a reload.
+std::thread& g_thread = *new std::thread;
 
 constexpr const wchar_t* kMuteMarker = L"factorio-access-mute.once";
 
