@@ -382,21 +382,49 @@ Sprite of the sprite or light.
 
 ### x_scale
 
-Horizontal scale of this sprite or animation.
+Horizontal scale of this sprite or animation. Write operation requires a valid number and clears `sprite_width`.
 
 **Read type:** `double`
 
 **Write type:** `double`
+
+**Optional:** Yes
 
 **Subclasses:** Sprite, Animation
 
 ### y_scale
 
-Vertical scale of this sprite or animation.
+Vertical scale of this sprite or animation. Write operation requires a valid number and clears `sprite_height`.
 
 **Read type:** `double`
 
 **Write type:** `double`
+
+**Optional:** Yes
+
+**Subclasses:** Sprite, Animation
+
+### sprite_width
+
+Width of this sprite or animation in tiles. If set, the sprite or animation is stretched to this width regardless of its original size. `nil` if `x_scale` is set. Writing requires a number greater than 0 and clears `x_scale`.
+
+**Read type:** `double`
+
+**Write type:** `double`
+
+**Optional:** Yes
+
+**Subclasses:** Sprite, Animation
+
+### sprite_height
+
+Height of this sprite or animation in tiles. If set, the sprite or animation is stretched to this height regardless of its original size. `nil` if `y_scale` is set. Writing requires a number greater than 0 and clears `y_scale`.
+
+**Read type:** `double`
+
+**Write type:** `double`
+
+**Optional:** Yes
 
 **Subclasses:** Sprite, Animation
 
@@ -486,7 +514,7 @@ Animation prototype name of this animation.
 
 ### animation_speed
 
-Animation speed of this animation. Animation speed in frames per tick.
+Animation speed of this animation, in frames per tick. It is multiplied by [animation speed](prototype:AnimationPrototype::animation_speed) of the selected animation prototype. Changing speed will update `animation_offset`, so that the current `animation_frame` stays the same. Set it to 0 if you want to pause the animation.
 
 **Read type:** `double`
 
@@ -496,7 +524,17 @@ Animation speed of this animation. Animation speed in frames per tick.
 
 ### animation_offset
 
-Animation offset of this animation. Animation offset in frames.
+Animation offset of this animation, in frames. Relative to game tick 0. This means the current animation frame is `((tick * speed) + animation_offset) % frame_count` with speed defined as [LuaRenderObject::animation_speed](runtime:LuaRenderObject::animation_speed) multiplied by [AnimationPrototype::animation_speed](prototype:AnimationPrototype::animation_speed).
+
+**Read type:** `double`
+
+**Write type:** `double`
+
+**Subclasses:** Animation
+
+### animation_frame
+
+Current frame of this animation. All writes update `animation_offset` to show the desired frame.
 
 **Read type:** `double`
 

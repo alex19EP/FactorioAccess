@@ -762,6 +762,18 @@ Flags that affect which entities will be selected.
 
 - `CursorBoxRenderType` *(optional)*
 
+### get_draw_selection_counts
+
+Whether the list of how many entities are selected should be shown.
+
+**Parameters:**
+
+- `selection_mode` `defines.selection_mode`
+
+**Returns:**
+
+- `boolean` *(optional)*
+
 ### get_entity_filter_mode
 
 The entity filter mode used by this selection tool.

@@ -270,6 +270,18 @@ Related to the numbers to be shown in the bottom right corner of this sprite-but
 
 **Subclasses:** sprite-button
 
+### opacity
+
+The opacity of the sprite shown in this widget, clamped to the range [0, 1].
+
+Setting this to `0.5` makes the sprite look like a ghost item or an unfulfilled recipe ingredient.
+
+**Read type:** `float`
+
+**Write type:** `float`
+
+**Subclasses:** sprite, sprite-button
+
 ### location
 
 The location of this widget when stored in [LuaGui::screen](runtime:LuaGui::screen). `nil` if not set or not in [LuaGui::screen](runtime:LuaGui::screen).
@@ -357,6 +369,18 @@ The zoom this camera or minimap is using. This value must be positive.
 **Write type:** `double`
 
 **Subclasses:** camera, minimap
+
+### zoom_limits
+
+The zoom limits of this camera. By default the camera can zoom in to 3x, the same as most player controllers.
+
+Reading this field creates a copy and only contains the limits previously set by a script. To change the zoom limits, set the entire field to the desired [ZoomLimits](runtime:ZoomLimits) table.
+
+**Read type:** `ZoomLimits`
+
+**Write type:** `ZoomLimits`
+
+**Subclasses:** camera
 
 ### minimap_player_index
 

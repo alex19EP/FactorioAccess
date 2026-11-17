@@ -8,7 +8,7 @@
 
 The condition to filter on.
 
-**Type:** `"enabled"` | `"hidden"` | `"hidden-from-flow-stats"` | `"hidden-from-player-crafting"` | `"allow-as-intermediate"` | `"allow-intermediates"` | `"allow-decomposition"` | `"always-show-made-in"` | `"has-ingredients"` | `"has-products"` | `"has-ingredient-item"` | `"has-ingredient-fluid"` | `"has-product-item"` | `"has-product-fluid"` | `"subgroup"` | `"category"` | `"energy"` | `"emissions-multiplier"` | `"request-paste-multiplier"` | `"overload-multiplier"`
+**Type:** `"enabled"` | `"hidden"` | `"hidden-from-flow-stats"` | `"hidden-from-player-crafting"` | `"hidden-in-factoriopedia"` | `"is-parameter"` | `"allow-as-intermediate"` | `"allow-intermediates"` | `"allow-decomposition"` | `"always-show-made-in"` | `"has-ingredients"` | `"has-products"` | `"has-ingredient-item"` | `"has-ingredient-fluid"` | `"has-product-item"` | `"has-product-fluid"` | `"subgroup"` | `"category"` | `"energy"` | `"emissions-multiplier"` | `"request-paste-multiplier"` | `"overload-multiplier"`
 
 **Required:** Yes
 

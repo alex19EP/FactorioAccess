@@ -33,7 +33,7 @@ This is **not** a custom keybinding (keyboard shortcut), for that see [CustomInp
 
 If this is `"lua"`, [on_lua_shortcut](runtime:on_lua_shortcut) is raised when the shortcut is clicked.
 
-**Type:** `"toggle-alt-mode"` | `"undo"` | `"redo"` | `"paste"` | `"import-string"` | `"toggle-personal-roboport"` | `"toggle-personal-logistic-requests"` | `"toggle-equipment-movement-bonus"` | `"spawn-item"` | `"lua"`
+**Type:** `"toggle-alt-mode"` | `"undo"` | `"redo"` | `"paste"` | `"import-string"` | `"toggle-personal-roboport"` | `"toggle-personal-logistic-requests"` | `"toggle-equipment-movement-bonus"` | `"toggle-tall-entity-visibility"` | `"spawn-item"` | `"lua"`
 
 **Required:** Yes
 

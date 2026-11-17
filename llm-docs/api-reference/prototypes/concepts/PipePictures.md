@@ -8,217 +8,217 @@
 
 ### straight_vertical_single
 
-**Type:** `Sprite`
+**Type:** `SpriteVariations`
 
 **Optional:** Yes
 
 ### straight_vertical
 
-**Type:** `Sprite`
+**Type:** `SpriteVariations`
 
 **Optional:** Yes
 
 ### straight_vertical_window
 
-**Type:** `Sprite`
+**Type:** `SpriteVariations`
 
 **Optional:** Yes
 
 ### straight_horizontal
 
-**Type:** `Sprite`
+**Type:** `SpriteVariations`
 
 **Optional:** Yes
 
 ### straight_horizontal_window
 
-**Type:** `Sprite`
+**Type:** `SpriteVariations`
 
 **Optional:** Yes
 
 ### corner_up_right
 
-**Type:** `Sprite`
+**Type:** `SpriteVariations`
 
 **Optional:** Yes
 
 ### corner_up_left
 
-**Type:** `Sprite`
+**Type:** `SpriteVariations`
 
 **Optional:** Yes
 
 ### corner_down_right
 
-**Type:** `Sprite`
+**Type:** `SpriteVariations`
 
 **Optional:** Yes
 
 ### corner_down_left
 
-**Type:** `Sprite`
+**Type:** `SpriteVariations`
 
 **Optional:** Yes
 
 ### t_up
 
-**Type:** `Sprite`
+**Type:** `SpriteVariations`
 
 **Optional:** Yes
 
 ### t_down
 
-**Type:** `Sprite`
+**Type:** `SpriteVariations`
 
 **Optional:** Yes
 
 ### t_right
 
-**Type:** `Sprite`
+**Type:** `SpriteVariations`
 
 **Optional:** Yes
 
 ### t_left
 
-**Type:** `Sprite`
+**Type:** `SpriteVariations`
 
 **Optional:** Yes
 
 ### cross
 
-**Type:** `Sprite`
+**Type:** `SpriteVariations`
 
 **Optional:** Yes
 
 ### ending_up
 
-**Type:** `Sprite`
+**Type:** `SpriteVariations`
 
 **Optional:** Yes
 
 ### ending_down
 
-**Type:** `Sprite`
+**Type:** `SpriteVariations`
 
 **Optional:** Yes
 
 ### ending_right
 
-**Type:** `Sprite`
+**Type:** `SpriteVariations`
 
 **Optional:** Yes
 
 ### ending_left
 
-**Type:** `Sprite`
+**Type:** `SpriteVariations`
 
 **Optional:** Yes
 
 ### straight_vertical_single_frozen
 
-**Type:** `Sprite`
+**Type:** `SpriteVariations`
 
 **Optional:** Yes
 
 ### straight_vertical_frozen
 
-**Type:** `Sprite`
+**Type:** `SpriteVariations`
 
 **Optional:** Yes
 
 ### straight_vertical_window_frozen
 
-**Type:** `Sprite`
+**Type:** `SpriteVariations`
 
 **Optional:** Yes
 
 ### straight_horizontal_frozen
 
-**Type:** `Sprite`
+**Type:** `SpriteVariations`
 
 **Optional:** Yes
 
 ### straight_horizontal_window_frozen
 
-**Type:** `Sprite`
+**Type:** `SpriteVariations`
 
 **Optional:** Yes
 
 ### corner_up_right_frozen
 
-**Type:** `Sprite`
+**Type:** `SpriteVariations`
 
 **Optional:** Yes
 
 ### corner_up_left_frozen
 
-**Type:** `Sprite`
+**Type:** `SpriteVariations`
 
 **Optional:** Yes
 
 ### corner_down_right_frozen
 
-**Type:** `Sprite`
+**Type:** `SpriteVariations`
 
 **Optional:** Yes
 
 ### corner_down_left_frozen
 
-**Type:** `Sprite`
+**Type:** `SpriteVariations`
 
 **Optional:** Yes
 
 ### t_up_frozen
 
-**Type:** `Sprite`
+**Type:** `SpriteVariations`
 
 **Optional:** Yes
 
 ### t_down_frozen
 
-**Type:** `Sprite`
+**Type:** `SpriteVariations`
 
 **Optional:** Yes
 
 ### t_right_frozen
 
-**Type:** `Sprite`
+**Type:** `SpriteVariations`
 
 **Optional:** Yes
 
 ### t_left_frozen
 
-**Type:** `Sprite`
+**Type:** `SpriteVariations`
 
 **Optional:** Yes
 
 ### cross_frozen
 
-**Type:** `Sprite`
+**Type:** `SpriteVariations`
 
 **Optional:** Yes
 
 ### ending_up_frozen
 
-**Type:** `Sprite`
+**Type:** `SpriteVariations`
 
 **Optional:** Yes
 
 ### ending_down_frozen
 
-**Type:** `Sprite`
+**Type:** `SpriteVariations`
 
 **Optional:** Yes
 
 ### ending_right_frozen
 
-**Type:** `Sprite`
+**Type:** `SpriteVariations`
 
 **Optional:** Yes
 
 ### ending_left_frozen
 
-**Type:** `Sprite`
+**Type:** `SpriteVariations`
 
 **Optional:** Yes
 

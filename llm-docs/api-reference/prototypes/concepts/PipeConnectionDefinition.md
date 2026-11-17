@@ -140,7 +140,7 @@ Only loaded if `connection_type` is `"underground"`.
 
 ### underground_collision_mask
 
-An underground connection may be defined as colliding with tiles in which case if any tile is placed between underground ends the connection will not be established.
+An underground connection may be defined as colliding with tiles in which case if any colliding tile is placed between underground ends the connection will not be established.
 
 In order to connect, both ends must have the same collision mask specified.
 

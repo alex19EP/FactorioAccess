@@ -3,7 +3,7 @@
 Used to define the parameters for tile shaders.
 
 **Type name:** `tile-effect`
-**Instance limit:** 32
+**Instance limit:** 255
 
 ## Properties
 

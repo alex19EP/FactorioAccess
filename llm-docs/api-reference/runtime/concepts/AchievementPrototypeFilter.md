@@ -8,7 +8,7 @@
 
 The condition to filter on.
 
-**Type:** `"allowed-without-fight"` | `"type"`
+**Type:** `"hidden"` | `"hidden-in-factoriopedia"` | `"is-parameter"` | `"allowed-without-fight"` | `"type"`
 
 **Required:** Yes
 

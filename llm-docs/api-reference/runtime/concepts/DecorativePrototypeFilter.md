@@ -8,7 +8,7 @@
 
 The condition to filter on.
 
-**Type:** `"decal"` | `"autoplace"` | `"collision-mask"`
+**Type:** `"hidden"` | `"hidden-in-factoriopedia"` | `"is-parameter"` | `"decal"` | `"autoplace"` | `"collision-mask"`
 
 **Required:** Yes
 

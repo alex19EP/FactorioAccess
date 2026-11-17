@@ -292,12 +292,14 @@ Finishes the test when the game was started with `--test-scenario` or `--test-sa
 
 ### raise_event
 
-Raise an event. Only events generated with [LuaBootstrap::generate_event_name](runtime:LuaBootstrap::generate_event_name) and the following can be raised:
+Manually raise an event. [Custom events](prototype:CustomEventPrototype) created in the prototype stage and events generated at runtime with [LuaBootstrap::generate_event_name](runtime:LuaBootstrap::generate_event_name) can be raised.
+
+Additionally, the following built-in events can be raised:
 
 **Parameters:**
 
 - `event` `LuaEventType` - ID or name of the event to raise.
-- `data` `table` - Table with extra data that will be passed to the event handler. Any invalid LuaObjects will silently stop the event from being raised.
+- `data` `table` - Table with extra data that will be passed to the event handler. Note that any arguments passed through the interface are a copy of the original, not a reference. Metatables are not retained, while references to LuaObjects stay intact. Functions cannot be passed through the interface. Any invalid LuaObjects will silently stop the event from being raised.
 
 **Examples:**
 

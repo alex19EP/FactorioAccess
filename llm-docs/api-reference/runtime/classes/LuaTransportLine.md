@@ -10,6 +10,12 @@ The entity this transport line belongs to.
 
 **Read type:** `LuaEntity`
 
+### index
+
+The index of this transport line in its owner.
+
+**Read type:** `defines.transport_line`
+
 ### output_lines
 
 The transport lines that this transport line outputs items to or an empty table if none.

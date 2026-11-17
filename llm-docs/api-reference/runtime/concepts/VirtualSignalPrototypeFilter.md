@@ -8,7 +8,7 @@
 
 The condition to filter on.
 
-**Type:** `"special-signal"`
+**Type:** `"hidden"` | `"hidden-in-factoriopedia"` | `"is-parameter"` | `"special-signal"`
 
 **Required:** Yes
 

@@ -39,6 +39,8 @@ An [underground belt](https://wiki.factorio.com/Underground_belt).
 
 ### underground_collision_mask
 
+The underground connection may be defined as colliding with tiles in which case if any colliding tile is placed between underground ends the connection will not be established.
+
 **Type:** `CollisionMaskConnector`
 
 **Optional:** Yes

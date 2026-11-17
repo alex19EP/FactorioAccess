@@ -8,7 +8,7 @@
 
 The condition to filter on.
 
-**Type:** `"item-to-place"` | `"type"`
+**Type:** `"hidden"` | `"hidden-in-factoriopedia"` | `"is-parameter"` | `"item-to-place"` | `"type"`
 
 **Required:** Yes
 

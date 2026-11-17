@@ -58,6 +58,12 @@ The other player whose GUI was opened.
 
 The player opening the GUI.
 
+### record
+
+**Type:** `LuaRecord` *(optional)*
+
+Blueprint record that was opened.
+
 ### surface_index
 
 **Type:** `uint32` *(optional)*

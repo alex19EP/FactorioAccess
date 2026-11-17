@@ -8,7 +8,7 @@
 
 The condition to filter on.
 
-**Type:** `"type"` | `"mod"` | `"setting-type"`
+**Type:** `"hidden"` | `"hidden-in-factoriopedia"` | `"is-parameter"` | `"type"` | `"mod"` | `"setting-type"`
 
 **Required:** Yes
 

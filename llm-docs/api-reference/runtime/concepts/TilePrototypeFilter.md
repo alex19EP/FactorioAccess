@@ -8,7 +8,7 @@
 
 The condition to filter on.
 
-**Type:** `"minable"` | `"autoplace"` | `"blueprintable"` | `"item-to-place"` | `"collision-mask"` | `"walking-speed-modifier"` | `"vehicle-friction-modifier"` | `"decorative-removal-probability"` | `"absorptions-per-second"`
+**Type:** `"hidden"` | `"hidden-in-factoriopedia"` | `"is-parameter"` | `"minable"` | `"autoplace"` | `"blueprintable"` | `"item-to-place"` | `"collision-mask"` | `"walking-speed-modifier"` | `"vehicle-friction-modifier"` | `"decorative-removal-probability"` | `"absorptions-per-second"`
 
 **Required:** Yes
 

@@ -88,7 +88,7 @@ Distance in chunks from the furthest base around to prevent expansions from reac
 
 ### min_expansion_cooldown
 
-The minimum time between expansions in ticks. The actual cooldown is adjusted to the current evolution levels. Defaults to `4*3 600=14 400` ticks.
+The minimum time between expansions in ticks. The actual cooldown is adjusted to the current evolution levels. Defaults to `10*3 600=36 000` ticks.
 
 **Type:** `uint32`
 
@@ -128,7 +128,7 @@ Defaults to `3.0`.
 
 ### settler_group_max_size
 
-The maximum size of a biter group that goes to build a new base. This is multiplied by the evolution factor. Defaults to `20`.
+The maximum size of a biter group that goes to build a new base. This is multiplied by the evolution factor. Defaults to `10`.
 
 **Type:** `uint32`
 

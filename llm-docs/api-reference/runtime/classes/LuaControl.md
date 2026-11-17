@@ -102,9 +102,9 @@ This is the GUI that will asked to close (by firing the [on_gui_closed](runtime:
 
 Write supports any of the types. Read will return the `entity`, `equipment`, `equipment-grid`, `player`, `element`, `inventory`, `item`, `tile`, or `nil`.
 
-**Read type:** `LuaEntity` | `LuaItemStack` | `LuaEquipment` | `LuaEquipmentGrid` | `LuaPlayer` | `LuaGuiElement` | `LuaInventory` | `LuaLogisticNetwork` | `LuaTile` | `defines.gui_type`
+**Read type:** `LuaEntity` | `LuaItemStack` | `LuaEquipment` | `LuaEquipmentGrid` | `LuaPlayer` | `LuaGuiElement` | `LuaInventory` | `LuaLogisticNetwork` | `LuaTile` | `LuaRecord` | `defines.gui_type`
 
-**Write type:** `LuaEntity` | `LuaItemStack` | `LuaEquipment` | `LuaEquipmentGrid` | `LuaPlayer` | `LuaGuiElement` | `LuaInventory` | `LuaLogisticNetwork` | `LuaTile` | `defines.gui_type`
+**Write type:** `LuaEntity` | `LuaItemStack` | `LuaEquipment` | `LuaEquipmentGrid` | `LuaPlayer` | `LuaGuiElement` | `LuaInventory` | `LuaLogisticNetwork` | `LuaTile` | `LuaRecord` | `defines.gui_type`
 
 **Optional:** Yes
 

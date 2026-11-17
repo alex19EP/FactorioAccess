@@ -64,7 +64,7 @@ Energy required to execute this recipe. This directly affects the crafting time:
 
 ### request_paste_multiplier
 
-The multiplier used when this recipe is copied from an assembling machine to a requester chest. For each item in the recipe the item count * this value is set in the requester chest.
+The multiplier used when this recipe is copied from an assembling machine to a requester chest or infinity chest. For each item ingredient in the recipe the `ingredient_amount * requester_paste_multiplier * machine_crafting_speed / energy_required` is set in the chest.
 
 **Read type:** `uint32`
 

@@ -62,6 +62,12 @@ The other player whose GUI was closed.
 
 The player closing the GUI.
 
+### record
+
+**Type:** `LuaRecord` *(optional)*
+
+Blueprint record that was closed.
+
 ### surface_index
 
 **Type:** `uint32` *(optional)*

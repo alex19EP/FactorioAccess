@@ -2,6 +2,8 @@
 
 Used for custom keyboard shortcuts/key bindings in mods. The key associated with the custom input can be changed in the options. This means that `key_sequence` is simply the default key binding.
 
+Custom inputs share the same namespace as custom events and built-in events for subscribing to and raising them.
+
 **Parent:** [Prototype](Prototype.md)
 **Type name:** `custom-input`
 

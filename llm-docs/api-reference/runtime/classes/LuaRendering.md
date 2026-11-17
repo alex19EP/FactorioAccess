@@ -208,8 +208,10 @@ Create a sprite.
 
 - `sprite` `SpritePath`
 - `orientation` `RealOrientation` *(optional)* - The orientation of the sprite. Default is 0.
-- `x_scale` `double` *(optional)* - Horizontal scale of the sprite. Default is 1.
-- `y_scale` `double` *(optional)* - Vertical scale of the sprite. Default is 1.
+- `x_scale` `double` *(optional)* - Horizontal scale of the sprite. Default is 1. Mutually exclusive with `sprite_width`.
+- `y_scale` `double` *(optional)* - Vertical scale of the sprite. Default is 1. Mutually exclusive with `sprite_height`.
+- `sprite_width` `double` *(optional)* - Width of the sprite in tiles. If given, the sprite is stretched to this width regardless of its original size. Mutually exclusive with `x_scale`.
+- `sprite_height` `double` *(optional)* - Height of the sprite in tiles. If given, the sprite is stretched to this height regardless of its original size. Mutually exclusive with `y_scale`.
 - `tint` `Color` *(optional)*
 - `render_layer` `RenderLayer` *(optional)* - Render layer of the sprite. Defaults to `"arrow"`.
 - `orientation_target` `ScriptRenderTarget` *(optional)* - If given, the sprite rotates so that it faces this target. Note that `orientation` is still applied to the sprite.
@@ -281,12 +283,15 @@ Create an animation.
 
 - `animation` `string` - Name of an [AnimationPrototype](prototype:AnimationPrototype).
 - `orientation` `RealOrientation` *(optional)* - The orientation of the animation. Default is 0.
-- `x_scale` `double` *(optional)* - Horizontal scale of the animation. Default is 1.
-- `y_scale` `double` *(optional)* - Vertical scale of the animation. Default is 1.
+- `x_scale` `double` *(optional)* - Horizontal scale of the sprite. Default is 1. Mutually exclusive with `sprite_width`.
+- `y_scale` `double` *(optional)* - Vertical scale of the sprite. Default is 1. Mutually exclusive with `sprite_height`.
+- `sprite_width` `double` *(optional)* - Width of the sprite in tiles. If given, the animation is stretched to this width regardless of its original size. Mutually exclusive with `x_scale`.
+- `sprite_height` `double` *(optional)* - Height of the sprite in tiles. If given, the animation is stretched to this height regardless of its original size. Mutually exclusive with `y_scale`.
 - `tint` `Color` *(optional)*
 - `render_layer` `RenderLayer` *(optional)* - Render layer of the animation. Defaults to `"arrow"`.
 - `animation_speed` `double` *(optional)* - How many frames the animation goes forward per tick. Default is 1.
-- `animation_offset` `double` *(optional)* - Offset of the animation in frames. Default is 0.
+- `animation_offset` `double` *(optional)* - Offset of the animation in frames relative to game tick 0. Default is 0.
+- `animation_frame` `double` *(optional)* - Frame the animation starts at. Takes precedence over `animation_offset`.
 - `orientation_target` `ScriptRenderTarget` *(optional)* - If given, the animation rotates so that it faces this target. Note that `orientation` is still applied to the animation.
 - `use_target_orientation` `boolean` *(optional)* - Only used if `orientation_target` is a LuaEntity.
 - `oriented_offset` `Vector` *(optional)* - Offsets the center of the animation if `orientation_target` is given. This offset will rotate together with the animation.

@@ -220,6 +220,10 @@ Must be >= 0.
 
 ### requester_paste_multiplier
 
+The multiplier used when this recipe is copied from an [assembling machine](prototype:AssemblingMachinePrototype) to a [requester chest](prototype:LogisticContainerPrototype) or [infinity chest](prototype:InfinityContainerPrototype).
+
+For each item ingredient the `ingredient_amount * requester_paste_multiplier * machine_crafting_speed / energy_required` is set as a request for that item in the chest. The request is clamped to always be for at least `ingredient_amount` items.
+
 **Type:** `uint32`
 
 **Optional:** Yes

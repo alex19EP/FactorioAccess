@@ -8,7 +8,7 @@
 
 The condition to filter on.
 
-**Type:** `"enabled"` | `"hidden"` | `"upgrade"` | `"visible-when-disabled"` | `"has-effects"` | `"has-prerequisites"` | `"research-unit-ingredient"` | `"unlocks-recipe"` | `"level"` | `"max-level"` | `"time"`
+**Type:** `"enabled"` | `"hidden"` | `"hidden-in-factoriopedia"` | `"is-parameter"` | `"upgrade"` | `"visible-when-disabled"` | `"has-effects"` | `"has-prerequisites"` | `"research-unit-ingredient"` | `"unlocks-recipe"` | `"level"` | `"max-level"` | `"time"`
 
 **Required:** Yes
 

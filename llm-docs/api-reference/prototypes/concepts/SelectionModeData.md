@@ -34,6 +34,16 @@
 
 **Required:** Yes
 
+### draw_selection_counts
+
+Whether the list of how many entities are selected should be shown.
+
+**Type:** `boolean`
+
+**Optional:** Yes
+
+**Default:** True
+
 ### mode
 
 **Type:** `SelectionModeFlags`

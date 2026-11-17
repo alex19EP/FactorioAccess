@@ -8,7 +8,7 @@
 
 The condition to filter on.
 
-**Type:** `"fly-condition"` | `"type"` | `"solar-power-in-space"`
+**Type:** `"hidden"` | `"hidden-in-factoriopedia"` | `"is-parameter"` | `"fly-condition"` | `"type"` | `"solar-power-in-space"`
 
 **Required:** Yes
 

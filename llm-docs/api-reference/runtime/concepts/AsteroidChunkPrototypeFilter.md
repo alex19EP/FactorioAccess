@@ -8,7 +8,7 @@
 
 The condition to filter on.
 
-**Type:** `"minable"`
+**Type:** `"hidden"` | `"hidden-in-factoriopedia"` | `"is-parameter"` | `"minable"`
 
 **Required:** Yes
 

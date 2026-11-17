@@ -50,6 +50,10 @@ The simulation object instance can be obtained from [LuaGameScript::simulation](
 
 **Write type:** `boolean`
 
+### camera_show_alerts
+
+**Write type:** `boolean`
+
 ### smart_belt_building
 
 **Write type:** `boolean`

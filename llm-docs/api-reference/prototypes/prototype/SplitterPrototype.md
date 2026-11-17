@@ -107,3 +107,25 @@ The maximum circuit wire distance for this entity.
 
 **Optional:** Yes
 
+### exchange_input_lines
+
+When set to true, right lane of left input belt is swapped with left lane of right input belt. This can be used to create a splitter which spreads both lanes of left input belt onto left lanes of both outputs, and both lanes of right input belt onto right lanes of both outputs.
+
+**Type:** `boolean`
+
+**Optional:** Yes
+
+**Default:** False
+
+### exchange_output_lines
+
+When set to true, right lane of left output belt is swapped with left lane of right output belt. This can be used to create a splitter which combines left lanes of both input lanes into left output belt and right lanes of both input lanes into right output belt.
+
+When this option is used, a [IconDrawSpecification::scale_for_many](prototype:IconDrawSpecification::scale_for_many) inside of [EntityPrototype::icon_draw_specification](prototype:EntityPrototype::icon_draw_specification) will need to be provided in case a filter is to be drawn as it will be rendered on respective sides of both output belts. Suggested value is `0.35`.
+
+**Type:** `boolean`
+
+**Optional:** Yes
+
+**Default:** False
+

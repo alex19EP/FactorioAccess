@@ -10,11 +10,31 @@ Is this record valid for writing? A record is invalid for write if it is a Bluep
 
 **Read type:** `boolean`
 
+### prototype
+
+**Read type:** `LuaItemPrototype`
+
+### name
+
+**Read type:** `string`
+
 ### type
 
 The type of this blueprint record.
 
 **Read type:** `"blueprint"` | `"blueprint-book"` | `"deconstruction-planner"` | `"upgrade-planner"`
+
+### shelf_index
+
+Identifier of the shelf this record is in. May correspond to a player index or be a special value when in game blueprints.
+
+**Read type:** `uint32`
+
+### record_id
+
+Identifier of the record within its shelf.
+
+**Read type:** `uint32`
 
 ### preview_icons
 

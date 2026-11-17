@@ -8,7 +8,7 @@
 
 The condition to filter on.
 
-**Type:** `"hidden"` | `"name"` | `"subgroup"` | `"default-temperature"` | `"max-temperature"` | `"heat-capacity"` | `"fuel-value"` | `"emissions-multiplier"` | `"gas-temperature"`
+**Type:** `"hidden"` | `"hidden-in-factoriopedia"` | `"is-parameter"` | `"name"` | `"subgroup"` | `"default-temperature"` | `"max-temperature"` | `"heat-capacity"` | `"fuel-value"` | `"emissions-multiplier"` | `"gas-temperature"`
 
 **Required:** Yes
 

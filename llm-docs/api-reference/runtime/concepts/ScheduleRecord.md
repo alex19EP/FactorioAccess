@@ -6,11 +6,15 @@
 
 ### allows_unloading
 
+When reading this will always be present. Defaults to `true` when writing.
+
 **Type:** `boolean`
 
 **Optional:** Yes
 
 ### created_by_interrupt
+
+When reading this will always be present. Defaults to `false` when writing.
 
 **Type:** `boolean`
 
@@ -40,11 +44,15 @@ Name of the station.
 
 ### temporary
 
+When reading this will always be present. Defaults to `false` when writing.
+
 **Type:** `boolean`
 
 **Optional:** Yes
 
 ### wait_conditions
+
+When reading this will always be present but may be an empty array.
 
 **Type:** Array[`WaitCondition`]
 

@@ -79,3 +79,13 @@ Tints of the building preview when this blueprint is held in the cursor. Every p
 
 **Optional:** Yes
 
+### draw_collision_indicators
+
+Whether the [collision indicators](prototype:UtilitySprites::buildability_collision) are drawn over entities that collide with the building preview when this blueprint is held in the cursor.
+
+**Type:** `boolean`
+
+**Optional:** Yes
+
+**Default:** True
+
