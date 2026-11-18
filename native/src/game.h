@@ -1896,10 +1896,8 @@ struct Layout {
    uint32_t triggerMineEntities = 0;
    uint32_t entityConnectorId = 0;       // IDConnector<ID<EntityPrototype,u16>>::id
    uint32_t triggerCaptureEntity = 0;    // CaptureSpawnerTechnologyTriggerPrototype::entityID.id, 0 for any
-   uint32_t researchQueueMap = 0;        // ResearchQueue::queue, std::deque<ID<TechnologyPrototype,u16>>: _Map
-   uint32_t researchQueueMapSize = 0;    // ... _Mapsize
-   uint32_t researchQueueOffset = 0;     // ... _Myoff
-   uint32_t researchQueueSize = 0;       // ... _Mysize
+   // ResearchQueue::queue, a std::deque<ID<TechnologyPrototype,u16>>, at its _Map (stdabi::Deque).
+   uint32_t researchQueue = 0;
    uintptr_t getTechnology = 0;          // Technology const& TechnologyReference::getTechnology() const
    uintptr_t technologyState = 0;        // ResearchState Technology::getState(ResearchQueue const*) const
    uintptr_t techSlotLevel = 0;          // unsigned TechnologySlot::getLevel() const: the level band's number
@@ -2389,14 +2387,11 @@ struct Layout {
    uint32_t controllerIsManual = 0;
    uint32_t entityUnitNumber = 0;          // EntityWithOwner::unitNumber, uint64
    // Spidertrons. SpiderVehicle::autopilot (SpiderAutopilot): destinations, a deque<MapPosition>
-   // (two to a block) of waypoints still to walk; followTarget, a Targeter of the entity it
-   // follows; patrolSize, how many of the last waypoints loop (0: none). The local player's remote
-   // selection is Player::spidertronRemoteSelectionState.current, asked with bool
+   // of waypoints still to walk, at its _Map (stdabi::Deque); followTarget, a Targeter of the
+   // entity it follows; patrolSize, how many of the last waypoints loop (0: none). The local
+   // player's remote selection is Player::spidertronRemoteSelectionState.current, asked with bool
    // SpidertronRemoteSelection::isSelected(SpiderVehicle const*) const.
-   uint32_t spiderDestinationsMap = 0;
-   uint32_t spiderDestinationsMapSize = 0;
-   uint32_t spiderDestinationsOffset = 0;
-   uint32_t spiderDestinationsSize = 0;
+   uint32_t spiderDestinations = 0;
    uint32_t spiderFollowTarget = 0;
    uint32_t spiderPatrolSize = 0;
    uint32_t playerSpidertronSelection = 0;

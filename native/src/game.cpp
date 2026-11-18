@@ -1353,10 +1353,7 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.triggerMineEntities, "MineEntityTechnologyTriggerPrototype", "entities");
    offset(layout.entityConnectorId, "IDConnector<ID<EntityPrototype,unsigned short> >", "id");
    offset(layout.triggerCaptureEntity, "CaptureSpawnerTechnologyTriggerPrototype", "entityID.id");
-   offset(layout.researchQueueMap, "ResearchQueue", "queue._Mypair._Myval2._Map");
-   offset(layout.researchQueueMapSize, "ResearchQueue", "queue._Mypair._Myval2._Mapsize");
-   offset(layout.researchQueueOffset, "ResearchQueue", "queue._Mypair._Myval2._Myoff");
-   offset(layout.researchQueueSize, "ResearchQueue", "queue._Mypair._Myval2._Mysize");
+   offset(layout.researchQueue, "ResearchQueue", "queue._Mypair._Myval2._Map");
    address(layout.getTechnology, "?getTechnology@TechnologyReference@@QEBAAEBVTechnology@@XZ");
    address(layout.technologyState, "?getState@Technology@@QEBA?AW4ResearchState@1@PEBVResearchQueue@@@Z");
    address(layout.techSlotLevel, "?getLevel@TechnologySlot@@QEBAIXZ");
@@ -1682,10 +1679,7 @@ bool resolve(pdb::SymbolTable& symbols) {
    offset(layout.trainController, "Train", "controller");
    classSlot(layout.controllerIsManual, "TrainController", "isManual");
    offset(layout.entityUnitNumber, "EntityWithOwner", "unitNumber");
-   offset(layout.spiderDestinationsMap, "SpiderVehicle", "autopilot.destinations._Mypair._Myval2._Map");
-   offset(layout.spiderDestinationsMapSize, "SpiderVehicle", "autopilot.destinations._Mypair._Myval2._Mapsize");
-   offset(layout.spiderDestinationsOffset, "SpiderVehicle", "autopilot.destinations._Mypair._Myval2._Myoff");
-   offset(layout.spiderDestinationsSize, "SpiderVehicle", "autopilot.destinations._Mypair._Myval2._Mysize");
+   offset(layout.spiderDestinations, "SpiderVehicle", "autopilot.destinations._Mypair._Myval2._Map");
    offset(layout.spiderFollowTarget, "SpiderVehicle", "autopilot.followTarget");
    offset(layout.spiderPatrolSize, "SpiderVehicle", "autopilot.patrolSize");
    offset(layout.playerSpidertronSelection, "Player", "spidertronRemoteSelectionState.current");

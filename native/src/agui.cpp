@@ -1673,9 +1673,6 @@ enum class ResearchState : uint8_t { Disabled, Researched, Available, Conditiona
 constexpr uint32_t kVertexFull = 0;
 constexpr uint32_t kVertexDummy = 1;
 
-// std::deque's elements per block for a 2-byte element, a constant of MSVC's library.
-constexpr size_t kDequeBlock = 8;
-
 uint16_t technologyId(const std::byte* reference) { return at<uint16_t>(reference, layout.techReferenceId); }
 
 const std::byte* technologyOf(const std::byte* reference) {
@@ -1711,14 +1708,9 @@ std::string nameWithLevel(const std::byte* prototype, unsigned level) {
 
 // The 1-based place of the technology in a research queue, or 0.
 unsigned queuePosition(const std::byte* queue, uint16_t id) {
-   auto* const* map = at<const uint16_t* const*>(queue, layout.researchQueueMap);
-   size_t mapSize = at<size_t>(queue, layout.researchQueueMapSize);
-   size_t first = at<size_t>(queue, layout.researchQueueOffset);
-   size_t size = at<size_t>(queue, layout.researchQueueSize);
-   for (size_t i = 0; i < size; ++i) {
-      size_t place = first + i;
-      if (map[(place / kDequeBlock) & (mapSize - 1)][place % kDequeBlock] == id) return static_cast<unsigned>(i + 1);
-   }
+   const auto& ids = at<stdabi::Deque<uint16_t>>(queue, layout.researchQueue);
+   for (size_t i = 0; i < ids.size(); ++i)
+      if (ids[i] == id) return static_cast<unsigned>(i + 1);
    return 0;
 }
 

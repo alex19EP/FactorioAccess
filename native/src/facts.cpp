@@ -1509,13 +1509,10 @@ std::vector<std::string> spiderState(const std::byte* spider) {
          items.push_back(vocab::kSpiderFollowing(localisedName(prototypeOf(followed))));
       return items;
    }
-   const size_t count = at<size_t>(spider, layout.spiderDestinationsSize);
+   const auto destinations = at<stdabi::Deque<Position>>(spider, layout.spiderDestinations);
+   const size_t count = destinations.size();
    if (count == 0) return items;
-   auto* const* map = at<const Position* const*>(spider, layout.spiderDestinationsMap);
-   const size_t mapSize = at<size_t>(spider, layout.spiderDestinationsMapSize);
-   const size_t first = at<size_t>(spider, layout.spiderDestinationsOffset);
-   constexpr size_t kBlock = 2; // MSVC's deque block for 8-byte elements
-   const Position next = map[(first / kBlock) & (mapSize - 1)][first % kBlock];
+   const Position next = destinations[0];
    const Position position = at<Position>(spider, layout.entityPosition);
    const double dx = static_cast<double>(next.x - position.x) / kScale;
    const double dy = static_cast<double>(next.y - position.y) / kScale;
