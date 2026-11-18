@@ -98,7 +98,9 @@ jobs:
           sleep 60
           if kill -0 $pid 2>/dev/null; then
             echo "Server: running after 60 s" | tee -a "$GITHUB_STEP_SUMMARY"
+            # It saves and lets go of the write data's lock as it quits; the next step needs both.
             kill $pid
+            wait $pid || true
           else
             wait $pid; code=$?
             echo "Server: exited early with code $code" | tee -a "$GITHUB_STEP_SUMMARY"
