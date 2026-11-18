@@ -1001,8 +1001,9 @@ std::string poleSupply(const std::byte* pole) {
    reinterpret_cast<SupplyArea>(layout.poleSupplyArea)(pole, area);
    alignas(8) std::byte search[game::kEntitySearchCapacity]{};
    reinterpret_cast<Search>(layout.entitySearch)(search, at<const void*>(pole, layout.entitySurface), area);
-   const auto* first = at<const std::byte* const*>(search, layout.entitySearchContent);
-   const auto* last = at<const std::byte* const*>(search, layout.entitySearchContent + sizeof(void*));
+   const auto content = at<stdabi::Vector<const std::byte* const>>(search, layout.entitySearchContent);
+   const std::byte* const* first = content.first;
+   const std::byte* const* last = content.last;
    int64_t supplied = 0;
    int64_t producers = 0;
    for (const std::byte* const* it = first; it != last; ++it) {
@@ -1297,10 +1298,9 @@ std::string inserterState(const std::byte* entity, const std::byte* inserter, co
 // The targets a turret shoots first or only, in FA's
 // words, which are shorter than the tooltip's.
 std::string turretPriorities(const std::byte* turret) {
-   const auto* first = at<const uint16_t*>(turret, layout.turretPriorityList);
-   const auto* last = at<const uint16_t*>(turret, layout.turretPriorityList + sizeof(void*));
+   const auto priorities = at<stdabi::Vector<const uint16_t>>(turret, layout.turretPriorityList);
    std::vector<std::string> names;
-   for (const uint16_t* id = first; id != last; ++id)
+   for (const uint16_t* id = priorities.first; id != priorities.last; ++id)
       if (const std::byte* prototype = *id ? prototypeAt(layout.entityPrototypes, *id) : nullptr)
          names.push_back(localisedName(prototype));
    if (names.empty()) return {};
@@ -1467,8 +1467,9 @@ std::string trainName(const std::byte* train) {
    const std::byte* naming = nullptr;
    uint64_t lowest = 0;
    for (const uint32_t movers : {layout.trainFrontMovers, layout.trainBackMovers}) {
-      const auto* first = at<const std::byte* const*>(train, movers);
-      const auto* last = at<const std::byte* const*>(train, movers + sizeof(void*));
+      const auto locomotives = at<stdabi::Vector<const std::byte* const>>(train, movers);
+      const std::byte* const* first = locomotives.first;
+      const std::byte* const* last = locomotives.last;
       for (const std::byte* const* loco = first; loco != last; ++loco) {
          const std::byte* owner = agui::objectAsBase(*loco, ".?AVEntityWithOwner@@");
          if (!owner) continue;
@@ -1574,9 +1575,8 @@ std::vector<const std::byte*> filtersOf(const std::byte* entity) {
 std::vector<std::string_view> productsOf(const std::byte* recipe) {
    std::vector<std::string_view> names;
    auto each = [&](uint32_t products, uint32_t size, uint32_t id, uintptr_t list) {
-      const auto* first = at<const std::byte*>(recipe, products);
-      const auto* last = at<const std::byte*>(recipe, products + sizeof(void*));
-      for (const std::byte* product = first; product < last; product += size)
+      const auto all = at<stdabi::Vector<const std::byte>>(recipe, products);
+      for (const std::byte* product = all.first; product < all.last; product += size)
          if (const std::byte* made = prototypeAt(list, at<uint16_t>(product, id))) names.push_back(internalName(made));
    };
    each(layout.recipeItemProducts, layout.itemProductSize, layout.itemProductId, layout.itemPrototypes);
@@ -1772,9 +1772,8 @@ void eachEntityIn(const std::byte* surface, Position leftTop, Position rightBott
    reinterpret_cast<void* (*)(const std::byte* box, std::byte* out)>(layout.boundingAabb)(corners, area);
    alignas(8) std::byte search[game::kEntitySearchCapacity]{};
    reinterpret_cast<Search>(layout.entitySearch)(search, surface, area);
-   const auto* first = at<const std::byte* const*>(search, layout.entitySearchContent);
-   const auto* last = at<const std::byte* const*>(search, layout.entitySearchContent + sizeof(void*));
-   for (const std::byte* const* it = first; it != last; ++it) visit(*it);
+   for (const std::byte* entity : at<stdabi::Vector<const std::byte* const>>(search, layout.entitySearchContent))
+      visit(entity);
    reinterpret_cast<void (*)(std::byte*)>(layout.entitySearchDestroy)(search);
 }
 
