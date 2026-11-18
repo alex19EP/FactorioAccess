@@ -7,6 +7,7 @@
 #include "log.h"
 #include "parts.h"
 #include "prototypes.h"
+#include "stdabi.h"
 #include "world.h"
 
 #include <algorithm>
@@ -51,26 +52,6 @@ template <class Function>
 Function virtualAt(const void* object, uint32_t slot) {
    auto vtable = *static_cast<void* const* const*>(object);
    return reinterpret_cast<Function>(vtable[slot]);
-}
-
-template <class T>
-struct MsvcVector {
-   T* first;
-   T* last;
-   T* end;
-};
-
-struct MsvcString {
-   union {
-      char buffer[16];
-      char* pointer;
-   };
-   size_t size;
-   size_t capacity;
-};
-
-std::string_view view(const MsvcString& string) {
-   return {string.capacity >= sizeof(string.buffer) ? string.pointer : string.buffer, string.size};
 }
 
 // MapPosition, in 1/256 of a tile.
@@ -434,7 +415,7 @@ const std::byte* localPlayer(const std::byte* game, int playerIndex) {
 // The surface with LuaSurface::index `index` (one more than SurfaceIndex) on `map`, or null once it
 // is gone.
 const std::byte* surfaceAt(const std::byte* map, uint32_t index) {
-   const auto& surfaces = at<MsvcVector<const std::byte*>>(map, layout.mapSurfaces);
+   const auto& surfaces = at<stdabi::Vector<const std::byte*>>(map, layout.mapSurfaces);
    for (const std::byte* const* surface = surfaces.first; surface < surfaces.last; ++surface)
       if (*surface && at<uint32_t>(*surface, layout.surfaceIndex) + 1 == index) return *surface;
    return nullptr;
@@ -448,7 +429,7 @@ const std::byte* forceOf(const std::byte* player) {
 
 std::string_view prototypeName(const std::byte* prototype) {
    // In place: a copy's short name lives in the copy, which the view would outlive.
-   return view(*reinterpret_cast<const MsvcString*>(prototype + layout.prototypeName));
+   return reinterpret_cast<const stdabi::String*>(prototype + layout.prototypeName)->view();
 }
 
 std::string_view prototypeType(const std::byte* prototype) {
@@ -460,29 +441,17 @@ std::string_view alertTypeName(uint8_t type) {
    return reinterpret_cast<const char* (*)(const uint8_t*)>(layout.alertTypeStr)(&type);
 }
 
-// The node of an MSVC std::map: left, parent, right, colour, end marker, then the value.
-struct TreeNode {
-   const TreeNode* left;
-   const TreeNode* parent;
-   const TreeNode* right;
-   char colour;
-   char isNil;
-};
-
 // The vector a std::map<SurfaceIndex, std::vector<T>> at `tree` holds for `surfaceIndex`, as its
-// first and last element, or empty.
+// first and last element, or empty. `key` and `value` are the node's _Myval offsets.
 std::pair<const std::byte*, const std::byte*> alertsOn(const std::byte* tree, uint32_t surfaceIndex, uint32_t key,
                                                        uint32_t value) {
-   const TreeNode* head = at<const TreeNode*>(tree, 0);
-   for (const TreeNode* node = head->parent; !node->isNil;) {
-      const uint32_t index = at<uint32_t>(node, key);
-      if (index == surfaceIndex) {
-         const auto alerts = at<MsvcVector<const std::byte>>(node, value);
-         return {alerts.first, alerts.last};
-      }
-      node = surfaceIndex < index ? node->left : node->right;
-   }
-   return {};
+   const auto* node = reinterpret_cast<const stdabi::Tree<void>*>(tree)->search([&](const auto* candidate) {
+      const uint32_t index = at<uint32_t>(candidate, key);
+      return index < surfaceIndex ? -1 : index > surfaceIndex ? 1 : 0;
+   });
+   if (!node) return {};
+   const auto alerts = at<stdabi::Vector<const std::byte>>(node, value);
+   return {alerts.first, alerts.last};
 }
 
 // Calls visit(type, alert) for every alert `player` has on the surface (the game's SurfaceIndex)
@@ -692,7 +661,7 @@ std::string subcategoryKey(const std::byte* entity, const std::byte* prototype, 
       break;
    }
    case Detail::Drill: {
-      const auto& targeters = at<MsvcVector<const std::byte>>(entity, rule.member);
+      const auto& targeters = at<stdabi::Vector<const std::byte>>(entity, rule.member);
       std::vector<std::string_view> resources;
       for (const std::byte* targeter = targeters.first; targeter < targeters.last;
            targeter += layout.resourceTargeterSize)
@@ -749,7 +718,7 @@ std::string subcategoryKey(const std::byte* entity, const std::byte* prototype, 
       key += std::format("/{}{}", fluidIn(box), connected == 1 ? "/end" : "");
       break;
    }
-   case Detail::Roboport: key += std::format("/{}", view(at<MsvcString>(entity, rule.member))); break;
+   case Detail::Roboport: key += std::format("/{}", at<stdabi::String>(entity, rule.member).view()); break;
    }
    return key;
 }
@@ -1971,7 +1940,7 @@ std::optional<Position> act(Action action) {
 
 // What each tile is, by tile ID.
 std::vector<TileInfo> tileInfos() {
-   const auto& list = *reinterpret_cast<const MsvcVector<const std::byte*>*>(layout.tilePrototypes);
+   const auto& list = *reinterpret_cast<const stdabi::Vector<const std::byte*>*>(layout.tilePrototypes);
    std::vector<TileInfo> tiles(static_cast<size_t>(list.last - list.first));
    for (size_t id = 0; id < tiles.size(); ++id)
       if (const std::byte* prototype = list.first[id])
@@ -2256,7 +2225,7 @@ std::unique_ptr<Job> startJob(const Refresh& request, Position origin, std::opti
       return nullptr;
    }
    auto job = std::make_unique<Job>(game, request, origin, direction, map);
-   const auto& chunks = at<MsvcVector<const std::byte*>>(place->surface, layout.surfaceChunks);
+   const auto& chunks = at<stdabi::Vector<const std::byte*>>(place->surface, layout.surfaceChunks);
    std::vector<std::pair<double, Position>> keyed;
    keyed.reserve(static_cast<size_t>(chunks.last - chunks.first));
    for (const std::byte* const* chunk = chunks.first; chunk < chunks.last; ++chunk) {
@@ -2290,7 +2259,8 @@ std::unique_ptr<Job> startJob(const Refresh& request, Position origin, std::opti
    // The player's alerts, each type a subcategory, where the map draws them, which the world does not
    // (ChartRenderer::drawAlerts). One about an entity is linked now and followed as it moves.
    if (map) {
-      const auto& entityPrototypes = *reinterpret_cast<const MsvcVector<const std::byte*>*>(layout.entityPrototypes);
+      const auto& entityPrototypes =
+         *reinterpret_cast<const stdabi::Vector<const std::byte*>*>(layout.entityPrototypes);
       const size_t entityCount = static_cast<size_t>(entityPrototypes.last - entityPrototypes.first);
       forEachAlert(localPlayer(game, request.playerIndex), place->surfaceIndex,
                    [&](uint8_t type, const std::byte* alert) {
@@ -2336,8 +2306,8 @@ std::unique_ptr<Job> startJob(const Refresh& request, Position origin, std::opti
    const std::byte* platform = at<const std::byte*>(place->surface, layout.surfacePlatform);
    if (platform && !map) {
       const auto& chunkPrototypes =
-         *reinterpret_cast<const MsvcVector<const std::byte*>*>(layout.asteroidChunkPrototypes);
-      const auto floating = at<MsvcVector<std::byte>>(platform, layout.platformAsteroidChunks);
+         *reinterpret_cast<const stdabi::Vector<const std::byte*>*>(layout.asteroidChunkPrototypes);
+      const auto floating = at<stdabi::Vector<std::byte>>(platform, layout.platformAsteroidChunks);
       for (std::byte* chunk = floating.first; chunk < floating.last; chunk += layout.asteroidChunkSize) {
          const Position position = chunkPosition(chunk);
          if (!scan.wanted(position)) continue;
@@ -2758,7 +2728,7 @@ DrawEntities g_drawEntitiesOriginal = nullptr;
 // nothing selected it draws only the network's roboports on the full map, which mark nothing.
 void detourDrawEntities(std::byte* gui, void* queue) {
    if (at<uint16_t>(gui, layout.networksGuiSelectedItem) || at<uint16_t>(gui, layout.networksGuiSelectedEntity)) {
-      const auto& entities = at<MsvcVector<std::byte*>>(gui, layout.networksGuiEntitiesToDraw);
+      const auto& entities = at<stdabi::Vector<std::byte*>>(gui, layout.networksGuiEntitiesToDraw);
       noteMarks(entities.first, entities.last);
    }
    g_drawEntitiesOriginal(gui, queue);

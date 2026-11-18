@@ -12,6 +12,7 @@
 #include "scanner.h"
 #include "skip.h"
 #include "speech.h"
+#include "stdabi.h"
 #include "viewannounce.h"
 #include "vocab.h"
 #include "world.h"
@@ -56,26 +57,6 @@ Function virtualAt(const void* object, uint32_t slot) {
    auto vtable = *static_cast<void* const* const*>(object);
    return reinterpret_cast<Function>(vtable[slot]);
 }
-
-struct MsvcString {
-   union {
-      char buffer[16];
-      const char* pointer;
-   };
-   size_t size;
-   size_t capacity;
-};
-
-std::string_view view(const MsvcString& string) {
-   return {string.capacity >= sizeof(string.buffer) ? string.pointer : string.buffer, string.size};
-}
-
-template <class T>
-struct MsvcVector {
-   T* first;
-   T* last;
-   T* end;
-};
 
 // MapPosition, in the game's fixed point (256 to a tile).
 using cursormoves::kScale;
@@ -196,14 +177,14 @@ MoveInputs g_moveInputs;
 const MoveInputs& moveInputs() {
    const std::byte* settings = at<const std::byte*>(globalContext(), layout.globalControlSettings);
    const auto inputs =
-      settings ? at<MsvcVector<const std::byte>>(settings, layout.customInputs) : MsvcVector<const std::byte>{};
+      settings ? at<stdabi::Vector<const std::byte>>(settings, layout.customInputs) : stdabi::Vector<const std::byte>{};
    if (inputs.first == g_moveInputs.first) return g_moveInputs;
    g_moveInputs = {inputs.first, {}};
    for (const std::byte* input = inputs.first; input < inputs.last; input += layout.controlInputSize) {
       const std::byte* prototype = at<const std::byte*>(input, layout.controlInputPrototype);
       if (!prototype) continue;
       // In place: a copy's short name lives in the copy, which a view would outlive.
-      const std::string_view name = view(*reinterpret_cast<const MsvcString*>(prototype + layout.prototypeName));
+      const std::string_view name = reinterpret_cast<const stdabi::String*>(prototype + layout.prototypeName)->view();
       for (size_t i = 0; i < kMoveKeys.size(); ++i)
          if (kMoveKeys[i].name == name) g_moveInputs.inputs[i] = input;
    }

@@ -3,6 +3,7 @@
 #include "agui.h"
 #include "game.h"
 #include "speech.h"
+#include "stdabi.h"
 #include "text.h"
 #include "vocab.h"
 #include "world.h"
@@ -30,13 +31,6 @@ T at(const void* object, uint32_t offset) {
    std::memcpy(&value, static_cast<const std::byte*>(object) + offset, sizeof(value));
    return value;
 }
-
-template <class T>
-struct MsvcVector {
-   T* first;
-   T* last;
-   T* end;
-};
 
 // SelectionMode: Nothing (no selection is open), Select, AlternativeSelect (Shift),
 // SuperForcedSelect, ReverseSelect.
@@ -142,11 +136,11 @@ bool scriptPositionTool(const std::byte* player) {
       return false;
    const std::byte* editors = controller + layout.editorControllerEditors;
    if (at<uint8_t>(editors, layout.mapEditorsActive) != layout.editorTypeScripting) return false;
-   const auto& list = *reinterpret_cast<const MsvcVector<const std::byte* const>*>(editors + layout.mapEditorsList);
+   const auto& list = *reinterpret_cast<const stdabi::Vector<const std::byte* const>*>(editors + layout.mapEditorsList);
    for (const std::byte* const* editor = list.first; editor != list.last; ++editor) {
       if (agui::className(reinterpret_cast<const agui::Widget*>(*editor)) != "ScriptingEditor") continue;
       const auto& tools =
-         *reinterpret_cast<const MsvcVector<const std::byte* const>*>(*editor + layout.editorBaseTools);
+         *reinterpret_cast<const stdabi::Vector<const std::byte* const>*>(*editor + layout.editorBaseTools);
       const size_t active = at<uint8_t>(*editor, layout.editorBaseActiveTool);
       return active < static_cast<size_t>(tools.last - tools.first) &&
              tools.first[active] == at<const std::byte*>(*editor, layout.scriptingPositionTool);
@@ -211,31 +205,18 @@ bool detourProcessActions(void* source, const void* event, bool paused) {
    return g_processActionsOriginal(source, event, paused);
 }
 
-struct MsvcString {
-   union {
-      char buffer[16];
-      char* pointer;
-   };
-   size_t size;
-   size_t capacity;
-};
-
-std::string_view view(const MsvcString& string) {
-   return {string.capacity >= sizeof(string.buffer) ? string.pointer : string.buffer, string.size};
-}
-
 // The prototype an ID indexes in a PrototypeList<T>::indexToPrototype vector, or null.
 const std::byte* prototypeAt(uintptr_t list, size_t index) {
-   const auto& prototypes = *reinterpret_cast<const MsvcVector<const std::byte* const>*>(list);
+   const auto& prototypes = *reinterpret_cast<const stdabi::Vector<const std::byte* const>*>(list);
    return index < static_cast<size_t>(prototypes.last - prototypes.first) ? prototypes.first[index] : nullptr;
 }
 
-using LocalisedStr = const MsvcString* (*)(const void* localisedString, const void* localeProvider);
+using LocalisedStr = const stdabi::String* (*)(const void* localisedString, const void* localeProvider);
 
 std::string localisedName(const std::byte* prototype) {
-   const MsvcString* name =
+   const stdabi::String* name =
       reinterpret_cast<LocalisedStr>(layout.localisedStringStr)(prototype + layout.prototypeLocalisedName, nullptr);
-   return text::speakable(view(*name));
+   return text::speakable(name->view());
 }
 
 // An IDWithQuality's name as the game would label it: the quality first, unless it is normal.
@@ -244,35 +225,21 @@ std::string name(uintptr_t prototypes, const std::byte* id) {
    if (!prototype) return {};
    std::string said = localisedName(prototype);
    const std::byte* quality = prototypeAt(layout.qualityPrototypes, at<uint8_t>(id, layout.idWithQualityQuality));
-   if (quality && view(at<MsvcString>(quality, layout.prototypeName)) != "normal")
+   if (quality && at<stdabi::String>(quality, layout.prototypeName).view() != "normal")
       said = localisedName(quality) + " " + said;
    return said;
 }
 
-// The node of a std::map (MSVC): left, parent, right, colour, end marker, then the stored pair.
-struct TreeNode {
-   TreeNode* left;
-   TreeNode* parent;
-   TreeNode* right;
-   char colour;
-   char isNil;
-};
+const stdabi::Tree<void>& treeAt(const std::byte* map) { return *reinterpret_cast<const stdabi::Tree<void>*>(map); }
 
+// Calls visit(node) for every node of the std::map at `map`, in key order; the node's value is at
+// the PDB's _Myval offsets.
 template <class Visit>
 void forEachNode(const std::byte* map, Visit visit) {
-   auto* head = at<TreeNode*>(map, 0);
-   std::vector<const TreeNode*> pending{head->parent};
-   while (!pending.empty()) {
-      const TreeNode* node = pending.back();
-      pending.pop_back();
-      if (node->isNil) continue;
-      visit(reinterpret_cast<const std::byte*>(node));
-      pending.push_back(node->left);
-      pending.push_back(node->right);
-   }
+   for (const std::byte* node : treeAt(map)) visit(node);
 }
 
-bool empty(const std::byte* map) { return at<size_t>(map, sizeof(void*)) == 0; }
+bool empty(const std::byte* map) { return treeAt(map).empty(); }
 
 struct Line {
    uint32_t count;

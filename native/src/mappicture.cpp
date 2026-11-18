@@ -1,6 +1,7 @@
 #include "mappicture.h"
 
 #include "game.h"
+#include "stdabi.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -26,31 +27,13 @@ Function virtualAt(const void* object, uint32_t slot) {
    return reinterpret_cast<Function>(vtable[slot]);
 }
 
-struct MsvcString {
-   union {
-      char buffer[16];
-      const char* pointer;
-   };
-   size_t size;
-   size_t capacity;
-
-   std::string_view view() const { return {capacity >= sizeof(buffer) ? pointer : buffer, size}; }
-};
-
-template <class T>
-struct MsvcVector {
-   T* first;
-   T* last;
-   T* end;
-};
-
 const std::byte* utility() {
    const auto* context = *reinterpret_cast<const std::byte* const*>(layout.globalContext);
    return context ? at<const std::byte*>(context, layout.globalUtilityConstants) : nullptr;
 }
 
-const MsvcVector<const std::byte* const>& prototypes(uintptr_t list) {
-   return *reinterpret_cast<const MsvcVector<const std::byte* const>*>(list);
+const stdabi::Vector<const std::byte* const>& prototypes(uintptr_t list) {
+   return *reinterpret_cast<const stdabi::Vector<const std::byte* const>*>(list);
 }
 
 std::string_view typeName(const std::byte* prototype) {
@@ -60,7 +43,7 @@ std::string_view typeName(const std::byte* prototype) {
 bool hidden(const std::byte* prototype) { return at<bool>(prototype, layout.prototypeHidden); }
 
 std::string_view order(const std::byte* prototype) {
-   return reinterpret_cast<const MsvcString*>(prototype + layout.prototypeOrder)->view();
+   return reinterpret_cast<const stdabi::String*>(prototype + layout.prototypeOrder)->view();
 }
 
 // std::optional<ByteColor> as the prototypes keep it: the colour, then whether there is one.

@@ -1,6 +1,7 @@
 #include "bindings.h"
 
 #include "game.h"
+#include "stdabi.h"
 
 #include <cstddef>
 
@@ -14,26 +15,6 @@ template <class T>
 const T& at(const void* object, uint32_t offset) {
    return *reinterpret_cast<const T*>(static_cast<const std::byte*>(object) + offset);
 }
-
-struct MsvcString {
-   union {
-      char buffer[16];
-      const char* pointer;
-   };
-   size_t size;
-   size_t capacity;
-};
-
-std::string_view view(const MsvcString& string) {
-   return {string.capacity >= sizeof(string.buffer) ? string.pointer : string.buffer, string.size};
-}
-
-template <class T>
-struct MsvcVector {
-   T* first;
-   T* last;
-   T* end;
-};
 
 // SDL_Keycode SDL_GetKeyFromScancode(SDL_Scancode, SDL_Keymod, bool key_event)
 using KeyFromScancode = uint32_t (*)(uint32_t scancode, uint16_t modifiers, bool keyEvent);
@@ -50,10 +31,10 @@ std::vector<Key> customInput(std::string_view name) {
    auto* context = *reinterpret_cast<const std::byte* const*>(layout.globalContext);
    const std::byte* settings = context ? at<const std::byte*>(context, layout.globalControlSettings) : nullptr;
    if (!settings) return keys;
-   const auto& inputs = at<MsvcVector<const std::byte>>(settings, layout.customInputs);
+   const auto& inputs = at<stdabi::Vector<const std::byte>>(settings, layout.customInputs);
    for (const std::byte* input = inputs.first; input < inputs.last; input += layout.controlInputSize) {
       const std::byte* prototype = at<const std::byte*>(input, layout.controlInputPrototype);
-      if (!prototype || view(at<MsvcString>(prototype, layout.prototypeName)) != name) continue;
+      if (!prototype || at<stdabi::String>(prototype, layout.prototypeName).view() != name) continue;
       for (uint32_t binding : {layout.controlInputKey1, layout.controlInputKey2}) {
          const std::byte* value = input + binding;
          if (at<uint8_t>(value, layout.inputValueType) != layout.inputValueKeyboard) continue;

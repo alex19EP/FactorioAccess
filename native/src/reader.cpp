@@ -11,6 +11,7 @@
 #include "graph/GraphBuilder.hpp"
 #include "screens/AguiNodes.hpp"
 #include "speech.h"
+#include "stdabi.h"
 #include "text.h"
 #include "vocab.h"
 #include "world.h"
@@ -46,43 +47,6 @@ template <class Function>
 Function virtualAt(const void* object, uint32_t slot) {
    auto vtable = *static_cast<void* const* const*>(object);
    return reinterpret_cast<Function>(vtable[slot]);
-}
-
-struct MsvcString {
-   union {
-      char buffer[16];
-      char* pointer;
-   };
-   size_t size;
-   size_t capacity;
-
-   char* data() { return capacity >= sizeof(buffer) ? pointer : buffer; }
-   std::string_view view() const { return {capacity >= sizeof(buffer) ? pointer : buffer, size}; }
-};
-
-template <class T>
-struct MsvcVector {
-   T* first;
-   T* last;
-   T* end;
-};
-
-// A node of an MSVC std::set<std::string>; the set starts with its head node, whose parent is the
-// root.
-struct StringNode {
-   const StringNode* left;
-   const StringNode* parent;
-   const StringNode* right;
-   char color;
-   char isNil;
-   MsvcString value;
-};
-
-void collect(const StringNode* node, std::vector<std::string>& out) {
-   if (node->isNil) return;
-   collect(node->left, out);
-   out.push_back(text::speakable(node->value.view()));
-   collect(node->right, out);
 }
 
 // MapPosition and ChunkPosition: two ints.
@@ -133,13 +97,13 @@ const std::byte* currentGame() {
 }
 
 std::string localisedName(const std::byte* prototype) {
-   using Str = const MsvcString* (*)(const void* localisedString, const void* localeProvider);
+   using Str = const stdabi::String* (*)(const void* localisedString, const void* localeProvider);
    return text::speakable(
       reinterpret_cast<Str>(layout.localisedStringStr)(prototype + layout.prototypeLocalisedName, nullptr)->view());
 }
 
 const std::byte* prototypeAt(uintptr_t list, uint32_t id) {
-   const auto& prototypes = *reinterpret_cast<const MsvcVector<const std::byte*>*>(list);
+   const auto& prototypes = *reinterpret_cast<const stdabi::Vector<const std::byte*>*>(list);
    const size_t count = static_cast<size_t>(prototypes.last - prototypes.first);
    return id < count ? prototypes.first[id] : nullptr;
 }
@@ -338,7 +302,7 @@ bool isProblem(const std::byte* entity) {
 // a colour, which the reader does not say. Shortened in place, so the game's allocator keeps it.
 constexpr std::string_view kDiode = "[img=utility/status_";
 
-void dropDiode(MsvcString& label) {
+void dropDiode(stdabi::String& label) {
    const std::string_view text = label.view();
    if (!text.starts_with(kDiode)) return;
    size_t start = text.find(']');
@@ -363,7 +327,7 @@ bool contentsDrawn(const std::byte* entity) {
 bool amountDrawn(const std::byte* entity) {
    const std::byte* prototype = at<const std::byte*>(entity, layout.entityPrototypeOf);
    if (typeName(prototype) != "resource") return false;
-   const auto& counts = *reinterpret_cast<const MsvcVector<uint32_t>*>(prototype + layout.resourceStageCounts);
+   const auto& counts = *reinterpret_cast<const stdabi::Vector<uint32_t>*>(prototype + layout.resourceStageCounts);
    return counts.last - counts.first >= 2;
 }
 
@@ -390,7 +354,7 @@ void prune(const std::byte* entity, std::byte* description, bool chestContents) 
    const std::string amount = amountDrawn(entity) ? vocab::translate("description.amount", {}) : "";
    // A fluid's own temperature line ("Temperature: Steam").
    const std::string fluidTemperature = vocab::translate("description.fluid-temperature", {""});
-   auto& categories = *reinterpret_cast<MsvcVector<std::byte*>*>(description + layout.descriptionCategories);
+   auto& categories = *reinterpret_cast<stdabi::Vector<std::byte*>*>(description + layout.descriptionCategories);
    for (std::byte** category = categories.first; category < categories.last; ++category) {
       const uint32_t kind = at<uint32_t>(*category, layout.categoryKind);
       const bool dropAll = kind == layout.categoryDebug || kind == layout.categoryCraftingConditions ||
@@ -398,13 +362,13 @@ void prune(const std::byte* entity, std::byte* description, bool chestContents) 
       // Without a category, Description::fillCategory draws the lines with no heading
       // ("Consumes water", "Electric network").
       std::memcpy(*category + layout.categoryKind, &layout.categoryNone, sizeof(uint32_t));
-      auto& items = *reinterpret_cast<MsvcVector<std::byte*>*>(*category + layout.categoryProperties);
+      auto& items = *reinterpret_cast<stdabi::Vector<std::byte*>*>(*category + layout.categoryProperties);
       std::byte** kept = items.first;
       bool droppedLast = false;
       // The unlabelled lines after "Contents" or "Fuel" are its items.
       bool inContents = false;
       for (std::byte** item = items.first; item < items.last; ++item) {
-         auto& label = *reinterpret_cast<MsvcString*>(*item + layout.propertyLabel);
+         auto& label = *reinterpret_cast<stdabi::String*>(*item + layout.propertyLabel);
          std::string_view name = label.view();
          if (!name.empty() && name.back() == ':') name.remove_suffix(1);
          if (!name.empty()) inContents = name == contents || name == fuel;
@@ -448,7 +412,7 @@ void prune(const std::byte* entity, std::byte* description, bool chestContents) 
 
 // Empties a string of the description in place.
 void clear(std::byte* description, uint32_t offset) {
-   auto& string = *reinterpret_cast<MsvcString*>(description + offset);
+   auto& string = *reinterpret_cast<stdabi::String*>(description + offset);
    string.size = 0;
    string.data()[0] = '\0';
 }
@@ -508,11 +472,11 @@ std::vector<std::string> lines(const agui::Widget* panel, const std::vector<std:
 // words for a ghost, whose tooltip is its inner entity's.
 std::string nameOf(const std::byte* entity, const std::byte* description) {
    std::string name =
-      text::speakable(reinterpret_cast<const MsvcString*>(description + layout.descriptionName)->view());
+      text::speakable(reinterpret_cast<const stdabi::String*>(description + layout.descriptionName)->view());
    const uint8_t quality = at<uint8_t>(description, layout.descriptionQuality);
    const std::byte* qualityPrototype = quality ? prototypeAt(layout.qualityPrototypes, quality) : nullptr;
    if (qualityPrototype &&
-       reinterpret_cast<const MsvcString*>(qualityPrototype + layout.prototypeName)->view() != "normal")
+       reinterpret_cast<const stdabi::String*>(qualityPrototype + layout.prototypeName)->view() != "normal")
       name += " (" + localisedName(qualityPrototype) + ")";
    const std::byte* prototype = at<const std::byte*>(entity, layout.entityPrototypeOf);
    if (isArrow(entity)) return vocab::kIndicatedSpot;
@@ -544,8 +508,9 @@ std::string describe(const std::byte* player, const std::byte* entity, Position 
    if (!chestContents && scanner::isMarked(entity)) parts.emplace_back(vocab::kMarked);
    for (std::string& fact : facts::describe(entity, tile.x, tile.y)) parts.push_back(std::move(fact));
    std::vector<std::string> modLists;
-   const auto* head = *reinterpret_cast<const StringNode* const*>(description + layout.descriptionModLists);
-   collect(head->parent, modLists);
+   for (const stdabi::String& list :
+        *reinterpret_cast<const stdabi::Tree<stdabi::String>*>(description + layout.descriptionModLists))
+      modLists.push_back(text::speakable(list.view()));
    prune(entity, description, chestContents);
    clear(description, layout.descriptionName);
    clear(description, layout.descriptionText);

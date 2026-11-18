@@ -3,6 +3,7 @@
 #include "agui.h"
 #include "game.h"
 #include "log.h"
+#include "stdabi.h"
 #include "vocab.h"
 
 #include <windows.h>
@@ -43,10 +44,9 @@ const agui::Widget* checkboxFor(const std::byte* item) {
    const agui::Widget* window = agui::menuStateWindow();
    if (!window || !agui::derivesFrom(window, "OtherSettingsGui")) return nullptr;
    auto* gui = reinterpret_cast<std::byte*>(const_cast<agui::Widget*>(window));
-   // std::vector<std::unique_ptr<BoolGuiSetting>>: first and last.
-   auto* first = at<std::byte**>(gui, layout.otherSettingsBools);
-   auto* last = at<std::byte**>(gui, layout.otherSettingsBools + sizeof(void*));
-   for (std::byte** entry = first; entry != last; ++entry)
+   // std::vector<std::unique_ptr<BoolGuiSetting>>.
+   const auto& bools = at<stdabi::Vector<std::byte*>>(gui, layout.otherSettingsBools);
+   for (std::byte** entry = bools.first; entry != bools.last; ++entry)
       if (at<std::byte*>(*entry, layout.boolSettingItem) == item)
          return reinterpret_cast<const agui::Widget*>(*entry + layout.boolSettingWidget);
    return nullptr;

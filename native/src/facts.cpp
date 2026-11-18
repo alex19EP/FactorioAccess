@@ -5,6 +5,7 @@
 #include "game.h"
 #include "prototypes.h"
 #include "railkinds.h"
+#include "stdabi.h"
 #include "text.h"
 #include "undergroundrules.h"
 #include "vocab.h"
@@ -67,16 +68,8 @@ const std::byte* prototypeOf(const void* entity) { return at<const std::byte*>(e
 
 // A prototype's internal name ("nuclear-reactor"), as Lua's name reads it.
 std::string_view internalName(const std::byte* prototype) {
-   struct MsvcString {
-      union {
-         char buffer[16];
-         const char* pointer;
-      };
-      size_t size;
-      size_t capacity;
-   };
-   const auto& name = *reinterpret_cast<const MsvcString*>(prototype + layout.prototypeName);
-   return {name.capacity >= sizeof(name.buffer) ? name.pointer : name.buffer, name.size};
+   const auto& name = *reinterpret_cast<const stdabi::String*>(prototype + layout.prototypeName);
+   return name.view();
 }
 
 // Entity::usageBitMask bits of entities the Lua API never hands out, which belt_neighbours skips
@@ -430,28 +423,15 @@ uint16_t requiredFluid(const std::byte* box, const std::vector<PipeConnection>& 
 }
 
 const std::byte* prototypeAt(uintptr_t list, uint32_t id) {
-   struct Vector {
-      const std::byte* const* first;
-      const std::byte* const* last;
-      const std::byte* const* end;
-   };
-   const auto& prototypes = *reinterpret_cast<const Vector*>(list);
-   return id < static_cast<size_t>(prototypes.last - prototypes.first) ? prototypes.first[id] : nullptr;
+   const auto& prototypes = *reinterpret_cast<const stdabi::Vector<const std::byte* const>*>(list);
+   return id < prototypes.size() ? prototypes[id] : nullptr;
 }
 
 std::string localisedName(const std::byte* prototype) {
-   struct MsvcString {
-      union {
-         char buffer[16];
-         const char* pointer;
-      };
-      size_t size;
-      size_t capacity;
-   };
-   using Str = const MsvcString* (*)(const void* localisedString, const void* localeProvider);
-   const MsvcString* name =
+   using Str = const stdabi::String* (*)(const void* localisedString, const void* localeProvider);
+   const stdabi::String* name =
       reinterpret_cast<Str>(layout.localisedStringStr)(prototype + layout.prototypeLocalisedName, nullptr);
-   return text::speakable({name->capacity >= 16 ? name->pointer : name->buffer, name->size});
+   return text::speakable(name->view());
 }
 
 // A connection point on the tile, rolled up with the others that lead the same way to the same
@@ -1123,9 +1103,9 @@ std::string oreLook(const std::byte* resource) {
 // The first three filters, each an item and how many it keeps, the rest counted, and whether
 // the chest trashes the rest, as list items.
 std::vector<std::string> infinityChestState(const std::byte* chest) {
-   const auto* first = at<const std::byte*>(chest, layout.infinityChestFilters);
-   const auto* last = at<const std::byte*>(chest, layout.infinityChestFilters + sizeof(void*));
-   const size_t count = static_cast<size_t>(last - first) / layout.infinityFilterSize;
+   const auto filters = at<stdabi::Vector<const std::byte>>(chest, layout.infinityChestFilters);
+   const std::byte* first = filters.first;
+   const size_t count = filters.size() / layout.infinityFilterSize;
    std::vector<std::string> items;
    if (count > 0) items.emplace_back(vocab::kInfinityFilters);
    for (size_t i = 0; i < count && i < 3; ++i) {
@@ -1166,16 +1146,8 @@ uint8_t directionBiased(Position target, Position origin) {
 
 // The custom name, else the number, as the mod names a network.
 std::string networkName(const std::byte* network) {
-   struct MsvcString {
-      union {
-         char buffer[16];
-         const char* pointer;
-      };
-      size_t size;
-      size_t capacity;
-   };
-   const auto& name = *reinterpret_cast<const MsvcString*>(network + layout.logisticNetworkName);
-   const std::string_view custom{name.capacity >= sizeof(name.buffer) ? name.pointer : name.buffer, name.size};
+   const std::string_view custom =
+      reinterpret_cast<const stdabi::String*>(network + layout.logisticNetworkName)->view();
    if (!custom.empty()) return text::speakable(custom);
    return std::to_string(at<uint32_t>(network, layout.logisticNetworkId));
 }
@@ -1192,10 +1164,9 @@ std::string logisticNetwork(const std::byte* chest) {
    uint8_t forceId = 0;
    virtualAt<ForceId>(chest, layout.entityGetForceId)(chest, &forceId);
    const std::byte* force = at<const std::byte* const*>(map, layout.mapForceData)[forceId];
-   const auto* managers = at<const std::byte* const*>(force, layout.forceLogisticManagers);
-   const auto* managersEnd = at<const std::byte* const*>(force, layout.forceLogisticManagers + sizeof(void*));
+   const auto managers = at<stdabi::Vector<const std::byte* const>>(force, layout.forceLogisticManagers);
    const uint32_t index = at<uint32_t>(surface, layout.surfaceIndex);
-   const std::byte* manager = index < static_cast<size_t>(managersEnd - managers) ? managers[index] : nullptr;
+   const std::byte* manager = index < managers.size() ? managers[index] : nullptr;
    if (!manager) return vocab::kLogisticNoNetwork;
 
    const Position position = at<Position>(chest, layout.entityPosition);
@@ -1340,21 +1311,13 @@ std::string turretPriorities(const std::byte* turret) {
 
 // A combinator's description, as its player wrote it.
 std::string combinatorDescription(const std::byte* entity) {
-   struct MsvcString {
-      union {
-         char buffer[16];
-         const char* pointer;
-      };
-      size_t size;
-      size_t capacity;
-   };
    const std::byte* combinator = agui::objectAsBase(entity, ".?AVCombinator@@");
    const std::byte* constant = combinator ? nullptr : agui::objectAsBase(entity, ".?AVConstantCombinator@@");
    if (!combinator && !constant) return {};
    const auto& text = combinator
-                         ? *reinterpret_cast<const MsvcString*>(combinator + layout.combinatorDescription)
-                         : *reinterpret_cast<const MsvcString*>(constant + layout.constantCombinatorDescription);
-   return text::speakable({text.capacity >= sizeof(text.buffer) ? text.pointer : text.buffer, text.size});
+                         ? *reinterpret_cast<const stdabi::String*>(combinator + layout.combinatorDescription)
+                         : *reinterpret_cast<const stdabi::String*>(constant + layout.constantCombinatorDescription);
+   return text::speakable(text.view());
 }
 
 std::string signalState(const std::byte* entity, std::string_view type) {
@@ -1457,10 +1420,9 @@ std::vector<std::string> roboportState(const std::byte* roboport) {
    std::vector<std::string> items;
    if (const std::byte* network = at<const std::byte*>(cell, layout.cellNetwork))
       items.push_back(vocab::kRoboportNetwork(networkName(network)));
-   const auto* spots = at<const std::byte*>(cell, layout.cellChargingSpots);
-   const auto* spotsEnd = at<const std::byte*>(cell, layout.cellChargingSpots + sizeof(void*));
+   const auto spots = at<stdabi::Vector<const std::byte>>(cell, layout.cellChargingSpots);
    uint32_t charging = 0;
-   for (const std::byte* spot = spots; spot < spotsEnd; spot += layout.chargeSpotSize)
+   for (const std::byte* spot = spots.first; spot < spots.last; spot += layout.chargeSpotSize)
       if (at<const void*>(spot, layout.chargeSpotRobot)) ++charging;
    const std::byte* materials = roboport + layout.roboportMaterials;
    const auto* stacks = at<const std::byte*>(materials, layout.inventoryData);
@@ -1477,17 +1439,9 @@ std::vector<std::string> roboportState(const std::byte* roboport) {
 
 // An entity's backer name (a locomotive's, a train stop's), or nothing.
 std::string backerName(const std::byte* entity) {
-   struct MsvcString {
-      union {
-         char buffer[16];
-         const char* pointer;
-      };
-      size_t size;
-      size_t capacity;
-   };
-   const auto* name = virtualAt<const MsvcString* (*)(const void*)>(entity, layout.entityBackerName)(entity);
+   const auto* name = virtualAt<const stdabi::String* (*)(const void*)>(entity, layout.entityBackerName)(entity);
    if (!name) return {};
-   return text::speakable({name->capacity >= sizeof(name->buffer) ? name->pointer : name->buffer, name->size});
+   return text::speakable(name->view());
 }
 
 // Which of the eight ways a vehicle heads, as FaUtils.get_heading_value rounds its orientation.
@@ -1599,17 +1553,18 @@ std::vector<const std::byte*> filtersOf(const std::byte* entity) {
       for (uint8_t i = 0; i < at<uint8_t>(prototype, layout.drillFilterCount); ++i)
          add(layout.entityPrototypes, at<uint16_t>(drill, layout.drillFilters + i * uint32_t{sizeof(uint16_t)}));
    } else if (const std::byte* collector = agui::objectAsBase(entity, ".?AVAsteroidCollector@@")) {
-      const auto* first = at<const uint16_t*>(collector, layout.collectorFilters);
-      const auto* last = at<const uint16_t*>(collector, layout.collectorFilters + sizeof(void*));
-      for (const uint16_t* id = first; id != last; ++id) add(layout.asteroidChunkPrototypes, *id);
+      for (const uint16_t id : at<stdabi::Vector<const uint16_t>>(collector, layout.collectorFilters))
+         add(layout.asteroidChunkPrototypes, id);
    } else if (const std::byte* container = agui::objectAsBase(entity, ".?AVLogisticContainer@@")) {
       if (at<uint8_t>(prototype, layout.containerMode) != layout.containerModeStorage) return out;
       const std::byte* point = at<const std::byte*>(container, layout.containerLogisticPoint);
       if (!point) return out;
-      const auto* section = at<const std::byte*>(point, layout.pointSections);
-      if (section == at<const std::byte*>(point, layout.pointSections + sizeof(void*))) return out;
-      const auto* filter = at<const std::byte*>(section, layout.sectionFilters);
-      if (filter == at<const std::byte*>(section, layout.sectionFilters + sizeof(void*))) return out;
+      const auto sections = at<stdabi::Vector<const std::byte>>(point, layout.pointSections);
+      if (sections.empty()) return out;
+      const std::byte* section = sections.first;
+      const auto filters = at<stdabi::Vector<const std::byte>>(section, layout.sectionFilters);
+      if (filters.empty()) return out;
+      const std::byte* filter = filters.first;
       using SignalPrototype = const std::byte* (*)(const void* signal);
       if (const std::byte* filtered =
              reinterpret_cast<SignalPrototype>(layout.signalPrototype)(filter + layout.logisticFilterSignal))
@@ -1665,26 +1620,6 @@ bool isCraftingMachine(std::string_view type) {
 }
 
 // ---- what a blueprint's entity shows ----
-
-struct StdString {
-   union {
-      char buffer[16];
-      const char* pointer;
-   };
-   size_t size;
-   size_t capacity;
-};
-
-std::string_view viewOf(const StdString& string) {
-   return {string.capacity >= sizeof(string.buffer) ? string.pointer : string.buffer, string.size};
-}
-
-template <class T>
-struct StdVector {
-   T* first;
-   T* last;
-   T* end;
-};
 
 bool altModeIn(const void* renderParameters) {
    return renderParameters &&
@@ -1765,8 +1700,8 @@ void addAlwaysShown(std::vector<std::string>& parts, const std::byte* entity, bo
          operandName(parameters + layout.arithmeticFirst), operandName(parameters + layout.arithmeticSecond),
          signalName(parameters + layout.arithmeticOutput), signals);
    } else if (const std::byte* decider = agui::objectAsBase(entity, ".?AVDeciderCombinator@@")) {
-      const auto conditions = at<StdVector<const std::byte>>(decider, layout.deciderConditions);
-      const auto outputs = at<StdVector<const std::byte>>(decider, layout.deciderOutputs);
+      const auto conditions = at<stdabi::Vector<const std::byte>>(decider, layout.deciderConditions);
+      const auto outputs = at<stdabi::Vector<const std::byte>>(decider, layout.deciderOutputs);
       std::string output = outputs.first != outputs.last ? signalName(outputs.first + layout.deciderOutputSignal) : "";
       if (conditions.first != conditions.last) {
          const std::byte* condition = conditions.first;
@@ -1798,7 +1733,7 @@ void addAlwaysShown(std::vector<std::string>& parts, const std::byte* entity, bo
    } else if (const std::byte* panel = agui::objectAsBase(entity, ".?AVDisplayPanel@@")) {
       // Its icon is an info icon, said with the others.
       if (at<uint16_t>(entity, layout.entityUsageBits) & kPreviewBit) return;
-      std::string_view text = viewOf(at<StdString>(panel, layout.panelText));
+      std::string_view text = reinterpret_cast<const stdabi::String*>(panel + layout.panelText)->view();
       if (!selected) {
          if (!alt || !at<bool>(panel, layout.panelAlwaysShow)) return;
          text = text.substr(0, text.find('\n'));
@@ -1810,12 +1745,12 @@ void addAlwaysShown(std::vector<std::string>& parts, const std::byte* entity, bo
 // The items to be delivered to a blueprint's entity, which the blueprint marks on it, from its
 // BlueprintEntities::EntityData: "with 2 Speed module, 1 Coal".
 void addDeliveries(std::vector<std::string>& parts, const std::byte* data) {
-   const auto plan = at<StdVector<const std::byte>>(data, layout.entityDataInsertPlan);
+   const auto plan = at<stdabi::Vector<const std::byte>>(data, layout.entityDataInsertPlan);
    std::vector<std::string> items;
    for (const std::byte* pair = plan.first; pair < plan.last; pair += layout.insertPairSize) {
       const std::byte* positions = pair + layout.insertPairPositions;
       uint64_t count = at<uint32_t>(positions, layout.positionsGridCount);
-      const auto stacks = at<StdVector<const std::byte>>(positions, layout.positionsStacks);
+      const auto stacks = at<stdabi::Vector<const std::byte>>(positions, layout.positionsStacks);
       for (const std::byte* stack = stacks.first; stack < stacks.last; stack += layout.stackLocationSize)
          count += at<uint32_t>(stack, layout.stackLocationCount);
       items.push_back(std::format("{} {}", count, itemName(pair)));

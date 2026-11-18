@@ -3,6 +3,7 @@
 #include "agui.h"
 #include "game.h"
 #include "speech.h"
+#include "stdabi.h"
 
 #include <algorithm>
 #include <cstddef>
@@ -23,20 +24,6 @@ T at(const void* object, uint32_t offset) {
    return *reinterpret_cast<const T*>(static_cast<const std::byte*>(object) + offset);
 }
 
-// MSVC std::string: a 16-byte small buffer or a heap pointer, then size and capacity.
-struct MsvcString {
-   union {
-      char buffer[16];
-      const char* pointer;
-   };
-   size_t size;
-   size_t capacity;
-};
-
-std::string_view view(const MsvcString& string) {
-   return {string.capacity > 15 ? string.pointer : string.buffer, string.size};
-}
-
 // The button reads "New tip" and the tip's name; it is made only on this client, for its player.
 using TipButton = void* (*)(void* button, const void* item, void* context);
 TipButton g_tipOriginal = nullptr;
@@ -49,13 +36,13 @@ void* tipButton(void* button, const void* item, void* context) {
 
 // Made by SpeechBubble::updateGui for this client's player, when the bubble is on the surface
 // they look at; made again if they leave that surface and come back.
-using SpeechBubbleGui = void* (*)(void* gui, void* bubble, const MsvcString* text, void* gameView,
+using SpeechBubbleGui = void* (*)(void* gui, void* bubble, const stdabi::String* text, void* gameView,
                                   const void* wrapperStyle, void* bubbleStyle);
 SpeechBubbleGui g_speechBubbleOriginal = nullptr;
 
-void* speechBubbleGui(void* gui, void* bubble, const MsvcString* text, void* gameView, const void* wrapperStyle,
+void* speechBubbleGui(void* gui, void* bubble, const stdabi::String* text, void* gameView, const void* wrapperStyle,
                       void* bubbleStyle) {
-   speech::sayShown(view(*text));
+   speech::sayShown(text->view());
    return g_speechBubbleOriginal(gui, bubble, text, gameView, wrapperStyle, bubbleStyle);
 }
 
@@ -87,8 +74,8 @@ struct Shown {
 std::vector<Shown> g_shown;
 
 ptrdiff_t connectorBytes(const void* manager) {
-   const auto* vector = static_cast<const std::byte*>(manager) + layout.infoBoxManagerConnectors;
-   return at<const std::byte*>(vector, sizeof(void*)) - at<const std::byte*>(vector, 0);
+   const auto& connectors = at<stdabi::Vector<const std::byte>>(manager, layout.infoBoxManagerConnectors);
+   return connectors.last - connectors.first;
 }
 
 using InfoBoxesUpdate = void (*)(void* manager);

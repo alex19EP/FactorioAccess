@@ -13,6 +13,7 @@
 #include "scanner.h"
 #include "selectedinfo.h"
 #include "speech.h"
+#include "stdabi.h"
 #include "world.h"
 
 #include <algorithm>
@@ -108,15 +109,6 @@ constexpr int kNumber = 3;
 constexpr int kString = 4;
 constexpr int kTable = 5;
 
-struct MsvcString {
-   union {
-      char buffer[16];
-      const char* pointer;
-   };
-   size_t size;
-   size_t capacity;
-};
-
 // Translates the LocalisedString at `index` the way localised_print does, in the game's current
 // locale. A malformed string raises a Lua error before anything here needs destroying.
 std::string translate(lua_State* L, int index) {
@@ -131,9 +123,9 @@ std::string translate(lua_State* L, int index) {
       void* object;
       ~Destroy() { reinterpret_cast<void (*)(void*)>(layout.localisedStringDestroy)(object); }
    } destroy{localised};
-   using Str = const MsvcString* (*)(const void* localisedString, const void* localeProvider);
-   const MsvcString* text = reinterpret_cast<Str>(layout.localisedStringStr)(localised, nullptr);
-   return {text->capacity >= sizeof(text->buffer) ? text->pointer : text->buffer, text->size};
+   using Str = const stdabi::String* (*)(const void* localisedString, const void* localeProvider);
+   const stdabi::String* text = reinterpret_cast<Str>(layout.localisedStringStr)(localised, nullptr);
+   return std::string(text->view());
 }
 
 // Rich text tags the screen reader would read out as markup.

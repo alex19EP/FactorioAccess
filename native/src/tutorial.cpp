@@ -1,6 +1,7 @@
 #include "tutorial.h"
 
 #include "game.h"
+#include "stdabi.h"
 
 #include <cstddef>
 #include <string_view>
@@ -11,19 +12,6 @@ namespace fa::tutorial {
 namespace {
 
 using game::layout;
-
-struct MsvcString {
-   union {
-      char buffer[16];
-      const char* pointer;
-   };
-   size_t size;
-   size_t capacity;
-};
-
-std::string_view view(const MsvcString& string) {
-   return {string.capacity >= sizeof(string.buffer) ? string.pointer : string.buffer, string.size};
-}
 
 // std::vector<Mod*>, as the constructor reads it.
 struct ModList {
@@ -59,7 +47,7 @@ void* construct(void* self, const void* scriptPath, const void* packagePath, voi
 
    std::vector<const std::byte*> kept;
    for (const std::byte* const* mod = mods->first; mod != mods->last; ++mod) {
-      std::string_view name = view(*reinterpret_cast<const MsvcString*>(*mod + layout.modName));
+      std::string_view name = reinterpret_cast<const stdabi::String*>(*mod + layout.modName)->view();
       for (std::string_view wanted : kScriptMods)
          if (name == wanted) kept.push_back(*mod);
    }

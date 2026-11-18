@@ -3,6 +3,7 @@
 #include "game.h"
 #include "log.h"
 #include "prototypes.h"
+#include "stdabi.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -29,34 +30,9 @@ Function virtualAt(const void* object, uint32_t slot) {
    return reinterpret_cast<Function>(vtable[slot]);
 }
 
-struct MsvcString {
-   union {
-      char buffer[16];
-      const char* pointer;
-   };
-   size_t size;
-   size_t capacity;
-};
-
-std::string_view view(const MsvcString& string) {
-   return {string.capacity > 15 ? string.pointer : string.buffer, string.size};
-}
-
-template <class T>
-struct MsvcVector {
-   T* first;
-   T* last;
-   T* end;
-};
-
-// An MSVC std::map node holding a std::pair<const std::string, Sprite*>.
-struct SpriteNode {
-   const SpriteNode* left;
-   const SpriteNode* parent;
-   const SpriteNode* right;
-   char color;
-   char isNil;
-   MsvcString key;
+// The value of a std::map<std::string, Sprite*>.
+struct NamedSprite {
+   stdabi::String key;
    const void* sprite;
 };
 
@@ -73,22 +49,15 @@ std::string utilityName(const void* sprite) {
    const std::byte* sprites = utilitySprites();
    auto* address = static_cast<const std::byte*>(sprite);
    if (!sprites || address < sprites || address >= sprites + layout.utilitySpritesSize) return {};
-   const SpriteNode* head = at<const SpriteNode*>(sprites, layout.utilitySpritesMapping);
-   std::vector<const SpriteNode*> pending{head->parent};
-   while (!pending.empty()) {
-      const SpriteNode* node = pending.back();
-      pending.pop_back();
-      if (node->isNil) continue;
-      if (node->sprite == sprite) return std::string(view(node->key));
-      pending.push_back(node->left);
-      pending.push_back(node->right);
-   }
+   const auto& mapping = *reinterpret_cast<const stdabi::Tree<NamedSprite>*>(sprites + layout.utilitySpritesMapping);
+   for (const NamedSprite& named : mapping)
+      if (named.sprite == sprite) return std::string(named.key.view());
    return {};
 }
 
 const std::byte* qualityPrototype(uint8_t index) {
-   const auto& list = *reinterpret_cast<const MsvcVector<const std::byte* const>*>(layout.qualityPrototypes);
-   return index < static_cast<size_t>(list.last - list.first) ? list.first[index] : nullptr;
+   const auto& list = *reinterpret_cast<const stdabi::Vector<const std::byte* const>*>(layout.qualityPrototypes);
+   return index < list.size() ? list[index] : nullptr;
 }
 
 // The quality badge drawQualityPartOfInfoIcon draws beside an icon.
@@ -207,7 +176,7 @@ size_t queued(const std::byte* queue) {
       count += seenSprites(queue + offset);
    count += seenSprites(queue + layout.drawQueueCorpses);
    for (uint32_t others : {layout.drawQueueOthers, layout.drawQueueOthersUnder, layout.drawQueueOthersAbove}) {
-      const auto orders = at<MsvcVector<const void*>>(queue, others);
+      const auto orders = at<stdabi::Vector<const void*>>(queue, others);
       count += static_cast<size_t>(orders.last - orders.first);
    }
    return count;

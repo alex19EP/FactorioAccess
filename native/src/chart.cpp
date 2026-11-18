@@ -2,6 +2,7 @@
 
 #include "game.h"
 #include "speech.h"
+#include "stdabi.h"
 #include "text.h"
 #include "vocab.h"
 #include "world.h"
@@ -26,26 +27,10 @@ T at(const void* object, uint32_t offset) {
    return value;
 }
 
-struct MsvcString {
-   union {
-      char buffer[16];
-      char* pointer;
-   };
-   size_t size;
-   size_t capacity;
-};
-
-std::string_view view(const MsvcString& string) {
-   return {string.capacity >= sizeof(string.buffer) ? string.pointer : string.buffer, string.size};
-}
-
 // Frees what a std::string the game returned holds, as its own destructor does: through the game's
-// allocator, which keeps the true start of a large block just before it.
-void destroy(MsvcString& string) {
-   if (string.capacity < sizeof(string.buffer)) return;
-   void* block = string.pointer;
-   if (string.capacity + 1 >= 0x1000) block = reinterpret_cast<void**>(block)[-1];
-   reinterpret_cast<void (*)(void*)>(layout.gameOperatorDelete)(block);
+// allocator.
+void destroy(stdabi::String& string) {
+   if (void* block = string.allocation()) reinterpret_cast<void (*)(void*)>(layout.gameOperatorDelete)(block);
 }
 
 const std::byte* currentGame() {
@@ -72,20 +57,20 @@ const std::byte* sourcePlayer(const std::byte* source) {
    return at<const std::byte*>(source, layout.inputSourcePlayer);
 }
 
-using LocalisedStr = const MsvcString* (*)(const void* localisedString, const void* localeProvider);
+using LocalisedStr = const stdabi::String* (*)(const void* localisedString, const void* localeProvider);
 
 std::string prototypeName(const std::byte* prototype) {
-   const MsvcString* name =
+   const stdabi::String* name =
       reinterpret_cast<LocalisedStr>(layout.localisedStringStr)(prototype + layout.prototypeLocalisedName, nullptr);
-   return text::speakable(view(*name));
+   return text::speakable(name->view());
 }
 
 using SelectionFunction = void* (*)(const void* source, std::byte* out);
 using PatchConstructFunction = void* (*)(void* info, bool useClockLimiter);
 using PatchDestroyFunction = void (*)(void* info);
 using PatchUpdateFunction = bool (*)(void* info, const void* resource, const void* force, bool keepIfUnchanged);
-using FormattedNameFunction = MsvcString* (*)(MsvcString* out, const void* material, double amount,
-                                              const void* prototype);
+using FormattedNameFunction = stdabi::String* (*)(stdabi::String* out, const void* material, double amount,
+                                                  const void* prototype);
 
 // The patch finder, kept across frames so that pointing again into the same patch costs nothing.
 // It belongs to the game it was made in.
@@ -100,42 +85,22 @@ void* patchInfo(const std::byte* game) {
    return g_patchInfo;
 }
 
-// The node of a std::map (MSVC): left, parent, right, colour, end marker, then the value.
-struct TreeNode {
-   TreeNode* left;
-   TreeNode* parent;
-   TreeNode* right;
-   char colour;
-   char isNil;
-};
-constexpr uint32_t kTreeValue = 0x20;
-
-TreeNode* nextNode(TreeNode* node) {
-   if (!node->right->isNil) {
-      node = node->right;
-      while (!node->left->isNil) node = node->left;
-      return node;
-   }
-   TreeNode* parent = node->parent;
-   while (!parent->isNil && node == parent->right) {
-      node = parent;
-      parent = parent->parent;
-   }
-   return parent;
-}
+// The counts map's value, a std::pair<MaterialID, double>: the double aligns it. MaterialID's size
+// comes from the PDB.
+constexpr uint32_t kTreeValue = stdabi::treeValueOffset<double>();
 
 std::string labelOf(const void* info, const std::byte* resource) {
    const void* prototype = at<const void*>(info, layout.patchInfoPrototype);
-   auto* head = at<TreeNode*>(info, layout.patchInfoCounts);
+   const auto& counts =
+      *reinterpret_cast<const stdabi::Tree<void>*>(static_cast<const std::byte*>(info) + layout.patchInfoCounts);
    std::string label;
    const uint32_t amountOffset = kTreeValue + (layout.materialIdSize + 7) / 8 * 8;
-   for (TreeNode* node = head->left; node != head; node = nextNode(node)) {
-      const auto* bytes = reinterpret_cast<const std::byte*>(node);
-      MsvcString line{};
+   for (const std::byte* bytes : counts) {
+      stdabi::String line{};
       reinterpret_cast<FormattedNameFunction>(layout.patchFormattedName)(&line, bytes + kTreeValue,
                                                                          at<double>(bytes, amountOffset), prototype);
       if (!label.empty()) label += ", ";
-      label += text::speakable(view(line));
+      label += text::speakable(line.view());
       destroy(line);
    }
    if (label.empty()) label = prototypeName(at<const std::byte*>(resource, layout.entityPrototypeOf));
@@ -154,7 +119,7 @@ std::string describePatch(const std::byte* player, const std::byte* resource) {
 
 std::string describe(const std::byte* player, const std::byte* selection) {
    if (const auto* tag = at<const std::byte*>(selection, layout.chartSelectionTag)) {
-      std::string text = text::speakable(view(at<MsvcString>(tag, layout.chartTagText)));
+      std::string text = text::speakable(at<stdabi::String>(tag, layout.chartTagText).view());
       return text.empty() ? std::string(vocab::kMapTag) : text + ", " + std::string(vocab::kMapTag);
    }
    if (const auto* target = at<const std::byte*>(selection, layout.chartSelectionTarget))

@@ -7,6 +7,7 @@
 #include "game.h"
 #include "highlights.h"
 #include "railplanner.h"
+#include "stdabi.h"
 #include "text.h"
 #include "vocab.h"
 #include "zoom.h"
@@ -241,24 +242,8 @@ struct TileSize {
 };
 using TileGridSizeFunction = TileSize* (*)(const void* prototype, TileSize* out, uint8_t direction);
 
-struct MsvcString {
-   union {
-      char buffer[16];
-      const char* pointer;
-   };
-   size_t size;
-   size_t capacity;
-};
-
-template <class T>
-struct MsvcVector {
-   T* first;
-   T* last;
-   T* end;
-};
-
 const std::byte* entityPrototype(uint16_t index) {
-   const auto& prototypes = *reinterpret_cast<const MsvcVector<const std::byte* const>*>(layout.entityPrototypes);
+   const auto& prototypes = *reinterpret_cast<const stdabi::Vector<const std::byte* const>*>(layout.entityPrototypes);
    return index < static_cast<size_t>(prototypes.last - prototypes.first) ? prototypes.first[index] : nullptr;
 }
 
@@ -556,7 +541,7 @@ using BuildCheckDataFunction = void* (*)(const void* settings, std::byte* out);
 using BuildabilityCheckFunction = void* (*)(const void* adapter, std::byte* out, const void* entity,
                                             const std::byte* data);
 using BuildCheckMessageFunction = void* (*)(const std::byte* result, std::byte* out);
-using LocalisedStr = const MsvcString* (*)(const void* localisedString, const void* localeProvider);
+using LocalisedStr = const stdabi::String* (*)(const void* localisedString, const void* localeProvider);
 
 // The text of a LocalisedString in the game's current locale, as the screen reader should read it;
 // destroys the string.
@@ -565,8 +550,8 @@ std::string takeSpeakable(void* localised) {
       void* object;
       ~Destroy() { reinterpret_cast<void (*)(void*)>(layout.localisedStringDestroy)(object); }
    } destroy{localised};
-   const MsvcString* text = reinterpret_cast<LocalisedStr>(layout.localisedStringStr)(localised, nullptr);
-   return text::speakable({text->capacity >= sizeof(text->buffer) ? text->pointer : text->buffer, text->size});
+   const stdabi::String* text = reinterpret_cast<LocalisedStr>(layout.localisedStringStr)(localised, nullptr);
+   return text::speakable(text->view());
 }
 
 using EntitySelectorFunction = const std::byte* (*)(const void* adapter);
@@ -652,12 +637,7 @@ bool g_blueprintTilesMade = false;
 
 template <class Visit>
 void eachBlueprintEntity(Visit&& visit) {
-   struct Vector {
-      const std::byte* first;
-      const std::byte* last;
-      const std::byte* end;
-   };
-   const auto data = at<Vector>(t_blueprintEntities, layout.blueprintEntitiesData);
+   const auto data = at<stdabi::Vector<const std::byte>>(t_blueprintEntities, layout.blueprintEntitiesData);
    for (const std::byte* entry = data.first; entry < data.last; entry += layout.entityDataSize)
       if (visit(entry, at<const void*>(entry, layout.entityDataEntity))) return;
 }
@@ -797,10 +777,10 @@ void addDetails(footprint::Piece& piece, const void* settings, const void* drawQ
 // and for a blueprint's piece while the build is pinned what else is drawn of it.
 footprint::Piece pieceOf(const void* settings, const void* drawQueue, const void* entity) {
    const std::byte* prototype = at<const std::byte*>(entity, layout.entityPrototypeOf);
-   const MsvcString* name =
+   const stdabi::String* name =
       reinterpret_cast<LocalisedStr>(layout.localisedStringStr)(prototype + layout.prototypeLocalisedName, nullptr);
    footprint::Piece piece{};
-   piece.name = text::speakable({name->capacity >= sizeof(name->buffer) ? name->pointer : name->buffer, name->size});
+   piece.name = text::speakable(name->view());
    piece.direction = -1;
    if (virtualAt<bool (*)(const void*)>(entity, layout.entityHasDirection)(entity)) {
       uint8_t direction = 0;
@@ -893,10 +873,10 @@ void detourDrawTile(const void* check, TilePosition tile, const void* placeAsTil
                     const void* adapter) {
    if (footprint::gathering()) {
       const auto* tilePrototype = static_cast<const std::byte*>(prototype);
-      const MsvcString* name = reinterpret_cast<LocalisedStr>(layout.localisedStringStr)(
+      const stdabi::String* name = reinterpret_cast<LocalisedStr>(layout.localisedStringStr)(
          tilePrototype + layout.prototypeLocalisedName, nullptr);
       footprint::Piece piece{};
-      piece.name = text::speakable({name->capacity >= sizeof(name->buffer) ? name->pointer : name->buffer, name->size});
+      piece.name = text::speakable(name->view());
       piece.direction = -1;
       piece.left = piece.right = tile.x;
       piece.top = piece.bottom = tile.y;

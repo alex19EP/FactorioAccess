@@ -3,6 +3,7 @@
 #include "game.h"
 #include "reader.h"
 #include "speech.h"
+#include "stdabi.h"
 #include "text.h"
 #include "vocab.h"
 #include "world.h"
@@ -36,26 +37,6 @@ T at(const void* object, uint32_t offset) {
    T value;
    std::memcpy(&value, static_cast<const std::byte*>(object) + offset, sizeof(value));
    return value;
-}
-
-template <class T>
-struct MsvcVector {
-   T* first;
-   T* last;
-   T* end;
-};
-
-struct MsvcString {
-   union {
-      char buffer[16];
-      char* pointer;
-   };
-   size_t size;
-   size_t capacity;
-};
-
-std::string_view view(const MsvcString& string) {
-   return {string.capacity >= sizeof(string.buffer) ? string.pointer : string.buffer, string.size};
 }
 
 // A RailLocation: where a rail end is, which way it leads and on which layer.
@@ -160,7 +141,7 @@ void publish(std::optional<Route> route) {
 
 // The prototype an ID indexes in a PrototypeList<T>::indexToPrototype vector, or null.
 const std::byte* prototypeAt(uintptr_t list, size_t index) {
-   const auto& prototypes = *reinterpret_cast<const MsvcVector<const std::byte* const>*>(list);
+   const auto& prototypes = *reinterpret_cast<const stdabi::Vector<const std::byte* const>*>(list);
    return index < static_cast<size_t>(prototypes.last - prototypes.first) ? prototypes.first[index] : nullptr;
 }
 
@@ -196,12 +177,12 @@ Route walk(const Location& start, const std::vector<Placed>& rails) {
    return route;
 }
 
-using LocalisedStr = const MsvcString* (*)(const void* localisedString, const void* localeProvider);
+using LocalisedStr = const stdabi::String* (*)(const void* localisedString, const void* localeProvider);
 
 std::string localisedName(const std::byte* prototype) {
-   const MsvcString* name =
+   const stdabi::String* name =
       reinterpret_cast<LocalisedStr>(layout.localisedStringStr)(prototype + layout.prototypeLocalisedName, nullptr);
-   return text::speakable(view(*name));
+   return text::speakable(name->view());
 }
 
 // "Rail x 12", as the mod says an item and its count.
@@ -209,36 +190,19 @@ std::string countText(const Count& count) {
    const std::byte* item = prototypeAt(layout.itemPrototypes, count.item);
    if (!item) return {};
    const std::byte* quality = prototypeAt(layout.qualityPrototypes, count.quality);
-   const bool hasQuality = quality && view(at<MsvcString>(quality, layout.prototypeName)) != "normal";
+   const bool hasQuality = quality && at<stdabi::String>(quality, layout.prototypeName).view() != "normal";
    return vocab::kItemQuantityQuality(localisedName(item), hasQuality ? 1 : 0,
                                       hasQuality ? localisedName(quality) : std::string(), count.count > 1 ? 1 : 0,
                                       count.count);
 }
 
-// The node of a std::map (MSVC): left, parent, right, colour, end marker, then the stored pair.
-struct TreeNode {
-   TreeNode* left;
-   TreeNode* parent;
-   TreeNode* right;
-   char colour;
-   char isNil;
-};
-
-// The entries of a std::map<IDWithQuality<ID<ItemPrototype>>, unsigned>.
+// The entries of a std::map<IDWithQuality<ID<ItemPrototype>>, unsigned>, in key order.
 std::vector<Count> readCounts(const void* map) {
    std::vector<Count> counts;
-   auto* head = at<const TreeNode*>(map, 0);
-   std::vector<const TreeNode*> pending{head->parent};
-   while (!pending.empty()) {
-      const TreeNode* node = pending.back();
-      pending.pop_back();
-      if (node->isNil) continue;
-      const auto* self = reinterpret_cast<const std::byte*>(node);
+   for (const std::byte* self : *static_cast<const stdabi::Tree<void>*>(map)) {
       const std::byte* id = self + layout.countNodeId;
       counts.push_back({at<uint16_t>(id, layout.idWithQualityBase), at<uint8_t>(id, layout.idWithQualityQuality),
                         at<uint32_t>(self, layout.countNodeCount)});
-      pending.push_back(node->left);
-      pending.push_back(node->right);
    }
    std::stable_sort(counts.begin(), counts.end(), [](const Count& a, const Count& b) { return a.count > b.count; });
    return counts;
@@ -419,7 +383,7 @@ void* detourBestSolution(void* finder, void* plan) {
       const auto* self = static_cast<const std::byte*>(result);
       t_drawn->planned = true;
       t_drawn->planStart = location(self + layout.railBuildPlanStart);
-      const auto& rails = at<MsvcVector<const std::byte>>(self, layout.railBuildPlanRails);
+      const auto& rails = at<stdabi::Vector<const std::byte>>(self, layout.railBuildPlanRails);
       t_drawn->rails.clear();
       for (const std::byte* rail = rails.first; rail < rails.last; rail += layout.locatedEntitySize)
          t_drawn->rails.push_back(

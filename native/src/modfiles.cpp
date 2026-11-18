@@ -2,6 +2,7 @@
 
 #include "game.h"
 #include "log.h"
+#include "stdabi.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -17,16 +18,6 @@ Function virtualAt(const void* object, uint32_t slot) {
    return (*reinterpret_cast<Function* const*>(object))[slot];
 }
 
-// MSVC std::wstring: an 8-wchar small buffer or a heap pointer, then size and capacity.
-struct MsvcWString {
-   union {
-      wchar_t buffer[8];
-      wchar_t* pointer;
-   };
-   size_t size;
-   size_t capacity;
-};
-
 // A PackagePath the game built in our storage. Its Filesystem::Path is a std::wstring the game
 // allocated, so the game's operator delete frees it.
 struct PackagePath {
@@ -35,8 +26,8 @@ struct PackagePath {
 
    ~PackagePath() {
       if (!built) return;
-      auto* path = reinterpret_cast<MsvcWString*>(storage + layout.packagePathPath);
-      if (path->capacity < std::size(path->buffer)) return;
+      auto* path = reinterpret_cast<stdabi::WString*>(storage + layout.packagePathPath);
+      if (!path->onHeap()) return;
       const size_t bytes = (path->capacity + 1) * sizeof(wchar_t);
       // MSVC over-aligns blocks of 4 KiB and more and frees them from a shifted pointer; no path
       // is that long.

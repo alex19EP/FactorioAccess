@@ -2,6 +2,7 @@
 
 #include "game.h"
 #include "speech.h"
+#include "stdabi.h"
 
 #include <cstddef>
 #include <string>
@@ -16,20 +17,6 @@ using game::layout;
 template <class T>
 T at(const void* object, uint32_t offset) {
    return *reinterpret_cast<const T*>(static_cast<const std::byte*>(object) + offset);
-}
-
-// MSVC std::string: a 16-byte small buffer or a heap pointer, then size and capacity.
-struct MsvcString {
-   union {
-      char buffer[16];
-      const char* pointer;
-   };
-   size_t size;
-   size_t capacity;
-};
-
-std::string_view view(const MsvcString& string) {
-   return {string.capacity > 15 ? string.pointer : string.buffer, string.size};
 }
 
 // Every player has a console, and every client keeps them all; only this client's player's is
@@ -48,11 +35,11 @@ const void* newest(const void* console, uint32_t list) { return at<const void*>(
 // void OutputConsole::add(std::string const& playerName, Color, LocalisedString const& body,
 // Player const* speaker, PrintSettings const&, std::vector<SavedSpecialItemReference>&&). Color
 // is 16 bytes, so x64 passes it by address.
-using Add = void (*)(void* console, const MsvcString* playerName, const void* color, const void* body,
+using Add = void (*)(void* console, const stdabi::String* playerName, const void* color, const void* body,
                      const void* speaker, const void* settings, void* specialItems);
 Add g_original = nullptr;
 
-void add(void* console, const MsvcString* playerName, const void* color, const void* body, const void* speaker,
+void add(void* console, const stdabi::String* playerName, const void* color, const void* body, const void* speaker,
          const void* settings, void* specialItems) {
    if (!isLocalConsole(console)) {
       g_original(console, playerName, color, body, speaker, settings, specialItems);
@@ -60,9 +47,9 @@ void add(void* console, const MsvcString* playerName, const void* color, const v
    }
    // Shown as the speaker's name, if any, then the body ("Alex" ": hello"). Translated before the
    // call, while the caller still owns the body; once added, the renderer reads the line too.
-   using Str = const MsvcString* (*)(const void* localisedString, const void* localeProvider);
-   std::string line(view(*playerName));
-   line += view(*reinterpret_cast<Str>(layout.localisedStringStr)(body, nullptr));
+   using Str = const stdabi::String* (*)(const void* localisedString, const void* localeProvider);
+   std::string line(playerName->view());
+   line += reinterpret_cast<Str>(layout.localisedStringStr)(body, nullptr)->view();
    const void* before = newest(console, layout.outputConsoleItems);
    const void* beforeNotSaved = newest(console, layout.outputConsoleItemsNotSaved);
    g_original(console, playerName, color, body, speaker, settings, specialItems);

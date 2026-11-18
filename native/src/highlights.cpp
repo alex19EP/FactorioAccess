@@ -6,6 +6,7 @@
 #include "game.h"
 #include "log.h"
 #include "speech.h"
+#include "stdabi.h"
 #include "text.h"
 #include "vocab.h"
 
@@ -66,22 +67,6 @@ Tiles tilesOf(const Box& box) {
    const int32_t left = box.leftTop.x >> 8, top = box.leftTop.y >> 8;
    return {left, top, std::max(left, (box.rightBottom.x - 1) >> 8), std::max(top, (box.rightBottom.y - 1) >> 8)};
 }
-
-struct MsvcString {
-   union {
-      char buffer[16];
-      const char* pointer;
-   };
-   size_t size;
-   size_t capacity;
-};
-
-template <class T>
-struct MsvcVector {
-   T* first;
-   T* last;
-   T* end;
-};
 
 // What a highlight says about its entity, in the order they are said.
 enum class Kind { Replaces, Removes, Turns, Changes, Keeps, Pair, Power, Wire, Covers, WorksWith, Link, Other };
@@ -160,13 +145,13 @@ std::optional<Report> g_pending;
 // Set on the thread drawing the roboport lines while a report waits for them.
 thread_local Report* t_lines = nullptr;
 
-using LocalisedStr = const MsvcString* (*)(const void* localisedString, const void* localeProvider);
+using LocalisedStr = const stdabi::String* (*)(const void* localisedString, const void* localeProvider);
 
 std::string entityName(const std::byte* entity) {
    const std::byte* prototype = at<const std::byte*>(entity, layout.entityPrototypeOf);
-   const MsvcString* name =
+   const stdabi::String* name =
       reinterpret_cast<LocalisedStr>(layout.localisedStringStr)(prototype + layout.prototypeLocalisedName, nullptr);
-   return {name->capacity >= sizeof(name->buffer) ? name->pointer : name->buffer, name->size};
+   return std::string(name->view());
 }
 
 Position entityPosition(const std::byte* entity) { return at<Position>(entity, layout.entityPosition); }
@@ -468,8 +453,7 @@ FindMatchingNetworkFunction g_findMatchingNetworkOriginal = nullptr;
 
 // The custom name, else the number, as the mod names a network.
 std::string networkName(const std::byte* network) {
-   const auto& name = *reinterpret_cast<const MsvcString*>(network + layout.logisticNetworkName);
-   std::string_view custom{name.capacity >= sizeof(name.buffer) ? name.pointer : name.buffer, name.size};
+   std::string_view custom = reinterpret_cast<const stdabi::String*>(network + layout.logisticNetworkName)->view();
    if (!custom.empty()) return text::speakable(custom);
    return std::to_string(at<uint32_t>(network, layout.logisticNetworkId));
 }
@@ -571,7 +555,7 @@ void preview(const void* settings, const void* entity, std::string meaning, bool
    }
 
    // The wires a pole would get, to each pole once.
-   const auto& wires = at<MsvcVector<const std::byte>>(settings, layout.settingsAddedWires);
+   const auto& wires = at<stdabi::Vector<const std::byte>>(settings, layout.settingsAddedWires);
    for (const std::byte* wire = wires.first; wire < wires.last; wire += layout.wireSize) {
       const std::byte* source = at<const std::byte*>(wire, layout.wireSource);
       const std::byte* target = at<const std::byte*>(wire, layout.wireTarget);

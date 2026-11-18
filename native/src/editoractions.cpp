@@ -4,6 +4,7 @@
 #include "game.h"
 #include "reader.h"
 #include "speech.h"
+#include "stdabi.h"
 #include "text.h"
 #include "vocab.h"
 
@@ -28,37 +29,11 @@ T at(const void* object, uint32_t offset) {
    return value;
 }
 
-// MSVC std::string: a 16-byte small buffer or a heap pointer, then size and capacity.
-struct MsvcString {
-   union {
-      char buffer[16];
-      char* pointer;
-   };
-   size_t size;
-   size_t capacity;
-};
-
-std::string_view view(const MsvcString& string) {
-   return {string.capacity >= sizeof(string.buffer) ? string.pointer : string.buffer, string.size};
-}
-
 // Frees what a std::string the game returned holds, as its own destructor does: through the game's
-// allocator, which keeps the true start of a large block just before it.
-void destroy(MsvcString& string) {
-   if (string.capacity < sizeof(string.buffer)) return;
-   void* block = string.pointer;
-   if (string.capacity + 1 >= 0x1000) block = reinterpret_cast<void**>(block)[-1];
-   reinterpret_cast<void (*)(void*)>(layout.gameOperatorDelete)(block);
+// allocator.
+void destroy(stdabi::String& string) {
+   if (void* block = string.allocation()) reinterpret_cast<void (*)(void*)>(layout.gameOperatorDelete)(block);
 }
-
-// An MSVC std::map node: the links, then the stored pair at an offset the PDB gives.
-struct MapNode {
-   const MapNode* left;
-   const MapNode* parent;
-   const MapNode* right;
-   char color;
-   char isNil;
-};
 
 const std::byte* localPlayer() {
    auto* context = *reinterpret_cast<const std::byte* const*>(layout.globalContext);
@@ -72,9 +47,9 @@ std::string speedLine(const std::byte* map) {
    const auto* speed = at<const std::byte*>(map, layout.mapGameSpeed);
    const auto* paused = at<const std::byte*>(map, layout.mapPausedState);
    if (!speed || !paused) return {};
-   MsvcString shown{};
-   reinterpret_cast<MsvcString* (*)(const void*, MsvcString*)>(layout.gameSpeedStr)(speed, &shown);
-   std::string line(view(shown));
+   stdabi::String shown{};
+   reinterpret_cast<stdabi::String* (*)(const void*, stdabi::String*)>(layout.gameSpeedStr)(speed, &shown);
+   std::string line(shown.view());
    destroy(shown);
    if (at<bool>(paused, layout.pausedSetting)) line += " " + std::string(vocab::kEditorPaused);
    return text::speakable(line);
@@ -83,14 +58,13 @@ std::string speedLine(const std::byte* map) {
 // The surface named `name` as the Surfaces editor lists it: "nauvis (Nauvis)", with the planet's
 // icon, or the name alone when the display name is the same.
 std::string surfaceLine(const std::byte* map, std::string_view name) {
-   const auto* first = at<const std::byte* const*>(map, layout.mapSurfaces);
-   const auto* last = at<const std::byte* const*>(map, layout.mapSurfaces + sizeof(void*));
-   for (const std::byte* const* surface = first; surface != last; ++surface) {
-      if (!*surface || view(at<MsvcString>(*surface, layout.surfaceName)) != name) continue;
-      MsvcString shown{};
-      reinterpret_cast<MsvcString* (*)(const void*, MsvcString*)>(layout.surfaceDisplayName)(*surface, &shown);
+   const auto surfaces = at<stdabi::Vector<const std::byte* const>>(map, layout.mapSurfaces);
+   for (const std::byte* const* surface = surfaces.begin(); surface != surfaces.end(); ++surface) {
+      if (!*surface || at<stdabi::String>(*surface, layout.surfaceName).view() != name) continue;
+      stdabi::String shown{};
+      reinterpret_cast<stdabi::String* (*)(const void*, stdabi::String*)>(layout.surfaceDisplayName)(*surface, &shown);
       std::string line(name);
-      if (view(shown) != name) line += " (" + std::string(view(shown)) + ")";
+      if (shown.view() != name) line += " (" + std::string(shown.view()) + ")";
       destroy(shown);
       return text::speakable(line);
    }
@@ -103,25 +77,19 @@ std::vector<const std::byte*> scriptObjects(const std::byte* map, bool areas, ui
    if (!data) return {};
    const uint32_t keyOffset = areas ? layout.scriptRectangleNodeValue : layout.scriptPositionNodeValue;
    const uint32_t vectorOffset = areas ? layout.scriptRectangleNodeVector : layout.scriptPositionNodeVector;
-   const auto* head = at<const MapNode*>(data + (areas ? layout.scriptRectangles : layout.scriptPositions), 0);
+   const auto& bySurface =
+      *reinterpret_cast<const stdabi::Tree<void>*>(data + (areas ? layout.scriptRectangles : layout.scriptPositions));
    std::vector<const std::byte*> found;
-   std::vector<const MapNode*> pending{head->parent};
-   while (!pending.empty()) {
-      const MapNode* node = pending.back();
-      pending.pop_back();
-      if (node->isNil) continue;
-      pending.push_back(node->left);
-      pending.push_back(node->right);
+   for (const std::byte* node : bySurface) {
       if (at<uint32_t>(node, keyOffset) != surface) continue;
-      const auto* first = at<const std::byte* const*>(node, vectorOffset);
-      const auto* last = at<const std::byte* const*>(node, vectorOffset + sizeof(void*));
-      found.insert(found.end(), first, last);
+      const auto objects = at<stdabi::Vector<const std::byte* const>>(node, vectorOffset);
+      found.insert(found.end(), objects.begin(), objects.end());
    }
    return found;
 }
 
 std::string scriptName(const std::byte* object) {
-   return text::speakable(view(at<MsvcString>(object, layout.scriptDataName)));
+   return text::speakable(at<stdabi::String>(object, layout.scriptDataName).view());
 }
 
 // The name of the scripting area or position `id` on `surface`; nothing when it has none.
@@ -195,7 +163,7 @@ void detourActionPerformed(void* handler, const std::byte* action, std::byte* co
       if (const std::optional<std::string> selected = scriptNameById(map, rectangle, surface, id))
          speech::say(rectangle ? vocab::kScriptAreaSelected(*selected) : vocab::kScriptPositionSelected(*selected));
    } else if (type == layout.editorSwitchToSurface) {
-      speech::say(surfaceLine(map, view(at<MsvcString>(action, layout.editorActionString))));
+      speech::say(surfaceLine(map, at<stdabi::String>(action, layout.editorActionString).view()));
    }
 }
 

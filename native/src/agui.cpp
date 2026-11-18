@@ -2,6 +2,7 @@
 
 #include "game.h"
 #include "prototypes.h"
+#include "stdabi.h"
 #include "world.h"
 
 #include <windows.h>
@@ -34,23 +35,6 @@ template <class T>
 const T& at(const void* object, uint32_t offset) {
    return *reinterpret_cast<const T*>(static_cast<const std::byte*>(object) + offset);
 }
-
-// MSVC std::string: a 16-byte small buffer or a heap pointer, then size and capacity.
-struct MsvcString {
-   union {
-      char buffer[16];
-      const char* pointer;
-   };
-   size_t size;
-   size_t capacity;
-};
-
-template <class T>
-struct MsvcVector {
-   T* first;
-   T* last;
-   T* end;
-};
 
 const Widget* fromTargetable(const std::byte* targetable) {
    if (!targetable) return nullptr;
@@ -204,8 +188,8 @@ const std::byte* asBaseChecked(const Widget* widget, std::string_view decoratedB
 }
 
 std::string_view readString(const void* object, uint32_t offset) {
-   const auto& string = at<MsvcString>(object, offset);
-   return {string.capacity >= sizeof(string.buffer) ? string.pointer : string.buffer, string.size};
+   const auto& string = at<stdabi::String>(object, offset);
+   return string.view();
 }
 
 using VirtualTable = void* const*;
@@ -257,7 +241,7 @@ const Widget* menuStateWindow() {
    if (!context) return nullptr;
    auto* manager = at<const std::byte*>(context, layout.globalAppManager);
    if (!manager) return nullptr;
-   const auto& states = at<MsvcVector<const std::byte* const>>(manager, layout.appManagerStates);
+   const auto& states = at<stdabi::Vector<const std::byte* const>>(manager, layout.appManagerStates);
    if (states.first == states.last) return nullptr;
    const std::byte* state = states.last[-1];
    // Not a widget, but polymorphic all the same, which is all classInfo reads. InGame, the state
@@ -310,7 +294,7 @@ const Widget* widgetUnderMouse(const Gui* gui) { return fromTargeter(gui, layout
 
 const Widget* topModal(const Gui* gui) {
    // The focus manager keeps modals sorted by priority, the topmost last.
-   const auto& modals = at<MsvcVector<const std::byte>>(gui, layout.guiModals);
+   const auto& modals = at<stdabi::Vector<const std::byte>>(gui, layout.guiModals);
    for (const std::byte* entry = modals.last; entry > modals.first;) {
       entry -= layout.modalSize;
       if (const Widget* widget = fromTargeter(entry, layout.modalWidget)) return widget;
@@ -321,12 +305,12 @@ const Widget* topModal(const Gui* gui) {
 const Widget* parent(const Widget* widget) { return at<const Widget*>(widget, layout.widgetParent); }
 
 std::span<const Widget* const> children(const Widget* widget) {
-   const auto& vector = at<MsvcVector<const Widget* const>>(widget, layout.widgetChildren);
+   const auto& vector = at<stdabi::Vector<const Widget* const>>(widget, layout.widgetChildren);
    return {vector.first, vector.last};
 }
 
 std::span<const Widget* const> privateChildren(const Widget* widget) {
-   const auto& vector = at<MsvcVector<const Widget* const>>(widget, layout.widgetPrivateChildren);
+   const auto& vector = at<stdabi::Vector<const Widget* const>>(widget, layout.widgetPrivateChildren);
    return {vector.first, vector.last};
 }
 
@@ -409,7 +393,7 @@ bool redSlot(const Widget* slot) {
 bool tabSelected(const Widget* tab) {
    const auto* pane = at<const std::byte*>(asBaseChecked(tab, ".?AVTab@agui@@"), layout.tabPane);
    if (!pane) return false;
-   const auto& tabs = at<MsvcVector<const std::byte>>(pane, layout.tabbedPaneTabs);
+   const auto& tabs = at<stdabi::Vector<const std::byte>>(pane, layout.tabbedPaneTabs);
    const auto* selected = at<const std::byte*>(pane, layout.tabbedPaneSelected);
    if (selected < tabs.first || selected >= tabs.last) return false;
    return fromTargeter(selected, layout.tabEntryTab) == tab;
@@ -500,7 +484,7 @@ MenuParts menuParts(const Widget* window) {
 
 std::vector<const Widget*> listBoxItems(const Widget* listBox) {
    const std::byte* base = asBaseChecked(listBox, ".?AVListBox@agui@@");
-   const auto& items = at<MsvcVector<const std::byte>>(base, layout.listBoxItems);
+   const auto& items = at<stdabi::Vector<const std::byte>>(base, layout.listBoxItems);
    std::vector<const Widget*> buttons;
    for (const std::byte* item = items.first; item < items.last; item += layout.listBoxItemSize)
       if (const Widget* button = at<const Widget*>(item, layout.listBoxItemButton)) buttons.push_back(button);
@@ -511,10 +495,10 @@ namespace {
 
 // A prototype's localised name in the game's current locale.
 std::string_view localisedName(const std::byte* prototype) {
-   using Str = const MsvcString* (*)(const void* localisedString, const void* localeProvider);
-   const MsvcString* name =
+   using Str = const stdabi::String* (*)(const void* localisedString, const void* localeProvider);
+   const stdabi::String* name =
       reinterpret_cast<Str>(layout.localisedStringStr)(prototype + layout.prototypeLocalisedName, nullptr);
-   return {name->capacity >= sizeof(name->buffer) ? name->pointer : name->buffer, name->size};
+   return name->view();
 }
 
 } // namespace
@@ -541,35 +525,28 @@ namespace {
 
 // The prototype an ID indexes in a PrototypeList<T>::indexToPrototype vector, or null.
 const std::byte* prototypeAt(uintptr_t list, size_t index) {
-   const auto& prototypes = *reinterpret_cast<const MsvcVector<const std::byte* const>*>(list);
-   return index < static_cast<size_t>(prototypes.last - prototypes.first) ? prototypes.first[index] : nullptr;
+   const auto& prototypes = *reinterpret_cast<const stdabi::Vector<const std::byte* const>*>(list);
+   return index < prototypes.size() ? prototypes[index] : nullptr;
 }
 
-// An MSVC std::map node: the tree links and flags, then the stored pair.
-struct MapNode {
-   const MapNode* left;
-   const MapNode* parent;
-   const MapNode* right;
-   char color;
-   char isNil;
+// The value of a std::map<ID<T, unsigned short>, std::unique_ptr<agui::Button>>.
+struct ButtonById {
+   uint16_t id;
+   const Widget* button;
 };
-constexpr size_t kMapValue = 0x20;
 
 // The key of the std::map<ID<T, unsigned short>, std::unique_ptr<agui::Button>> entry holding `button`.
 std::optional<uint16_t> mapKeyOf(const std::byte* map, const Widget* button) {
-   const MapNode* head = at<const MapNode*>(map, 0);
-   std::vector<const MapNode*> pending{head->parent};
-   while (!pending.empty()) {
-      const MapNode* node = pending.back();
-      pending.pop_back();
-      if (node->isNil) continue;
-      auto* value = reinterpret_cast<const std::byte*>(node) + kMapValue;
-      if (at<const Widget*>(value, 8) == button) return at<uint16_t>(value, 0);
-      pending.push_back(node->left);
-      pending.push_back(node->right);
-   }
+   for (const ButtonById& entry : at<stdabi::Tree<ButtonById>>(map, 0))
+      if (entry.button == button) return entry.id;
    return std::nullopt;
 }
+
+// The value of a std::map<agui::TextButton*, Result>; every Result is an enum.
+struct ResultOfButton {
+   const Widget* button;
+   int32_t result;
+};
 
 } // namespace
 
@@ -580,17 +557,8 @@ const Widget* dialogConfirmButton(const Widget* window) {
    int32_t confirm = at<int32_t>(dialog, layout.dialogConfirmValue);
    if (confirm == 0) return nullptr;
    // As Dialog<>::getResultButtonByResult: a std::map<agui::TextButton*, Result>.
-   const MapNode* head = at<const MapNode*>(dialog, layout.dialogResultMapping);
-   std::vector<const MapNode*> pending{head->parent};
-   while (!pending.empty()) {
-      const MapNode* node = pending.back();
-      pending.pop_back();
-      if (node->isNil) continue;
-      auto* value = reinterpret_cast<const std::byte*>(node) + kMapValue;
-      if (at<int32_t>(value, 8) == confirm) return at<const Widget*>(value, 0);
-      pending.push_back(node->left);
-      pending.push_back(node->right);
-   }
+   for (const ResultOfButton& entry : at<stdabi::Tree<ResultOfButton>>(dialog, layout.dialogResultMapping))
+      if (entry.result == confirm) return entry.button;
    return nullptr;
 }
 
@@ -661,7 +629,7 @@ std::vector<Tip> tips() {
    auto* context = *reinterpret_cast<const std::byte* const*>(layout.globalContext);
    const auto* all = context ? at<const std::byte*>(context, layout.globalTipsAndTricks) : nullptr;
    if (!all) return result;
-   const auto& items = at<MsvcVector<const std::byte* const>>(all, layout.tipsItems);
+   const auto& items = at<stdabi::Vector<const std::byte* const>>(all, layout.tipsItems);
    for (const std::byte* const* item = items.first; item < items.last; ++item)
       result.push_back({at<uint8_t>(*item, layout.tipItemIndent), at<bool>(*item, layout.tipItemIsTitle),
                         at<uint32_t>(*item, layout.tipItemStatus) == layout.tipStatusSuggested});
@@ -785,21 +753,15 @@ std::string slotNumberText(const Widget* slot) {
    double count = callVirtualAt<double>(number, layout.buttonNumberCount);
    if (count == 0) return {};
    auto rounding = callVirtualAt<uint8_t>(number, layout.buttonNumberRoundType);
-   using Format = MsvcString* (*)(MsvcString* out, double value, uint8_t compactness, uint8_t useDecimal,
-                                  uint8_t rounding, uint8_t decimals);
-   MsvcString made{};
+   using Format = stdabi::String* (*)(stdabi::String* out, double value, uint8_t compactness, uint8_t useDecimal,
+                                      uint8_t rounding, uint8_t decimals);
+   stdabi::String made{};
    reinterpret_cast<Format>(layout.shortNumberFormat)(&made, count, static_cast<uint8_t>(layout.compactnessCompact),
                                                       static_cast<uint8_t>(layout.useDecimalAuto), rounding,
                                                       static_cast<uint8_t>(layout.numDecimalsOne));
-   bool large = made.capacity >= sizeof(made.buffer);
-   std::string text(large ? made.pointer : made.buffer, made.size);
-   if (large) {
-      // Freed as the game's own std::string frees it: its allocator keeps the true start of a large
-      // block just before it.
-      void* block = const_cast<char*>(made.pointer);
-      if (made.capacity + 1 >= 0x1000) block = reinterpret_cast<void**>(block)[-1];
-      reinterpret_cast<void (*)(void*)>(layout.gameOperatorDelete)(block);
-   }
+   std::string text(made.view());
+   // Freed as the game's own std::string frees it.
+   if (void* block = made.allocation()) reinterpret_cast<void (*)(void*)>(layout.gameOperatorDelete)(block);
    return text;
 }
 
@@ -1131,7 +1093,7 @@ unsigned selectedRow(const Widget* table) {
 std::optional<TableOrdering> tableOrdering(const Widget* table) {
    const std::byte* base = asBaseChecked(table, ".?AVTableWithSelection@agui@@");
    uint32_t column = at<uint32_t>(base, layout.tableOrderingColumn);
-   const auto& headers = at<MsvcVector<const std::byte>>(base, layout.tableHeaders);
+   const auto& headers = at<stdabi::Vector<const std::byte>>(base, layout.tableHeaders);
    if (column == UINT32_MAX || size_t(headers.last - headers.first) <= size_t{column} * layout.tableHeaderSize)
       return std::nullopt;
    return TableOrdering{column,
@@ -1155,13 +1117,13 @@ namespace {
 
 std::vector<QuickBarRow> rowsAt(const Widget* quickBar, uint32_t offset) {
    std::vector<QuickBarRow> rows;
-   const auto& all = at<MsvcVector<const std::byte* const>>(quickBar, offset);
+   const auto& all = at<stdabi::Vector<const std::byte* const>>(quickBar, offset);
    for (const std::byte* const* it = all.first; it != all.last; ++it) {
       const std::byte* widgets = *it;
       QuickBarRow& row = rows.emplace_back();
       row.page = at<uint8_t>(widgets, layout.rowPage);
       row.button = at<const Widget*>(widgets, layout.rowButton);
-      const auto& slots = at<MsvcVector<const Widget* const>>(widgets, layout.rowSlots);
+      const auto& slots = at<stdabi::Vector<const Widget* const>>(widgets, layout.rowSlots);
       row.slots.assign(slots.first, slots.last);
    }
    return rows;
@@ -1219,7 +1181,7 @@ const Widget* shortcutBar() {
 std::vector<std::vector<Shortcut>> shortcutBarRows(const Widget* shortcutBar) {
    // Columns with no shortcut at all are hidden; the rest show every place, empty or not.
    std::vector<const Widget*> columns;
-   const auto& all = at<MsvcVector<const Widget* const>>(shortcutBar, layout.shortcutBarColumns);
+   const auto& all = at<stdabi::Vector<const Widget* const>>(shortcutBar, layout.shortcutBarColumns);
    for (const Widget* const* it = all.first; it != all.last; ++it)
       if (visible(*it)) columns.push_back(*it);
 
@@ -1275,19 +1237,11 @@ const Widget* trackedAchievements() { return shownMember(gameView(), layout.game
 
 namespace {
 
-// Calls visit(node) for every node of the std::map or std::set at `tree`.
+// Calls visit(node) for every node of the std::map or std::set at `tree`, in key order; the node's
+// value is at the PDB's _Myval offsets.
 template <class Visit>
 void forEachNode(const std::byte* tree, Visit visit) {
-   const MapNode* head = at<const MapNode*>(tree, 0);
-   std::vector<const MapNode*> pending{head->parent};
-   while (!pending.empty()) {
-      const MapNode* node = pending.back();
-      pending.pop_back();
-      if (node->isNil) continue;
-      visit(reinterpret_cast<const std::byte*>(node));
-      pending.push_back(node->left);
-      pending.push_back(node->right);
-   }
+   for (const std::byte* node : at<stdabi::Tree<void>>(tree, 0)) visit(node);
 }
 
 constexpr std::string_view kOwnModKey = "mod-FactorioAccess";
@@ -1331,7 +1285,7 @@ ModScreenWindows modScreenWindows() {
    });
 
    std::vector<const Widget*> modWidgets;
-   const auto& elements = at<MsvcVector<const std::byte* const>>(screen, layout.guiElementChildren);
+   const auto& elements = at<stdabi::Vector<const std::byte* const>>(screen, layout.guiElementChildren);
    for (const std::byte* const* it = elements.first; it != elements.last; ++it) {
       const Widget* widget = at<const Widget*>(*it, layout.guiElementWidget);
       if (widget && std::ranges::find(own, at<uint32_t>(*it, layout.guiElementIndex)) == own.end())
@@ -1363,7 +1317,7 @@ std::vector<AlertButton> alertButtons() {
    std::vector<AlertButton> buttons;
    const std::byte* view = gameView();
    if (!view) return buttons;
-   const auto& guis = at<MsvcVector<const Widget* const>>(view, layout.gameViewAlerts);
+   const auto& guis = at<stdabi::Vector<const Widget* const>>(view, layout.gameViewAlerts);
    for (const Widget* const* it = guis.first; it != guis.last; ++it)
       if (visible(*it))
          buttons.push_back({member(*it, layout.alertGuiButton), at<AlertCategory>(*it, layout.alertGuiCategory)});
@@ -1734,9 +1688,9 @@ std::string takeTranslation(void* localised) {
       void* object;
       ~Destroy() { reinterpret_cast<void (*)(void*)>(layout.localisedStringDestroy)(object); }
    } destroy{localised};
-   using Str = const MsvcString* (*)(const void* localisedString, const void* localeProvider);
-   const MsvcString* text = reinterpret_cast<Str>(layout.localisedStringStr)(localised, nullptr);
-   return {text->capacity >= sizeof(text->buffer) ? text->pointer : text->buffer, text->size};
+   using Str = const stdabi::String* (*)(const void* localisedString, const void* localeProvider);
+   const stdabi::String* text = reinterpret_cast<Str>(layout.localisedStringStr)(localised, nullptr);
+   return std::string(text->view());
 }
 
 // A key of the game's locale in its current language, e.g. "gui-technology-preview.status-queued".
@@ -1814,7 +1768,7 @@ std::optional<std::string> triggerSubject(const std::byte* trigger) {
    if (kind == "BuildEntityTechnologyTriggerPrototype")
       return prototypeNameAt(layout.entityPrototypes, at<uint16_t>(prototype, layout.triggerBuildEntity));
    if (kind == "MineEntityTechnologyTriggerPrototype") {
-      const auto& entities = at<MsvcVector<const std::byte>>(prototype, layout.triggerMineEntities);
+      const auto& entities = at<stdabi::Vector<const std::byte>>(prototype, layout.triggerMineEntities);
       return prototypeNameAt(layout.entityPrototypes, at<uint16_t>(entities.first, layout.entityConnectorId));
    }
    if (kind == "CaptureSpawnerTechnologyTriggerPrototype") {
@@ -1834,7 +1788,7 @@ std::vector<std::string> ingredientNames(const std::byte* technology) {
       return names;
    }
    const auto* prototype = at<const std::byte*>(technology, layout.technologyPrototype);
-   const auto& ingredients = at<MsvcVector<const std::byte>>(prototype, layout.techIngredients);
+   const auto& ingredients = at<stdabi::Vector<const std::byte>>(prototype, layout.techIngredients);
    for (const std::byte* ingredient = ingredients.first; ingredient < ingredients.last;
         ingredient += layout.researchIngredientSize)
       if (std::optional<std::string> name =
@@ -1884,10 +1838,10 @@ TechnologyInfo technologyInfo(const Widget* slot) {
 
 TechnologyGraph technologyGraph(const Widget* graph) {
    TechnologyGraph result;
-   const auto& vertices = at<MsvcVector<const std::byte* const>>(graph, layout.graphVertices);
+   const auto& vertices = at<stdabi::Vector<const std::byte* const>>(graph, layout.graphVertices);
    auto type = [](const std::byte* vertex) { return at<uint32_t>(vertex, layout.vertexType); };
    auto edges = [](const std::byte* vertex, uint32_t offset) {
-      const auto& list = at<MsvcVector<const std::byte* const>>(vertex, offset);
+      const auto& list = at<stdabi::Vector<const std::byte* const>>(vertex, offset);
       return std::span<const std::byte* const>(list.first, list.last);
    };
    // Through the routing vertices of an edge that spans layers, one in each, to its far end.
@@ -1947,7 +1901,7 @@ const Widget* craftingQueue() {
 }
 
 std::vector<const Widget*> craftingQueueSlots(const Widget* craftingQueue) {
-   const auto& slots = at<MsvcVector<const Widget* const>>(craftingQueue, layout.craftingQueueSlots);
+   const auto& slots = at<stdabi::Vector<const Widget* const>>(craftingQueue, layout.craftingQueueSlots);
    return {slots.first, slots.last};
 }
 
@@ -1994,7 +1948,7 @@ EquipmentPiece shapeOf(const std::byte* prototype) {
    piece.height = static_cast<int>(at<uint32_t>(prototype, layout.equipmentShapeHeight));
    piece.cells.assign(static_cast<size_t>(piece.width * piece.height), true);
    // A column per x, a cell per y.
-   const auto& columns = at<MsvcVector<const MsvcVector<const char>>>(prototype, layout.equipmentShapeCells);
+   const auto& columns = at<stdabi::Vector<const stdabi::Vector<const char>>>(prototype, layout.equipmentShapeCells);
    for (int column = 0; column < piece.width && columns.first + column < columns.last; ++column) {
       const auto& cells = columns.first[column];
       for (int row = 0; row < piece.height && cells.first + row < cells.last; ++row)
@@ -2019,7 +1973,7 @@ std::optional<EquipmentGridView> equipmentGrid(const Widget* holder) {
    EquipmentGridView view;
    view.width = static_cast<int>(reinterpret_cast<Size>(layout.equipmentGridWidth)(grid));
    view.height = static_cast<int>(reinterpret_cast<Size>(layout.equipmentGridHeight)(grid));
-   const auto& pieces = at<MsvcVector<const std::byte* const>>(grid, layout.equipmentGridPieces);
+   const auto& pieces = at<stdabi::Vector<const std::byte* const>>(grid, layout.equipmentGridPieces);
    for (const std::byte* const* it = pieces.first; it != pieces.last; ++it) {
       const std::byte* equipment = *it;
       auto* self = const_cast<std::byte*>(equipment);
@@ -2087,7 +2041,7 @@ void hoverEquipmentCell(const Widget* holder, int x, int y) {
 std::vector<const Widget*> shortcutBarListCheckBoxes(const Widget* shortcutBar) {
    std::vector<const Widget*> boxes;
    if (!at<bool>(shortcutBar, layout.shortcutBarListOpen)) return boxes;
-   const auto& rows = at<MsvcVector<const Widget* const>>(shortcutBar, layout.shortcutBarListRows);
+   const auto& rows = at<stdabi::Vector<const Widget* const>>(shortcutBar, layout.shortcutBarListRows);
    for (const Widget* const* it = rows.first; it != rows.last; ++it)
       // The list's search hides the rows it filters out.
       if (visible(*it)) boxes.push_back(member(*it, layout.shortcutRowCheckBox));
@@ -2105,34 +2059,21 @@ void clearFocus(const Widget* widget) { callVirtual<void>(widget, layout.slotCle
 
 namespace {
 
-// Our string in the game's std::string layout, for calls that take std::string const& and copy
-// it; the game never frees or grows it. Copying reads the terminator too, so `text` must stay alive
-// and unchanged for the call.
-MsvcString borrow(const std::string& text) {
-   MsvcString view{};
-   view.size = text.size();
-   if (text.size() < sizeof(view.buffer)) {
-      std::memcpy(view.buffer, text.c_str(), text.size() + 1);
-      view.capacity = sizeof(view.buffer) - 1;
-   } else {
-      view.pointer = text.c_str();
-      view.capacity = text.size();
-   }
-   return view;
-}
+// `text` for game calls that take std::string const& and copy it (stdabi::String::borrow).
+stdabi::String borrow(const std::string& text) { return stdabi::String::borrow(text.c_str(), text.size()); }
 
 } // namespace
 
 void setEnabled(const Widget* widget, bool enabled) { callVirtual<Widget*>(widget, layout.slotSetEnabled, enabled); }
 
 void setToolTip(const Widget* widget, const std::string& text) {
-   MsvcString view = borrow(text);
-   reinterpret_cast<Widget* (*)(const Widget*, const MsvcString*)>(layout.widgetSetToolTip)(widget, &view);
+   stdabi::String view = borrow(text);
+   reinterpret_cast<Widget* (*)(const Widget*, const stdabi::String*)>(layout.widgetSetToolTip)(widget, &view);
 }
 
 void setLabelText(const Widget* label, const std::string& text) {
-   MsvcString view = borrow(text);
-   reinterpret_cast<void (*)(const Widget*, const MsvcString*)>(layout.labelSetText)(label, &view);
+   stdabi::String view = borrow(text);
+   reinterpret_cast<void (*)(const Widget*, const stdabi::String*)>(layout.labelSetText)(label, &view);
 }
 
 void scrollIntoView(const Widget* widget) {
@@ -2404,7 +2345,7 @@ const std::byte* objectAsBase(const void* object, std::string_view decoratedBase
 
 const Widget* openDropDown(const Gui* gui) {
    // The top modal only: a dropdown list under a dialog is not the one being used.
-   const auto& modals = at<MsvcVector<const std::byte>>(gui, layout.guiModals);
+   const auto& modals = at<stdabi::Vector<const std::byte>>(gui, layout.guiModals);
    for (const std::byte* entry = modals.last; entry > modals.first;) {
       entry -= layout.modalSize;
       const Widget* widget = fromTargeter(entry, layout.modalWidget);

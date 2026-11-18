@@ -3,6 +3,7 @@
 #include "agui.h"
 #include "facts.h"
 #include "game.h"
+#include "stdabi.h"
 #include "text.h"
 #include "vocab.h"
 
@@ -23,27 +24,6 @@ template <class T>
 const T& at(const void* object, uint32_t offset) {
    return *reinterpret_cast<const T*>(static_cast<const std::byte*>(object) + offset);
 }
-
-// MSVC std::string: a 16-byte small buffer or a heap pointer, then size and capacity.
-struct MsvcString {
-   union {
-      char buffer[16];
-      const char* pointer;
-   };
-   size_t size;
-   size_t capacity;
-};
-
-std::string_view view(const MsvcString& string) {
-   return {string.capacity >= sizeof(string.buffer) ? string.pointer : string.buffer, string.size};
-}
-
-template <class T>
-struct MsvcVector {
-   T* first;
-   T* last;
-   T* end;
-};
 
 using VirtualTable = void* const*;
 
@@ -70,7 +50,7 @@ using SelectionFunction = std::byte* (*)(const void* blueprint, std::byte* out, 
 using TileSelectionFunction = std::byte* (*)(const void* tiles, std::byte* out, const MapPosition* at);
 using TileBoxFunction = TileBox* (*)(const void* blueprint, TileBox* out);
 using PixelShiftFunction = MapPosition* (*)(const void* picture, MapPosition* out, const MapPosition* absolute);
-using LocalisedStr = const MsvcString* (*)(const void* localisedString, const void* localeProvider);
+using LocalisedStr = const stdabi::String* (*)(const void* localisedString, const void* localeProvider);
 
 constexpr int32_t kScale = game::kMapPositionScale;
 
@@ -83,20 +63,20 @@ const std::byte* parametersOf(const std::byte* widget) { return widget + layout.
 
 // The prototype an ID indexes in a PrototypeList<T>::indexToPrototype vector, or null.
 const std::byte* prototypeAt(uintptr_t list, size_t index) {
-   const auto& prototypes = *reinterpret_cast<const MsvcVector<const std::byte* const>*>(list);
+   const auto& prototypes = *reinterpret_cast<const stdabi::Vector<const std::byte* const>*>(list);
    return index < static_cast<size_t>(prototypes.last - prototypes.first) ? prototypes.first[index] : nullptr;
 }
 
 std::string localisedName(const std::byte* prototype) {
-   const MsvcString* name =
+   const stdabi::String* name =
       reinterpret_cast<LocalisedStr>(layout.localisedStringStr)(prototype + layout.prototypeLocalisedName, nullptr);
-   return text::speakable(view(*name));
+   return text::speakable(name->view());
 }
 
 // A quality's name and a space before the name it qualifies, or nothing for normal quality or none.
 std::string qualityPrefix(uint8_t quality) {
    const std::byte* prototype = quality ? prototypeAt(layout.qualityPrototypes, quality) : nullptr;
-   if (!prototype || view(at<MsvcString>(prototype, layout.prototypeName)) == "normal") return {};
+   if (!prototype || at<stdabi::String>(prototype, layout.prototypeName).view() == "normal") return {};
    return localisedName(prototype) + " ";
 }
 
@@ -117,14 +97,14 @@ std::string join(const std::vector<std::string>& parts, std::string_view separat
 
 // The blueprint's EntityData at `index`, or null.
 const std::byte* entityDataAt(const std::byte* blueprint, uint32_t index) {
-   const auto& entities = at<MsvcVector<const std::byte>>(blueprint, layout.blueprintEntityList);
+   const auto& entities = at<stdabi::Vector<const std::byte>>(blueprint, layout.blueprintEntityList);
    const std::byte* data = entities.first + size_t{index} * layout.entityDataSize;
    return data < entities.last ? data : nullptr;
 }
 
 // Whether the entity or tile at `index` of the picture's removal list is removed.
 bool removed(const std::byte* widget, uint32_t list, uint32_t index) {
-   const auto& items = at<MsvcVector<const uint8_t>>(parametersOf(widget), list);
+   const auto& items = at<stdabi::Vector<const uint8_t>>(parametersOf(widget), list);
    return index < static_cast<size_t>(items.last - items.first) && items.first[index];
 }
 
@@ -151,7 +131,7 @@ const std::byte* entityAtPoint(const std::byte* widget, MapPosition point) {
 
 // Whether the picture keeps the blueprint's entity `entity`: false for one the player removed.
 bool keeps(const std::byte* widget, const void* entity) {
-   const auto& entities = at<MsvcVector<const std::byte>>(blueprintOf(widget), layout.blueprintEntityList);
+   const auto& entities = at<stdabi::Vector<const std::byte>>(blueprintOf(widget), layout.blueprintEntityList);
    uint32_t index = 0;
    for (const std::byte* data = entities.first; data < entities.last; data += layout.entityDataSize, ++index)
       if (at<const void*>(data, layout.entityDataEntity) == entity)

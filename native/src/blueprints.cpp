@@ -2,6 +2,7 @@
 
 #include "agui.h"
 #include "game.h"
+#include "stdabi.h"
 #include "text.h"
 #include "vocab.h"
 
@@ -22,28 +23,7 @@ const T& at(const void* object, uint32_t offset) {
    return *reinterpret_cast<const T*>(static_cast<const std::byte*>(object) + offset);
 }
 
-// MSVC std::string: a 16-byte small buffer or a heap pointer, then size and capacity.
-struct MsvcString {
-   union {
-      char buffer[16];
-      const char* pointer;
-   };
-   size_t size;
-   size_t capacity;
-};
-
-std::string_view view(const MsvcString& string) {
-   return {string.capacity >= sizeof(string.buffer) ? string.pointer : string.buffer, string.size};
-}
-
-template <class T>
-struct MsvcVector {
-   T* first;
-   T* last;
-   T* end;
-};
-
-using LocalisedStr = const MsvcString* (*)(const void* localisedString, const void* localeProvider);
+using LocalisedStr = const stdabi::String* (*)(const void* localisedString, const void* localeProvider);
 using SignalPrototypeFunction = const std::byte* (*)(const void* signal);
 
 // What a slot shows at most over the item's icon (PreviewIcons::draw, the planners' getIcons).
@@ -54,20 +34,20 @@ constexpr int kNestedBooks = 8;
 
 // The prototype an ID indexes in a PrototypeList<T>::indexToPrototype vector, or null.
 const std::byte* prototypeAt(uintptr_t list, size_t index) {
-   const auto& prototypes = *reinterpret_cast<const MsvcVector<const std::byte* const>*>(list);
+   const auto& prototypes = *reinterpret_cast<const stdabi::Vector<const std::byte* const>*>(list);
    return index < static_cast<size_t>(prototypes.last - prototypes.first) ? prototypes.first[index] : nullptr;
 }
 
 std::string localisedName(const std::byte* prototype) {
-   const MsvcString* name =
+   const stdabi::String* name =
       reinterpret_cast<LocalisedStr>(layout.localisedStringStr)(prototype + layout.prototypeLocalisedName, nullptr);
-   return text::speakable(view(*name));
+   return text::speakable(name->view());
 }
 
 // A quality's name and a space before the name it qualifies, or nothing for normal quality or none.
 std::string qualityPrefix(uint8_t quality) {
    const std::byte* prototype = quality ? prototypeAt(layout.qualityPrototypes, quality) : nullptr;
-   if (!prototype || view(at<MsvcString>(prototype, layout.prototypeName)) == "normal") return {};
+   if (!prototype || at<stdabi::String>(prototype, layout.prototypeName).view() == "normal") return {};
    return localisedName(prototype) + " ";
 }
 
@@ -88,7 +68,7 @@ std::string signalName(const std::byte* signal) {
 // The icons the owner chose, a PreviewIcons' std::vector<SignalID>.
 std::vector<std::string> chosenIcons(const std::byte* icons) {
    std::vector<std::string> names;
-   const auto& signals = at<MsvcVector<const std::byte>>(icons, 0);
+   const auto& signals = at<stdabi::Vector<const std::byte>>(icons, 0);
    for (const std::byte* signal = signals.first; signal < signals.last && names.size() < kIconsShown;
         signal += layout.signalSize)
       if (std::string name = signalName(signal); !name.empty()) names.push_back(std::move(name));
@@ -96,7 +76,7 @@ std::vector<std::string> chosenIcons(const std::byte* icons) {
 }
 
 std::string stringAt(const std::byte* object, uint32_t offset) {
-   return text::speakable(view(at<MsvcString>(object, offset)));
+   return text::speakable(at<stdabi::String>(object, offset).view());
 }
 
 std::optional<Shown> shownAt(const void* item, int depth);
@@ -104,7 +84,7 @@ std::optional<Shown> shownRecordAt(const void* record, const void* player, int d
 
 // As BlueprintBook::draw: the book's own icons, else what its active item shows inside it.
 std::vector<std::string> bookIcons(const std::byte* book, int depth) {
-   const auto& own = at<MsvcVector<const std::byte>>(book, layout.bookIcons);
+   const auto& own = at<stdabi::Vector<const std::byte>>(book, layout.bookIcons);
    if (own.first != own.last || depth >= kNestedBooks) return chosenIcons(book + layout.bookIcons);
    const std::byte* inventory = book + layout.bookInventory;
    uint16_t active = at<uint16_t>(book, layout.bookActiveIndex);
@@ -119,9 +99,9 @@ std::vector<std::string> bookIcons(const std::byte* book, int depth) {
 // As BlueprintBookRecord::draw: the book's own icons, else what the record the player builds from
 // shows.
 std::vector<std::string> bookRecordIcons(const std::byte* book, const void* player, int depth) {
-   const auto& own = at<MsvcVector<const std::byte>>(book, layout.bookRecordIcons);
+   const auto& own = at<stdabi::Vector<const std::byte>>(book, layout.bookRecordIcons);
    if (own.first != own.last || depth >= kNestedBooks) return chosenIcons(book + layout.bookRecordIcons);
-   const auto& records = at<MsvcVector<const void* const>>(book, layout.bookRecordRecords);
+   const auto& records = at<stdabi::Vector<const void* const>>(book, layout.bookRecordRecords);
    uint16_t active = agui::bookRecordActiveIndex(book, player);
    if (active >= static_cast<size_t>(records.last - records.first) || !records.first[active]) return {};
    std::optional<Shown> drawn = shownRecordAt(records.first[active], player, depth + 1);
@@ -140,7 +120,7 @@ std::vector<std::string> deconIcons(const std::byte* planner) {
    std::vector<std::string> names;
    uint8_t tileMode = at<uint8_t>(planner, layout.deconDataTileMode);
    if (tileMode != layout.tileSelectionOnly) {
-      const auto& filters = at<MsvcVector<const std::byte>>(planner, layout.deconDataEntities);
+      const auto& filters = at<stdabi::Vector<const std::byte>>(planner, layout.deconDataEntities);
       for (const std::byte* filter = filters.first; filter < filters.last && names.size() < kIconsShown;
            filter += layout.entityFilterSize) {
          // The quality is drawn only when the filter asks for exactly one.
@@ -151,7 +131,7 @@ std::vector<std::string> deconIcons(const std::byte* planner) {
       }
    }
    if (tileMode != layout.tileSelectionNever) {
-      const auto& tiles = at<MsvcVector<const uint16_t>>(planner, layout.deconDataTiles);
+      const auto& tiles = at<stdabi::Vector<const uint16_t>>(planner, layout.deconDataTiles);
       for (const uint16_t* tile = tiles.first; tile < tiles.last && names.size() < kIconsShown; ++tile)
          if (std::string name = named(layout.tilePrototypes, *tile, 0); !name.empty()) names.push_back(std::move(name));
    }
@@ -162,7 +142,7 @@ std::vector<std::string> deconIcons(const std::byte* planner) {
 std::vector<std::string> upgradeIcons(const std::byte* planner) {
    std::vector<std::string> names;
    std::vector<std::tuple<uint8_t, uint16_t, uint8_t>> seen;
-   const auto& mappings = at<MsvcVector<const std::byte>>(planner, layout.upgradeDataMappings);
+   const auto& mappings = at<stdabi::Vector<const std::byte>>(planner, layout.upgradeDataMappings);
    for (const std::byte* mapping = mappings.first; mapping < mappings.last && names.size() < kIconsShown;
         mapping += layout.mappingSize) {
       if (at<uint16_t>(mapping, layout.mappingSourceId) == 0 &&
