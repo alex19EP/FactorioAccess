@@ -133,15 +133,27 @@ jobs:
       - name: Symbol check
         shell: pwsh
         run: |
-          native/build/RelWithDebInfo/fa_symbols_check.exe "$env:RUNNER_TEMP\factorio\factorio.exe"
+          native/build/RelWithDebInfo/fa_symbols_check.exe "$env:RUNNER_TEMP\factorio\factorio.exe" `
+             --queries "$env:RUNNER_TEMP\queries.tsv"
           exit $LASTEXITCODE
+
+      # Everything the DLL resolves, with the Windows answers: the Mac check's input. Written even
+      # when the check fails.
+      - name: Upload the query list
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: queries
+          path: ${{ runner.temp }}/queries.tsv
+          if-no-files-found: warn
 
   # The Mac port's offline check (native/tools/mac): the DLL's names, virtual slots, layouts and
   # calling conventions against this release's Mac build and Windows PDB. The numbers are a report
   # while there is no Mac build of the DLL; the job fails only when a step of the check breaks.
   mac-check:
-    needs: detect
-    if: needs.detect.outputs.check == 'true'
+    needs: [detect, symbols]
+    # Also after a failed symbol check: its query list still has what resolved.
+    if: ${{ !cancelled() && needs.detect.outputs.check == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -181,8 +193,10 @@ jobs:
           unzip -q -j -o "$RUNNER_TEMP/factorio.zip" '*/bin/x64/factorio.exe' '*/bin/x64/factorio.pdb' -d "$game/win"
           rm "$RUNNER_TEMP/factorio.zip"
           get osx "$RUNNER_TEMP/factorio.dmg"
-          # 7-Zip warns about the image's trailing data; the binary being there is what counts.
-          7zz x -y -bso0 -bsp0 "$RUNNER_TEMP/factorio.dmg" -o"$game/mac" || true
+          # Ubuntu's 7zip names its 7-Zip 7z, Debian's 7zz. It may warn about the image's trailing
+          # data; the binary being there is what counts.
+          seven=$(command -v 7zz || command -v 7z)
+          "$seven" x -y -bso0 -bsp0 "$RUNNER_TEMP/factorio.dmg" -o"$game/mac" || echo "7-Zip exit code $?"
           rm "$RUNNER_TEMP/factorio.dmg"
           mac=$(find "$game/mac" -path '*factorio.app/Contents/MacOS/factorio' -type f | head -1)
           if [ -z "$mac" ]; then
@@ -192,11 +206,17 @@ jobs:
           echo "MAC_BIN=$mac" >> "$GITHUB_ENV"
           echo "WIN_DIR=$game/win" >> "$GITHUB_ENV"
 
+      - name: Query list
+        uses: actions/download-artifact@v8
+        with:
+          name: queries
+          path: ${{ runner.temp }}
+
       - name: Mac check
         run: |
           "$RUNNER_TEMP/venv/bin/python" -I native/tools/mac/check.py \
             --exe "$WIN_DIR/factorio.exe" --pdb "$WIN_DIR/factorio.pdb" --mac "$MAC_BIN" \
-            --src native/src --work "$RUNNER_TEMP/mac-work" --summary "$GITHUB_STEP_SUMMARY"
+            --queries "$RUNNER_TEMP/queries.tsv" --work "$RUNNER_TEMP/mac-work" --summary "$GITHUB_STEP_SUMMARY"
 
       # The check's own results, not the game's: the type and symbol dumps stay behind.
       - name: Upload the results
@@ -207,6 +227,7 @@ jobs:
           path: |
             ${{ runner.temp }}/mac-work/*.log
             ${{ runner.temp }}/mac-work/*.json
+            ${{ runner.temp }}/mac-work/*.symbols
           if-no-files-found: warn
 
   mod-tests:

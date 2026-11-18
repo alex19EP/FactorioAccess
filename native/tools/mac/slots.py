@@ -75,6 +75,7 @@ def method_of(d):
 
 req = json.load(open(f'{W}/names.json'))['slots']
 result = collections.Counter()
+found = {}  # (class, method) -> Mac slot index, written to slots.json
 for cls, method, field in req:
     if cls not in vtables:
         result['no vtable'] += 1
@@ -84,6 +85,7 @@ for cls, method, field in req:
     hits = [i for i, e in enumerate(es) if method_of(e) == method]
     if len(hits) == 1 or (method.startswith('~') and len(hits) == 2 and hits[1] == hits[0] + 1):
         result['ok'] += 1
+        found[(cls, method)] = hits[0]
         print('ok', cls, method, hits, es[hits[0]][:90])
     elif not hits:
         result['not in vtable'] += 1
@@ -153,3 +155,7 @@ for cls, method, field in req:
                     if method_of(e) == method:
                         votes[i] += 1
     print('pure' if cls in vtables else 'interface', cls, method, dict(votes.most_common(3)))
+    if votes:
+        found[(cls, method)] = votes.most_common(1)[0][0]
+json.dump([{'class': c, 'method': m, 'slot': i} for (c, m), i in sorted(found.items())],
+          open(f'{W}/slots.json', 'w'), indent=1)

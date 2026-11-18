@@ -3,7 +3,10 @@ against a Windows build (factorio.exe and factorio.pdb) and the Mac build of the
 
 Usage:
   python -I check.py --exe factorio.exe --pdb factorio.pdb --mac <factorio.app>/Contents/MacOS/factorio
-                     --src native/src --work <folder> [--undname undname.exe] [--summary <markdown file>]
+                     --queries queries.tsv --work <folder> [--undname undname.exe] [--summary <markdown file>]
+
+queries.tsv is the DLL's own list of what it resolves, with the Windows answers: write it with
+`fa_symbols_check <factorio.exe> --queries queries.tsv` (a Windows tool, the build's own).
 
 Needs llvm-nm, llvm-cxxfilt, llvm-pdbutil and llvm-undname on PATH (or undname.exe through
 --undname), and the capstone and pefile packages. Each step's output is kept in the work folder as
@@ -64,7 +67,7 @@ def main():
     p.add_argument('--exe', required=True)
     p.add_argument('--pdb', required=True)
     p.add_argument('--mac', required=True)
-    p.add_argument('--src', required=True)
+    p.add_argument('--queries', required=True)
     p.add_argument('--work', required=True)
     p.add_argument('--undname', default='llvm-undname')
     p.add_argument('--summary')
@@ -87,7 +90,7 @@ def main():
     run(['llvm-pdbutil', 'dump', '-publics', a.pdb], out=w('win_publics.txt'))
 
     print('Names and slots', flush=True)
-    script('names.py', a.src, out=w('names.json'))
+    script('queries.py', a.queries, WORK, log='queries')
     names = json.load(open(w('names.json')))
     with open(w('msvc_dem.tsv'), 'w', encoding='utf-8') as f:
         for _, n in names['addresses']:
@@ -97,12 +100,13 @@ def main():
     script('slots.py', WORK, a.mac, log='slots')
 
     print('Layouts', flush=True)
-    script('lookups.py', os.path.join(a.src, 'game.cpp'), out=w('lookups.json'))
     script('predict.py', log='predict')
     print('Evidence from the Mac code', flush=True)
     script('evidence.py', a.exe, a.mac, log='evidence')
     print('Calling conventions', flush=True)
     script('abi.py', a.mac, log='abi')
+    print('Mac symbol table', flush=True)
+    script('table.py', a.mac, w('factorio-access-native.symbols'), log='table')
 
     summary = report(w)
     print(summary)
@@ -119,7 +123,7 @@ def report(w):
                  + ''.join(f", {v} {k}" for k, v in sorted(kinds.items()) if k != 'ok'))
     for r in match:
         if r['kind'] != 'ok':
-            lines.append(f"  - {r['kind']}: `{r['field']}` {r['name'][:100]}")
+            lines.append(f"  - {r['kind']}: {r['name'][:120]}")
     slots = open(w('slots.log'), encoding='utf-8').read()
     m = re.search(r'^Counter\((.*)\)$', slots, re.M)
     first = dict(re.findall(r"'([^']+)': (\d+)", m.group(1))) if m else {}
@@ -147,8 +151,11 @@ def report(w):
     lines.append(f"- Mac code against the predicted offsets: {m.group(1) if m else 'no result'}")
     abi = json.load(open(w('abi.json')))
     lines.append(f'- Calling conventions: {len(abi)} functions need a Mac form of their declaration')
+    table = open(w('table.log'), encoding='utf-8').read().splitlines()
+    lines.append(f'- Mac symbol table: {table[0]}')
+    lines += [f'  - {line.strip()}' for line in table[1:]]
     lines.append('')
-    lines.append('Logs and data: the work folder (`*.log`, `*.json`).')
+    lines.append('Logs, data and the Mac symbol table: the work folder (`*.log`, `*.json`, `*.symbols`).')
     return '\n'.join(lines)
 
 

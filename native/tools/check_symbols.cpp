@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <cstdio>
 #include <filesystem>
+#include <fstream>
 #include <string_view>
 #include <vector>
 
@@ -86,8 +87,13 @@ bool checkInlining(fa::pdb::SymbolTable& symbols) {
 } // namespace
 
 int wmain(int argc, wchar_t** argv) {
-   if (argc != 2) {
-      std::fputs("usage: fa_symbols_check <path to factorio.exe>\n", stderr);
+   // --queries writes every query the DLL makes with its Windows answer, one per line as
+   // kind<TAB>name or type<TAB>path, enumerator or method<TAB>value: the list the Mac symbol table is
+   // made from (native/tools/mac).
+   std::filesystem::path queriesFile;
+   if (argc == 4 && std::wstring_view(argv[2]) == L"--queries") queriesFile = argv[3];
+   if (argc != 2 && queriesFile.empty()) {
+      std::fputs("usage: fa_symbols_check <path to factorio.exe> [--queries <file>]\n", stderr);
       return 2;
    }
    std::filesystem::path exe = argv[1];
@@ -101,6 +107,8 @@ int wmain(int argc, wchar_t** argv) {
    auto image = reinterpret_cast<HMODULE>(reinterpret_cast<uintptr_t>(mapped) & ~uintptr_t{3});
 
    fa::pdb::SymbolTable symbols(image, exe, {});
+   std::vector<fa::pdb::Query> queries;
+   symbols.recordQueries(&queries);
    if (const auto& identity = symbols.identity()) fa::log::info("PDB {} ({})", identity->key(), identity->pdbPath);
    bool ok = fa::game::resolve(symbols);
 
@@ -112,6 +120,14 @@ int wmain(int argc, wchar_t** argv) {
    }
    symbols.finish();
    FreeLibrary(mapped);
+   if (!queriesFile.empty()) {
+      std::ofstream out(queriesFile, std::ios::binary | std::ios::trunc);
+      for (const auto& q : queries) out << q.kind << '\t' << q.first << '\t' << q.second << '\t' << q.value << '\n';
+      if (!out) {
+         std::fprintf(stderr, "cannot write %ls\n", queriesFile.c_str());
+         ok = false;
+      }
+   }
    std::fputs(ok ? "OK\n" : "FAILED\n", stdout);
    return ok ? 0 : 1;
 }

@@ -691,8 +691,7 @@ std::optional<uintptr_t> SymbolTable::address(std::string_view decoratedName) {
       log::error("Symbol not found: {}", decoratedName);
       return std::nullopt;
    }
-   cache_[key] = *rva;
-   cacheDirty_ = true;
+   remember(std::move(key), *rva, "rva", decoratedName, {});
    return reinterpret_cast<uintptr_t>(image_) + *rva;
 }
 
@@ -703,8 +702,7 @@ std::optional<uint32_t> SymbolTable::offset(std::string_view type, std::string_v
    if (!file) return std::nullopt;
    auto offset = file->memberOffset(type, path);
    if (!offset) return std::nullopt;
-   cache_[key] = *offset;
-   cacheDirty_ = true;
+   remember(std::move(key), *offset, "off", type, path);
    return offset;
 }
 
@@ -715,8 +713,7 @@ std::optional<uint32_t> SymbolTable::size(std::string_view type) {
    if (!file) return std::nullopt;
    auto size = file->classSize(type);
    if (!size) return std::nullopt;
-   cache_[key] = *size;
-   cacheDirty_ = true;
+   remember(std::move(key), *size, "size", type, {});
    return size;
 }
 
@@ -727,8 +724,7 @@ std::optional<int64_t> SymbolTable::enumValue(std::string_view type, std::string
    if (!file) return std::nullopt;
    auto value = file->enumeratorValue(type, enumerator);
    if (!value) return std::nullopt;
-   cache_[key] = static_cast<uint64_t>(*value);
-   cacheDirty_ = true;
+   remember(std::move(key), static_cast<uint64_t>(*value), "enum", type, enumerator);
    return value;
 }
 
@@ -739,9 +735,15 @@ std::optional<uint32_t> SymbolTable::virtualSlot(std::string_view type, std::str
    if (!file) return std::nullopt;
    auto slot = file->virtualSlot(type, method);
    if (!slot) return std::nullopt;
-   cache_[key] = *slot;
-   cacheDirty_ = true;
+   remember(std::move(key), *slot, "vslot", type, method);
    return slot;
+}
+
+void SymbolTable::remember(std::string key, uint64_t value, std::string_view kind, std::string_view first,
+                           std::string_view second) {
+   cache_[std::move(key)] = value;
+   cacheDirty_ = true;
+   if (queries_) queries_->push_back({std::string(kind), std::string(first), std::string(second), value});
 }
 
 std::vector<InlinedCopies> SymbolTable::inlinedCopies(std::span<const uintptr_t> functions) {

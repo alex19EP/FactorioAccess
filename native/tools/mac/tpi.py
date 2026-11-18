@@ -50,7 +50,9 @@ def parse(path):
             fl = re.search(r'underlying type: (0x[0-9A-F]+(?: \([^)]*\))?|<no type>)', body)
             opts = re.search(r'options: (.*)', body)
             uniq = re.search(r'unique name: `([^`]*)`', body)
+            efl = re.search(r'field list: (<no type>|0x[0-9A-F]+)', body)
             types[idx] = {'k': 'enum', 'name': name, 'under': ref(fl.group(1)),
+                          'fl': None if not efl or efl.group(1) == '<no type>' else int(efl.group(1), 16),
                           'fwd': 'forward ref' in opts.group(1), 'uniq': uniq.group(1) if uniq else name}
         elif kind == 'LF_POINTER':
             r = re.search(r'referent = (0x[0-9A-F]+(?: \([^)]*\))?|<no type>)', body)
@@ -105,15 +107,19 @@ def parse(path):
     return types
 
 
+FORMAT = 2  # 2: enums keep their field list
+
+
 def load(dump, cache):
     if os.path.exists(cache) and os.path.getmtime(cache) > os.path.getmtime(dump):
         with open(cache, 'rb') as f:
-            types, prim = pickle.load(f)
-        PRIM.update(prim)
-        return types
+            saved = pickle.load(f)
+        if len(saved) == 3 and saved[2] == FORMAT:
+            PRIM.update(saved[1])
+            return saved[0]
     types = parse(dump)
     with open(cache, 'wb') as f:
-        pickle.dump((types, dict(PRIM)), f, protocol=pickle.HIGHEST_PROTOCOL)
+        pickle.dump((types, dict(PRIM), FORMAT), f, protocol=pickle.HIGHEST_PROTOCOL)
     return types
 
 
