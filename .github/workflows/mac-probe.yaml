@@ -1,0 +1,139 @@
+name: Mac probe
+
+# Finds out what a GitHub macOS (Apple Silicon) runner can do with Factorio, before any Mac port
+# work: whether a dylib injected with DYLD_INSERT_LIBRARIES loads into the game, whether the game
+# runs as a server without a window, and whether it starts with graphics in the runner's desktop
+# session. Every step runs even when an earlier one fails, and the logs and screenshots are uploaded.
+# The game itself is never cached or uploaded: it is not ours to share.
+# A push to the mac-probe branch runs it too, since a manual run needs the file on the default branch.
+on:
+  push:
+    branches: [mac-probe]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Factorio version, such as 2.1.25 (empty for the newest experimental)
+        required: false
+
+jobs:
+  probe:
+    runs-on: macos-15
+    timeout-minutes: 30
+    env:
+      OUT: ${{ github.workspace }}/probe-out
+      GAME: ${{ github.workspace }}/game
+      DATA: ${{ github.workspace }}/game-data
+    steps:
+      - name: Runner
+        run: |
+          mkdir -p "$OUT"
+          {
+            sw_vers
+            uname -m
+            system_profiler SPDisplaysDataType SPHardwareDataType
+          } 2>&1 | tee "$OUT/runner.txt"
+
+      - name: Download Factorio
+        env:
+          REQUESTED: ${{ inputs.version }}
+          FACTORIO_USERNAME: ${{ secrets.FACTORIO_USERNAME }}
+          FACTORIO_TOKEN: ${{ secrets.FACTORIO_TOKEN }}
+        run: |
+          if [ -z "$FACTORIO_USERNAME" ] || [ -z "$FACTORIO_TOKEN" ]; then
+            echo "::error::Set the FACTORIO_USERNAME and FACTORIO_TOKEN repository secrets"
+            exit 1
+          fi
+          version="$REQUESTED"
+          if [ -z "$version" ]; then
+            version=$(curl -fsS --retry 3 https://factorio.com/api/latest-releases | jq -r .experimental.expansion)
+          fi
+          echo "Factorio $version" | tee -a "$GITHUB_STEP_SUMMARY"
+          curl -fsSL --retry 3 -o "$RUNNER_TEMP/factorio.dmg" --get \
+            --data-urlencode "username=$FACTORIO_USERNAME" --data-urlencode "token=$FACTORIO_TOKEN" \
+            "https://www.factorio.com/get-download/$version/expansion/osx"
+          mount=$(hdiutil attach -nobrowse -readonly "$RUNNER_TEMP/factorio.dmg" | awk -F'\t' '/\/Volumes\//{print $NF}')
+          mkdir -p "$GAME"
+          cp -R "$mount/factorio.app" "$GAME/" || cp -R "$mount"/*/factorio.app "$GAME/"
+          hdiutil detach "$mount"
+          bin="$GAME/factorio.app/Contents/MacOS/factorio"
+          file "$bin" | tee "$OUT/binary.txt"
+          codesign -d --entitlements - "$bin" >> "$OUT/binary.txt" 2>&1 || true
+          # The game's write data goes to a folder of its own, not ~/Library.
+          mkdir -p "$DATA/config"
+          printf '[path]\nread-data=__PATH__system-read-data__\nwrite-data=%s\n' "$DATA" > "$DATA/config/config.ini"
+          echo "BIN=$bin" >> "$GITHUB_ENV"
+
+      # A dylib whose constructor writes a file: the smallest proof that injection works here.
+      - name: Injection
+        if: always() && env.BIN != ''
+        run: |
+          cat > "$RUNNER_TEMP/hello.c" <<'EOF'
+          #include <stdio.h>
+          #include <stdlib.h>
+          #include <unistd.h>
+          __attribute__((constructor)) static void hello(void) {
+              FILE* f = fopen(getenv("PROBE_MARKER"), "a");
+              if (f) { fprintf(f, "loaded into pid %d\n", getpid()); fclose(f); }
+          }
+          EOF
+          clang -dynamiclib -arch arm64 -o "$RUNNER_TEMP/libhello.dylib" "$RUNNER_TEMP/hello.c"
+          export PROBE_MARKER="$OUT/injection-marker.txt"
+          DYLD_INSERT_LIBRARIES="$RUNNER_TEMP/libhello.dylib" "$BIN" --version -c "$DATA/config/config.ini" \
+            2>&1 | tee "$OUT/version.txt"
+          if [ -s "$PROBE_MARKER" ]; then
+            echo "Injection: loaded" | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Injection: NOT loaded" | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+      - name: Server without a window
+        if: always() && env.BIN != ''
+        run: |
+          export PROBE_MARKER="$OUT/server-marker.txt"
+          "$BIN" -c "$DATA/config/config.ini" --create "$DATA/probe.zip" > "$OUT/create.txt" 2>&1
+          DYLD_INSERT_LIBRARIES="$RUNNER_TEMP/libhello.dylib" \
+            "$BIN" -c "$DATA/config/config.ini" --start-server "$DATA/probe.zip" > "$OUT/server.txt" 2>&1 &
+          pid=$!
+          sleep 60
+          if kill -0 $pid 2>/dev/null; then
+            echo "Server: running after 60 s" | tee -a "$GITHUB_STEP_SUMMARY"
+            kill $pid
+          else
+            wait $pid; code=$?
+            echo "Server: exited early with code $code" | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+          grep -E "Hosting game|Matching server|State changed" "$OUT/server.txt" | tail -5 || true
+
+      - name: Game with graphics
+        if: always() && env.BIN != ''
+        run: |
+          export PROBE_MARKER="$OUT/client-marker.txt"
+          screencapture -x "$OUT/desktop-before.png" || echo "screencapture failed" | tee -a "$GITHUB_STEP_SUMMARY"
+          DYLD_INSERT_LIBRARIES="$RUNNER_TEMP/libhello.dylib" \
+            "$BIN" -c "$DATA/config/config.ini" > "$OUT/client.txt" 2>&1 &
+          pid=$!
+          for t in 30 60 90; do
+            sleep 30
+            screencapture -x "$OUT/game-$t.png" || true
+            kill -0 $pid 2>/dev/null || break
+          done
+          if kill -0 $pid 2>/dev/null; then
+            echo "Graphics: game still running after 90 s (see the screenshots)" | tee -a "$GITHUB_STEP_SUMMARY"
+            kill $pid
+          else
+            wait $pid; code=$?
+            echo "Graphics: game exited with code $code" | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+          grep -iE "metal|graphics|gpu|renderer|error" "$DATA/factorio-current.log" | head -40 || true
+
+      - name: Upload logs and screenshots
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: mac-probe
+          path: |
+            probe-out
+            game-data/factorio-current.log
+            game-data/factorio-previous.log
+          if-no-files-found: warn
