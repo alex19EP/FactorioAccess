@@ -5,8 +5,11 @@ name: Mac probe
 # runs as a server without a window, and whether it starts with graphics in the runner's desktop
 # session. Every step runs even when an earlier one fails, and the logs and screenshots are uploaded.
 # The game itself is never cached or uploaded: it is not ours to share.
-# A push to the mac-probe branch runs it too, since a manual run needs the file on the default branch.
+# Also nightly, at an hour when GitHub's arm64 macOS runners are more likely free: by day a queued
+# job was cancelled after 15 minutes without getting one. A push to the mac-probe branch runs it too.
 on:
+  schedule:
+    - cron: '17 3 * * *'
   push:
     branches: [mac-probe]
   workflow_dispatch:
